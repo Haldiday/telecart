@@ -17,12 +17,14 @@ interface Ads2ColSectionProps {
   sectionId: string;
   sectionTable?: string;
   adsTable?: string;
+  mobileContainImage?: boolean;
 }
 
 export default function Ads2ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_2col',
+  mobileContainImage = false,
 }: Ads2ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -117,7 +119,7 @@ export default function Ads2ColSection({
                 {displayAds.map((ad, displayIndex) => (
                   <div
                     key={`${ad.id}-${displayIndex}`}
-                    className="flex-none px-2.5"
+                    className="flex-none px-1.5"
                     style={{ width: `${slideWidth}%` }}
                   >
                     <a
@@ -128,7 +130,7 @@ export default function Ads2ColSection({
                         <img
                           src={ad.image_url}
                           alt="Ad"
-                          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                          className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
                         />
                       )}
                     </a>
@@ -138,18 +140,18 @@ export default function Ads2ColSection({
             </div>
           </div>
         ) : (
-          <div className="flex">
+          <div className="flex gap-3">
             {adsToDisplay.map((ad) => (
-              <div key={ad.id} className="flex-1 px-2.5">
+              <div key={ad.id} className="flex-1">
                 <a
                   href={ad.link || '#'}
-                  className={`block h-[180px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border border-border' : ''}`}
+                  className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border border-border' : ''}`}
                 >
                   {ad.image_url && (
                     <img
                       src={ad.image_url}
                       alt="Ad"
-                      className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                      className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
                     />
                   )}
                 </a>

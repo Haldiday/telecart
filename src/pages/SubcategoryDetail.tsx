@@ -6,6 +6,7 @@ import { useScopedSectionInstances, type ScopedPageSection } from '@/hooks/useSc
 import { Switch } from '@/components/ui/switch';
 import ImageUpload from '@/components/admin/ImageUpload';
 import ImageCropper from '@/components/admin/ImageCropper';
+import FileUpload from '@/components/admin/FileUpload';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import FeaturedCards from '@/components/home/FeaturedCards';
@@ -34,13 +35,13 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   Download,
   ArrowLeft,
+  ArrowRight,
   Info,
   Play,
   Maximize2,
   X,
   Package,
   ExternalLink,
-  CalendarDays,
   FileText,
   CheckCircle2,
   GripVertical,
@@ -52,6 +53,8 @@ import {
   Image,
   LayoutPanelTop,
   Eye,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 const db = supabase as any;
@@ -62,6 +65,7 @@ const PRODUCT_OFFERS_TABLE = 'subcategory_offers';
 const PRODUCT_ADS_2_TABLE = 'subcategory_ads_2col';
 const PRODUCT_ADS_3_TABLE = 'subcategory_ads_3col';
 const PRODUCT_LOGO_STEPS_TABLE = 'subcategory_logo_steps';
+const INITIAL_OVERVIEW_POINTS_COUNT = 8;
 
 type ProductAdminTab = 'layout' | 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'logo_steps';
 
@@ -118,6 +122,7 @@ interface Category {
   show_downloads_tab?: boolean;
   show_overview_section?: boolean;
   show_products_tab?: boolean;
+  show_brands_tab?: boolean;
 }
 
 interface CategoryButton {
@@ -129,7 +134,7 @@ interface CategoryButton {
   sort_order: number;
 }
 
-interface CategoryDownload {
+interface Download {
   id: string;
   file_name: string;
   file_url: string;
@@ -139,6 +144,13 @@ interface CategoryDownload {
 interface CategoryProduct {
   id: string;
   title: string;
+  link: string;
+  sort_order: number;
+}
+
+interface BrandItem {
+  id: string;
+  name: string;
   link: string;
   sort_order: number;
 }
@@ -227,16 +239,18 @@ const normalizeExternalUrl = (url: string) => {
   return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
 };
 
-const getEmbeddableScheduleUrl = (url: string) => {
-  const normalizedUrl = normalizeExternalUrl(url);
-  if (!normalizedUrl) return null;
+const getDownloadFileType = (fileName?: string | null) => {
+  const extension = fileName?.split('.').pop()?.trim().toLowerCase();
+  if (!extension) return 'other';
 
-  if (normalizedUrl.includes('calendly.com') && !normalizedUrl.includes('embed_domain=')) {
-    return normalizedUrl.includes('?') ? `${normalizedUrl}&embed_domain=localhost` : `${normalizedUrl}?embed_domain=localhost`;
-  }
-
-  return normalizedUrl;
+  const supportedTypes = new Set(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip']);
+  return supportedTypes.has(extension) ? extension : 'other';
 };
+
+// Adjust these values to control the desktop download card size.
+const DOWNLOAD_CARD_WIDTH = 220;
+const DOWNLOAD_CARD_MIN_HEIGHT = 180;
+const DOWNLOAD_CARD_BACKGROUND = '#ffffff';
 
 const getSectionDisplayName = (section?: ScopedPageSection | null) => section?.heading?.trim() || section?.name || '';
 
@@ -321,7 +335,7 @@ export default function SubcategoryDetail() {
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [showVideoFullscreen, setShowVideoFullscreen] = useState(false);
-  const [downloads, setDownloads] = useState<CategoryDownload[]>([]);
+  const [downloads, setDownloads] = useState<Download[]>([]);
   const [products, setProducts] = useState<CategoryProduct[]>([]);
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [overviewPoints, setOverviewPoints] = useState<CategoryOverviewPoint[]>([]);
@@ -330,7 +344,9 @@ export default function SubcategoryDetail() {
   const [overviewPointsHeading, setOverviewPointsHeading] = useState(defaultOverviewPointsHeading);
   const [isSaving, setIsSaving] = useState(false);
   const [showOverviewPointsSection, setShowOverviewPointsSection] = useState(true);
+  const [showAllOverviewPoints, setShowAllOverviewPoints] = useState(false);
   const [allSectionsVisible, setAllSectionsVisible] = useState(true);
+  const [showBrandsTabSetting, setShowBrandsTabSetting] = useState(true);
 
   const handleShowOverviewSectionChange = async (value: boolean) => {
     setShowOverviewPointsSection(value);
@@ -345,12 +361,7 @@ export default function SubcategoryDetail() {
     }
   };
 
-  const [subcategoryLink, setSubcategoryLink] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
-  const [scheduleLink, setScheduleLink] = useState('');
-  const [showScheduleTab, setShowScheduleTab] = useState(false);
-  const [scheduleLink2, setScheduleLink2] = useState('');
-  const [showScheduleTab2, setShowScheduleTab2] = useState(false);
   const [formLink, setFormLink] = useState('');
   const [showFormTab, setShowFormTab] = useState(false);
 
@@ -367,6 +378,7 @@ export default function SubcategoryDetail() {
   const [productAds2, setProductAds2] = useState<Ad2Item[]>([]);
   const [productAds3, setProductAds3] = useState<Ad3Item[]>([]);
   const [productLogoSteps, setProductLogoSteps] = useState<LogoStepItem[]>([]);
+  const [brands, setBrands] = useState<BrandItem[]>([]);
 
   const [selectedCardsSectionId, setSelectedCardsSectionId] = useState('');
   const [selectedOffersSectionId, setSelectedOffersSectionId] = useState('');
@@ -377,18 +389,20 @@ export default function SubcategoryDetail() {
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCardItem> | null>(null);
   const [editOffer, setEditOffer] = useState<Partial<OfferItem> | null>(null);
+
+  const [isSavingBrands, setIsSavingBrands] = useState(false);
   const [editAd1, setEditAd1] = useState<Partial<Ad2Item> | null>(null);
   const [editAd2, setEditAd2] = useState<Partial<Ad2Item> | null>(null);
   const [editAd3, setEditAd3] = useState<Partial<Ad3Item> | null>(null);
   const [editLogoStep, setEditLogoStep] = useState<Partial<LogoStepItem> | null>(null);
+  const [editDownload, setEditDownload] = useState<Partial<Download> | null>(null);
 
-  const scheduleLinkTrimmed = scheduleLink.trim();
-  const scheduleLink2Trimmed = scheduleLink2.trim();
   const hasVideoResource = Boolean(videoUrl);
   const showDownloadsTab = category?.show_downloads_tab !== false;
   const showProductsTab = category?.show_products_tab !== false;
-  const showScheduleAsTab = Boolean(scheduleLinkTrimmed && showScheduleTab);
-  const showSchedule2AsTab = Boolean(scheduleLink2Trimmed && showScheduleTab2);
+  const showBrandsTabForUsers = showBrandsTabSetting && brands.length > 0;
+  const showBrandsTab = isAdmin || showBrandsTabForUsers;
+  const showBrandsInOverview = showBrandsTabSetting && (isAdmin || brands.length > 0);
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
   const hasResourcesTab = hasVideoResource;
 
@@ -398,44 +412,36 @@ export default function SubcategoryDetail() {
 
   if (hasResourcesTab) tabs.push({ key: 'resources', label: 'Resources', icon: <Play className="h-4 w-4" /> });
   if (showDownloadsTab) tabs.push({ key: 'downloads', label: 'Downloads', icon: <Download className="h-4 w-4" /> });
-  if (isAdmin && showProductsTab) tabs.push({ key: 'products', label: 'Products', icon: <Package className="h-4 w-4" /> });
-  if (showScheduleAsTab) tabs.push({ key: 'schedule', label: 'Schedule', icon: <CalendarDays className="h-4 w-4" /> });
-  if (showSchedule2AsTab) tabs.push({ key: 'schedule-2', label: 'Schedule 2', icon: <CalendarDays className="h-4 w-4" /> });
+  if (isAdmin && showProductsTab) tabs.push({ key: 'products', label: 'Admin', icon: <Package className="h-4 w-4" /> });
+  if (showBrandsTab) tabs.push({ key: 'brands', label: 'Brands', icon: <Image className="h-4 w-4" /> });
   if (showFormAsTab) tabs.push({ key: 'form', label: 'Form', icon: <FileText className="h-4 w-4" /> });
 
   const resourcesTabIndex = tabs.findIndex((tab) => tab.key === 'resources');
   const downloadsTabIndex = tabs.findIndex((tab) => tab.key === 'downloads');
   const productsTabIndex = tabs.findIndex((tab) => tab.key === 'products');
-  const scheduleTabIndex = tabs.findIndex((tab) => tab.key === 'schedule');
-  const schedule2TabIndex = tabs.findIndex((tab) => tab.key === 'schedule-2');
+  const brandsTabIndex = tabs.findIndex((tab) => tab.key === 'brands');
   const formTabIndex = tabs.findIndex((tab) => tab.key === 'form');
 
-  const scheduleEmbedUrl = scheduleLinkTrimmed ? getEmbeddableScheduleUrl(scheduleLinkTrimmed) : null;
-  const scheduleEmbedUrl2 = scheduleLink2Trimmed ? getEmbeddableScheduleUrl(scheduleLink2Trimmed) : null;
-
   const productItems: ProductCardItem[] = useMemo(
-    () => [
-      ...(subcategory && subcategoryLink.trim()
-        ? [
-            {
-              id: `subcategory-${subcategory.id}`,
-              title: subcategory.name,
-              link: subcategoryLink.trim(),
-            },
-          ]
-        : []),
-      ...products.map((product) => ({
+    () =>
+      products.map((product) => ({
         id: `category-product-${product.id}`,
         title: product.title,
         link: product.link,
       })),
-    ],
-    [products, subcategory, subcategoryLink]
+    [products]
   );
 
   const visibleOverviewPoints = useMemo(
     () => overviewPoints.filter((point) => point.text.trim().length > 0).sort((a, b) => a.sort_order - b.sort_order),
     [overviewPoints]
+  );
+
+  const hasMoreOverviewPoints = visibleOverviewPoints.length > INITIAL_OVERVIEW_POINTS_COUNT;
+
+  const displayedOverviewPoints = useMemo(
+    () => (showAllOverviewPoints ? visibleOverviewPoints : visibleOverviewPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT)),
+    [showAllOverviewPoints, visibleOverviewPoints]
   );
 
   const primaryButtons = useMemo(
@@ -453,8 +459,18 @@ export default function SubcategoryDetail() {
     [buttons]
   );
 
+  const adminHeroEditableButtons = useMemo(
+    () => buttons.slice(0, 4),
+    [buttons]
+  );
+
   const secondaryButtons = useMemo(
     () => buttons.slice(2, 4).filter((button) => button.is_visible),
+    [buttons]
+  );
+
+  const heroButtons = useMemo(
+    () => buttons.filter((button) => button.is_visible),
     [buttons]
   );
 
@@ -609,7 +625,7 @@ export default function SubcategoryDetail() {
       const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: productData }, { data: buttonData }, { data: overviewPointData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
-        supabase.from('category_downloads').select('*').eq('category_id', categoryId),
+        supabase.from('subcategory_downloads' as any).select('*').eq('subcategory_id', subcategoryId),
         supabase.from('category_products' as any).select('*').eq('category_id', categoryId).order('sort_order'),
         supabase.from('category_buttons').select('*').eq('category_id', categoryId).order('sort_order'),
         supabase.from('category_overview_points' as any).select('*').eq('category_id', categoryId).order('sort_order'),
@@ -618,6 +634,7 @@ export default function SubcategoryDetail() {
       if (categoryData) {
         setCategory(categoryData);
         setShowOverviewPointsSection(categoryData.show_overview_section !== false);
+        setShowBrandsTabSetting(categoryData.show_brands_tab !== false);
         const normalizedDetailHeading = isGenericDetailHeading(categoryData.detail_heading || '', categoryData.name)
           ? ''
           : categoryData.detail_heading || '';
@@ -631,19 +648,13 @@ export default function SubcategoryDetail() {
       }
 
       if (subcategoryData) {
-        const subcat = subcategoryData as any;
         setSubcategory(subcategoryData);
-        setSubcategoryLink(subcat.link || '');
-        setVideoUrl(subcat.video_url || '');
-        setScheduleLink(subcat.schedule_link || '');
-        setShowScheduleTab(subcat.show_schedule_in_separate_tab || false);
-        setScheduleLink2(subcat.schedule_link_2 || '');
-        setShowScheduleTab2(subcat.show_schedule_2_in_separate_tab || false);
-        setFormLink(subcat.form_link || '');
-        setShowFormTab(subcat.show_form_in_separate_tab || false);
+        setVideoUrl((subcategoryData as any).video_url || '');
+        setFormLink((subcategoryData as any).form_link || '');
+        setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
       }
 
-      if (downloadData) setDownloads(downloadData);
+      if (downloadData) setDownloads(downloadData as unknown as Download[]);
       if (productData) setProducts(productData as unknown as CategoryProduct[]);
 
       if (buttonData && buttonData.length > 0) {
@@ -670,7 +681,7 @@ export default function SubcategoryDetail() {
       .channel(`subcategory_detail_${subcategoryId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `id=eq.${subcategoryId}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_downloads', filter: `category_id=eq.${categoryId}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_downloads', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_products', filter: `category_id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `category_id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_overview_points', filter: `category_id=eq.${categoryId}` }, loadData)
@@ -679,6 +690,23 @@ export default function SubcategoryDetail() {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [categoryId, subcategoryId]);
+
+  useEffect(() => {
+    if (!categoryId || !subcategoryId) return;
+
+    const storageKey = `subcategory-brands-${subcategoryId}`;
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      try {
+        const storedBrands: BrandItem[] = JSON.parse(raw);
+        setBrands(storedBrands.sort((a, b) => a.sort_order - b.sort_order));
+      } catch (error) {
+        console.error('Failed to parse saved brands:', error);
+      }
+    } else {
+      setBrands([]);
+    }
   }, [categoryId, subcategoryId]);
 
   const handleButtonLabelChange = (buttonId: string | undefined, value: string) => {
@@ -697,6 +725,54 @@ export default function SubcategoryDetail() {
     setButtons((current) =>
       current.map((button) => (button.id === buttonId ? { ...button, link: value || null } : button))
     );
+  };
+
+  const handleBrandNameChange = (brandId: string, value: string) => {
+    setBrands((current) =>
+      current.map((brand) => (brand.id === brandId ? { ...brand, name: value } : brand))
+    );
+  };
+
+  const handleBrandLinkChange = (brandId: string, value: string) => {
+    setBrands((current) =>
+      current.map((brand) => (brand.id === brandId ? { ...brand, link: value } : brand))
+    );
+  };
+
+  const addBrand = () => {
+    if (!categoryId) return;
+    setBrands((current) => [
+      ...current,
+      {
+        id: `brand-${crypto.randomUUID()}`,
+        name: '',
+        link: '',
+        sort_order: current.length,
+      },
+    ]);
+  };
+
+  const removeBrand = (brandId: string) => {
+    setBrands((current) =>
+      current
+        .filter((brand) => brand.id !== brandId)
+        .map((brand, index) => ({ ...brand, sort_order: index }))
+    );
+  };
+
+  const handleSaveBrands = async () => {
+    if (!subcategoryId) return;
+    setIsSavingBrands(true);
+    try {
+      const storageKey = `subcategory-brands-${subcategoryId}`;
+      localStorage.setItem(storageKey, JSON.stringify(brands));
+      toast.success('Brands saved.');
+    } catch (error) {
+      console.error('Failed to save brands:', error);
+      toast.error('Failed to save brands.');
+    } finally {
+      setIsSavingBrands(false);
+    }
   };
 
   const handleOverviewPointTextChange = (index: number, value: string) => {
@@ -765,12 +841,7 @@ export default function SubcategoryDetail() {
         await supabase
           .from('subcategories')
           .update({
-            link: subcategoryLink.trim() || null,
             video_url: videoUrl.trim() || null,
-            schedule_link: scheduleLink.trim() || null,
-            show_schedule_in_separate_tab: showScheduleTab,
-            schedule_link_2: scheduleLink2.trim() || null,
-            show_schedule_2_in_separate_tab: showScheduleTab2,
             form_link: formLink.trim() || null,
             show_form_in_separate_tab: showFormTab,
           } as any)
@@ -1187,6 +1258,39 @@ export default function SubcategoryDetail() {
     }
   };
 
+  const saveDownload = async () => {
+    if (!editDownload?.file_name?.trim() || !editDownload?.file_url?.trim()) {
+      toast.error('File name and uploaded file are required.');
+      return;
+    }
+
+    try {
+      if (editDownload.id) {
+        await db
+          .from('subcategory_downloads')
+          .update({
+            file_name: editDownload.file_name.trim(),
+            file_url: editDownload.file_url.trim(),
+            file_type: editDownload.file_type || 'pdf',
+          })
+          .eq('id', editDownload.id);
+      } else {
+        await db.from('subcategory_downloads').insert({
+          file_name: editDownload.file_name.trim(),
+          file_url: editDownload.file_url.trim(),
+          file_type: editDownload.file_type || 'pdf',
+          subcategory_id: subcategoryId,
+        });
+      }
+
+      setEditDownload(null);
+      toast.success('Download saved.');
+    } catch (error) {
+      console.error('Error saving download:', error);
+      toast.error('Failed to save download.');
+    }
+  };
+
   const deleteItem = async (tableName: string, itemId: string) => {
     try {
       await db.from(tableName).delete().eq('id', itemId);
@@ -1238,6 +1342,7 @@ export default function SubcategoryDetail() {
           sectionId={section.id}
           sectionTable={PRODUCT_SECTION_TABLE}
           cardsTable={PRODUCT_CARDS_TABLE}
+          hideSeeAllOnMobile
         />
       );
     }
@@ -1268,6 +1373,7 @@ export default function SubcategoryDetail() {
           sectionId={section.id}
           sectionTable={PRODUCT_SECTION_TABLE}
           adsTable={PRODUCT_ADS_2_TABLE}
+          mobileContainImage
         />
       );
     }
@@ -1283,6 +1389,7 @@ export default function SubcategoryDetail() {
           sectionId={section.id}
           sectionTable={PRODUCT_SECTION_TABLE}
           adsTable={PRODUCT_ADS_2_TABLE}
+          mobileContainImage
         />
       );
     }
@@ -1298,6 +1405,7 @@ export default function SubcategoryDetail() {
           sectionId={section.id}
           sectionTable={PRODUCT_SECTION_TABLE}
           adsTable={PRODUCT_ADS_3_TABLE}
+          mobileContainImage
         />
       );
     }
@@ -1337,6 +1445,40 @@ export default function SubcategoryDetail() {
     return null;
   };
 
+  const renderBrandGrid = () => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {brands.map((brand) => {
+        const externalUrl = normalizeExternalUrl(brand.link || '');
+        const content = (
+          <span className="text-base font-semibold text-foreground">{brand.name || 'Unnamed brand'}</span>
+        );
+
+        if (externalUrl) {
+          return (
+            <a
+              key={brand.id}
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-[72px] items-center rounded-xl border border-border bg-card px-4 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+            >
+              {content}
+            </a>
+          );
+        }
+
+        return (
+          <div
+            key={brand.id}
+            className="flex min-h-[72px] items-center rounded-xl border border-border bg-card px-4 py-4 text-left"
+          >
+            {content}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   if (!category || !subcategory) {
     return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   }
@@ -1344,30 +1486,32 @@ export default function SubcategoryDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <div className="fixed top-20 left-4 z-50">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Home
+      <div className="mx-auto w-full max-w-6xl px-4 pt-6">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Home
         </Link>
       </div>
       <main className="flex-1">
         {/* Hero Section with colored background and video */}
         <div
           className="relative border-b border-border"
-          style={{ background: 'linear-gradient(90deg, #4f46e5 0%, #9333ea 100%)' }}
+          style={{ background: '#ffffff' }}
         >
-          <div className="mx-auto max-w-6xl px-4 py-8 flex flex-col md:flex-row md:items-center gap-y-6 md:gap-y-0 gap-x-6 md:gap-x-8">
-            <div className="flex-1 min-w-0 flex flex-col gap-3 md:gap-2 items-start md:items-start justify-start text-left md:text-left">
-              <div className="flex flex-col md:flex-row md:items-center gap-4 mt-4 md:mt-0">
+          <div className="mx-auto flex max-w-6xl flex-col gap-x-6 gap-y-6 px-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-8">
+            <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-4 text-left">
+              <div className="mt-0 flex flex-col gap-4 md:flex-row md:items-center">
                 {category.icon_url && (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-white">
-                    <img src={category.icon_url} alt={category.name} className="h-9 w-9 object-contain" />
+                  <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff]">
+                    <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
                   </div>
                 )}
                 <div className="min-w-0">
-                  <h1 className="text-2xl md:text-3xl font-bold text-white truncate drop-shadow-md">{subcategory.name}</h1>
-                  <p className="mt-1 inline-flex items-center rounded-md bg-white/10 px-2.5 py-1 text-xs md:text-xs font-medium text-white/90">
-                    {category.name}
-                  </p>
+                  <h1 className="break-words whitespace-normal text-2xl font-bold text-foreground md:text-3xl">
+                    {subcategory.name}
+                  </h1>
                 </div>
               </div>
               <div className="mt-3 w-full">
@@ -1375,27 +1519,27 @@ export default function SubcategoryDetail() {
                   <textarea
                     value={detailDescription}
                     onChange={(event) => setDetailDescription(event.target.value)}
-                    className="min-h-[80px] w-full rounded-lg border-0 bg-white/10 px-3 py-2 text-sm md:text-base font-medium text-white placeholder-white/60 outline-none focus:bg-white/20 focus:ring-1 focus:ring-white/30 resize-none"
+                    className="min-h-[80px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground/80 placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none md:text-base"
                     placeholder="Enter description here..."
                   />
                 ) : (
-                  <p className="text-white/90 text-xl md:text-xl font-medium drop-shadow-sm">
+                  <p className="max-w-5xl text-base leading-relaxed text-foreground/80">
                     {detailDescription || `Connect with businesses to expand your brand presence.`}
                   </p>
                 )}
               </div>
 
-              {isAdmin && primaryEditableButtons.length > 0 && (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  {primaryEditableButtons.map((button) => (
-                    <div key={button.id ?? button.label} className="rounded-3xl border border-white/20 bg-white/10 p-4 shadow-sm">
+              {isAdmin && adminHeroEditableButtons.length > 0 && (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {adminHeroEditableButtons.map((button) => (
+                    <div key={button.id ?? button.label} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
                       <div className="flex items-center justify-between gap-3">
                         <input
                           type="text"
                           value={button.label}
                           onChange={(event) => handleButtonLabelChange(button.id, event.target.value)}
                           placeholder="Button label"
-                          className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                         />
                         <Switch
                           checked={button.is_visible}
@@ -1403,28 +1547,28 @@ export default function SubcategoryDetail() {
                           className="shrink-0"
                         />
                       </div>
-                      <input
-                        type="text"
-                        value={button.link || ''}
-                        onChange={(event) => handleButtonLinkChange(button.id, event.target.value)}
-                        placeholder="Button link"
-                        className="mt-3 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                      />
-                      <p className="mt-2 text-xs text-white/70">{button.is_visible ? 'Visible' : 'Hidden'}</p>
+                        <input
+                          type="text"
+                          value={button.link || ''}
+                          onChange={(event) => handleButtonLinkChange(button.id, event.target.value)}
+                          placeholder="Button link"
+                          className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                        />
+                      <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
                     </div>
                   ))}
                 </div>
               )}
 
-              {!isAdmin && primaryButtons.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {primaryButtons.map((button) => (
+              {!isAdmin && heroButtons.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-3">
+                  {heroButtons.map((button) => (
                     <a
                       key={button.id}
                       href={normalizeExternalUrl(button.link || '') || '#'}
                       target={button.link ? '_blank' : undefined}
                       rel={button.link ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white px-5 py-2 text-sm font-medium text-[#331f8d] transition-colors hover:bg-white/30"
+                      className="inline-flex items-center justify-center rounded-[10px] border border-border bg-background px-6 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary"
                     >
                       {button.label}
                     </a>
@@ -1465,7 +1609,7 @@ export default function SubcategoryDetail() {
                     )}
                   </div>
                   <div className="flex items-center justify-between p-3">
-                    <p className="text-xs text-white/80 truncate">{isYouTube ? 'YouTube video' : 'Click play icon for fullscreen'}</p>
+                    <p className="text-xs text-white/80 truncate">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
                     {!isYouTube && (
                       <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-1 hover:bg-white/10" title="Fullscreen">
                         <Maximize2 className="h-3 w-3 text-white/80" />
@@ -1503,7 +1647,19 @@ export default function SubcategoryDetail() {
         <div className="container mx-auto w-full px-4 py-8">
           {activeTab === 0 && (
             <div className="w-full space-y-8">
-              <div className={`w-full ${isAdmin ? 'md:max-w-3xl' : ''}`}>
+              {isAdmin && (
+                <div className="flex justify-end md:px-8 lg:px-12">
+                  <button
+                    type="button"
+                    onClick={handleSaveAll}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSaving ? 'Saving...' : 'Save changes'}
+                  </button>
+                </div>
+              )}
+              <div className={`w-full md:px-8 lg:px-12 ${isAdmin ? 'md:max-w-3xl' : ''}`}>
                 {shouldShowOverviewCard && showOverviewPointsSection && (
                   <div className={`mt-6 flex flex-col gap-4 ${!isAdmin && secondaryButtons.length > 0 ? 'lg:flex-row lg:items-start lg:justify-between' : ''}`}>
                     <div
@@ -1511,100 +1667,63 @@ export default function SubcategoryDetail() {
                         isAdmin ? 'rounded-2xl border border-border bg-card p-5 shadow-sm' : ''
                       }`}
                     >
-                      <div className={`flex flex-col gap-6 ${isAdmin && secondaryEditableButtons.length > 0 ? 'md:flex-row md:gap-8' : ''}`}>
+                      <div className="flex flex-col gap-6">
                         {/* Left side: Title and Points */}
                         <div className="flex-1">
-                          <h3 className={`text-foreground ${isAdmin ? 'mb-4 text-sm font-semibold' : 'mb-6 text-lg font-bold'}`}>
+                          <h3 className={`text-foreground ${isAdmin ? 'mb-4 text-sm font-semibold' : 'mb-6 text-2xl md:text-3xl font-semibold'}`}>
                             {overviewPointsHeading.trim() || defaultOverviewPointsHeading}
                           </h3>
 
-                          <div className="space-y-3">
+                          <div className="max-w-[920px] space-y-4">
                             {visibleOverviewPoints.length > 0 ? (
-                              visibleOverviewPoints.map((point) =>
-                                point.is_highlighted ? (
-                                <div
-                                  key={point.id}
-                                  className="flex items-start gap-2.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-emerald-700"
-                                >
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                                    <span>{point.text}</span>
+                              <>
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                  {displayedOverviewPoints.map((point) => (
+                                    <div
+                                      key={point.id}
+                                      className={`flex items-start gap-2.5 rounded-xl border border-border px-4 py-3 text-sm ${
+                                        point.is_highlighted ? 'bg-white font-medium text-emerald-700' : 'bg-background text-muted-foreground'
+                                      }`}
+                                    >
+                                      {point.is_highlighted && <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />}
+                                      <span>{point.text}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {hasMoreOverviewPoints && (
+                                  <div className="flex justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAllOverviewPoints((current) => !current)}
+                                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                                    >
+                                      {showAllOverviewPoints ? 'View Less' : 'View All'}
+                                      {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    </button>
                                   </div>
-                                ) : (
-                                  <p key={point.id} className="text-sm text-muted-foreground">
-                                    {point.text}
-                                  </p>
-                                )
-                              )
+                                )}
+                              </>
                             ) : (
                               isAdmin && <p className="text-sm text-muted-foreground">Add overview points to preview them here.</p>
                             )}
                           </div>
                         </div>
-
-                        {/* Right side: Secondary Buttons Editor (Admin only) */}
-                        {isAdmin && secondaryEditableButtons.length > 0 && (
-                          <div className="flex flex-col gap-3 md:min-w-[220px]">
-                            <div className="grid gap-3">
-                              {secondaryEditableButtons.map((button) => (
-                                <div key={button.id ?? button.label} className="rounded-2xl border border-border bg-background p-3">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <input
-                                      type="text"
-                                      value={button.label}
-                                      onChange={(event) => handleButtonLabelChange(button.id, event.target.value)}
-                                      placeholder="Button label"
-                                      className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                                    />
-                                    <Switch
-                                      checked={button.is_visible}
-                                      onCheckedChange={(value) => handleButtonVisibilityChange(button.id, value)}
-                                      className="shrink-0"
-                                    />
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={button.link || ''}
-                                    onChange={(event) => handleButtonLinkChange(button.id, event.target.value)}
-                                    placeholder="Button link"
-                                    className="mt-2 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                                  />
-                                  <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
 
-                    {!isAdmin && secondaryButtons.length > 0 && (
-                      <div className="flex w-full flex-col gap-3 lg:w-[320px] lg:flex-shrink-0 lg:pt-10">
-                        {secondaryButtons.map((button) => (
-                          <a
-                            key={button.id}
-                            href={normalizeExternalUrl(button.link || '') || '#'}
-                            target={button.link ? '_blank' : undefined}
-                            rel={button.link ? 'noopener noreferrer' : undefined}
-                            className="inline-flex justify-center items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
-                          >
-                            {button.label}
-                          </a>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
 
                 {isAdmin && (
                   <>
                     <div className="mt-6 rounded-2xl border border-border bg-card p-5">
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
+                      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
                           <h3 className="text-sm font-semibold">Overview Points</h3>
                           <p className="text-xs text-muted-foreground">Live preview updates above as you edit.</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <label className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium cursor-pointer hover:bg-secondary">
+                        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+                          <label className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium cursor-pointer hover:bg-secondary sm:w-auto sm:justify-start">
                             <span className="text-xs">Show in Overview</span>
                             <Switch 
                               checked={showOverviewPointsSection} 
@@ -1624,7 +1743,7 @@ export default function SubcategoryDetail() {
                           <button
                             type="button"
                             onClick={handleAddOverviewPoint}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary sm:w-auto"
                           >
                             <Plus className="h-4 w-4" />
                             Add point
@@ -1647,7 +1766,7 @@ export default function SubcategoryDetail() {
                               {overviewPoints.map((point, index) => (
                                 <SortableAdminItem key={point.id} id={point.id}>
                                   <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                       <input
                                         type="text"
                                         value={point.text}
@@ -1655,18 +1774,20 @@ export default function SubcategoryDetail() {
                                         placeholder={`Point ${index + 1}`}
                                         className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                                       />
-                                      <Switch
-                                        checked={point.is_highlighted}
-                                        onCheckedChange={(value) => handleOverviewPointHighlightChange(index, value)}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveOverviewPoint(index)}
-                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                        aria-label={`Remove point ${index + 1}`}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
+                                      <div className="flex items-center justify-between gap-3 sm:justify-start">
+                                        <Switch
+                                          checked={point.is_highlighted}
+                                          onCheckedChange={(value) => handleOverviewPointHighlightChange(index, value)}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveOverviewPoint(index)}
+                                          className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                          aria-label={`Remove point ${index + 1}`}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </SortableAdminItem>
@@ -1681,37 +1802,52 @@ export default function SubcategoryDetail() {
                       )}
                     </div>
 
-                    <div className="mt-4 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleSaveAll}
-                        disabled={isSaving}
-                        className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSaving ? 'Saving...' : 'Save changes'}
-                      </button>
-                    </div>
                   </>
                 )}
               </div>
 
               {showDownloadsTab && (
-                <div className="w-full md:max-w-3xl">
+                <div className="w-full">
                   <h2 className="mb-6 text-lg font-bold">Downloads</h2>
                   {downloads.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No downloads available.</p>
                   ) : (
-                    <div className="flex flex-wrap gap-3">
+                    <div
+                      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
+                      style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
+                    >
                       {downloads.map((download) => (
-                        <a
+                        <div
                           key={download.id}
-                          href={download.file_url}
-                          download
-                          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
+                          className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
+                          style={{
+                            ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
+                            backgroundColor: DOWNLOAD_CARD_BACKGROUND,
+                            minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
+                          }}
                         >
-                          <Download className="h-4 w-4 text-primary" />
-                          <span className="max-w-[180px] truncate">{download.file_name}</span>
-                        </a>
+                          <div className="flex h-full flex-col">
+                            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                              <Download className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="min-h-0 flex-1">
+                              <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
+                              <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
+                            </div>
+                            <a
+                              href={download.file_url}
+                              download
+                              className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
+                            >
+                              <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
+                                Download
+                              </span>
+                              <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
+                                <Download className="h-5 w-5" />
+                              </span>
+                            </a>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1719,57 +1855,50 @@ export default function SubcategoryDetail() {
               )}
 
               <div className="space-y-4">
-                <div className="w-full md:max-w-5xl">
-                  <h2 className="mb-6 text-lg font-bold">Products</h2>
-                  {productItems.length === 0 && visibleProductSections.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No products or promotional content available.</p>
-                  ) : (
-                    productItems.length > 0 && (
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        {productItems.map((product) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => {
-                              const externalUrl = normalizeExternalUrl(product.link);
-                              if (externalUrl) {
-                                window.open(externalUrl, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
-                            className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
-                          >
-                            <span className="truncate pr-4 text-base font-medium text-foreground">{product.title}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )
-                  )}
-                </div>
+                {showBrandsInOverview && (
+                  <div className="w-full md:max-w-5xl">
+                    <h2 className="mb-6 text-lg font-bold">Brands</h2>
+                    {brands.length > 0 ? (
+                      renderBrandGrid()
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No brands available yet.</p>
+                    )}
+                  </div>
+                )}
 
-                {visibleProductSections.map((section) => renderProductSection(section))}
+                {showProductsTab && (
+                  <>
+                    <div className="w-full md:max-w-5xl">
+                      {productItems.length === 0 && visibleProductSections.length === 0 ? (
+                        <p className="text-sm text-muted-foreground"></p>
+                      ) : (
+                        productItems.length > 0 && (
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {productItems.map((product) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                onClick={() => {
+                                  const externalUrl = normalizeExternalUrl(product.link);
+                                  if (externalUrl) {
+                                    window.open(externalUrl, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+                              >
+                                <span className="truncate pr-4 text-base font-medium text-foreground">{product.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )
+                      )}
+                    </div>
+
+                    {visibleProductSections.map((section) => renderProductSection(section))}
+                  </>
+                )}
               </div>
 
-              {showScheduleAsTab && scheduleEmbedUrl && (
-                <div className="w-full">
-                  <h2 className="mb-6 text-lg font-bold">Schedule</h2>
-                  <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                    <div className="h-[50vh] w-full bg-muted md:h-[80vh]">
-                      <iframe src={scheduleEmbedUrl} title="Schedule Meeting" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {showSchedule2AsTab && scheduleEmbedUrl2 && (
-                <div className="w-full">
-                  <h2 className="mb-6 text-lg font-bold">Schedule 2</h2>
-                  <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                    <div className="h-[50vh] w-full bg-muted md:h-[80vh]">
-                      <iframe src={scheduleEmbedUrl2} title="Schedule Meeting 2" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
                 <div className="w-full">
@@ -1822,7 +1951,7 @@ export default function SubcategoryDetail() {
                           )}
                         </div>
                         <div className="flex items-center justify-between p-4">
-                          <p className="text-sm text-muted-foreground">{isYouTube ? 'YouTube video' : 'Click play icon for fullscreen'}</p>
+                          <p className="text-sm text-muted-foreground">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
                           {!isYouTube && (
                             <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-2 hover:bg-secondary" title="Fullscreen">
                               <Maximize2 className="h-3 w-3" />
@@ -1838,22 +1967,79 @@ export default function SubcategoryDetail() {
           )}
 
           {activeTab === downloadsTabIndex && showDownloadsTab && (
-            <div className="w-full md:max-w-3xl">
-              <h2 className="mb-6 text-lg font-bold">Downloads</h2>
+            <div className="w-full">
+              <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <h2 className="text-lg font-bold">Downloads</h2>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setEditDownload({ file_name: '', file_url: '', file_type: 'pdf' })}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                  >
+                    <Plus className="h-4 w-4" /> Add Download
+                  </button>
+                )}
+              </div>
+
               {downloads.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No downloads available.</p>
               ) : (
-                <div className="flex flex-wrap gap-3">
+                <div
+                  className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
+                  style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
+                >
                   {downloads.map((download) => (
-                    <a
+                    <div
                       key={download.id}
-                      href={download.file_url}
-                      download
-                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
+                      className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
+                      style={{
+                        ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
+                        backgroundColor: DOWNLOAD_CARD_BACKGROUND,
+                        minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
+                      }}
                     >
-                      <Download className="h-4 w-4 text-primary" />
-                      <span className="max-w-[180px] truncate">{download.file_name}</span>
-                    </a>
+                      <div className="flex h-full flex-col">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                            <Download className="h-5 w-5 text-primary" />
+                          </div>
+                          {isAdmin && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditDownload(download)}
+                                className="text-muted-foreground transition-colors hover:text-foreground"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteItem('subcategory_downloads', download.id)}
+                                className="text-destructive transition-colors hover:text-destructive/80"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-h-0 flex-1">
+                          <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
+                          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
+                        </div>
+                        <a
+                          href={download.file_url}
+                          download
+                          className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
+                        >
+                          <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
+                            Download
+                          </span>
+                          <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
+                            <Download className="h-5 w-5" />
+                          </span>
+                        </a>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -2468,25 +2654,129 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
-          {activeTab === scheduleTabIndex && showScheduleAsTab && scheduleEmbedUrl && (
-            <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Schedule</h2>
-              <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                <div className="h-[50vh] w-full bg-muted md:h-[80vh]">
-                  <iframe src={scheduleEmbedUrl} title="Schedule Meeting" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
-                </div>
-              </div>
-            </div>
-          )}
 
-          {activeTab === schedule2TabIndex && showSchedule2AsTab && scheduleEmbedUrl2 && (
+          {activeTab === brandsTabIndex && showBrandsTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Schedule 2</h2>
-              <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                <div className="h-[50vh] w-full bg-muted md:h-[80vh]">
-                  <iframe src={scheduleEmbedUrl2} title="Schedule Meeting 2" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
+              <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">Brands</h2>
+                  <p className="text-sm text-muted-foreground">Add brand names and links for the brand showcase.</p>
                 </div>
+                {isAdmin && (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <label className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium cursor-pointer hover:bg-secondary sm:w-auto sm:justify-start">
+                      <span className="text-xs">Show Brands Tab</span>
+                      <Switch
+                        checked={showBrandsTabSetting}
+                        onCheckedChange={async (value) => {
+                          setShowBrandsTabSetting(value);
+                          try {
+                            await supabase.from('categories').update({ show_brands_tab: value } as any).eq('id', categoryId);
+                            setCategory((current) => (current ? { ...current, show_brands_tab: value } : current));
+                            toast.success(value ? 'Brands tab shown.' : 'Brands tab hidden.');
+                          } catch (error) {
+                            console.error('Error updating brands tab visibility:', error);
+                            toast.error('Failed to save setting.');
+                            setShowBrandsTabSetting(!value);
+                          }
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addBrand}
+                      className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                    >
+                      Add brand
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {brands.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No brands available yet.</p>
+              ) : (
+                isAdmin ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {brands.map((brand) => (
+                      <div key={brand.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">
+                              {brand.name.trim() || 'New Brand'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Brand card for the Overview and Brands tabs.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeBrand(brand.id)}
+                            className="inline-flex items-center justify-center rounded-lg border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Brand Name
+                            </label>
+                            <input
+                              type="text"
+                              value={brand.name}
+                              onChange={(event) => handleBrandNameChange(brand.id, event.target.value)}
+                              placeholder="e.g. Airtel IoT"
+                              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Brand Link
+                            </label>
+                            <input
+                              type="text"
+                              value={brand.link}
+                              onChange={(event) => handleBrandLinkChange(brand.id, event.target.value)}
+                              placeholder="https://example.com"
+                              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2">
+                            <p className="text-xs text-muted-foreground">Clicking the brand card opens this link in a new tab.</p>
+                            {brand.link.trim() && (
+                              <a
+                                href={normalizeExternalUrl(brand.link) || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                              >
+                                Preview
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  renderBrandGrid()
+                )
+              )}
+
+              {isAdmin && (
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveBrands}
+                    disabled={isSavingBrands}
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingBrands ? 'Saving...' : 'Save brands'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2690,6 +2980,56 @@ export default function SubcategoryDetail() {
               <textarea value={editLogoStep.description || ''} onChange={(event) => setEditLogoStep({ ...editLogoStep, description: event.target.value || null })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5" rows={3} />
             </div>
             <button type="button" onClick={saveLogoStep} className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground">
+              Save
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {editDownload && (
+        <Modal title={editDownload.id ? 'Edit Download' : 'Add Download'} onClose={() => setEditDownload(null)}>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">File Name</label>
+              <input value={editDownload.file_name || ''} onChange={(event) => setEditDownload({ ...editDownload, file_name: event.target.value })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5" placeholder="e.g., Product Brochure.pdf" />
+            </div>
+            <FileUpload
+              label="Upload File"
+              value={editDownload.file_url || null}
+              fileName={editDownload.file_name || undefined}
+              folder="downloads"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed"
+              onChange={({ url, name }) =>
+                setEditDownload({
+                  ...editDownload,
+                  file_url: url,
+                  file_name: editDownload.file_name?.trim() ? editDownload.file_name : name,
+                  file_type: getDownloadFileType(name),
+                })
+              }
+              onRemove={() =>
+                setEditDownload({
+                  ...editDownload,
+                  file_url: '',
+                  file_type: 'pdf',
+                })
+              }
+            />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">File Type</label>
+              <select value={editDownload.file_type || 'pdf'} onChange={(event) => setEditDownload({ ...editDownload, file_type: event.target.value })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5">
+                <option value="pdf">PDF</option>
+                <option value="doc">DOC</option>
+                <option value="docx">DOCX</option>
+                <option value="xls">XLS</option>
+                <option value="xlsx">XLSX</option>
+                <option value="ppt">PPT</option>
+                <option value="pptx">PPTX</option>
+                <option value="zip">ZIP</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <button type="button" onClick={saveDownload} className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground">
               Save
             </button>
           </div>

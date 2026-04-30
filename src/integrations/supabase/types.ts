@@ -97,6 +97,7 @@ export type Database = {
           name: string
           overview_points_heading: string | null
           section_id: string
+          show_brands_tab: boolean
           show_downloads_tab: boolean
           show_overview_section: boolean
           show_products_tab: boolean
@@ -114,6 +115,7 @@ export type Database = {
           name: string
           overview_points_heading?: string | null
           section_id: string
+          show_brands_tab?: boolean
           show_downloads_tab?: boolean
           show_overview_section?: boolean
           show_products_tab?: boolean
@@ -131,6 +133,7 @@ export type Database = {
           name?: string
           overview_points_heading?: string | null
           section_id?: string
+          show_brands_tab?: boolean
           show_downloads_tab?: boolean
           show_overview_section?: boolean
           show_products_tab?: boolean

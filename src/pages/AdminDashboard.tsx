@@ -22,7 +22,7 @@ import {
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; }
 interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
-interface Category { id: string; name: string; icon_url: string | null; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; }
+interface Category { id: string; name: string; icon_url: string | null; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; }
 interface Subcategory { id: string; category_id: string; name: string; link: string | null; video_url?: string | null; schedule_link?: string | null; show_schedule_in_separate_tab?: boolean; schedule_link_2?: string | null; show_schedule_2_in_separate_tab?: boolean; sort_order: number; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
@@ -132,6 +132,7 @@ export default function AdminDashboard() {
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
   const [editSubs, setEditSubs] = useState<Subcategory[]>([]);
+  const [editSubcategory, setEditSubcategory] = useState<Partial<Subcategory> | null>(null);
   const [editDownloads, setEditDownloads] = useState<Partial<CategoryDownload>[]>([]);
   const [editOffer, setEditOffer] = useState<Partial<Offer> | null>(null);
   const [editAd2, setEditAd2] = useState<Partial<Ad2> | null>(null);
@@ -623,6 +624,7 @@ export default function AdminDashboard() {
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
             show_downloads_tab: editCategory.show_downloads_tab ?? true,
+            show_brands_tab: editCategory.show_brands_tab ?? true,
             section_id: selectedCategoriesSectionId
           })
           .eq('id', categoryId);
@@ -636,6 +638,7 @@ export default function AdminDashboard() {
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
             show_downloads_tab: editCategory.show_downloads_tab ?? true,
+            show_brands_tab: editCategory.show_brands_tab ?? true,
             section_id: selectedCategoriesSectionId,
             sort_order: selectedCategories.length
           })
@@ -656,7 +659,7 @@ export default function AdminDashboard() {
             id: sub.id,
             category_id: categoryId,
             name: sub.name,
-            link: sub.link,
+            link: null,
             video_url: sub.video_url,
             schedule_link: sub.schedule_link,
             show_schedule_in_separate_tab: sub.show_schedule_in_separate_tab ?? false,
@@ -1342,7 +1345,7 @@ export default function AdminDashboard() {
                       <span className="md:hidden">Delete</span>
                     </button>
                     <button
-                      onClick={() => { setEditCategory({ name: '', bg_color: '#FFF9C4', icon_url: null, show_downloads_tab: true }); setEditSubs([]); setEditDownloads([]); }}
+                      onClick={() => { setEditCategory({ name: '', bg_color: '#FFF9C4', icon_url: null, show_downloads_tab: true, show_brands_tab: true }); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
                       className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
@@ -1357,25 +1360,205 @@ export default function AdminDashboard() {
                 <SortableContext items={selectedCategories.map((cat) => cat.id)} strategy={verticalListSortingStrategy}>
                   <div className="grid gap-3">
                     {selectedCategories.map((cat) => (
-                      <SortableCategoryItem key={cat.id} id={cat.id}>
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.bg_color }}>
-                          {cat.icon_url && <img src={cat.icon_url} alt="" className="w-6 h-6 object-contain" />}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{cat.name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {subcategories.filter(s => s.category_id === cat.id).length} subcategories, {categoryDownloads.filter((download) => download.category_id === cat.id).length} downloads
-                          </p>
-                        </div>
-                        <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditDownloads(categoryDownloads.filter((download) => download.category_id === cat.id)); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                      </SortableCategoryItem>
+                      <div key={cat.id}>
+                        <SortableCategoryItem id={cat.id}>
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.bg_color }}>
+                            {cat.icon_url && <img src={cat.icon_url} alt="" className="w-6 h-6 object-contain" />}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">{cat.name}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {subcategories.filter(s => s.category_id === cat.id).length} subcategories, {categoryDownloads.filter((download) => download.category_id === cat.id).length} downloads
+                            </p>
+                          </div>
+                          <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditDownloads(categoryDownloads.filter((download) => download.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                        </SortableCategoryItem>
+                        {editCategory?.id === cat.id && (
+                          <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <h3 className="text-lg font-semibold">{editCategory.id ? 'Edit Category' : 'Add Category'}</h3>
+                                <p className="text-sm text-muted-foreground">Edit category details and subcategories below.</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+
+                            <div className="space-y-4">
+                              <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Name</label>
+                                <input value={editCategory.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input type="color" value={editCategory.bg_color || '#FFF9C4'} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="w-12 h-10 rounded border border-input cursor-pointer" />
+                                  <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
+                                </div>
+                              </div>
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={editCategory.show_downloads_tab ?? true} onCheckedChange={(checked) => setEditCategory({ ...editCategory, show_downloads_tab: Boolean(checked) })} />
+                                <span>Show Downloads tab</span>
+                              </label>
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={editCategory.show_brands_tab ?? true} onCheckedChange={(checked) => setEditCategory({ ...editCategory, show_brands_tab: Boolean(checked) })} />
+                                <span>Show Brands tab</span>
+                              </label>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="text-sm font-medium">Subcategories</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, sort_order: editSubs.length })}
+                                    className="text-sm text-primary font-semibold"
+                                  >
+                                    + Add
+                                  </button>
+                                </div>
+                                {editSubs.length === 0 ? (
+                                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                                    No subcategories added yet.
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    {editSubs.map((sub) => (
+                                      <div key={sub.id} className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between">
+                                        <div className="min-w-0">
+                                          <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                            {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditSubcategory(sub)}
+                                            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                            className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="text-sm font-medium">Overview Downloads</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditDownloads([
+                                        ...editDownloads,
+                                        { id: crypto.randomUUID(), category_id: editCategory.id || '', file_name: '', file_url: '', file_type: 'file' },
+                                      ]);
+                                    }}
+                                    className="text-sm text-primary font-semibold"
+                                  >
+                                    + Add
+                                  </button>
+                                </div>
+                                <div className="space-y-3">
+                                  {editDownloads.map((download, i) => (
+                                    <div key={download.id || i} className="rounded-xl border border-border p-3">
+                                      <div className="mb-3 flex items-center justify-between">
+                                        <span className="text-sm font-medium">Download {i + 1}</span>
+                                        <button type="button" onClick={() => setEditDownloads(editDownloads.filter((_, index) => index !== i))} className="p-1 text-destructive">
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                      <FileUpload
+                                        label="Document"
+                                        value={download.file_url || null}
+                                        fileName={download.file_name}
+                                        folder="downloads"
+                                        onChange={(file) => {
+                                          const nextDownloads = [...editDownloads];
+                                          nextDownloads[i] = {
+                                            ...nextDownloads[i],
+                                            file_name: file.name,
+                                            file_url: file.url,
+                                            file_type: file.type,
+                                          };
+                                          setEditDownloads(nextDownloads);
+                                        }}
+                                        onRemove={() => {
+                                          const nextDownloads = [...editDownloads];
+                                          nextDownloads[i] = {
+                                            ...nextDownloads[i],
+                                            file_name: '',
+                                            file_url: '',
+                                            file_type: 'file',
+                                          };
+                                          setEditDownloads(nextDownloads);
+                                        }}
+                                      />
+                                      <input
+                                        placeholder="Button label"
+                                        value={download.file_name || ''}
+                                        onChange={(e) => {
+                                          const nextDownloads = [...editDownloads];
+                                          nextDownloads[i] = { ...nextDownloads[i], file_name: e.target.value };
+                                          setEditDownloads(nextDownloads);
+                                        }}
+                                        className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                >
+                                  Cancel
+                                </button>
+                                <button onClick={saveCategory} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </SortableContext>
               </DndContext>
-              {editCategory && (
-                <Modal title={editCategory.id ? 'Edit Category' : 'Add Category'} onClose={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); }}>
+              {editCategory && !editCategory.id && (
+                <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Add Category</h3>
+                      <p className="text-sm text-muted-foreground">Create a new category below.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                      className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
                   <div className="space-y-4">
                     <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
                     <div>
@@ -1393,49 +1576,56 @@ export default function AdminDashboard() {
                       <Switch checked={editCategory.show_downloads_tab ?? true} onCheckedChange={(checked) => setEditCategory({ ...editCategory, show_downloads_tab: Boolean(checked) })} />
                       <span>Show Downloads tab</span>
                     </label>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Switch checked={editCategory.show_brands_tab ?? true} onCheckedChange={(checked) => setEditCategory({ ...editCategory, show_brands_tab: Boolean(checked) })} />
+                      <span>Show Brands tab</span>
+                    </label>
+
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium">Subcategories</label>
-                        <button onClick={() => setEditSubs([...editSubs, { id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, schedule_link: null, show_schedule_in_separate_tab: false, schedule_link_2: null, show_schedule_2_in_separate_tab: false, sort_order: editSubs.length }])} className="text-sm text-primary font-semibold">+ Add</button>
+                        <button
+                          type="button"
+                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, sort_order: editSubs.length })}
+                          className="text-sm text-primary font-semibold"
+                        >
+                          + Add
+                        </button>
                       </div>
-                      {editSubs.map((sub, i) => (
-                        <div key={sub.id} className="space-y-2 mb-4 p-3 rounded-lg border border-border bg-muted/30">
-                          <div className="flex gap-2">
-                            <input placeholder="Name" value={sub.name} onChange={(e) => { const ns = [...editSubs]; ns[i] = { ...ns[i], name: e.target.value }; setEditSubs(ns); }} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                            <button onClick={() => setEditSubs(editSubs.filter((_, j) => j !== i))} className="text-destructive p-2"><X className="w-4 h-4" /></button>
-                          </div>
-                          <input placeholder="Link (optional)" value={sub.link || ''} onChange={(e) => { const ns = [...editSubs]; ns[i] = { ...ns[i], link: e.target.value || null }; setEditSubs(ns); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                          <input placeholder="Video URL (optional)" value={sub.video_url || ''} onChange={(e) => { const ns = [...editSubs]; ns[i] = { ...ns[i], video_url: e.target.value || null }; setEditSubs(ns); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                          <div className="flex items-center gap-3">
-                            <input placeholder="Schedule Link (optional)" value={sub.schedule_link || ''} onChange={(e) => { const ns = [...editSubs]; ns[i] = { ...ns[i], schedule_link: e.target.value || null }; setEditSubs(ns); }} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                            <label className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
-                              <Switch
-                                checked={sub.show_schedule_in_separate_tab ?? false}
-                                onCheckedChange={(checked) => {
-                                  const ns = [...editSubs];
-                                  ns[i] = { ...ns[i], show_schedule_in_separate_tab: Boolean(checked) };
-                                  setEditSubs(ns);
-                                }}
-                              />
-                              
-                            </label>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <input placeholder="Schedule Link 2 (optional)" value={sub.schedule_link_2 || ''} onChange={(e) => { const ns = [...editSubs]; ns[i] = { ...ns[i], schedule_link_2: e.target.value || null }; setEditSubs(ns); }} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                            <label className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
-                              <Switch
-                                checked={sub.show_schedule_2_in_separate_tab ?? false}
-                                onCheckedChange={(checked) => {
-                                  const ns = [...editSubs];
-                                  ns[i] = { ...ns[i], show_schedule_2_in_separate_tab: Boolean(checked) };
-                                  setEditSubs(ns);
-                                }}
-                              />
-                            
-                            </label>
-                          </div>
+                      {editSubs.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                          No subcategories added yet.
                         </div>
-                      ))}
+                      ) : (
+                        <div className="space-y-3">
+                          {editSubs.map((sub) => (
+                            <div key={sub.id} className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                  {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditSubcategory(sub)}
+                                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                  className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -1502,7 +1692,79 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    <button onClick={saveCategory} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                      >
+                        Cancel
+                      </button>
+                      <button onClick={saveCategory} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {editSubcategory && (
+                <Modal
+                  title={editSubs.some((sub) => sub.id === editSubcategory.id) ? 'Edit Subcategory' : 'Add Subcategory'}
+                  onClose={() => setEditSubcategory(null)}
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Name</label>
+                      <input
+                        value={editSubcategory.name || ''}
+                        onChange={(e) => setEditSubcategory({ ...editSubcategory, name: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Video URL (optional)</label>
+                      <input
+                        value={editSubcategory.video_url || ''}
+                        onChange={(e) => setEditSubcategory({ ...editSubcategory, video_url: e.target.value || null })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setEditSubcategory(null)}
+                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!editSubcategory.name?.trim()) return;
+                          const nextSub: Subcategory = {
+                            id: editSubcategory.id || crypto.randomUUID(),
+                            category_id: editSubcategory.category_id || editCategory?.id || '',
+                            name: editSubcategory.name.trim(),
+                            link: null,
+                            video_url: editSubcategory.video_url?.trim() || null,
+                            sort_order: editSubcategory.sort_order ?? editSubs.length,
+                          };
+                          setEditSubs((current) => {
+                            const existingIndex = current.findIndex((sub) => sub.id === nextSub.id);
+                            if (existingIndex >= 0) {
+                              const next = [...current];
+                              next[existingIndex] = { ...next[existingIndex], ...nextSub };
+                              return next;
+                            }
+                            return [...current, nextSub];
+                          });
+                          setEditSubcategory(null);
+                        }}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
                 </Modal>
               )}

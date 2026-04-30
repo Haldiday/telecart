@@ -21,12 +21,14 @@ interface FeaturedCardsProps {
   sectionId: string;
   sectionTable?: string;
   cardsTable?: string;
+  hideSeeAllOnMobile?: boolean;
 }
 
 export default function FeaturedCards({
   sectionId,
   sectionTable = 'page_sections',
   cardsTable = 'featured_cards',
+  hideSeeAllOnMobile = false,
 }: FeaturedCardsProps) {
   const db = supabase as any;
   const [cards, setCards] = useState<Card[]>([]);
@@ -135,10 +137,10 @@ export default function FeaturedCards({
                 <div key={card.id}>
                   <div
                     onClick={handleCardClick}
-                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                   >
                     {card.logo_url && (
-                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl">
+                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0">
                         <img
                           src={card.logo_url}
                           alt={card.title}
@@ -146,11 +148,11 @@ export default function FeaturedCards({
                         />
                       </div>
                     )}
-                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2">
+                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
                       {card.title}
-                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                     </h3>
-                    <p className="text-base leading-relaxed text-muted-foreground">
+                    <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
                   </div>
@@ -183,10 +185,10 @@ export default function FeaturedCards({
                     >
                       <div
                         onClick={handleCardClick}
-                        className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                        className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                       >
                         {card.logo_url && (
-                          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl">
+                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl flex-shrink-0">
                             <img
                               src={card.logo_url}
                               alt={card.title}
@@ -194,11 +196,11 @@ export default function FeaturedCards({
                             />
                           </div>
                         )}
-                        <h3 className="mb-2 text-2xl font-semibold leading-tight flex items-center gap-2">
+                        <h3 className="mb-2 text-lg md:text-2xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
                           {card.title}
-                          {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                          {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                         </h3>
-                        <p className="text-base leading-relaxed text-muted-foreground">
+                        <p className="text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
                           {card.description}
                         </p>
                       </div>
@@ -220,10 +222,10 @@ export default function FeaturedCards({
                 <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
                   <div
                     onClick={handleCardClick}
-                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                   >
                     {card.logo_url && (
-                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl">
+                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
                         <img
                           src={card.logo_url}
                           alt={card.title}
@@ -231,11 +233,11 @@ export default function FeaturedCards({
                         />
                       </div>
                     )}
-                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2">
+                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
                       {card.title}
-                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                     </h3>
-                    <p className="text-base leading-relaxed text-muted-foreground">
+                    <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
                   </div>
@@ -244,7 +246,7 @@ export default function FeaturedCards({
             })}
           </div>
         )}
-        {needsCarousel && (
+        {needsCarousel && !(hideSeeAllOnMobile && isMobile) && (
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => navigate(`/featured-cards/${sectionId}`)}

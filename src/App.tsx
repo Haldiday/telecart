@@ -27,7 +27,6 @@ const router = createBrowserRouter(
   ],
   {
     future: {
-      v7_startTransition: true,
       v7_relativeSplatPath: true,
     },
   }
@@ -38,7 +37,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <RouterProvider router={router} />
+      <RouterProvider
+        router={router}
+        future={{
+          v7_startTransition: true,
+        }}
+      />
     </TooltipProvider>
   </QueryClientProvider>
 );

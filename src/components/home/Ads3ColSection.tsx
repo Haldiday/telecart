@@ -19,12 +19,14 @@ interface Ads3ColSectionProps {
   sectionId: string;
   sectionTable?: string;
   adsTable?: string;
+  mobileContainImage?: boolean;
 }
 
 export default function Ads3ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_3col',
+  mobileContainImage = false,
 }: Ads3ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -123,21 +125,24 @@ export default function Ads3ColSection({
                 {displayAds.map((ad, displayIndex) => (
                   <div
                     key={`${ad.id}-${displayIndex}`}
-                    className="flex-none px-2.5"
+                    className="flex-none px-1.5"
                     style={{ width: `${slideWidth}%` }}
                   >
-                    <a href={ad.link || '#'} className="block group">
+                    <a
+                      href={ad.link || '#'}
+                      className={`block group rounded-[28px] ${ad.show_border ? 'border border-border p-3' : ''}`}
+                    >
                       <div
                         className={`overflow-hidden rounded-[28px] bg-muted ${
                           ads.length < 3
-                            ? 'h-[180px] md:h-[300px]'
-                            : 'aspect-[16/9]'
-                        } ${ad.show_border ? 'border border-border' : ''}`}
+                            ? 'h-[160px] md:h-[300px]'
+                            : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                        } ${ad.show_border ? 'border border-border/70' : ''}`}
                       >
-                        {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />}
+                        {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
                       </div>
                       {(ad.heading || ad.description) && (
-                        <div className="px-1 pt-4">
+                        <div className={ad.show_border ? 'pt-4 px-1 pb-1' : 'px-1 pt-4'}>
                           {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
                           {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
                         </div>
@@ -149,21 +154,24 @@ export default function Ads3ColSection({
             </div>
           </div>
         ) : (
-          <div className="flex">
+          <div className="flex gap-3">
             {adsToDisplay.map((ad) => (
-              <div key={ad.id} className="flex-1 px-2.5">
-                <a href={ad.link || '#'} className="block group">
+              <div key={ad.id} className="flex-1">
+                <a
+                  href={ad.link || '#'}
+                  className={`block group rounded-[28px] ${ad.show_border ? 'border border-border p-3' : ''}`}
+                >
                   <div
                     className={`overflow-hidden rounded-[28px] bg-muted ${
                       adsToDisplay.length < 3
-                        ? 'h-[180px] md:h-[300px]'
-                        : 'aspect-[16/9]'
-                    } ${ad.show_border ? 'border border-border' : ''}`}
+                        ? 'h-[160px] md:h-[300px]'
+                        : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                    } ${ad.show_border ? 'border border-border/70' : ''}`}
                   >
-                    {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />}
+                    {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
                   </div>
                   {(ad.heading || ad.description) && (
-                    <div className="px-1 pt-4">
+                    <div className={ad.show_border ? 'pt-4 px-1 pb-1' : 'px-1 pt-4'}>
                       {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
                       {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
                     </div>

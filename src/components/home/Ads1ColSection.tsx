@@ -14,12 +14,14 @@ interface Ads1ColSectionProps {
   sectionId: string;
   sectionTable?: string;
   adsTable?: string;
+  mobileContainImage?: boolean;
 }
 
 export default function Ads1ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_2col',
+  mobileContainImage = false,
 }: Ads1ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -110,7 +112,7 @@ export default function Ads1ColSection({
                 <img
                   src={ad.image_url}
                   alt="Ad"
-                  className="h-full w-full object-cover"
+                  className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
                 />
               )}
             </div>

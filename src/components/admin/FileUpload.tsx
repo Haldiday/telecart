@@ -77,7 +77,7 @@ export default function FileUpload({
           <div className="flex flex-col items-center gap-2">
             <Upload className="h-6 w-6 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {uploading ? 'Uploading...' : 'Upload PDF or DOCX'}
+              {uploading ? 'Uploading...' : 'Upload file from device'}
             </span>
           </div>
         </button>

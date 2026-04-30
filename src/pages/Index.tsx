@@ -71,6 +71,11 @@ export default function Index() {
             return <Component key={section.id} />;
           }
           
+          // Hide "See All" on mobile for Featured Cards in overview
+          if (section.section_type === 'cards') {
+            return <Component key={section.id} sectionId={section.id} hideSeeAllOnMobile={true} />;
+          }
+          
           return <Component key={section.id} sectionId={section.id} />;
         })}
       </main>
