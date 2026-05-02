@@ -19,12 +19,14 @@ interface OffersSectionProps {
   sectionId: string;
   sectionTable?: string;
   offersTable?: string;
+  compact?: boolean;
 }
 
 export default function OffersSection({
   sectionId,
   sectionTable = 'page_sections',
   offersTable = 'offers',
+  compact = false,
 }: OffersSectionProps) {
   const db = supabase as any;
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -92,9 +94,9 @@ export default function OffersSection({
   if (offers.length === 0) return null;
 
   return (
-    <section id="offers" className="py-10 md:py-14">
-      <div className="container mx-auto px-4 md:px-8 lg:px-12">
-        <div className="mb-6 flex items-center justify-between">
+    <div className={compact ? '' : 'py-10 md:py-14'}>
+      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
+        <div className={`mb-6 flex items-center justify-between ${compact ? 'mb-4' : ''}`}>
           {showHeading && (
             <h2 className="text-2xl md:text-3xl font-semibold">
               {heading}
@@ -182,6 +184,6 @@ export default function OffersSection({
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

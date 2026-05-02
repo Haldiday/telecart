@@ -23,7 +23,7 @@ import {
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; }
 interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
 interface Category { id: string; name: string; icon_url: string | null; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; }
-interface Subcategory { id: string; category_id: string; name: string; link: string | null; video_url?: string | null; schedule_link?: string | null; show_schedule_in_separate_tab?: boolean; schedule_link_2?: string | null; show_schedule_2_in_separate_tab?: boolean; sort_order: number; }
+interface Subcategory { id: string; category_id: string; name: string; link: string | null; video_url?: string | null; image_url?: string | null; schedule_link?: string | null; show_schedule_in_separate_tab?: boolean; schedule_link_2?: string | null; show_schedule_2_in_separate_tab?: boolean; sort_order: number; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
@@ -661,9 +661,10 @@ export default function AdminDashboard() {
             name: sub.name,
             link: null,
             video_url: sub.video_url,
+            image_url: sub.image_url,
             schedule_link: sub.schedule_link,
             show_schedule_in_separate_tab: sub.show_schedule_in_separate_tab ?? false,
-            schedule_link_2: sub.schedule_link_2 || null,
+            schedule_link_2: sub.schedule_link_2,
             show_schedule_2_in_separate_tab: sub.show_schedule_2_in_separate_tab ?? false,
             sort_order: index
           }));
@@ -1417,7 +1418,7 @@ export default function AdminDashboard() {
                                   <label className="text-sm font-medium">Subcategories</label>
                                   <button
                                     type="button"
-                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, sort_order: editSubs.length })}
+                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
                                     className="text-sm text-primary font-semibold"
                                   >
                                     + Add
@@ -1435,6 +1436,7 @@ export default function AdminDashboard() {
                                           <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
                                           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
                                             {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
+                                            {sub.image_url && <span className="rounded-full border border-border bg-background px-2 py-1">Image</span>}
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -1586,7 +1588,7 @@ export default function AdminDashboard() {
                         <label className="text-sm font-medium">Subcategories</label>
                         <button
                           type="button"
-                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, sort_order: editSubs.length })}
+                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
                           className="text-sm text-primary font-semibold"
                         >
                           + Add
@@ -1700,7 +1702,32 @@ export default function AdminDashboard() {
                       >
                         Cancel
                       </button>
-                      <button onClick={saveCategory} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!editCategory.name?.trim()) return;
+                          const nextSub: Subcategory = {
+                            id: editCategory.id || crypto.randomUUID(),
+                            category_id: editCategory.id || editCategory.id || '',
+                            name: editCategory.name.trim(),
+                            link: null,
+                            video_url: editCategory.video_url?.trim() || null,
+                            image_url: editCategory.image_url?.trim() || null,
+                            sort_order: editSubs.length,
+                          };
+                          setEditSubs((current) => {
+                            const existingIndex = current.findIndex((sub) => sub.id === nextSub.id);
+                            if (existingIndex >= 0) {
+                              const next = [...current];
+                              next[existingIndex] = { ...next[existingIndex], ...nextSub };
+                              return next;
+                            }
+                            return [...current, nextSub];
+                          });
+                          setEditCategory(null);
+                        }}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                      >
                         Save
                       </button>
                     </div>
@@ -1721,14 +1748,57 @@ export default function AdminDashboard() {
                         className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Video URL (optional)</label>
-                      <input
-                        value={editSubcategory.video_url || ''}
-                        onChange={(e) => setEditSubcategory({ ...editSubcategory, video_url: e.target.value || null })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                      />
+                    
+                    <div className="space-y-3 border-t pt-4">
+                      <label className="block text-sm font-medium">Add Media (optional)</label>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="media-type"
+                            checked={!editSubcategory.image_url}
+                            onChange={() => setEditSubcategory({ ...editSubcategory, video_url: '', image_url: null })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Video URL</span>
+                        </label>
+                        {!editSubcategory.image_url && (
+                          <div className="ml-7">
+                            <label className="block text-sm font-medium mb-1.5">Video URL</label>
+                            <input
+                              value={editSubcategory.video_url || ''}
+                              onChange={(e) => setEditSubcategory({ ...editSubcategory, video_url: e.target.value || null, image_url: null })}
+                              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              placeholder="https://..."
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="media-type"
+                            checked={Boolean(editSubcategory.image_url)}
+                            onChange={() => setEditSubcategory({ ...editSubcategory, image_url: '', video_url: null })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Upload Image</span>
+                        </label>
+                        {Boolean(editSubcategory.image_url) && (
+                          <div className="ml-7">
+                            <ImageUpload 
+                              label="Subcategory Image" 
+                              value={editSubcategory.image_url || null} 
+                              onChange={(url) => setEditSubcategory({ ...editSubcategory, image_url: url, video_url: null })} 
+                              folder="subcategories" 
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
                     <div className="flex justify-end gap-3">
                       <button
                         type="button"
@@ -1747,7 +1817,8 @@ export default function AdminDashboard() {
                             name: editSubcategory.name.trim(),
                             link: null,
                             video_url: editSubcategory.video_url?.trim() || null,
-                            sort_order: editSubcategory.sort_order ?? editSubs.length,
+                            image_url: editSubcategory.image_url?.trim() || null,
+                            sort_order: editSubs.length,
                           };
                           setEditSubs((current) => {
                             const existingIndex = current.findIndex((sub) => sub.id === nextSub.id);

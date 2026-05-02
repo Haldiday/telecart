@@ -15,6 +15,7 @@ interface Ads1ColSectionProps {
   sectionTable?: string;
   adsTable?: string;
   mobileContainImage?: boolean;
+  compact?: boolean;
 }
 
 export default function Ads1ColSection({
@@ -22,6 +23,7 @@ export default function Ads1ColSection({
   sectionTable = 'page_sections',
   adsTable = 'ads_2col',
   mobileContainImage = false,
+  compact = false,
 }: Ads1ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -92,8 +94,8 @@ export default function Ads1ColSection({
   if (!ad) return null;
 
   return (
-    <section className="py-6 md:py-10">
-      <div className="container mx-auto px-4 md:px-8 lg:px-12">
+    <div className={compact ? '' : 'py-6 md:py-10'}>
+      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
           <h2 className="mb-6 text-2xl md:text-3xl font-semibold">
             {heading}
@@ -119,6 +121,6 @@ export default function Ads1ColSection({
           </a>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

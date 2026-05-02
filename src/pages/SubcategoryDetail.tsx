@@ -65,6 +65,7 @@ const PRODUCT_OFFERS_TABLE = 'subcategory_offers';
 const PRODUCT_ADS_2_TABLE = 'subcategory_ads_2col';
 const PRODUCT_ADS_3_TABLE = 'subcategory_ads_3col';
 const PRODUCT_LOGO_STEPS_TABLE = 'subcategory_logo_steps';
+const SUBCATEGORY_BRANDS_TABLE = 'subcategory_brands';
 const INITIAL_OVERVIEW_POINTS_COUNT = 8;
 
 type ProductAdminTab = 'layout' | 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'logo_steps';
@@ -102,12 +103,15 @@ interface Subcategory {
   name: string;
   link: string | null;
   video_url?: string | null;
+  image_url?: string | null;
   schedule_link?: string | null;
   schedule_link_2?: string | null;
   show_schedule_2_in_separate_tab?: boolean;
   show_schedule_in_separate_tab?: boolean;
   form_link?: string | null;
   show_form_in_separate_tab?: boolean;
+  about_heading?: string | null;
+  about_content?: string | null;
   category_id: string;
 }
 
@@ -362,8 +366,12 @@ export default function SubcategoryDetail() {
   };
 
   const [videoUrl, setVideoUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [formLink, setFormLink] = useState('');
   const [showFormTab, setShowFormTab] = useState(false);
+  const [aboutHeading, setAboutHeading] = useState('About');
+  const [aboutContent, setAboutContent] = useState('');
+  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
 
   const [productAdminTab, setProductAdminTab] = useState<ProductAdminTab>('layout');
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -397,14 +405,15 @@ export default function SubcategoryDetail() {
   const [editLogoStep, setEditLogoStep] = useState<Partial<LogoStepItem> | null>(null);
   const [editDownload, setEditDownload] = useState<Partial<Download> | null>(null);
 
-  const hasVideoResource = Boolean(videoUrl);
+  const hasVideoResource = Boolean(videoUrl.trim());
+  const hasImageResource = Boolean(imageUrl.trim());
   const showDownloadsTab = category?.show_downloads_tab !== false;
   const showProductsTab = category?.show_products_tab !== false;
   const showBrandsTabForUsers = showBrandsTabSetting && brands.length > 0;
   const showBrandsTab = isAdmin || showBrandsTabForUsers;
   const showBrandsInOverview = showBrandsTabSetting && (isAdmin || brands.length > 0);
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
-  const hasResourcesTab = hasVideoResource;
+  const hasResourcesTab = hasVideoResource || hasImageResource;
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" /> },
@@ -443,6 +452,12 @@ export default function SubcategoryDetail() {
     () => (showAllOverviewPoints ? visibleOverviewPoints : visibleOverviewPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT)),
     [showAllOverviewPoints, visibleOverviewPoints]
   );
+
+  const aboutContentIsLong = useMemo(() => {
+    const text = aboutContent.trim();
+    if (!text) return false;
+    return text.split('\n').length > 7 || text.length > 420;
+  }, [aboutContent]);
 
   const primaryButtons = useMemo(
     () => buttons.slice(0, 2).filter((button) => button.is_visible),
@@ -622,13 +637,14 @@ export default function SubcategoryDetail() {
     if (!categoryId || !subcategoryId) return;
 
     const loadData = async () => {
-      const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: productData }, { data: buttonData }, { data: overviewPointData }] = await Promise.all([
+      const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
         supabase.from('subcategory_downloads' as any).select('*').eq('subcategory_id', subcategoryId),
         supabase.from('category_products' as any).select('*').eq('category_id', categoryId).order('sort_order'),
         supabase.from('category_buttons').select('*').eq('category_id', categoryId).order('sort_order'),
         supabase.from('category_overview_points' as any).select('*').eq('category_id', categoryId).order('sort_order'),
+        supabase.from(SUBCATEGORY_BRANDS_TABLE as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
       ]);
 
       if (categoryData) {
@@ -650,8 +666,11 @@ export default function SubcategoryDetail() {
       if (subcategoryData) {
         setSubcategory(subcategoryData);
         setVideoUrl((subcategoryData as any).video_url || '');
+        setImageUrl((subcategoryData as any).image_url || '');
         setFormLink((subcategoryData as any).form_link || '');
         setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
+        setAboutHeading((subcategoryData as any).about_heading || 'About');
+        setAboutContent((subcategoryData as any).about_content || '');
       }
 
       if (downloadData) setDownloads(downloadData as unknown as Download[]);
@@ -672,6 +691,29 @@ export default function SubcategoryDetail() {
         );
       }
 
+      if (brandData && brandData.length > 0) {
+        setBrands((brandData as unknown as BrandItem[]).map((brand) => ({
+          id: brand.id,
+          name: brand.name || '',
+          link: brand.link || '',
+          sort_order: brand.sort_order ?? 0,
+        })));
+      } else {
+        const storageKey = `subcategory-brands-${subcategoryId}`;
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          try {
+            const storedBrands: BrandItem[] = JSON.parse(raw);
+            setBrands(storedBrands.sort((a, b) => a.sort_order - b.sort_order));
+          } catch (error) {
+            console.error('Failed to parse saved brands:', error);
+            setBrands([]);
+          }
+        } else {
+          setBrands([]);
+        }
+      }
+
       setOverviewPoints((overviewPointData as unknown as CategoryOverviewPoint[]) || []);
     };
 
@@ -685,28 +727,12 @@ export default function SubcategoryDetail() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_products', filter: `category_id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `category_id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_overview_points', filter: `category_id=eq.${categoryId}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: SUBCATEGORY_BRANDS_TABLE, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [categoryId, subcategoryId]);
-
-  useEffect(() => {
-    if (!categoryId || !subcategoryId) return;
-
-    const storageKey = `subcategory-brands-${subcategoryId}`;
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      try {
-        const storedBrands: BrandItem[] = JSON.parse(raw);
-        setBrands(storedBrands.sort((a, b) => a.sort_order - b.sort_order));
-      } catch (error) {
-        console.error('Failed to parse saved brands:', error);
-      }
-    } else {
-      setBrands([]);
-    }
   }, [categoryId, subcategoryId]);
 
   const handleButtonLabelChange = (buttonId: string | undefined, value: string) => {
@@ -744,7 +770,7 @@ export default function SubcategoryDetail() {
     setBrands((current) => [
       ...current,
       {
-        id: `brand-${crypto.randomUUID()}`,
+        id: crypto.randomUUID(),
         name: '',
         link: '',
         sort_order: current.length,
@@ -752,20 +778,55 @@ export default function SubcategoryDetail() {
     ]);
   };
 
-  const removeBrand = (brandId: string) => {
-    setBrands((current) =>
-      current
-        .filter((brand) => brand.id !== brandId)
-        .map((brand, index) => ({ ...brand, sort_order: index }))
-    );
+  const removeBrand = async (brandId: string) => {
+    try {
+      // Delete from database
+      await db.from(SUBCATEGORY_BRANDS_TABLE).delete().eq('id', brandId);
+      
+      // Remove from local state
+      setBrands((current) =>
+        current
+          .filter((brand) => brand.id !== brandId)
+          .map((brand, index) => ({ ...brand, sort_order: index }))
+      );
+      
+      toast.success('Brand removed.');
+    } catch (error) {
+      console.error('Error removing brand:', error);
+      toast.error('Failed to remove brand.');
+    }
   };
 
   const handleSaveBrands = async () => {
     if (!subcategoryId) return;
     setIsSavingBrands(true);
     try {
+      const normalizedBrands = brands.map((brand, index) => ({
+        id: brand.id.startsWith('brand-') ? crypto.randomUUID() : brand.id,
+        subcategory_id: subcategoryId,
+        name: brand.name.trim(),
+        link: brand.link.trim() || null,
+        sort_order: index,
+      }));
+
+      const { error } = await supabase
+        .from(SUBCATEGORY_BRANDS_TABLE as any)
+        .upsert(normalizedBrands, { onConflict: 'id' });
+
+      if (error) {
+        throw error;
+      }
+
+      setBrands(normalizedBrands.map((brand) => ({
+        id: brand.id,
+        name: brand.name,
+        link: brand.link || '',
+        sort_order: brand.sort_order,
+      })));
+
       const storageKey = `subcategory-brands-${subcategoryId}`;
-      localStorage.setItem(storageKey, JSON.stringify(brands));
+      localStorage.setItem(storageKey, JSON.stringify(normalizedBrands));
+
       toast.success('Brands saved.');
     } catch (error) {
       console.error('Failed to save brands:', error);
@@ -844,6 +905,8 @@ export default function SubcategoryDetail() {
             video_url: videoUrl.trim() || null,
             form_link: formLink.trim() || null,
             show_form_in_separate_tab: showFormTab,
+            about_heading: aboutHeading.trim() || 'About',
+            about_content: aboutContent.trim() || null,
           } as any)
           .eq('id', subcategoryId);
       }
@@ -1337,13 +1400,16 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <FeaturedCards
-          key={section.id}
-          sectionId={section.id}
-          sectionTable={PRODUCT_SECTION_TABLE}
-          cardsTable={PRODUCT_CARDS_TABLE}
-          hideSeeAllOnMobile
-        />
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <FeaturedCards
+            key={section.id}
+            sectionId={section.id}
+            sectionTable={PRODUCT_SECTION_TABLE}
+            cardsTable={PRODUCT_CARDS_TABLE}
+            hideSeeAllOnMobile
+            compact
+          />
+        </section>
       );
     }
 
@@ -1353,12 +1419,15 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <OffersSection
-          key={section.id}
-          sectionId={section.id}
-          sectionTable={PRODUCT_SECTION_TABLE}
-          offersTable={PRODUCT_OFFERS_TABLE}
-        />
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <OffersSection
+            key={section.id}
+            sectionId={section.id}
+            sectionTable={PRODUCT_SECTION_TABLE}
+            offersTable={PRODUCT_OFFERS_TABLE}
+            compact
+          />
+        </section>
       );
     }
 
@@ -1368,13 +1437,16 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <Ads1ColSection
-          key={section.id}
-          sectionId={section.id}
-          sectionTable={PRODUCT_SECTION_TABLE}
-          adsTable={PRODUCT_ADS_2_TABLE}
-          mobileContainImage
-        />
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <Ads1ColSection
+            key={section.id}
+            sectionId={section.id}
+            sectionTable={PRODUCT_SECTION_TABLE}
+            adsTable={PRODUCT_ADS_2_TABLE}
+            mobileContainImage
+            compact
+          />
+        </section>
       );
     }
 
@@ -1384,13 +1456,16 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <Ads2ColSection
-          key={section.id}
-          sectionId={section.id}
-          sectionTable={PRODUCT_SECTION_TABLE}
-          adsTable={PRODUCT_ADS_2_TABLE}
-          mobileContainImage
-        />
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <Ads2ColSection
+            key={section.id}
+            sectionId={section.id}
+            sectionTable={PRODUCT_SECTION_TABLE}
+            adsTable={PRODUCT_ADS_2_TABLE}
+            mobileContainImage
+            compact
+          />
+        </section>
       );
     }
 
@@ -1400,13 +1475,16 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <Ads3ColSection
-          key={section.id}
-          sectionId={section.id}
-          sectionTable={PRODUCT_SECTION_TABLE}
-          adsTable={PRODUCT_ADS_3_TABLE}
-          mobileContainImage
-        />
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <Ads3ColSection
+            key={section.id}
+            sectionId={section.id}
+            sectionTable={PRODUCT_SECTION_TABLE}
+            adsTable={PRODUCT_ADS_3_TABLE}
+            mobileContainImage
+            compact
+          />
+        </section>
       );
     }
 
@@ -1416,7 +1494,7 @@ export default function SubcategoryDetail() {
       }
 
       return (
-        <section key={section.id} className="rounded-2xl border border-border bg-white p-5 md:p-8">
+        <section key={section.id} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           {section.show_heading !== false && (
             <h2 className="mb-6 text-center text-lg font-bold text-foreground md:text-xl">{getSectionDisplayName(section)}</h2>
           )}
@@ -1577,7 +1655,17 @@ export default function SubcategoryDetail() {
               )}
             </div>
             {/* Video Card on the right */}
-            {videoUrl && (() => {
+            {(hasVideoResource || hasImageResource) && (() => {
+              if (hasImageResource) {
+                return (
+                  <div className="w-full md:w-[400px] max-w-[420px] overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
+                    <div className="relative aspect-video bg-black/30">
+                      <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[250px] w-full object-cover" />
+                    </div>
+                  </div>
+                );
+              }
+
               const youtubeId = getYouTubeVideoId(videoUrl);
               const isYouTube = youtubeId !== null;
               return (
@@ -1644,9 +1732,10 @@ export default function SubcategoryDetail() {
           </div>
         </div>
 
-        <div className="container mx-auto w-full px-4 py-8">
-          {activeTab === 0 && (
-            <div className="w-full space-y-8">
+        <div className="w-full bg-slate-50 py-8">
+          <div className="container mx-auto w-full px-4">
+            {activeTab === 0 && (
+              <div className="w-full space-y-8">
               {isAdmin && (
                 <div className="flex justify-end md:px-8 lg:px-12">
                   <button
@@ -1659,18 +1748,32 @@ export default function SubcategoryDetail() {
                   </button>
                 </div>
               )}
-              <div className={`w-full md:px-8 lg:px-12 ${isAdmin ? 'md:max-w-3xl' : ''}`}>
+              <div className={`w-full md:px-8 lg:px-12 ${isAdmin ? 'md:max-w-3xl' : 'md:max-w-8xl'}`}>
+                {!isAdmin && aboutContent.trim() && (
+                  <div className="mt-6 w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="mb-4 text-2xl font-semibold text-foreground">{aboutHeading}</h2>
+                    <div className="text-base leading-relaxed text-foreground/80" style={aboutContentIsLong && !isAboutExpanded ? { maxHeight: '12.25rem', overflow: 'hidden' } : undefined}>
+                      <p className="whitespace-pre-wrap">{aboutContent}</p>
+                    </div>
+                    {aboutContentIsLong && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAboutExpanded((current) => !current)}
+                        className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
+                      >
+                        {isAboutExpanded ? 'Show Less' : 'Show More'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {shouldShowOverviewCard && showOverviewPointsSection && (
                   <div className={`mt-6 flex flex-col gap-4 ${!isAdmin && secondaryButtons.length > 0 ? 'lg:flex-row lg:items-start lg:justify-between' : ''}`}>
-                    <div
-                      className={`w-full ${
-                        isAdmin ? 'rounded-2xl border border-border bg-card p-5 shadow-sm' : ''
-                      }`}
-                    >
+                    <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
                       <div className="flex flex-col gap-6">
                         {/* Left side: Title and Points */}
                         <div className="flex-1">
-                          <h3 className={`text-foreground ${isAdmin ? 'mb-4 text-sm font-semibold' : 'mb-6 text-2xl md:text-3xl font-semibold'}`}>
+                          <h3 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">
                             {overviewPointsHeading.trim() || defaultOverviewPointsHeading}
                           </h3>
 
@@ -1711,6 +1814,41 @@ export default function SubcategoryDetail() {
                       </div>
                     </div>
 
+                  </div>
+                )}
+
+                {isAdmin && (
+                  <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold"></h3>
+                        
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <label className="mb-3 block text-base font-medium">Heading</label>
+                        <input
+                          type="text"
+                          value={aboutHeading}
+                          onChange={(event) => setAboutHeading(event.target.value)}
+                          placeholder="About heading"
+                          className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-2xl font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-3 block text-base font-medium">Content</label>
+                        <textarea
+                          value={aboutContent}
+                          onChange={(event) => setAboutContent(event.target.value)}
+                          placeholder="Enter about section content here..."
+                          className="min-h-[200px] w-full rounded-lg border border-border bg-transparent px-4 py-3 text-base leading-relaxed outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
+                        />
+                        <p className="mt-3 text-sm text-muted-foreground">{aboutContent.length} characters</p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1804,60 +1942,62 @@ export default function SubcategoryDetail() {
 
                   </>
                 )}
+
+
               </div>
 
-              {showDownloadsTab && (
-                <div className="w-full">
-                  <h2 className="mb-6 text-lg font-bold">Downloads</h2>
-                  {downloads.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No downloads available.</p>
-                  ) : (
-                    <div
-                      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
-                      style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
-                    >
-                      {downloads.map((download) => (
-                        <div
-                          key={download.id}
-                          className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
-                          style={{
-                            ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
-                            backgroundColor: DOWNLOAD_CARD_BACKGROUND,
-                            minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
-                          }}
-                        >
-                          <div className="flex h-full flex-col">
-                            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                              <Download className="h-5 w-5 text-primary" />
+              <div className="space-y-8">
+                {showDownloadsTab && (
+                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground">Downloads</h2>
+                    {downloads.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No downloads available.</p>
+                    ) : (
+                      <div
+                        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
+                        style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
+                      >
+                        {downloads.map((download) => (
+                          <div
+                            key={download.id}
+                            className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
+                            style={{
+                              ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
+                              backgroundColor: DOWNLOAD_CARD_BACKGROUND,
+                              minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
+                            }}
+                          >
+                            <div className="flex h-full flex-col">
+                              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                                <Download className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="min-h-0 flex-1">
+                                <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
+                                <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
+                              </div>
+                              <a
+                                href={download.file_url}
+                                download
+                                className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
+                              >
+                                <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
+                                  Download
+                                </span>
+                                <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
+                                  <Download className="h-5 w-5" />
+                                </span>
+                              </a>
                             </div>
-                            <div className="min-h-0 flex-1">
-                              <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
-                              <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
-                            </div>
-                            <a
-                              href={download.file_url}
-                              download
-                              className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
-                            >
-                              <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
-                                Download
-                              </span>
-                              <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
-                                <Download className="h-5 w-5" />
-                              </span>
-                            </a>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              <div className="space-y-4">
                 {showBrandsInOverview && (
-                  <div className="w-full md:max-w-5xl">
-                    <h2 className="mb-6 text-lg font-bold">Brands</h2>
+                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground">Brands</h2>
                     {brands.length > 0 ? (
                       renderBrandGrid()
                     ) : (
@@ -1866,39 +2006,35 @@ export default function SubcategoryDetail() {
                   </div>
                 )}
 
-                {showProductsTab && (
-                  <>
-                    <div className="w-full md:max-w-5xl">
-                      {productItems.length === 0 && visibleProductSections.length === 0 ? (
-                        <p className="text-sm text-muted-foreground"></p>
-                      ) : (
-                        productItems.length > 0 && (
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            {productItems.map((product) => (
-                              <button
-                                key={product.id}
-                                type="button"
-                                onClick={() => {
-                                  const externalUrl = normalizeExternalUrl(product.link);
-                                  if (externalUrl) {
-                                    window.open(externalUrl, '_blank', 'noopener,noreferrer');
-                                  }
-                                }}
-                                className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
-                              >
-                                <span className="truncate pr-4 text-base font-medium text-foreground">{product.title}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )
-                      )}
-                    </div>
+                {(productItems.length > 0 || visibleProductSections.length > 0) && (
+                  <div className="space-y-8">
+                    {productItems.length > 0 && (
+                      <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                        <h2 className="mb-6 text-2xl font-semibold text-foreground">Products</h2>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {productItems.map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => {
+                                const externalUrl = normalizeExternalUrl(product.link);
+                                if (externalUrl) {
+                                  window.open(externalUrl, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+                            >
+                              <span className="truncate pr-4 text-base font-medium text-foreground">{product.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {visibleProductSections.map((section) => renderProductSection(section))}
-                  </>
+                  </div>
                 )}
               </div>
-
 
               {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
                 <div className="w-full">
@@ -1917,7 +2053,7 @@ export default function SubcategoryDetail() {
             <div className="w-full md:max-w-4xl">
               <h2 className="mb-6 text-lg font-bold">Resources</h2>
               <div className="space-y-6">
-                {videoUrl &&
+                {hasVideoResource &&
                   (() => {
                     const youtubeId = getYouTubeVideoId(videoUrl);
                     const isYouTube = youtubeId !== null;
@@ -1961,13 +2097,20 @@ export default function SubcategoryDetail() {
                       </div>
                     );
                   })()}
+                {hasImageResource && (
+                  <div className="w-full max-w-[500px] overflow-hidden rounded-xl border border-border bg-card">
+                    <div className="relative aspect-video bg-muted">
+                      <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-full w-full object-cover" />
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>
           )}
 
           {activeTab === downloadsTabIndex && showDownloadsTab && (
-            <div className="w-full">
+            <div className={`w-full ${isAdmin ? 'md:px-8 lg:px-12 md:max-w-3xl' : 'md:px-4 lg:px-6 md:max-w-5xl'}`}>
               <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <h2 className="text-lg font-bold">Downloads</h2>
                 {isAdmin && (
@@ -2660,7 +2803,7 @@ export default function SubcategoryDetail() {
               <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-lg font-bold">Brands</h2>
-                  <p className="text-sm text-muted-foreground">Add brand names and links for the brand showcase.</p>
+                  
                 </div>
                 {isAdmin && (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -2790,6 +2933,7 @@ export default function SubcategoryDetail() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </main>
 

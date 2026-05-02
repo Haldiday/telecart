@@ -22,6 +22,7 @@ interface FeaturedCardsProps {
   sectionTable?: string;
   cardsTable?: string;
   hideSeeAllOnMobile?: boolean;
+  compact?: boolean;
 }
 
 export default function FeaturedCards({
@@ -29,6 +30,7 @@ export default function FeaturedCards({
   sectionTable = 'page_sections',
   cardsTable = 'featured_cards',
   hideSeeAllOnMobile = false,
+  compact = false,
 }: FeaturedCardsProps) {
   const db = supabase as any;
   const [cards, setCards] = useState<Card[]>([]);
@@ -117,10 +119,10 @@ export default function FeaturedCards({
   if (cards.length === 0) return null;
 
   return (
-    <section className="py-10 md:py-14">
-      <div className="container mx-auto px-4 md:px-8 lg:px-12">
+    <div className={compact ? '' : 'py-10 md:py-14'}>
+      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
-          <h2 className="mb-6 text-2xl md:text-3xl font-semibold">
+          <h2 className={`mb-6 text-2xl md:text-3xl font-semibold ${compact ? 'mt-0' : ''}`}>
             {heading}
           </h2>
         )}
@@ -248,16 +250,10 @@ export default function FeaturedCards({
         )}
         {needsCarousel && !(hideSeeAllOnMobile && isMobile) && (
           <div className="mt-6 flex justify-center">
-            <button
-              onClick={() => navigate(`/featured-cards/${sectionId}`)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-6 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-            >
-              See All
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
