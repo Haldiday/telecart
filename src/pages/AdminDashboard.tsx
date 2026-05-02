@@ -1781,7 +1781,7 @@ export default function AdminDashboard() {
                             type="radio"
                             name="media-type"
                             checked={Boolean(editSubcategory.image_url)}
-                            onChange={() => setEditSubcategory({ ...editSubcategory, image_url: '', video_url: null })}
+                            onChange={() => setEditSubcategory({ ...editSubcategory, image_url: ' ', video_url: null })}
                             className="w-4 h-4"
                           />
                           <span className="text-sm">Upload Image</span>
