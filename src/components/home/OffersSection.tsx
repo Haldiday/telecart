@@ -129,22 +129,20 @@ export default function OffersSection({
                   >
                     <a href={offer.link || '#'} className={`block group rounded-xl ${offer.show_border ? 'border border-border p-3' : ''}`}>
                       {offer.image_url && (
-                        <div className="mb-4 h-[px] overflow-hidden rounded-xl bg-muted">
+                        <div className="mb-4 h-[300px] overflow-hidden rounded-xl bg-white">
                           <img
                             src={offer.image_url}
                             alt={offer.heading}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>
                       )}
-                      <h3 className="mb-2 text-lg md:text-xl font-semibold line-clamp-1">
+                      <h3 className="mb-2 h-[28px] text-center text-lg md:text-xl font-semibold line-clamp-1">
                         {offer.heading}
                       </h3>
-                      {offer.description && (
-                        <p className="text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                          {offer.description}
-                        </p>
-                      )}
+                      <p className="h-[56px] text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
+                        {offer.description || ''}
+                      </p>
                     </a>
                   </div>
                 ))}
@@ -162,22 +160,20 @@ export default function OffersSection({
               <div key={offer.id}>
                 <a href={offer.link || '#'} className={`block group rounded-xl ${offer.show_border ? 'border border-border p-3' : ''}`}>
                   {offer.image_url && (
-                    <div className="mb-4 h-[px] overflow-hidden rounded-xl bg-muted">
+                    <div className="mb-4 h-[300px] overflow-hidden rounded-xl bg-white">
                       <img
                         src={offer.image_url}
                         alt={offer.heading}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                   )}
-                  <h3 className="mb-2 text-lg md:text-xl font-semibold line-clamp-1">
+                  <h3 className="mb-2 h-[28px] text-center text-lg md:text-xl font-semibold line-clamp-1">
                     {offer.heading}
                   </h3>
-                  {offer.description && (
-                    <p className="text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                      {offer.description}
-                    </p>
-                  )}
+                  <p className="h-[56px] text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
+                    {offer.description || ''}
+                  </p>
                 </a>
               </div>
             ))}

@@ -104,6 +104,7 @@ interface Subcategory {
   link: string | null;
   video_url?: string | null;
   image_url?: string | null;
+  video_url_2?: string[] | null;
   schedule_link?: string | null;
   schedule_link_2?: string | null;
   show_schedule_2_in_separate_tab?: boolean;
@@ -112,6 +113,11 @@ interface Subcategory {
   show_form_in_separate_tab?: boolean;
   about_heading?: string | null;
   about_content?: string | null;
+  detail_heading?: string | null;
+  detail_description?: string | null;
+  detail_description_2?: string | null;
+  show_downloads?: boolean;
+  show_brands?: boolean;
   category_id: string;
 }
 
@@ -131,7 +137,7 @@ interface Category {
 
 interface CategoryButton {
   id?: string;
-  category_id: string;
+  subcategory_id?: string;
   label: string;
   link?: string | null;
   is_visible: boolean;
@@ -273,7 +279,7 @@ function SortableAdminItem({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 justify-start"
     >
       <button
         type="button"
@@ -345,12 +351,12 @@ export default function SubcategoryDetail() {
   const [overviewPoints, setOverviewPoints] = useState<CategoryOverviewPoint[]>([]);
   const [detailHeading, setDetailHeading] = useState('');
   const [detailDescription, setDetailDescription] = useState('');
+  const [detailDescription2, setDetailDescription2] = useState('');
   const [overviewPointsHeading, setOverviewPointsHeading] = useState(defaultOverviewPointsHeading);
   const [isSaving, setIsSaving] = useState(false);
   const [showOverviewPointsSection, setShowOverviewPointsSection] = useState(true);
   const [showAllOverviewPoints, setShowAllOverviewPoints] = useState(false);
   const [allSectionsVisible, setAllSectionsVisible] = useState(true);
-  const [showBrandsTabSetting, setShowBrandsTabSetting] = useState(true);
 
   const handleShowOverviewSectionChange = async (value: boolean) => {
     setShowOverviewPointsSection(value);
@@ -367,6 +373,7 @@ export default function SubcategoryDetail() {
 
   const [videoUrl, setVideoUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl2, setVideoUrl2] = useState<string[]>([]);
   const [formLink, setFormLink] = useState('');
   const [showFormTab, setShowFormTab] = useState(false);
   const [aboutHeading, setAboutHeading] = useState('About');
@@ -397,23 +404,20 @@ export default function SubcategoryDetail() {
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCardItem> | null>(null);
   const [editOffer, setEditOffer] = useState<Partial<OfferItem> | null>(null);
-
-  const [isSavingBrands, setIsSavingBrands] = useState(false);
   const [editAd1, setEditAd1] = useState<Partial<Ad2Item> | null>(null);
   const [editAd2, setEditAd2] = useState<Partial<Ad2Item> | null>(null);
   const [editAd3, setEditAd3] = useState<Partial<Ad3Item> | null>(null);
   const [editLogoStep, setEditLogoStep] = useState<Partial<LogoStepItem> | null>(null);
-  const [editDownload, setEditDownload] = useState<Partial<Download> | null>(null);
 
   const hasVideoResource = Boolean(videoUrl.trim());
   const hasImageResource = Boolean(imageUrl.trim());
-  const showDownloadsTab = category?.show_downloads_tab !== false;
+  const hasVideoResource2 = videoUrl2.some(url => url?.trim());
+  const showDownloadsTab = subcategory?.show_downloads !== false;
   const showProductsTab = category?.show_products_tab !== false;
-  const showBrandsTabForUsers = showBrandsTabSetting && brands.length > 0;
-  const showBrandsTab = isAdmin || showBrandsTabForUsers;
-  const showBrandsInOverview = showBrandsTabSetting && (isAdmin || brands.length > 0);
+  const showBrandsTab = subcategory?.show_brands !== false && brands.length > 0;
+  const showBrandsInOverview = subcategory?.show_brands !== false && brands.length > 0;
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
-  const hasResourcesTab = hasVideoResource || hasImageResource;
+  const hasResourcesTab = hasVideoResource2;
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" /> },
@@ -642,35 +646,39 @@ export default function SubcategoryDetail() {
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
         supabase.from('subcategory_downloads' as any).select('*').eq('subcategory_id', subcategoryId),
         supabase.from('category_products' as any).select('*').eq('category_id', categoryId).order('sort_order'),
-        supabase.from('category_buttons').select('*').eq('category_id', categoryId).order('sort_order'),
-        supabase.from('category_overview_points' as any).select('*').eq('category_id', categoryId).order('sort_order'),
+        supabase.from('category_buttons').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
+        supabase.from('subcategory_overview_points' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
         supabase.from(SUBCATEGORY_BRANDS_TABLE as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
       ]);
 
       if (categoryData) {
         setCategory(categoryData);
-        setShowOverviewPointsSection(categoryData.show_overview_section !== false);
-        setShowBrandsTabSetting(categoryData.show_brands_tab !== false);
-        const normalizedDetailHeading = isGenericDetailHeading(categoryData.detail_heading || '', categoryData.name)
-          ? ''
-          : categoryData.detail_heading || '';
-        const normalizedDetailDescription = isGenericDetailDescription(categoryData.detail_description || '', categoryData.name)
-          ? ''
-          : categoryData.detail_description || '';
-
-        setDetailHeading(normalizedDetailHeading);
-        setDetailDescription(normalizedDetailDescription);
-        setOverviewPointsHeading(categoryData.overview_points_heading || defaultOverviewPointsHeading);
       }
 
       if (subcategoryData) {
         setSubcategory(subcategoryData);
         setVideoUrl((subcategoryData as any).video_url || '');
         setImageUrl((subcategoryData as any).image_url || '');
+        setVideoUrl2((subcategoryData as any).video_url_2 || []);
         setFormLink((subcategoryData as any).form_link || '');
         setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
         setAboutHeading((subcategoryData as any).about_heading || 'About');
         setAboutContent((subcategoryData as any).about_content || '');
+        setOverviewPointsHeading((subcategoryData as any).overview_points_heading || defaultOverviewPointsHeading);
+        setShowOverviewPointsSection(true);
+        const normalizedDetailHeading = isGenericDetailHeading((subcategoryData as any).detail_heading || '', subcategoryData.name)
+          ? ''
+          : (subcategoryData as any).detail_heading || '';
+        const normalizedDetailDescription = isGenericDetailDescription((subcategoryData as any).detail_description || '', subcategoryData.name)
+          ? ''
+          : (subcategoryData as any).detail_description || '';
+        const normalizedDetailDescription2 = isGenericDetailDescription((subcategoryData as any).detail_description_2 || '', subcategoryData.name)
+          ? ''
+          : (subcategoryData as any).detail_description_2 || '';
+
+        setDetailHeading(normalizedDetailHeading);
+        setDetailDescription(normalizedDetailDescription);
+        setDetailDescription2(normalizedDetailDescription2);
       }
 
       if (downloadData) setDownloads(downloadData as unknown as Download[]);
@@ -682,7 +690,7 @@ export default function SubcategoryDetail() {
         setButtons(
           defaultCategoryButtons.map((button, index) => ({
             id: `default-${index}`,
-            category_id: categoryId,
+            category_id: subcategoryId,
             label: button.label,
             link: button.link || null,
             is_visible: button.is_visible,
@@ -725,8 +733,8 @@ export default function SubcategoryDetail() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_downloads', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_products', filter: `category_id=eq.${categoryId}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `category_id=eq.${categoryId}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_overview_points', filter: `category_id=eq.${categoryId}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: SUBCATEGORY_BRANDS_TABLE, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .subscribe();
 
@@ -734,107 +742,6 @@ export default function SubcategoryDetail() {
       supabase.removeChannel(channel);
     };
   }, [categoryId, subcategoryId]);
-
-  const handleButtonLabelChange = (buttonId: string | undefined, value: string) => {
-    setButtons((current) =>
-      current.map((button) => (button.id === buttonId ? { ...button, label: value } : button))
-    );
-  };
-
-  const handleButtonVisibilityChange = (buttonId: string | undefined, value: boolean) => {
-    setButtons((current) =>
-      current.map((button) => (button.id === buttonId ? { ...button, is_visible: value } : button))
-    );
-  };
-
-  const handleButtonLinkChange = (buttonId: string | undefined, value: string) => {
-    setButtons((current) =>
-      current.map((button) => (button.id === buttonId ? { ...button, link: value || null } : button))
-    );
-  };
-
-  const handleBrandNameChange = (brandId: string, value: string) => {
-    setBrands((current) =>
-      current.map((brand) => (brand.id === brandId ? { ...brand, name: value } : brand))
-    );
-  };
-
-  const handleBrandLinkChange = (brandId: string, value: string) => {
-    setBrands((current) =>
-      current.map((brand) => (brand.id === brandId ? { ...brand, link: value } : brand))
-    );
-  };
-
-  const addBrand = () => {
-    if (!categoryId) return;
-    setBrands((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        name: '',
-        link: '',
-        sort_order: current.length,
-      },
-    ]);
-  };
-
-  const removeBrand = async (brandId: string) => {
-    try {
-      // Delete from database
-      await db.from(SUBCATEGORY_BRANDS_TABLE).delete().eq('id', brandId);
-      
-      // Remove from local state
-      setBrands((current) =>
-        current
-          .filter((brand) => brand.id !== brandId)
-          .map((brand, index) => ({ ...brand, sort_order: index }))
-      );
-      
-      toast.success('Brand removed.');
-    } catch (error) {
-      console.error('Error removing brand:', error);
-      toast.error('Failed to remove brand.');
-    }
-  };
-
-  const handleSaveBrands = async () => {
-    if (!subcategoryId) return;
-    setIsSavingBrands(true);
-    try {
-      const normalizedBrands = brands.map((brand, index) => ({
-        id: brand.id.startsWith('brand-') ? crypto.randomUUID() : brand.id,
-        subcategory_id: subcategoryId,
-        name: brand.name.trim(),
-        link: brand.link.trim() || null,
-        sort_order: index,
-      }));
-
-      const { error } = await supabase
-        .from(SUBCATEGORY_BRANDS_TABLE as any)
-        .upsert(normalizedBrands, { onConflict: 'id' });
-
-      if (error) {
-        throw error;
-      }
-
-      setBrands(normalizedBrands.map((brand) => ({
-        id: brand.id,
-        name: brand.name,
-        link: brand.link || '',
-        sort_order: brand.sort_order,
-      })));
-
-      const storageKey = `subcategory-brands-${subcategoryId}`;
-      localStorage.setItem(storageKey, JSON.stringify(normalizedBrands));
-
-      toast.success('Brands saved.');
-    } catch (error) {
-      console.error('Failed to save brands:', error);
-      toast.error('Failed to save brands.');
-    } finally {
-      setIsSavingBrands(false);
-    }
-  };
 
   const handleOverviewPointTextChange = (index: number, value: string) => {
     setOverviewPoints((current) => current.map((point, pointIndex) => (pointIndex === index ? { ...point, text: value } : point)));
@@ -886,50 +793,30 @@ export default function SubcategoryDetail() {
     setIsSaving(true);
 
     try {
-      await saveCategoryField({
-        detail_heading:
-          !isGenericDetailHeading(detailHeading.trim(), category.name) && detailHeading.trim()
-            ? detailHeading.trim()
-            : null,
-        detail_description:
-          !isGenericDetailDescription(detailDescription.trim(), category.name) && detailDescription.trim()
-            ? detailDescription.trim()
-            : null,
-        overview_points_heading: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
-      });
-
       if (subcategoryId) {
         await supabase
           .from('subcategories')
           .update({
             video_url: videoUrl.trim() || null,
+            video_url_2: videoUrl2.filter(url => url?.trim()).map(url => url.trim()) || null,
             form_link: formLink.trim() || null,
             show_form_in_separate_tab: showFormTab,
             about_heading: aboutHeading.trim() || 'About',
             about_content: aboutContent.trim() || null,
+            overview_points_heading: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
+            detail_heading:
+              !isGenericDetailHeading(detailHeading.trim(), subcategory?.name || '') && detailHeading.trim()
+                ? detailHeading.trim()
+                : null,
           } as any)
           .eq('id', subcategoryId);
       }
 
-      await supabase.from('category_buttons').delete().eq('category_id', categoryId);
-
-      const buttonPayloads = buttons.map((button, index) => ({
-        category_id: categoryId,
-        label: button.label.trim() || 'Button',
-        link: button.link?.trim() || null,
-        is_visible: button.is_visible,
-        sort_order: index,
-      }));
-
-      if (buttonPayloads.length > 0) {
-        await supabase.from('category_buttons').insert(buttonPayloads);
-      }
-
-      await supabase.from('category_overview_points' as any).delete().eq('category_id', categoryId);
+      await supabase.from('subcategory_overview_points' as any).delete().eq('subcategory_id', subcategoryId);
 
       const overviewPointPayloads = overviewPoints
         .map((point, index) => ({
-          category_id: categoryId,
+          subcategory_id: subcategoryId,
           text: point.text.trim(),
           is_highlighted: point.is_highlighted,
           sort_order: index,
@@ -937,12 +824,12 @@ export default function SubcategoryDetail() {
         .filter((point) => point.text.length > 0);
 
       if (overviewPointPayloads.length > 0) {
-        await supabase.from('category_overview_points' as any).insert(overviewPointPayloads);
+        await supabase.from('subcategory_overview_points' as any).insert(overviewPointPayloads);
       }
 
       const [{ data: refreshedButtons }, { data: refreshedOverviewPoints }] = await Promise.all([
-        supabase.from('category_buttons').select('*').eq('category_id', categoryId).order('sort_order'),
-        supabase.from('category_overview_points' as any).select('*').eq('category_id', categoryId).order('sort_order'),
+        supabase.from('category_buttons').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
+        supabase.from('subcategory_overview_points' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
       ]);
 
       if (refreshedButtons) setButtons(refreshedButtons);
@@ -1321,39 +1208,6 @@ export default function SubcategoryDetail() {
     }
   };
 
-  const saveDownload = async () => {
-    if (!editDownload?.file_name?.trim() || !editDownload?.file_url?.trim()) {
-      toast.error('File name and uploaded file are required.');
-      return;
-    }
-
-    try {
-      if (editDownload.id) {
-        await db
-          .from('subcategory_downloads')
-          .update({
-            file_name: editDownload.file_name.trim(),
-            file_url: editDownload.file_url.trim(),
-            file_type: editDownload.file_type || 'pdf',
-          })
-          .eq('id', editDownload.id);
-      } else {
-        await db.from('subcategory_downloads').insert({
-          file_name: editDownload.file_name.trim(),
-          file_url: editDownload.file_url.trim(),
-          file_type: editDownload.file_type || 'pdf',
-          subcategory_id: subcategoryId,
-        });
-      }
-
-      setEditDownload(null);
-      toast.success('Download saved.');
-    } catch (error) {
-      console.error('Error saving download:', error);
-      toast.error('Failed to save download.');
-    }
-  };
-
   const deleteItem = async (tableName: string, itemId: string) => {
     try {
       await db.from(tableName).delete().eq('id', itemId);
@@ -1564,7 +1418,7 @@ export default function SubcategoryDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <div className="mx-auto w-full max-w-6xl px-4 pt-6">
+      <div className="w-full pl-8 pr-4 pt-6">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
@@ -1578,8 +1432,8 @@ export default function SubcategoryDetail() {
           className="relative border-b border-border"
           style={{ background: '#ffffff' }}
         >
-          <div className="mx-auto flex max-w-6xl flex-col gap-x-6 gap-y-6 px-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-8">
-            <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-4 text-left">
+          <div className="flex w-full flex-col gap-x-6 gap-y-6 pl-8 pr-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-4">
+            <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4 md:pl-8">
               <div className="mt-0 flex flex-col gap-4 md:flex-row md:items-center">
                 {category.icon_url && (
                   <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff]">
@@ -1592,63 +1446,41 @@ export default function SubcategoryDetail() {
                   </h1>
                 </div>
               </div>
-              <div className="mt-3 w-full">
-                {isAdmin ? (
-                  <textarea
-                    value={detailDescription}
-                    onChange={(event) => setDetailDescription(event.target.value)}
-                    className="min-h-[80px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground/80 placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none md:text-base"
-                    placeholder="Enter description here..."
-                  />
-                ) : (
-                  <p className="max-w-5xl text-base leading-relaxed text-foreground/80">
-                    {detailDescription || `Connect with businesses to expand your brand presence.`}
+              <div className="mt-2 w-full md:mt-3">
+                <p 
+                  className="max-w-xl whitespace-pre-wrap text-xl font-extrabold leading-7" 
+                  style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: 'rgb(99, 101, 110)' }}
+                >
+                  {detailDescription || `Connect with businesses to expand your brand presence.`}
+                </p>
+              </div>
+              <div className="w-full">
+                {detailDescription2 && (
+                  <p 
+                    className="max-w-xl whitespace-pre-wrap text-xl font-normal leading-7" 
+                    style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: 'rgb(99, 101, 110)' }}
+                  >
+                    {detailDescription2}
                   </p>
                 )}
               </div>
 
-              {isAdmin && adminHeroEditableButtons.length > 0 && (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  {adminHeroEditableButtons.map((button) => (
-                    <div key={button.id ?? button.label} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <input
-                          type="text"
-                          value={button.label}
-                          onChange={(event) => handleButtonLabelChange(button.id, event.target.value)}
-                          placeholder="Button label"
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                        />
-                        <Switch
-                          checked={button.is_visible}
-                          onCheckedChange={(value) => handleButtonVisibilityChange(button.id, value)}
-                          className="shrink-0"
-                        />
-                      </div>
-                        <input
-                          type="text"
-                          value={button.link || ''}
-                          onChange={(event) => handleButtonLinkChange(button.id, event.target.value)}
-                          placeholder="Button link"
-                          className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                        />
-                      <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!isAdmin && heroButtons.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-3">
-                  {heroButtons.map((button) => (
+              {secondaryButtons.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-4 md:mt-1 md:gap-6">
+                  {secondaryButtons.map((button, index) => (
                     <a
                       key={button.id}
                       href={normalizeExternalUrl(button.link || '') || '#'}
                       target={button.link ? '_blank' : undefined}
                       rel={button.link ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center justify-center rounded-[10px] border border-border bg-background px-6 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary"
+                      className={
+                        index === 0
+                          ? 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
+                          : 'inline-flex items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
+                      }
                     >
                       {button.label}
+                      <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                     </a>
                   ))}
                 </div>
@@ -1658,10 +1490,32 @@ export default function SubcategoryDetail() {
             {(hasVideoResource || hasImageResource) && (() => {
               if (hasImageResource) {
                 return (
-                  <div className="w-full md:w-[400px] max-w-[420px] overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                    <div className="relative aspect-video bg-black/30">
-                      <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[250px] w-full object-cover" />
+                  <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-12">
+                    <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
+                      <div className="relative aspect-video bg-black/30">
+                        <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[250px] w-full object-cover" />
+                      </div>
                     </div>
+                    {primaryButtons.length > 0 && (
+                      <div className="mt-4 flex flex-nowrap items-center gap-3 md:flex-wrap md:gap-6">
+                        {primaryButtons.map((button, index) => (
+                          <a
+                            key={button.id}
+                            href={normalizeExternalUrl(button.link || '') || '#'}
+                            target={button.link ? '_blank' : undefined}
+                            rel={button.link ? 'noopener noreferrer' : undefined}
+                            className={
+                              index === 0
+                                ? 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:flex-none md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
+                                : 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:flex-none md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
+                            }
+                          >
+                            {button.label}
+                            <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               }
@@ -1669,41 +1523,63 @@ export default function SubcategoryDetail() {
               const youtubeId = getYouTubeVideoId(videoUrl);
               const isYouTube = youtubeId !== null;
               return (
-                <div className="w-full md:w-[400px] max-w-[420px] overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                  <div className="group relative aspect-video bg-black/30">
-                    {isYouTube ? (
-                      <iframe
-                        src={getYouTubeEmbedUrl(youtubeId)}
-                        title="Video Resource"
-                        className="h-[180px] md:h-[250px] w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <>
-                        <video
-                          src={videoUrl}
-                          className="h-[180px] md:h-[250px] w-full object-cover"
-                          controls
-                          preload="metadata"
-                          poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
+                <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-12">
+                  <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
+                    <div className="group relative aspect-video bg-black/30">
+                      {isYouTube ? (
+                        <iframe
+                          src={getYouTubeEmbedUrl(youtubeId)}
+                          title="Video Resource"
+                          className="h-[180px] md:h-[250px] w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
                         />
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
-                          <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
-                            <Play className="h-6 w-6 fill-current" />
+                      ) : (
+                        <>
+                          <video
+                            src={videoUrl}
+                            className="h-[180px] md:h-[250px] w-full object-cover"
+                            controls
+                            preload="metadata"
+                            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
+                          />
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
+                            <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
+                              <Play className="h-6 w-6 fill-current" />
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3">
+                      <p className="text-xs text-white/80 truncate">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
+                      {!isYouTube && (
+                        <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-1 hover:bg-white/10" title="Fullscreen">
+                          <Maximize2 className="h-3 w-3 text-white/80" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between p-3">
-                    <p className="text-xs text-white/80 truncate">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
-                    {!isYouTube && (
-                      <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-1 hover:bg-white/10" title="Fullscreen">
-                        <Maximize2 className="h-3 w-3 text-white/80" />
-                      </button>
-                    )}
-                  </div>
+                  {primaryButtons.length > 0 && (
+                    <div className="mt-4 flex flex-nowrap items-center gap-3 md:flex-wrap md:gap-6">
+                      {primaryButtons.map((button, index) => (
+                        <a
+                          key={button.id}
+                          href={normalizeExternalUrl(button.link || '') || '#'}
+                          target={button.link ? '_blank' : undefined}
+                          rel={button.link ? 'noopener noreferrer' : undefined}
+                          className={
+                            index === 0
+                              ? 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:flex-none md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
+                              : 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:flex-none md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
+                          }
+                        >
+                          {button.label}
+                          <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1711,7 +1587,7 @@ export default function SubcategoryDetail() {
         </div>
 
         <div className="border-b border-border bg-card">
-          <div className="container mx-auto px-4">
+          <div className="w-full pl-8 pr-4">
             <div className="flex gap-1 overflow-x-auto">
               {tabs.map((tab, index) => (
                 <button
@@ -1733,24 +1609,12 @@ export default function SubcategoryDetail() {
         </div>
 
         <div className="w-full bg-slate-50 py-8">
-          <div className="container mx-auto w-full px-4">
+          <div className="w-full pl-8 pr-4">
             {activeTab === 0 && (
               <div className="w-full space-y-8">
-              {isAdmin && (
-                <div className="flex justify-end md:px-8 lg:px-12">
-                  <button
-                    type="button"
-                    onClick={handleSaveAll}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSaving ? 'Saving...' : 'Save changes'}
-                  </button>
-                </div>
-              )}
-              <div className={`w-full md:px-8 lg:px-12 ${isAdmin ? 'md:max-w-3xl' : 'md:max-w-8xl'}`}>
-                {!isAdmin && aboutContent.trim() && (
-                  <div className="mt-6 w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className={`w-full  ${isAdmin ? 'md:max-w-3xl' : 'md:max-w-8xl'}`}>
+                {aboutContent.trim() && (
+                  <div className="mt-6 max-w-3xl rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm text-left">
                     <h2 className="mb-4 text-2xl font-semibold text-foreground">{aboutHeading}</h2>
                     <div className="text-base leading-relaxed text-foreground/80" style={aboutContentIsLong && !isAboutExpanded ? { maxHeight: '12.25rem', overflow: 'hidden' } : undefined}>
                       <p className="whitespace-pre-wrap">{aboutContent}</p>
@@ -1768,7 +1632,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {shouldShowOverviewCard && showOverviewPointsSection && (
-                  <div className={`mt-6 flex flex-col gap-4 ${!isAdmin && secondaryButtons.length > 0 ? 'lg:flex-row lg:items-start lg:justify-between' : ''}`}>
+                  <div className={`mt-6 flex flex-col gap-4 ${secondaryButtons.length > 0 ? 'lg:flex-row lg:items-start lg:justify-between' : ''}`}>
                     <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
                       <div className="flex flex-col gap-6">
                         {/* Left side: Title and Points */}
@@ -1815,132 +1679,6 @@ export default function SubcategoryDetail() {
                     </div>
 
                   </div>
-                )}
-
-                {isAdmin && (
-                  <div className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div className="min-w-0">
-                        <h3 className="text-lg font-semibold"></h3>
-                        
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div>
-                        <label className="mb-3 block text-base font-medium">Heading</label>
-                        <input
-                          type="text"
-                          value={aboutHeading}
-                          onChange={(event) => setAboutHeading(event.target.value)}
-                          placeholder="About heading"
-                          className="w-full rounded-lg border border-border bg-transparent px-4 py-3 text-2xl font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-3 block text-base font-medium">Content</label>
-                        <textarea
-                          value={aboutContent}
-                          onChange={(event) => setAboutContent(event.target.value)}
-                          placeholder="Enter about section content here..."
-                          className="min-h-[200px] w-full rounded-lg border border-border bg-transparent px-4 py-3 text-base leading-relaxed outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
-                        />
-                        <p className="mt-3 text-sm text-muted-foreground">{aboutContent.length} characters</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isAdmin && (
-                  <>
-                    <div className="mt-6 rounded-2xl border border-border bg-card p-5">
-                      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-semibold">Overview Points</h3>
-                          <p className="text-xs text-muted-foreground">Live preview updates above as you edit.</p>
-                        </div>
-                        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
-                          <label className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium cursor-pointer hover:bg-secondary sm:w-auto sm:justify-start">
-                            <span className="text-xs">Show in Overview</span>
-                            <Switch 
-                              checked={showOverviewPointsSection} 
-                              onCheckedChange={async (value) => {
-                                setShowOverviewPointsSection(value);
-                                try {
-                                  await supabase.from('categories').update({ show_overview_section: value }).eq('id', categoryId);
-                                  toast.success(value ? 'Overview section shown.' : 'Overview section hidden.');
-                                } catch (error) {
-                                  console.error('Error updating overview section visibility:', error);
-                                  toast.error('Failed to save setting.');
-                                  setShowOverviewPointsSection(!value);
-                                }
-                              }}
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={handleAddOverviewPoint}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary sm:w-auto"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Add point
-                          </button>
-                        </div>
-                      </div>
-
-                      <input
-                        type="text"
-                        value={overviewPointsHeading}
-                        onChange={(event) => setOverviewPointsHeading(event.target.value)}
-                        placeholder="Card heading"
-                        className="mb-4 w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                      />
-
-                      {overviewPoints.length > 0 ? (
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleOverviewPointDragEnd}>
-                          <SortableContext items={overviewPoints.map((point) => point.id)} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-3">
-                              {overviewPoints.map((point, index) => (
-                                <SortableAdminItem key={point.id} id={point.id}>
-                                  <div className="space-y-3">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                      <input
-                                        type="text"
-                                        value={point.text}
-                                        onChange={(event) => handleOverviewPointTextChange(index, event.target.value)}
-                                        placeholder={`Point ${index + 1}`}
-                                        className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                                      />
-                                      <div className="flex items-center justify-between gap-3 sm:justify-start">
-                                        <Switch
-                                          checked={point.is_highlighted}
-                                          onCheckedChange={(value) => handleOverviewPointHighlightChange(index, value)}
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveOverviewPoint(index)}
-                                          className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                          aria-label={`Remove point ${index + 1}`}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </SortableAdminItem>
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                          No points added yet.
-                        </div>
-                      )}
-                    </div>
-
-                  </>
                 )}
 
 
@@ -2049,79 +1787,57 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
+
           {activeTab === resourcesTabIndex && hasResourcesTab && (
-            <div className="w-full md:max-w-4xl">
+            <div className="w-full">
               <h2 className="mb-6 text-lg font-bold">Resources</h2>
-              <div className="space-y-6">
-                {hasVideoResource &&
-                  (() => {
-                    const youtubeId = getYouTubeVideoId(videoUrl);
-                    const isYouTube = youtubeId !== null;
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {videoUrl2.filter(url => url?.trim()).map((url, index) => {
+                  const youtubeId = getYouTubeVideoId(url);
+                  const isYouTube = youtubeId !== null;
 
-                    return (
-                      <div className="w-full max-w-[500px] overflow-hidden rounded-xl border border-border bg-card">
-                        <div className="group relative aspect-video bg-muted">
-                          {isYouTube ? (
-                            <iframe
-                              src={getYouTubeEmbedUrl(youtubeId)}
-                              title="Video Resource"
-                              className="h-full w-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
+                  return (
+                    <div key={index} className="w-full overflow-hidden rounded-xl border border-border bg-card">
+                      <div className="group relative aspect-video bg-muted">
+                        {isYouTube ? (
+                          <iframe
+                            src={getYouTubeEmbedUrl(youtubeId)}
+                            title={`Video Resource ${index + 1}`}
+                            className="h-full w-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <>
+                            <video
+                              src={url}
+                              className="h-full w-full object-cover"
+                              controls
+                              preload="metadata"
+                              poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
                             />
-                          ) : (
-                            <>
-                              <video
-                                src={videoUrl}
-                                className="h-full w-full object-cover"
-                                controls
-                                preload="metadata"
-                                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
-                              />
-                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
-                                <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
-                                  <Play className="h-6 w-6 fill-current" />
-                                </div>
+                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
+                              <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
+                                <Play className="h-6 w-6 fill-current" />
                               </div>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between p-4">
-                          <p className="text-sm text-muted-foreground">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
-                          {!isYouTube && (
-                            <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-2 hover:bg-secondary" title="Fullscreen">
-                              <Maximize2 className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    );
-                  })()}
-                {hasImageResource && (
-                  <div className="w-full max-w-[500px] overflow-hidden rounded-xl border border-border bg-card">
-                    <div className="relative aspect-video bg-muted">
-                      <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-full w-full object-cover" />
+                      <div className="flex items-center justify-between p-4">
+                        <p className="text-sm text-muted-foreground">Video {index + 1}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-
+                  );
+                })}
               </div>
             </div>
           )}
 
           {activeTab === downloadsTabIndex && showDownloadsTab && (
             <div className={`w-full ${isAdmin ? 'md:px-8 lg:px-12 md:max-w-3xl' : 'md:px-4 lg:px-6 md:max-w-5xl'}`}>
-              <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="mb-6">
                 <h2 className="text-lg font-bold">Downloads</h2>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setEditDownload({ file_name: '', file_url: '', file_type: 'pdf' })}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-                  >
-                    <Plus className="h-4 w-4" /> Add Download
-                  </button>
-                )}
               </div>
 
               {downloads.length === 0 ? (
@@ -2142,28 +1858,8 @@ export default function SubcategoryDetail() {
                       }}
                     >
                       <div className="flex h-full flex-col">
-                        <div className="mb-4 flex items-start justify-between gap-3">
-                          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                            <Download className="h-5 w-5 text-primary" />
-                          </div>
-                          {isAdmin && (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditDownload(download)}
-                                className="text-muted-foreground transition-colors hover:text-foreground"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteItem('subcategory_downloads', download.id)}
-                                className="text-destructive transition-colors hover:text-destructive/80"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          )}
+                        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                          <Download className="h-5 w-5 text-primary" />
                         </div>
                         <div className="min-h-0 flex-1">
                           <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
@@ -2800,125 +2496,11 @@ export default function SubcategoryDetail() {
 
           {activeTab === brandsTabIndex && showBrandsTab && (
             <div className="w-full">
-              <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">Brands</h2>
-                  
-                </div>
-                {isAdmin && (
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium cursor-pointer hover:bg-secondary sm:w-auto sm:justify-start">
-                      <span className="text-xs">Show Brands Tab</span>
-                      <Switch
-                        checked={showBrandsTabSetting}
-                        onCheckedChange={async (value) => {
-                          setShowBrandsTabSetting(value);
-                          try {
-                            await supabase.from('categories').update({ show_brands_tab: value } as any).eq('id', categoryId);
-                            setCategory((current) => (current ? { ...current, show_brands_tab: value } : current));
-                            toast.success(value ? 'Brands tab shown.' : 'Brands tab hidden.');
-                          } catch (error) {
-                            console.error('Error updating brands tab visibility:', error);
-                            toast.error('Failed to save setting.');
-                            setShowBrandsTabSetting(!value);
-                          }
-                        }}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addBrand}
-                      className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-                    >
-                      Add brand
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {brands.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No brands available yet.</p>
+              <h2 className="mb-6 text-lg font-bold">Brands</h2>
+              {brands.length > 0 ? (
+                renderBrandGrid()
               ) : (
-                isAdmin ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {brands.map((brand) => (
-                      <div key={brand.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                        <div className="mb-4 flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {brand.name.trim() || 'New Brand'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Brand card for the Overview and Brands tabs.</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeBrand(brand.id)}
-                            className="inline-flex items-center justify-center rounded-lg border border-destructive/20 px-3 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
-                          >
-                            Remove
-                          </button>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              Brand Name
-                            </label>
-                            <input
-                              type="text"
-                              value={brand.name}
-                              onChange={(event) => handleBrandNameChange(brand.id, event.target.value)}
-                              placeholder="e.g. Airtel IoT"
-                              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              Brand Link
-                            </label>
-                            <input
-                              type="text"
-                              value={brand.link}
-                              onChange={(event) => handleBrandLinkChange(brand.id, event.target.value)}
-                              placeholder="https://example.com"
-                              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2">
-                            <p className="text-xs text-muted-foreground">Clicking the brand card opens this link in a new tab.</p>
-                            {brand.link.trim() && (
-                              <a
-                                href={normalizeExternalUrl(brand.link) || '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
-                              >
-                                Preview
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  renderBrandGrid()
-                )
-              )}
-
-              {isAdmin && (
-                <div className="mt-4 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleSaveBrands}
-                    disabled={isSavingBrands}
-                    className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSavingBrands ? 'Saving...' : 'Save brands'}
-                  </button>
-                </div>
+                <p className="text-sm text-muted-foreground">No brands available yet.</p>
               )}
             </div>
           )}
@@ -3124,56 +2706,6 @@ export default function SubcategoryDetail() {
               <textarea value={editLogoStep.description || ''} onChange={(event) => setEditLogoStep({ ...editLogoStep, description: event.target.value || null })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5" rows={3} />
             </div>
             <button type="button" onClick={saveLogoStep} className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground">
-              Save
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {editDownload && (
-        <Modal title={editDownload.id ? 'Edit Download' : 'Add Download'} onClose={() => setEditDownload(null)}>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">File Name</label>
-              <input value={editDownload.file_name || ''} onChange={(event) => setEditDownload({ ...editDownload, file_name: event.target.value })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5" placeholder="e.g., Product Brochure.pdf" />
-            </div>
-            <FileUpload
-              label="Upload File"
-              value={editDownload.file_url || null}
-              fileName={editDownload.file_name || undefined}
-              folder="downloads"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed"
-              onChange={({ url, name }) =>
-                setEditDownload({
-                  ...editDownload,
-                  file_url: url,
-                  file_name: editDownload.file_name?.trim() ? editDownload.file_name : name,
-                  file_type: getDownloadFileType(name),
-                })
-              }
-              onRemove={() =>
-                setEditDownload({
-                  ...editDownload,
-                  file_url: '',
-                  file_type: 'pdf',
-                })
-              }
-            />
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">File Type</label>
-              <select value={editDownload.file_type || 'pdf'} onChange={(event) => setEditDownload({ ...editDownload, file_type: event.target.value })} className="w-full rounded-lg border border-input bg-background px-4 py-2.5">
-                <option value="pdf">PDF</option>
-                <option value="doc">DOC</option>
-                <option value="docx">DOCX</option>
-                <option value="xls">XLS</option>
-                <option value="xlsx">XLSX</option>
-                <option value="ppt">PPT</option>
-                <option value="pptx">PPTX</option>
-                <option value="zip">ZIP</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <button type="button" onClick={saveDownload} className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-primary-foreground">
               Save
             </button>
           </div>

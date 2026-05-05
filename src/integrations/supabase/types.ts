@@ -324,7 +324,7 @@ export type Database = {
       }
       category_buttons: {
         Row: {
-          category_id: string
+          subcategory_id: string
           created_at: string
           id: string
           is_visible: boolean
@@ -333,7 +333,7 @@ export type Database = {
           sort_order: number
         }
         Insert: {
-          category_id: string
+          subcategory_id: string
           created_at?: string
           id?: string
           is_visible?: boolean
@@ -342,7 +342,7 @@ export type Database = {
           sort_order?: number
         }
         Update: {
-          category_id?: string
+          subcategory_id?: string
           created_at?: string
           id?: string
           is_visible?: boolean
@@ -352,10 +352,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "category_buttons_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "category_buttons_subcategory_id_fkey"
+            columns: ["subcategory_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "subcategories"
             referencedColumns: ["id"]
           },
         ]
