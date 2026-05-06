@@ -35,7 +35,10 @@ export default function AllSubcategoriesPage() {
   useEffect(() => {
     if (!categoryId) return;
 
+    let mounted = true;
+    
     const loadData = async () => {
+      if (!mounted) return;
       setLoading(true);
 
       const [{ data: categoryData }, { data: subcategoriesData }] = await Promise.all([
@@ -46,6 +49,8 @@ export default function AllSubcategoriesPage() {
           .eq('category_id', categoryId)
           .order('sort_order'),
       ]);
+
+      if (!mounted) return;
 
       if (categoryData) setCategory(categoryData);
       if (subcategoriesData) setSubcategories(subcategoriesData);
@@ -61,6 +66,7 @@ export default function AllSubcategoriesPage() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [categoryId]);

@@ -48,9 +48,11 @@ export default function OffersSection({
   } = useInfiniteStepCarousel(offers.length, visibleCount, needsCarousel);
 
   useEffect(() => {
+    let mounted = true;
+    
     const loadOffers = () => {
       db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Offer[] | null }) => {
-        if (data) setOffers(data);
+        if (data && mounted) setOffers(data);
       });
     };
 
@@ -61,7 +63,7 @@ export default function OffersSection({
         .eq('id', sectionId)
         .single();
       
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || 'Offers & Discounts');
         setShowHeading(data.show_heading !== false);
       }
@@ -81,6 +83,7 @@ export default function OffersSection({
       .subscribe();
 
     return () => {
+      mounted = false;
       offersChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };

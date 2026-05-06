@@ -34,6 +34,8 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    let mounted = true;
+    
     async function load() {
       const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
       if (!cats) return;
@@ -42,7 +44,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
         ...category,
         subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
       }));
-      setCategories(merged);
+      if (mounted) setCategories(merged);
     }
 
     async function loadSection() {
@@ -52,7 +54,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
         .eq('id', sectionId)
         .single();
       
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || 'Explore companies by category');
         setShowHeading(data.show_heading !== false);
       }
@@ -73,6 +75,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
       .subscribe();
 
     return () => {
+      mounted = false;
       channel.unsubscribe();
       sectionsChannel.unsubscribe();
     };

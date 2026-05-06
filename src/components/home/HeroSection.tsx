@@ -18,19 +18,26 @@ export default function HeroSection() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
+    let mounted = true;
+    
     supabase
       .from('hero_settings')
       .select('*')
       .limit(1)
       .single()
       .then(({ data }) => {
-        if (data) {
+        if (data && mounted) {
           setMainText(data.main_text);
           setWords(data.animated_words);
         }
       });
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -61,13 +68,18 @@ export default function HeroSection() {
       setSearchResults([]);
       setSearchError(null);
       setIsSearching(false);
+      setSelectedIndex(-1);
       return;
     }
 
+    let mounted = true;
     const searchTerm = query.trim();
     const timeout = window.setTimeout(async () => {
+      if (!mounted) return;
+
       setIsSearching(true);
       setSearchError(null);
+      setSelectedIndex(-1);
 
       const [{ data: categories, error: categoriesError }, { data: subcategories, error: subcategoriesError }] = await Promise.all([
         supabase
@@ -81,6 +93,8 @@ export default function HeroSection() {
           .ilike('name', `%${searchTerm}%`)
           .order('sort_order'),
       ]);
+
+      if (!mounted) return;
 
       if (categoriesError || subcategoriesError) {
         setSearchError('Unable to search right now.');
@@ -105,7 +119,10 @@ export default function HeroSection() {
       setIsSearching(false);
     }, 250);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      mounted = false;
+      window.clearTimeout(timeout);
+    };
   }, [query]);
 
   function handleResultClick(result: SearchResult) {
@@ -122,6 +139,41 @@ export default function HeroSection() {
       handleResultClick(searchResults[0]);
     }
   }
+
+  const suggestedSearches = [
+    'Best payment service',
+    'Jewelry store in Los Angeles',
+    'Sunglasses store in New York',
+    'Bank near me',
+    'Affiliate marketing service',
+  ];
+
+  const getItemsCount = () => {
+    if (query.trim()) {
+      return searchResults.length;
+    }
+    return suggestedSearches.length;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const itemCount = getItemsCount();
+    if (itemCount === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < itemCount - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      if (query.trim()) {
+        handleResultClick(searchResults[selectedIndex]);
+      } else {
+        setQuery(suggestedSearches[selectedIndex]);
+      }
+    }
+  };
 
   return (
     <section
@@ -187,6 +239,7 @@ export default function HeroSection() {
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setIsSearchActive(true)}
                 onBlur={() => setTimeout(() => setIsSearchActive(false), 100)}
+                onKeyDown={handleKeyDown}
                 className="w-full h-[64px] rounded-[32px] bg-transparent pl-6 pr-20 text-[14px] outline-none"
                 style={{
                   fontFamily: 'Trustpilot Sans, Poppins, sans-serif',
@@ -242,13 +295,15 @@ export default function HeroSection() {
                         No results found. Try another keyword.
                       </div>
                     ) : (
-                      searchResults.map((result) => (
+                      searchResults.map((result, index) => (
                         <button
                           key={`${result.type}-${result.id}`}
                           type="button"
                           onMouseDown={() => setIsSearchActive(true)}
                           onClick={() => handleResultClick(result)}
-                          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm text-[#61646b] hover:bg-[#f5f5f5]"
+                          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm ${
+                            selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'text-[#61646b] hover:bg-[#f5f5f5]'
+                          }`}
                         >
                           <svg
                             width="16"
@@ -272,19 +327,15 @@ export default function HeroSection() {
                       ))
                     )
                   ) : (
-                    [
-                      'Best payment service',
-                      'Jewelry store in Los Angeles',
-                      'Sunglasses store in New York',
-                      'Bank near me',
-                      'Affiliate marketing service',
-                    ].map((item) => (
+                    suggestedSearches.map((item, index) => (
                       <button
                         key={item}
                         type="button"
                         onMouseDown={() => setIsSearchActive(true)}
                         onClick={() => setQuery(item)}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm text-[#61646b] hover:bg-[#f5f5f5]"
+                        className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm ${
+                          selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'text-[#61646b] hover:bg-[#f5f5f5]'
+                        }`}
                       >
                         <svg
                           width="16"

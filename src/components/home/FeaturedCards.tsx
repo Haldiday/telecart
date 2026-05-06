@@ -53,6 +53,8 @@ export default function FeaturedCards({
   } = useInfiniteStepCarousel(cards.length, visibleCount, needsCarousel);
 
   useEffect(() => {
+    let mounted = true;
+    
     const loadCards = () => {
       db
         .from(cardsTable)
@@ -60,7 +62,7 @@ export default function FeaturedCards({
         .eq('section_id', sectionId)
         .order('sort_order')
         .then(({ data }) => {
-          if (data) {
+          if (data && mounted) {
             setCards((data as any[]).map((card) => ({
               ...card,
               link: card.link ?? null,
@@ -78,7 +80,7 @@ export default function FeaturedCards({
         .eq('id', sectionId)
         .single();
       
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || 'Featured Companies');
         setShowHeading(data.show_heading !== false);
       }
@@ -106,6 +108,7 @@ export default function FeaturedCards({
       .subscribe();
 
     return () => {
+      mounted = false;
       cardsChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };

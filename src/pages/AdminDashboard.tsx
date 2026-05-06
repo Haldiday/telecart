@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
 import ImageCropper from '@/components/admin/ImageCropper';
 import FileUpload from '@/components/admin/FileUpload';
+import RichTextEditor from '@/components/admin/RichTextEditor';
+import TipTapEditor from '@/components/admin/TipTapEditor';
 import { Switch } from '@/components/ui/switch';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
@@ -17,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save,
-  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft
+  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; }
@@ -42,7 +44,6 @@ interface Subcategory {
   overview_points_heading?: string | null;
   detail_heading?: string | null;
   detail_description?: string | null;
-  detail_description_2?: string | null;
   show_downloads?: boolean;
   show_brands?: boolean;
   sort_order: number;
@@ -52,6 +53,7 @@ interface SubcategoryDownload { id?: string; file_name: string; file_url: string
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface SubcategoryBrand { id?: string; name: string; logo_url: string | null; link: string | null; is_visible: boolean; }
 interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; text: string; is_highlighted: boolean; sort_order: number; }
+interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
@@ -72,6 +74,27 @@ function SortableItem({ id, children, disabled }: { id: string; children: React.
         {disabled ? <Lock className="w-5 h-5" /> : <GripVertical className="w-5 h-5" />}
       </button>
       <div className="flex-1">{children}</div>
+    </div>
+  );
+}
+
+// Custom sortable item for About sections that isolates the RichTextEditor from drag operations
+function SortableAboutSectionItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style} className="w-full space-y-3">
+      <div className="flex items-center gap-3">
+        <button
+          {...(disabled ? {} : { ...attributes, ...listeners })}
+          type="button"
+          className={`text-muted-foreground ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-grab hover:text-foreground'}`}
+          aria-label={disabled ? 'Fixed section' : 'Drag to reorder section'}
+        >
+          {disabled ? <Lock className="w-5 h-5" /> : <GripVertical className="w-5 h-5" />}
+        </button>
+        <div className="flex-1">{children}</div>
+      </div>
     </div>
   );
 }
@@ -124,6 +147,7 @@ const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'ads_1col', label: '1-Col Ad', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_2col', label: '2-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_3col', label: '3-Col Ads', icon: <Image className="w-5 h-5" /> },
+  { key: 'leads', label: 'Demo Leads', icon: <Star className="w-5 h-5" /> },
 ];
 
 export default function AdminDashboard() {
@@ -156,6 +180,8 @@ export default function AdminDashboard() {
   const [ads2, setAds2] = useState<Ad2[]>([]);
   const [ads3, setAds3] = useState<Ad3[]>([]);
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -176,6 +202,11 @@ export default function AdminDashboard() {
   const [editAd1, setEditAd1] = useState<Partial<Ad2> | null>(null);
   const [editSubOverviewPoints, setEditSubOverviewPoints] = useState<SubcategoryOverviewPoint[]>([]);
   const [editSubOverviewPointsState, setEditSubOverviewPointsState] = useState<Record<string, SubcategoryOverviewPoint[]>>({});
+
+  // State for multiple About sections
+  const [aboutSections, setAboutSections] = useState<SubcategoryAboutSection[]>([]);
+  const [editAboutSections, setEditAboutSections] = useState<Record<string, SubcategoryAboutSection[]>>({});
+  const [editingAboutSection, setEditingAboutSection] = useState<Partial<SubcategoryAboutSection> | null>(null);
 
   // Inline edit view state for subcategories
   const [editingSubcategoryId, setEditingSubcategoryId] = useState<string | null>(null);
@@ -229,29 +260,90 @@ export default function AdminDashboard() {
   }, [loading, user, isAdmin]);
 
   useEffect(() => {
-    loadAll();
+    let mounted = true;
+    
+    const loadAllSafe = async () => {
+      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData] = await Promise.all([
+        supabase.from('page_sections').select('*').order('sort_order'),
+        supabase.from('hero_settings').select('*').limit(1).single(),
+        supabase.from('featured_cards').select('*').order('sort_order'),
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('subcategories').select('*').order('sort_order'),
+        supabase.from('category_downloads').select('*'),
+        supabase.from('offers').select('*').order('sort_order'),
+        supabase.from('ads_2col').select('*').order('sort_order'),
+        supabase.from('ads_3col').select('*').order('sort_order'),
+        supabase.from('category_buttons').select('*').order('sort_order'),
+        supabase.from('subcategory_downloads' as any).select('*'),
+        supabase.from('subcategory_about_sections').select('*').order('sort_order'),
+        supabase.from('leads').select('*').order('created_at', { ascending: false }),
+      ]);
+      let subBrands;
+      try {
+        const result = await supabase.from('subcategory_brands' as any).select('*');
+        subBrands = result;
+      } catch {
+        subBrands = { data: [] };
+      }
+      let subOverviewPoints;
+      try {
+        const result = await supabase.from('subcategory_overview_points' as any).select('*');
+        subOverviewPoints = result;
+      } catch {
+        subOverviewPoints = { data: [] };
+      }
+      
+      if (!mounted) return;
+
+      if (s.data) setSections(s.data);
+      if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
+      if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false })));
+      if (cat.data) setCategories(cat.data);
+      if (sub.data) {
+        setSubcategories(sub.data);
+        const map: Record<string, string> = {};
+        sub.data.forEach((s: any) => { map[s.id] = s.name; });
+        setSubcategoriesMap(map);
+      }
+      if (downloads.data) setCategoryDownloads(downloads.data);
+      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false })));
+      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+      if (btns.data) setButtons(btns.data);
+      if (subDownloads.data) setEditSubDownloads(subDownloads.data);
+      if (aboutSects.data) setAboutSections(aboutSects.data);
+      if (leadsData.data) setLeads(leadsData.data as Lead[]);
+    };
+
+    loadAllSafe();
 
     const channel = supabase
-      .channel('admin_dashboard_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_settings' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'featured_cards' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_downloads' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_2col' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_3col' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any }, loadAll)
+      .channel('admin-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_settings' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'featured_cards' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_downloads' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_2col' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_3col' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_downloads' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_about_sections' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadAllSafe)
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
   async function loadAll() {
-    const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads] = await Promise.all([
+    const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).single(),
       supabase.from('featured_cards').select('*').order('sort_order'),
@@ -263,6 +355,7 @@ export default function AdminDashboard() {
       supabase.from('ads_3col').select('*').order('sort_order'),
       supabase.from('category_buttons').select('*').order('sort_order'),
       supabase.from('subcategory_downloads' as any).select('*'),
+      supabase.from('subcategory_about_sections').select('*').order('sort_order'),
     ]);
     let subBrands;
     try {
@@ -350,6 +443,27 @@ export default function AdminDashboard() {
         });
       });
       setEditSubOverviewPointsState(pointsBySubcategory);
+    }
+    if (aboutSects.data) {
+      setAboutSections(aboutSects.data);
+      const aboutSectionsBySubcategory: Record<string, SubcategoryAboutSection[]> = {};
+      aboutSects.data.forEach((section: any) => {
+        if (!aboutSectionsBySubcategory[section.subcategory_id]) {
+          aboutSectionsBySubcategory[section.subcategory_id] = [];
+        }
+        aboutSectionsBySubcategory[section.subcategory_id].push({
+          id: section.id,
+          subcategory_id: section.subcategory_id,
+          heading: section.heading,
+          content: section.content,
+          background_color: section.background_color || '#ffffff',
+          heading_color: section.heading_color || '#000000',
+          sort_order: section.sort_order,
+          created_at: section.created_at,
+          updated_at: section.updated_at,
+        });
+      });
+      setEditAboutSections(aboutSectionsBySubcategory);
     }
   }
 
@@ -446,6 +560,105 @@ export default function AdminDashboard() {
 
     toast.success('Card order saved!');
   }
+
+  // Functions for managing multiple About sections
+  const addAboutSection = (subcategoryId: string) => {
+    const newSection: SubcategoryAboutSection = {
+      id: `temp-${crypto.randomUUID()}`,
+      subcategory_id: subcategoryId,
+      heading: 'About',
+      content: '',
+      background_color: '#ffffff',
+      heading_color: '#000000',
+      sort_order: (editAboutSections[subcategoryId] || []).length,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    setEditAboutSections(prev => ({
+      ...prev,
+      [subcategoryId]: [...(prev[subcategoryId] || []), newSection]
+    }));
+  };
+
+  const updateAboutSection = useCallback((subcategoryId: string, sectionId: string, updates: Partial<SubcategoryAboutSection>) => {
+    setEditAboutSections(prev => ({
+      ...prev,
+      [subcategoryId]: (prev[subcategoryId] || []).map(section =>
+        section.id === sectionId ? { ...section, ...updates } : section
+      )
+    }));
+  }, []);
+
+  // Create a stable onChange handler for each section to prevent re-renders
+  const createAboutSectionChangeHandler = useCallback((subcategoryId: string, sectionId: string) => {
+    return (value: string) => {
+      updateAboutSection(subcategoryId, sectionId, { content: value });
+    };
+  }, [updateAboutSection]);
+
+  const deleteAboutSection = async (subcategoryId: string, sectionId: string) => {
+    if (!window.confirm('Delete this About section?')) return;
+
+    try {
+      await supabase.from('subcategory_about_sections').delete().eq('id', sectionId);
+      setEditAboutSections(prev => ({
+        ...prev,
+        [subcategoryId]: (prev[subcategoryId] || []).filter(section => section.id !== sectionId)
+      }));
+      toast.success('About section deleted.');
+    } catch (error) {
+      console.error('Error deleting about section:', error);
+      toast.error('Failed to delete about section.');
+    }
+  };
+
+  const saveAboutSections = async (subcategoryId: string) => {
+    const sections = editAboutSections[subcategoryId] || [];
+
+    try {
+      // Clear existing sections for this subcategory
+      await supabase.from('subcategory_about_sections').delete().eq('subcategory_id', subcategoryId);
+
+      // Insert updated sections - save sections with heading even if content is empty
+      const sectionsToInsert = sections
+        .filter(section => section.heading && section.heading.trim())
+        .map((section, index) => ({
+          subcategory_id: subcategoryId,
+          heading: section.heading.trim() || 'About',
+          content: section.content ? section.content.trim() : '',
+          background_color: section.background_color || '#ffffff',
+          heading_color: section.heading_color || '#000000',
+          sort_order: index,
+        }));
+
+      if (sectionsToInsert.length > 0) {
+        await supabase.from('subcategory_about_sections').insert(sectionsToInsert);
+      }
+
+      toast.success('About sections saved.');
+      loadAll(); // Reload data
+    } catch (error) {
+      console.error('Error saving about sections:', error);
+      toast.error('Failed to save about sections.');
+    }
+  };
+
+  const handleAboutSectionDragEnd = (subcategoryId: string) => (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const sections = editAboutSections[subcategoryId] || [];
+    const oldIndex = sections.findIndex((section) => section.id === active.id);
+    const newIndex = sections.findIndex((section) => section.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(sections, oldIndex, newIndex).map((section, index) => ({ ...section, sort_order: index }));
+    setEditAboutSections(prev => ({
+      ...prev,
+      [subcategoryId]: newOrder
+    }));
+  };
 
   async function handleAds2DragEnd(event: DragEndEvent) {
     if (!ads2FixedModeEnabled) return;
@@ -789,7 +1002,6 @@ export default function AdminDashboard() {
           about_content: sub.about_content || null,
           overview_points_heading: sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
-          detail_description_2: sub.detail_description_2 || null,
           show_downloads: editShowDownloadsState[sub.id] ?? true,
           sort_order: index,
         }));
@@ -846,7 +1058,7 @@ export default function AdminDashboard() {
           subDownloads.forEach((download, index) => {
             if (download.file_name && download.file_url) {
               subDownloadsToInsert.push({
-                id: download.id || crypto.randomUUID(),
+                id: crypto.randomUUID(), // Always generate new ID to prevent duplicate key violations
                 subcategory_id: subId,
                 file_name: download.file_name,
                 file_url: download.file_url,
@@ -903,11 +1115,10 @@ export default function AdminDashboard() {
           for (const subId of subIds) {
             const subOverviewPoints = editSubOverviewPointsState[subId] || [];
             subOverviewPoints.forEach((point, index) => {
-              if (point.text) {
+              if (point.text.trim()) {
                 subOverviewPointsToInsert.push({
-                  id: point.id || crypto.randomUUID(),
                   subcategory_id: subId,
-                  text: point.text,
+                  text: point.text.trim(),
                   is_highlighted: point.is_highlighted,
                   sort_order: index,
                 });
@@ -920,9 +1131,14 @@ export default function AdminDashboard() {
           }
         } catch (error) {
           console.error('Error saving subcategory overview points:', error instanceof Error ? error.message : JSON.stringify(error));
-          // Don't throw, allow the save to continue even if overview points fail
-          toast.error('Failed to save header points. Please run the SQL migration to create the subcategory_overview_points table.');
+          toast.error('Failed to save header points. Please run SQL migration to create subcategory_overview_points table.');
         }
+
+        // Save About sections for each subcategory
+        for (const subId of subIds) {
+          await saveAboutSections(subId);
+        }
+
       }
 
       // Save downloads
@@ -1699,6 +1915,10 @@ export default function AdminDashboard() {
                                               setEditSubBrands(editSubBrandsState[sub.id] || []);
                                               setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                              setEditAboutSections(prev => ({
+                                                ...prev,
+                                                [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                              }));
                                             }}
                                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                                           >
@@ -1850,6 +2070,10 @@ export default function AdminDashboard() {
                                     setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: prev[sub.id] ?? true }));
                                     setEditSubBrands(editSubBrandsState[sub.id] || []);
                                     setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
+                                    setEditAboutSections(prev => ({
+                                      ...prev,
+                                      [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                    }));
                                   }}
                                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                                 >
@@ -1971,7 +2195,6 @@ export default function AdminDashboard() {
                             image_url: editSubcategory.image_url?.trim() || null,
                             video_url_2: (editSubcategory.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
                             detail_description: editSubcategory.detail_description?.trim() || null,
-                            detail_description_2: editSubcategory.detail_description_2?.trim() || null,
                             show_downloads: editShowDownloadsState[editSubcategory.id || 'new'] ?? true,
                             show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
                             sort_order: editSubs.length,
@@ -2046,39 +2269,65 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Description 2</label>
-                      <textarea
-                        value={editingSub.detail_description_2 || ''}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, detail_description_2: e.target.value } : s));
-                        }}
-                        className="min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="Enter second description here..."
-                      />
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">About Heading</label>
-                      <input
-                        value={editingSub.about_heading || 'About'}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
-                        }}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                        placeholder="About heading"
-                      />
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">About Content</label>
-                      <textarea
-                        value={editingSub.about_content || ''}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
-                        }}
-                        className="min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="Enter about section content here..."
-                      />
+                      <div className="flex items-center justify-between mb-4">
+                        <label className="text-sm font-medium">About Sections</label>
+                        <button
+                          type="button"
+                          onClick={() => addAboutSection(editingSub.id)}
+                          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                        >
+                          <Plus className="h-4 w-4" /> Add More
+                        </button>
+                      </div>
+                      
+                      {(editAboutSections[editingSub.id] || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">No About sections added yet. Click "Add More" to create your first About section.</p>
+                      ) : (
+                        <div className="space-y-3">
+                              {(editAboutSections[editingSub.id] || []).map((section, index) => (
+                                <div key={section.id} className="w-full space-y-3" style={{ backgroundColor: section.background_color || '#ffffff', padding: '16px', borderRadius: '8px' }}>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <input
+                                      value={section.heading}
+                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading: e.target.value })}
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                      placeholder="About heading"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteAboutSection(editingSub.id, section.id)}
+                                      className="text-destructive hover:text-destructive/80 p-1"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <label className="text-sm text-muted-foreground">Background:</label>
+                                    <input
+                                      type="color"
+                                      value={section.background_color || '#ffffff'}
+                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
+                                      className="w-10 h-10 rounded cursor-pointer border border-input"
+                                    />
+                                    <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
+                                    <input
+                                      type="color"
+                                      value={section.heading_color || '#000000'}
+                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading_color: e.target.value })}
+                                      className="w-10 h-10 rounded cursor-pointer border border-input"
+                                    />
+                                  </div>
+                                  <TipTapEditor
+                                    key={section.id}
+                                    value={section.content || ''}
+                                    onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
+                                    className="min-h-[100px] w-full"
+                                    placeholder="Enter about section content here..."
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                      )}
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
@@ -3002,6 +3251,64 @@ export default function AdminDashboard() {
                     <button onClick={saveAd3} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
+              )}
+            </div>
+          )}
+
+          {/* DEMO LEADS */}
+          {tab === 'leads' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Demo Requests</h2>
+              </div>
+
+              {leads.length === 0 ? (
+                <div className="text-center py-12 bg-card rounded-xl border border-border">
+                  <p className="text-muted-foreground">No demo requests yet.</p>
+                </div>
+              ) : (
+                <div className="bg-card rounded-xl border border-border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Organization</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Subcategory</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Terms</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leads.map((lead) => (
+                          <tr key={lead.id} className="border-t border-border">
+                            <td className="px-4 py-3 text-sm">
+                              {new Date(lead.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium">{lead.name}</td>
+                            <td className="px-4 py-3 text-sm">{lead.phone}</td>
+                            <td className="px-4 py-3 text-sm">{lead.email}</td>
+                            <td className="px-4 py-3 text-sm">{lead.organization}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {lead.subcategory_id ? subcategoriesMap[lead.subcategory_id] || 'Unknown' : 'N/A'}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {lead.terms_accepted ? (
+                                <span className="inline-flex items-center gap-1 text-green-600">
+                                  <CheckCircle2 className="w-4 h-4" /> Accepted
+                                </span>
+                              ) : (
+                                <span className="text-red-600">Not Accepted</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
           )}

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useScopedSectionInstances, type ScopedPageSection } from '@/hooks/useScopedSectionInstances';
+import RichTextEditor from '@/components/admin/RichTextEditor';
 import { Switch } from '@/components/ui/switch';
 import ImageUpload from '@/components/admin/ImageUpload';
 import ImageCropper from '@/components/admin/ImageCropper';
@@ -14,6 +15,7 @@ import OffersSection from '@/components/home/OffersSection';
 import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
+import WatchDemoForm from '@/components/home/WatchDemoForm';
 import { toast } from 'sonner';
 import {
   DndContext,
@@ -115,7 +117,6 @@ interface Subcategory {
   about_content?: string | null;
   detail_heading?: string | null;
   detail_description?: string | null;
-  detail_description_2?: string | null;
   show_downloads?: boolean;
   show_brands?: boolean;
   category_id: string;
@@ -225,6 +226,18 @@ interface LogoStepItem {
   logo_url: string | null;
   sort_order: number;
   section_id: string;
+}
+
+interface SubcategoryAboutSection {
+  id: string;
+  subcategory_id: string;
+  heading: string;
+  content: string | null;
+  background_color?: string;
+  heading_color?: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 const getYouTubeVideoId = (url: string): string | null => {
@@ -351,7 +364,6 @@ export default function SubcategoryDetail() {
   const [overviewPoints, setOverviewPoints] = useState<CategoryOverviewPoint[]>([]);
   const [detailHeading, setDetailHeading] = useState('');
   const [detailDescription, setDetailDescription] = useState('');
-  const [detailDescription2, setDetailDescription2] = useState('');
   const [overviewPointsHeading, setOverviewPointsHeading] = useState(defaultOverviewPointsHeading);
   const [isSaving, setIsSaving] = useState(false);
   const [showOverviewPointsSection, setShowOverviewPointsSection] = useState(true);
@@ -379,6 +391,8 @@ export default function SubcategoryDetail() {
   const [aboutHeading, setAboutHeading] = useState('About');
   const [aboutContent, setAboutContent] = useState('');
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+  const [aboutSections, setAboutSections] = useState<SubcategoryAboutSection[]>([]);
+  const [expandedAboutSection, setExpandedAboutSection] = useState(false);
 
   const [productAdminTab, setProductAdminTab] = useState<ProductAdminTab>('layout');
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -612,7 +626,19 @@ export default function SubcategoryDetail() {
   }, [productSections]);
 
   useEffect(() => {
-    loadProductSectionContent();
+    let mounted = true;
+    
+    const safeLoadProductSectionContent = async () => {
+      if (mounted) {
+        await loadProductSectionContent();
+      }
+    };
+    
+    safeLoadProductSectionContent();
+    
+    return () => {
+      mounted = false;
+    };
   }, [loadProductSectionContent]);
 
   useEffect(() => {
@@ -640,8 +666,10 @@ export default function SubcategoryDetail() {
   useEffect(() => {
     if (!categoryId || !subcategoryId) return;
 
+    let mounted = true;
+    
     const loadData = async () => {
-      const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }] = await Promise.all([
+      const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }, { data: aboutSectionsData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
         supabase.from('subcategory_downloads' as any).select('*').eq('subcategory_id', subcategoryId),
@@ -649,7 +677,10 @@ export default function SubcategoryDetail() {
         supabase.from('category_buttons').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
         supabase.from('subcategory_overview_points' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
         supabase.from(SUBCATEGORY_BRANDS_TABLE as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
+        supabase.from('subcategory_about_sections' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
       ]);
+
+      if (!mounted) return;
 
       if (categoryData) {
         setCategory(categoryData);
@@ -672,13 +703,9 @@ export default function SubcategoryDetail() {
         const normalizedDetailDescription = isGenericDetailDescription((subcategoryData as any).detail_description || '', subcategoryData.name)
           ? ''
           : (subcategoryData as any).detail_description || '';
-        const normalizedDetailDescription2 = isGenericDetailDescription((subcategoryData as any).detail_description_2 || '', subcategoryData.name)
-          ? ''
-          : (subcategoryData as any).detail_description_2 || '';
 
         setDetailHeading(normalizedDetailHeading);
         setDetailDescription(normalizedDetailDescription);
-        setDetailDescription2(normalizedDetailDescription2);
       }
 
       if (downloadData) setDownloads(downloadData as unknown as Download[]);
@@ -723,6 +750,7 @@ export default function SubcategoryDetail() {
       }
 
       setOverviewPoints((overviewPointData as unknown as CategoryOverviewPoint[]) || []);
+      setAboutSections((aboutSectionsData as unknown as SubcategoryAboutSection[]) || []);
     };
 
     loadData();
@@ -736,9 +764,11 @@ export default function SubcategoryDetail() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: SUBCATEGORY_BRANDS_TABLE, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_about_sections', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [categoryId, subcategoryId]);
@@ -1434,7 +1464,7 @@ export default function SubcategoryDetail() {
         >
           <div className="flex w-full flex-col gap-x-6 gap-y-6 pl-8 pr-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-4">
             <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4 md:pl-8">
-              <div className="mt-0 flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="mt-4 flex flex-col gap-4 md:mt-10 md:flex-row md:items-center">
                 {category.icon_url && (
                   <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff]">
                     <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
@@ -1448,33 +1478,29 @@ export default function SubcategoryDetail() {
               </div>
               <div className="mt-2 w-full md:mt-3">
                 <p 
-                  className="max-w-xl whitespace-pre-wrap text-xl font-extrabold leading-7" 
-                  style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: 'rgb(99, 101, 110)' }}
+                  className="max-w-xl whitespace-pre-wrap" 
+                  style={{ 
+                    fontFamily: '"Plus Jakarta Sans", sans-serif',
+                    fontSize: '20px',
+                    fontWeight: 800,
+                    lineHeight: '28px',
+                    color: 'rgb(99, 101, 110)'
+                  }}
                 >
                   {detailDescription || `Connect with businesses to expand your brand presence.`}
                 </p>
               </div>
-              <div className="w-full">
-                {detailDescription2 && (
-                  <p 
-                    className="max-w-xl whitespace-pre-wrap text-xl font-normal leading-7" 
-                    style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', color: 'rgb(99, 101, 110)' }}
-                  >
-                    {detailDescription2}
-                  </p>
-                )}
-              </div>
 
-              {secondaryButtons.length > 0 && (
+              {heroButtons.length > 0 && (
                 <div className="mt-2 flex flex-wrap items-center gap-4 md:mt-1 md:gap-6">
-                  {secondaryButtons.map((button, index) => (
+                  {heroButtons.map((button, index) => (
                     <a
                       key={button.id}
                       href={normalizeExternalUrl(button.link || '') || '#'}
                       target={button.link ? '_blank' : undefined}
                       rel={button.link ? 'noopener noreferrer' : undefined}
                       className={
-                        index === 0
+                        index === 0 || index === 2
                           ? 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
                           : 'inline-flex items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
                       }
@@ -1490,32 +1516,13 @@ export default function SubcategoryDetail() {
             {(hasVideoResource || hasImageResource) && (() => {
               if (hasImageResource) {
                 return (
-                  <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-12">
+                  <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-10">
                     <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                      <div className="relative aspect-video bg-black/30">
-                        <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[250px] w-full object-cover" />
+                      <div className="relative bg-black/30">
+                        <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[200px] w-full object-cover" />
                       </div>
                     </div>
-                    {primaryButtons.length > 0 && (
-                      <div className="mt-4 flex flex-nowrap items-center gap-3 md:flex-wrap md:gap-6">
-                        {primaryButtons.map((button, index) => (
-                          <a
-                            key={button.id}
-                            href={normalizeExternalUrl(button.link || '') || '#'}
-                            target={button.link ? '_blank' : undefined}
-                            rel={button.link ? 'noopener noreferrer' : undefined}
-                            className={
-                              index === 0
-                                ? 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:flex-none md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
-                                : 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:flex-none md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
-                            }
-                          >
-                            {button.label}
-                            <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
-                          </a>
-                        ))}
-                      </div>
-                    )}
+                    {/* Buttons removed from media section - now all in description */}
                   </div>
                 );
               }
@@ -1523,14 +1530,14 @@ export default function SubcategoryDetail() {
               const youtubeId = getYouTubeVideoId(videoUrl);
               const isYouTube = youtubeId !== null;
               return (
-                <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-12">
+                <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-10">
                   <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                    <div className="group relative aspect-video bg-black/30">
+                    <div className="group relative bg-black/30">
                       {isYouTube ? (
                         <iframe
                           src={getYouTubeEmbedUrl(youtubeId)}
                           title="Video Resource"
-                          className="h-[180px] md:h-[250px] w-full"
+                          className="h-[180px] md:h-[200px] w-full"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
@@ -1538,7 +1545,7 @@ export default function SubcategoryDetail() {
                         <>
                           <video
                             src={videoUrl}
-                            className="h-[180px] md:h-[250px] w-full object-cover"
+                            className="h-[180px] md:h-[200px] w-full object-cover"
                             controls
                             preload="metadata"
                             poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
@@ -1551,35 +1558,8 @@ export default function SubcategoryDetail() {
                         </>
                       )}
                     </div>
-                    <div className="flex items-center justify-between p-3">
-                      <p className="text-xs text-white/80 truncate">{isYouTube ? '' : 'Click play icon for fullscreen'}</p>
-                      {!isYouTube && (
-                        <button type="button" onClick={() => setShowVideoFullscreen(true)} className="rounded-lg p-1 hover:bg-white/10" title="Fullscreen">
-                          <Maximize2 className="h-3 w-3 text-white/80" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {primaryButtons.length > 0 && (
-                    <div className="mt-4 flex flex-nowrap items-center gap-3 md:flex-wrap md:gap-6">
-                      {primaryButtons.map((button, index) => (
-                        <a
-                          key={button.id}
-                          href={normalizeExternalUrl(button.link || '') || '#'}
-                          target={button.link ? '_blank' : undefined}
-                          rel={button.link ? 'noopener noreferrer' : undefined}
-                          className={
-                            index === 0
-                              ? 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75] md:flex-none md:gap-3 md:rounded-2xl md:px-8 md:py-3 md:text-base'
-                              : 'inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-3 py-2 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5 md:flex-none md:gap-3 md:rounded-2xl md:px-5 md:py-3 md:text-base'
-                          }
-                        >
-                          {button.label}
-                          <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                                      </div>
+                  {/* Buttons removed from media section - now all in description */}
                 </div>
               );
             })()}
@@ -1613,21 +1593,57 @@ export default function SubcategoryDetail() {
             {activeTab === 0 && (
               <div className="w-full space-y-8">
               <div className={`w-full  ${isAdmin ? 'md:max-w-3xl' : 'md:max-w-8xl'}`}>
-                {aboutContent.trim() && (
-                  <div className="mt-6 max-w-3xl rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm text-left">
-                    <h2 className="mb-4 text-2xl font-semibold text-foreground">{aboutHeading}</h2>
-                    <div className="text-base leading-relaxed text-foreground/80" style={aboutContentIsLong && !isAboutExpanded ? { maxHeight: '12.25rem', overflow: 'hidden' } : undefined}>
-                      <p className="whitespace-pre-wrap">{aboutContent}</p>
-                    </div>
-                    {aboutContentIsLong && (
-                      <button
-                        type="button"
-                        onClick={() => setIsAboutExpanded((current) => !current)}
-                        className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
+                {aboutSections.length > 0 && (
+                  <div className="mt-6 space-y-6">
+                    {aboutSections.map((section, index) => (
+                      <div
+                        key={section.id}
                       >
-                        {isAboutExpanded ? 'Show Less' : 'Show More'}
-                      </button>
-                    )}
+                        {index === 0 ? (
+                          <div className="flex flex-col lg:flex-row gap-6 items-start">
+                            <div
+                              className="w-full lg:w-[850px] flex-shrink-0 rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
+                              style={{ 
+                                backgroundColor: section.background_color || '#ffffff',
+                                height: '450px'
+                              }}
+                            >
+                              <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
+                              <div
+                                className="text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline overflow-hidden"
+                                style={{ 
+                                  maxHeight: expandedAboutSection ? 'none' : '280px',
+                                  transition: 'max-height 0.3s ease-in-out'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                              />
+                              {section.content && section.content.length > 500 && (
+                                <button
+                                  onClick={() => setExpandedAboutSection(!expandedAboutSection)}
+                                  className="mt-3 text-sm font-medium text-primary hover:underline"
+                                >
+                                  {expandedAboutSection ? 'See Less' : 'See More'}
+                                </button>
+                              )}
+                            </div>
+                            <div className="w-full lg:w-[400px] flex-shrink-0">
+                              <WatchDemoForm subcategoryId={subcategoryId} demoLink={subcategory?.schedule_link} />
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
+                            style={{ backgroundColor: section.background_color || '#ffffff' }}
+                          >
+                            <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
+                            <div
+                              className="text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline"
+                              dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -1687,7 +1703,7 @@ export default function SubcategoryDetail() {
               <div className="space-y-8">
                 {showDownloadsTab && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground">Downloads</h2>
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Downloads</h2>
                     {downloads.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No downloads available.</p>
                     ) : (
@@ -1735,7 +1751,7 @@ export default function SubcategoryDetail() {
 
                 {showBrandsInOverview && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground">Brands</h2>
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Brands</h2>
                     {brands.length > 0 ? (
                       renderBrandGrid()
                     ) : (
@@ -1748,7 +1764,7 @@ export default function SubcategoryDetail() {
                   <div className="space-y-8">
                     {productItems.length > 0 && (
                       <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                        <h2 className="mb-6 text-2xl font-semibold text-foreground">Products</h2>
+                        <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Products</h2>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           {productItems.map((product) => (
                             <button

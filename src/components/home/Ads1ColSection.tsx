@@ -31,6 +31,8 @@ export default function Ads1ColSection({
   const [showHeading, setShowHeading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+    
     const loadAds = () => {
       db
         .from(adsTable)
@@ -38,7 +40,7 @@ export default function Ads1ColSection({
         .eq('section_id', sectionId)
         .order('sort_order')
         .then(({ data }) => {
-          if (data) {
+          if (data && mounted) {
             setAds(
               (data as any[]).map((ad) => ({
                 ...ad,
@@ -57,7 +59,7 @@ export default function Ads1ColSection({
         .eq('id', sectionId)
         .single();
 
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || 'Featured Ad');
         setShowHeading(data.show_heading !== false);
       }
@@ -85,6 +87,7 @@ export default function Ads1ColSection({
       .subscribe();
 
     return () => {
+      mounted = false;
       adsChannel.unsubscribe();
       sectionChannel.unsubscribe();
     };

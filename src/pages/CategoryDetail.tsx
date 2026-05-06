@@ -53,6 +53,8 @@ export default function CategoryDetail() {
   useEffect(() => {
     if (!id) return;
 
+    let mounted = true;
+    
     const loadCategoryData = async () => {
       const [
         { data: categoryData },
@@ -65,6 +67,8 @@ export default function CategoryDetail() {
         supabase.from('category_features').select('*').eq('category_id', id).order('sort_order'),
         supabase.from('category_sub_features').select('*').order('sort_order'),
       ]);
+
+      if (!mounted) return;
 
       if (categoryData) {
         setCategory(categoryData);
@@ -93,6 +97,7 @@ export default function CategoryDetail() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [id]);

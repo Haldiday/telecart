@@ -63,7 +63,13 @@ export function useScopedSectionInstances({ tableName, scopeColumn, scopeValue }
   useEffect(() => {
     if (!scopeValue) return;
 
-    fetchSections();
+    let mounted = true;
+    
+    const safeFetchSections = () => {
+      if (mounted) fetchSections();
+    };
+    
+    safeFetchSections();
 
     const channel = supabase
       .channel(`${tableName}_${scopeValue}_sections`)
@@ -75,11 +81,12 @@ export function useScopedSectionInstances({ tableName, scopeColumn, scopeValue }
           table: tableName,
           filter: `${scopeColumn}=eq.${scopeValue}`,
         },
-        fetchSections
+        safeFetchSections
       )
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [fetchSections, scopeColumn, scopeValue, tableName]);

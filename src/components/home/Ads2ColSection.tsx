@@ -48,9 +48,11 @@ export default function Ads2ColSection({
   } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
 
   useEffect(() => {
+    let mounted = true;
+    
     const loadAds = () => {
       db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
-        if (data) {
+        if (data && mounted) {
           setAds((data as any[]).map((ad) => ({
             ...ad,
             is_fixed: ad.is_fixed ?? false,
@@ -67,7 +69,7 @@ export default function Ads2ColSection({
         .eq('id', sectionId)
         .single();
       
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || '2 Column Ads');
         setShowHeading(data.show_heading !== false);
       }
@@ -87,6 +89,7 @@ export default function Ads2ColSection({
       .subscribe();
 
     return () => {
+      mounted = false;
       adsChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };

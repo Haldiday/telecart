@@ -32,6 +32,8 @@ export const useSectionInstances = () => {
 
   // Subscribe to real-time updates
   useEffect(() => {
+    let mounted = true;
+    
     fetchSections();
 
     const subscription = supabase
@@ -40,12 +42,13 @@ export const useSectionInstances = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'page_sections' },
         () => {
-          fetchSections();
+          if (mounted) fetchSections();
         }
       )
       .subscribe();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);

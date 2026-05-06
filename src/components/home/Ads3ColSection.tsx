@@ -59,9 +59,11 @@ export default function Ads3ColSection({
   } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
 
   useEffect(() => {
+    let mounted = true;
+    
     const loadAds = () => {
       db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
-        if (data) setAds((data as any[]).map((ad) => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+        if (data && mounted) setAds((data as any[]).map((ad) => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
       });
     };
 
@@ -72,7 +74,7 @@ export default function Ads3ColSection({
         .eq('id', sectionId)
         .single();
       
-      if (data) {
+      if (data && mounted) {
         setHeading(data.heading || '3 Column Ads');
         setShowHeading(data.show_heading !== false);
       }
@@ -92,6 +94,7 @@ export default function Ads3ColSection({
       .subscribe();
 
     return () => {
+      mounted = false;
       adsChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };

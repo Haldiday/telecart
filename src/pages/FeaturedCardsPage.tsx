@@ -29,7 +29,10 @@ export default function FeaturedCardsPage() {
   useEffect(() => {
     if (!sectionId) return;
 
+    let mounted = true;
+    
     const loadData = async () => {
+      if (!mounted) return;
       setLoading(true);
       
       const [{ data: cardsData }, { data: sectionData }] = await Promise.all([
@@ -45,6 +48,8 @@ export default function FeaturedCardsPage() {
           .single(),
       ]);
 
+      if (!mounted) return;
+
       if (cardsData) setCards(cardsData);
       if (sectionData) setSection(sectionData);
       setLoading(false);
@@ -59,6 +64,7 @@ export default function FeaturedCardsPage() {
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [sectionId]);

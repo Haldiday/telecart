@@ -32,10 +32,12 @@ export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
 
   useEffect(() => {
+    let mounted = true;
+    
     // Initial fetch
     const loadSections = async () => {
       const { data } = await supabase.from('page_sections').select('*').order('sort_order');
-      if (data) setSections(data);
+      if (data && mounted) setSections(data);
     };
     
     loadSections();
@@ -54,6 +56,7 @@ export default function Index() {
       .subscribe();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
