@@ -16,9 +16,10 @@ interface PageSection {
   name: string;
   sort_order: number;
   is_visible: boolean;
+  background_color?: string | null;
 }
 
-const SECTION_MAP: Record<string, React.FC<{ sectionId: string }>> = {
+const SECTION_MAP: Record<string, React.FC<any>> = {
   hero: HeroSection as any,
   cards: FeaturedCards,
   categories: CategoriesSection,
@@ -37,7 +38,7 @@ export default function Index() {
     // Initial fetch
     const loadSections = async () => {
       const { data } = await supabase.from('page_sections').select('*').order('sort_order');
-      if (data && mounted) setSections(data);
+      if (data && mounted) setSections(data as PageSection[]);
     };
     
     loadSections();
@@ -68,18 +69,31 @@ export default function Index() {
         {sections.filter(s => s.is_visible).map((section) => {
           const Component = SECTION_MAP[section.section_type];
           if (!Component) return null;
-          
-          // Hero section doesn't need sectionId
-          if (section.section_type === 'hero') {
-            return <Component key={section.id} />;
+
+          const sectionContent = (() => {
+            // Hero section doesn't need sectionId
+            if (section.section_type === 'hero') {
+              return <Component />;
+            }
+
+            // Hide "See All" on mobile for Featured Cards in overview
+            if (section.section_type === 'cards') {
+              return <Component sectionId={section.id} hideSeeAllOnMobile={true} />;
+            }
+
+            return <Component sectionId={section.id} />;
+          })();
+
+          // Apply background color to section container if specified
+          if (section.background_color && section.section_type !== 'hero') {
+            return (
+              <div key={section.id} style={{ backgroundColor: section.background_color }}>
+                {sectionContent}
+              </div>
+            );
           }
-          
-          // Hide "See All" on mobile for Featured Cards in overview
-          if (section.section_type === 'cards') {
-            return <Component key={section.id} sectionId={section.id} hideSeeAllOnMobile={true} />;
-          }
-          
-          return <Component key={section.id} sectionId={section.id} />;
+
+          return <div key={section.id}>{sectionContent}</div>;
         })}
       </main>
       <Footer />

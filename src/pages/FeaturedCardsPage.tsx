@@ -18,6 +18,7 @@ interface PageSection {
   id: string;
   heading: string;
   show_heading: boolean;
+  background_color: string | null;
 }
 
 export default function FeaturedCardsPage() {

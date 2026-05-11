@@ -11,6 +11,7 @@ export interface ScopedPageSection {
   heading: string;
   description: string | null;
   show_heading: boolean;
+  background_color: string | null;
 }
 
 interface UseScopedSectionInstancesOptions {

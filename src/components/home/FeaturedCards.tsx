@@ -224,7 +224,7 @@ export default function FeaturedCards({
                 }
               };
               return (
-                <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
+                <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
                   <div
                     onClick={handleCardClick}
                     className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}

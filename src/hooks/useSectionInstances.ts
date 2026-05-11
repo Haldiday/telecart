@@ -221,11 +221,15 @@ export const useSectionInstances = () => {
   };
 
   // Update section heading
-  const updateHeading = async (sectionId: string, heading: string): Promise<boolean> => {
+  const updateHeading = async (sectionId: string, heading: string, backgroundColor?: string | null): Promise<boolean> => {
     try {
+      const updateData: any = { heading };
+      if (backgroundColor !== undefined) {
+        updateData.background_color = backgroundColor || null;
+      }
       const { error } = await supabase
         .from('page_sections')
-        .update({ heading })
+        .update(updateData)
         .eq('id', sectionId);
 
       if (error) throw error;

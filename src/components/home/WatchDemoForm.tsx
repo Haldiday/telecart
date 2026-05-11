@@ -10,9 +10,11 @@ import { Play } from 'lucide-react';
 interface WatchDemoFormProps {
   subcategoryId?: string;
   demoLink?: string | null;
+  demoFormHeading?: string | null;
+  demoButtonLabel?: string | null;
 }
 
-export default function WatchDemoForm({ subcategoryId, demoLink }: WatchDemoFormProps) {
+export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading, demoButtonLabel }: WatchDemoFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -109,7 +111,7 @@ export default function WatchDemoForm({ subcategoryId, demoLink }: WatchDemoForm
   return (
     <div className="w-full lg:w-[400px] rounded-[12px] p-[33px_40px_40px] bg-[#f4f2f0] shadow-sm">
       <div className="mb-3">
-        <h3 className="text-lg font-semibold text-foreground text-center">See The Software In Action<br/>Watch Free Demo!</h3>
+        <h3 className="text-lg font-semibold text-foreground text-center">{demoFormHeading || 'See The Software In Action\nWatch Free Demo!'}</h3>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -198,7 +200,7 @@ export default function WatchDemoForm({ subcategoryId, demoLink }: WatchDemoForm
           className="w-full bg-green-600 hover:bg-green-700 h-11"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Submitting...' : 'Get Free Advice'}
+          {isSubmitting ? 'Submitting...' : (demoButtonLabel || 'Get Free Advice')}
         </Button>
       </form>
     </div>

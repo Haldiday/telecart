@@ -125,7 +125,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
     content: value || '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] px-3 py-2',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] px-3 py-2 [&_p]:my-3 [&_h1]:my-3 [&_h2]:my-3 [&_h3]:my-3 [&_h4]:my-3 [&_h5]:my-3 [&_h6]:my-3',
         placeholder: placeholder,
       },
     },
