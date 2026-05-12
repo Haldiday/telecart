@@ -49,7 +49,6 @@ interface Subcategory {
   name: string;
   link: string | null;
   video_url?: string | null;
-  image_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
   schedule_link_2?: string | null;
@@ -237,7 +236,6 @@ export default function SubcategoryDetail() {
   };
 
   const [videoUrl, setVideoUrl] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
   const [videoUrl2, setVideoUrl2] = useState<string[]>([]);
   const [formLink, setFormLink] = useState('');
   const [showFormTab, setShowFormTab] = useState(false);
@@ -253,7 +251,6 @@ export default function SubcategoryDetail() {
   const [brands, setBrands] = useState<BrandItem[]>([]);
 
   const hasVideoResource = Boolean(videoUrl.trim());
-  const hasImageResource = Boolean(imageUrl.trim());
   const hasVideoResource2 = videoUrl2.some(url => url?.trim());
   const showDownloadsTab = subcategory?.show_downloads !== false;
   const showProductsTab = category?.show_products_tab !== false;
@@ -418,7 +415,6 @@ export default function SubcategoryDetail() {
       if (subcategoryData) {
         setSubcategory(subcategoryData);
         setVideoUrl((subcategoryData as any).video_url || '');
-        setImageUrl((subcategoryData as any).image_url || '');
         setVideoUrl2((subcategoryData as any).video_url_2 || []);
         setFormLink((subcategoryData as any).form_link || '');
         setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
@@ -643,59 +639,63 @@ export default function SubcategoryDetail() {
       <Header />
       <main className="flex-1">
         {/* Hero Section with colored background and video */}
-        <div
-          className="relative border-b border-border"
-          style={{ 
-            background: subcategory?.hero_background_image 
-              ? `url(${subcategory.hero_background_image}) center/cover no-repeat` 
-              : '#ffffff',
-            minHeight: '400px'
-          }}
-        >
+        <div className="relative w-full max-w-none overflow-hidden border-b border-border">
+          {subcategory?.hero_background_image ? (
+            <img
+              src={subcategory.hero_background_image}
+              alt="Hero Banner"
+              className="
+                w-full
+                h-[180px]
+                sm:h-[220px]
+                md:h-[280px]
+                lg:h-[360px]
+                xl:h-[430px]
+                object-fill
+                object-center
+              "
+            />
+          ) : (
+            <div className="w-full h-[180px] sm:h-[220px] md:h-[280px] lg:h-[360px] xl:h-[430px] bg-white" />
+          )}
           <div className="flex w-full flex-col gap-x-6 gap-y-6 pl-8 pr-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-4">
-            <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4 md:pl-8">
-              <div className="mt-4 flex flex-col gap-4 md:mt-10 md:flex-row md:items-center">
-                {category.icon_url && (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff]">
-                    <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
+            {/* Only show logo, name, and description when NO hero background image is present */}
+            {!subcategory?.hero_background_image && (
+              <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4 md:pl-8">
+                <div className="mt-4 flex flex-col gap-4 md:mt-10 md:flex-row md:items-center">
+                  {category.icon_url && (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff] shadow-lg">
+                      <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h1 className="break-words whitespace-normal text-2xl font-bold text-foreground md:text-3xl">
+                      {subcategory.name}
+                    </h1>
                   </div>
-                )}
-                <div className="min-w-0">
-                  <h1 className="break-words whitespace-normal text-2xl font-bold text-foreground md:text-3xl">
-                    {subcategory.name}
-                  </h1>
+                </div>
+                <div className="mt-2 w-full md:mt-3">
+                  <p 
+                    className="max-w-xl whitespace-pre-wrap" 
+                    style={{ 
+                      fontFamily: '"Plus Jakarta Sans", sans-serif',
+                      fontSize: '20px',
+                      fontWeight: 800,
+                      lineHeight: '28px',
+                      color: 'rgb(99, 101, 110)'
+                    }}
+                  >
+                    {detailDescription || `Connect with businesses to expand your brand presence.`}
+                  </p>
                 </div>
               </div>
-              <div className="mt-2 w-full md:mt-3">
-                <p 
-                  className="max-w-xl whitespace-pre-wrap" 
-                  style={{ 
-                    fontFamily: '"Plus Jakarta Sans", sans-serif',
-                    fontSize: '20px',
-                    fontWeight: 800,
-                    lineHeight: '28px',
-                    color: 'rgb(99, 101, 110)'
-                  }}
-                >
-                  {detailDescription || `Connect with businesses to expand your brand presence.`}
-                </p>
-              </div>
-            </div>
+            )}
+            {/* When hero background is present, show only video card */}
+            {subcategory?.hero_background_image && (
+              <div className="flex-1 min-w-0" />
+            )}
             {/* Video Card on the right */}
-            {(hasVideoResource || hasImageResource) && (() => {
-              if (hasImageResource) {
-                return (
-                  <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-10">
-                    <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                      <div className="relative bg-black/30">
-                        <img src={imageUrl} alt={`${subcategory.name} resource`} className="h-[180px] md:h-[200px] w-full object-cover" />
-                      </div>
-                    </div>
-                    {/* Buttons removed from media section - now all in description */}
-                  </div>
-                );
-              }
-
+            {hasVideoResource && (() => {
               const youtubeId = getYouTubeVideoId(videoUrl);
               const isYouTube = youtubeId !== null;
               return (
@@ -727,13 +727,66 @@ export default function SubcategoryDetail() {
                         </>
                       )}
                     </div>
-                                      </div>
-                  {/* Buttons removed from media section - now all in description */}
+                  </div>
                 </div>
               );
             })()}
           </div>
         </div>
+
+        {/* Floating CTA Bar - PhonePe Style */}
+        {heroButtons.length > 0 && (
+          <div className="relative z-10" style={{ transform: 'translate3d(0,-44px,0)' }}>
+            <div className="mx-auto px-4 md:px-8" style={{ width: '90%' }}>
+              <div 
+                className="flex justify-center overflow-hidden"
+                style={{
+                  fontFamily: 'Inter Tight, sans-serif, Helvetica, Arial',
+                  fontSize: '16px',
+                  background: '#fff',
+                  borderRadius: '36px',
+                  boxShadow: '0 12px 26px 0 rgba(0,0,0,.14)',
+                  margin: '0 auto'
+                }}
+              >
+                <div className="flex flex-col md:flex-row w-full">
+                  {heroButtons.map((button, index) => (
+                    <a
+                      key={button.id}
+                      href={normalizeExternalUrl(button.link || '') || '#'}
+                      target={button.link ? '_blank' : undefined}
+                      rel={button.link ? 'noopener noreferrer' : undefined}
+                      className={`
+                        text-center transition-all duration-200
+                        bg-white text-[#6739b7] hover:bg-[#f8f9fc]
+                        ${index < heroButtons.length - 1 ? 'border-b border-gray-300' : ''}
+                        md:border-r md:border-b-0 md:border-gray-300
+                        ${index === 0 ? 'rounded-l-2xl' : ''}
+                        ${index === heroButtons.length - 1 ? 'rounded-r-2xl' : ''}
+                      `}
+                      style={{
+                        fontFamily: 'Inter Tight, sans-serif, Helvetica, Arial',
+                        fontSize: '1.125rem',
+                        fontWeight: '400',
+                        padding: '22px',
+                        textAlign: 'center',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        display: 'block',
+                        width: '100%',
+                        color: '#6739b7',
+                        position: 'relative',
+                        flex: heroButtons.length === 4 ? '0 0 25%' : '1'
+                      }}
+                    >
+                      {button.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="border-b border-border bg-card">
           <div className="w-full px-4 md:pl-8 md:pr-4">
@@ -771,7 +824,7 @@ export default function SubcategoryDetail() {
                         {index === 0 ? (
                           <div className="flex flex-col lg:flex-row gap-6 items-start">
                             <div
-                              className="w-full lg:w-[850px] flex-shrink-0 rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
+                              className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
                               style={{ 
                                 backgroundColor: section.background_color || '#ffffff',
                                 height: '450px'
@@ -796,26 +849,7 @@ export default function SubcategoryDetail() {
                               )}
                             </div>
                             <div className="w-full lg:w-[400px] flex-shrink-0">
-                              {heroButtons.length > 0 && (
-                                <div className="flex flex-col gap-3">
-                                  {heroButtons.map((button, index) => (
-                                    <a
-                                      key={button.id}
-                                      href={normalizeExternalUrl(button.link || '') || '#'}
-                                      target={button.link ? '_blank' : undefined}
-                                      rel={button.link ? 'noopener noreferrer' : undefined}
-                                      className={
-                                        index === 0 || index === 2
-                                          ? 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#001f8b] px-4 py-3 text-sm font-medium text-white shadow-lg transition hover:bg-[#001a75]'
-                                          : 'inline-flex items-center justify-center gap-2 rounded-xl border border-[#001f8b] bg-transparent px-4 py-3 text-sm font-medium text-[#001f8b] transition hover:bg-[#001f8b]/5'
-                                      }
-                                    >
-                                      {button.label}
-                                      <ArrowRight className="h-4 w-4" />
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
+                              {/* CTA buttons moved to floating bar above - no longer needed here */}
                             </div>
                           </div>
                         ) : (
@@ -880,6 +914,50 @@ export default function SubcategoryDetail() {
                       </div>
                     </div>
 
+                  </div>
+                )}
+
+                {/* Video Resources in Overview - only show when Resources tab is visible */}
+                {showResourcesTab && videoUrl2.filter(url => url?.trim()).length > 0 && (
+                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Video Resources</h2>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {videoUrl2.filter(url => url?.trim()).map((url, index) => {
+                        const youtubeId = getYouTubeVideoId(url);
+                        const isYouTube = youtubeId !== null;
+
+                        return (
+                          <div key={index} className="w-full overflow-hidden rounded-xl border border-border bg-card">
+                            <div className="group relative aspect-video bg-muted">
+                              {isYouTube ? (
+                                <iframe
+                                  src={getYouTubeEmbedUrl(youtubeId)}
+                                  title={`Video Resource ${index + 1}`}
+                                  className="h-full w-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              ) : (
+                                <>
+                                  <video
+                                    src={url}
+                                    className="h-full w-full object-cover"
+                                    controls
+                                    preload="metadata"
+                                    poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
+                                  />
+                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
+                                    <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
+                                      <Play className="h-6 w-6 fill-current" />
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                                                      </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -1142,10 +1220,7 @@ export default function SubcategoryDetail() {
                             </>
                           )}
                         </div>
-                        <div className="flex items-center justify-between p-4">
-                          <p className="text-sm text-muted-foreground">Video {index + 1}</p>
-                        </div>
-                      </div>
+                                              </div>
                     );
                   })}
                 </div>

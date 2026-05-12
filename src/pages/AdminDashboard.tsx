@@ -32,7 +32,6 @@ interface Subcategory {
   name: string;
   link: string | null;
   video_url?: string | null;
-  image_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
   schedule_link_2?: string | null;
@@ -1806,7 +1805,6 @@ export default function AdminDashboard() {
           name: sub.name,
           link: sub.link || null,
           video_url: sub.video_url,
-          image_url: sub.image_url,
           video_url_2: (sub.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
           schedule_link: sub.schedule_link,
           show_schedule_in_separate_tab: sub.show_schedule_in_separate_tab ?? false,
@@ -3505,56 +3503,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Add Media (optional)</label>
-                      <div className="space-y-3">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="media-type"
-                            checked={editingSub.image_url === null || editingSub.image_url === undefined}
-                            onChange={() => setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url: '', image_url: null } : s))}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">Video URL</span>
-                        </label>
-                        {(editingSub.image_url === null || editingSub.image_url === undefined) && (
-                          <div className="ml-7">
-                            <label className="block text-sm font-medium mb-1.5">Video URL</label>
-                            <input
-                              value={editingSub.video_url || ''}
-                              onChange={(e) => setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url: e.target.value || null, image_url: null } : s))}
-                              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                              placeholder="https://..."
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="media-type"
-                            checked={editingSub.image_url !== null && editingSub.image_url !== undefined}
-                            onChange={() => setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, image_url: '', video_url: null } : s))}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">Upload Image</span>
-                        </label>
-                        {(editingSub.image_url !== null && editingSub.image_url !== undefined) && (
-                          <div className="ml-7">
-                            <ImageUpload
-                              label="Subcategory Image"
-                              value={editingSub.image_url || null}
-                              onChange={(url) => setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, image_url: url, video_url: null } : s))}
-                              folder="subcategories"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
+                    
                     <div className="space-y-3 border-t pt-4">
                       <label className="block text-sm font-medium">Video URLs (Resources)</label>
                       <div className="space-y-3">
