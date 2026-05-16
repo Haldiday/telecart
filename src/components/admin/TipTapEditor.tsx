@@ -147,7 +147,7 @@ const FontFamily = Extension.create({
 /** Avoid Tailwind `prose` in the editor — it overrides blockquote/list visuals. */
 const EDITOR_CONTENT_CLASS =
   'tiptap-editor-content max-w-none focus:outline-none min-h-[100px] px-3 py-2 ' +
-  '[&_p]:my-3 [&_h1]:my-3 [&_h2]:my-3 [&_h3]:my-3 [&_h4]:my-3 [&_h5]:my-3 [&_h6]:my-3 ' +
+  '[&_p]:my-3 [&_p]:min-h-[1.5em] [&_h1]:my-3 [&_h2]:my-3 [&_h3]:my-3 [&_h4]:my-3 [&_h5]:my-3 [&_h6]:my-3 ' +
   '[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1';
 
 const BLOCKQUOTE_INLINE_STYLE =

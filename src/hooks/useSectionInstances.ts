@@ -59,15 +59,14 @@ export const useSectionInstances = () => {
     customName?: string
   ): Promise<PageSection | null> => {
     try {
-      // Get the max sort_order for this section type
-      const { data: existingSections } = await supabase
+      // Get the current max sort_order across ALL sections
+      const { data: allSections } = await supabase
         .from('page_sections')
         .select('sort_order')
-        .eq('section_type', sectionType)
         .order('sort_order', { ascending: false })
         .limit(1);
 
-      const maxSort = existingSections?.[0]?.sort_order ?? -1;
+      const maxSort = allSections?.[0]?.sort_order ?? -1;
       const newSort = maxSort + 1;
 
       // Generate default name if not provided

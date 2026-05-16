@@ -98,8 +98,7 @@ export default function Ads1ColSection({
     };
   }, [adsTable, db, sectionId, sectionTable]);
 
-  const ad = ads[0];
-  if (!ad) return null;
+  if (ads.length === 0) return null;
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
@@ -111,23 +110,30 @@ export default function Ads1ColSection({
           </h2>
         )}
 
-        {/* ✅ Reduced border radius */}
-        <div className={`rounded-[12px] overflow-hidden bg-muted shadow-sm ${ad.show_border ? 'border' : ''}`} style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}>
-          <a
-            href={ad.link || '#'}
-            className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
-          >
-            {/* ✅ Banner size */}
-            <div className="h-[110px] md:h-[130px] lg:h-[140px] w-full bg-[#f5f5f5] flex items-center justify-center">
-              {ad.image_url && (
-                <img
-                  src={ad.image_url}
-                  alt="Ad"
-                  className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
-                />
-              )}
+        <div className="space-y-4">
+          {ads.map((ad) => (
+            <div 
+              key={ad.id}
+              className={`rounded-[12px] overflow-hidden bg-muted shadow-sm ${ad.show_border ? 'border' : ''}`} 
+              style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+            >
+              <a
+                href={ad.link || '#'}
+                className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
+              >
+                {/* ✅ Banner size */}
+                <div className="h-[110px] md:h-[130px] lg:h-[140px] w-full bg-[#f5f5f5] flex items-center justify-center">
+                  {ad.image_url && (
+                    <img
+                      src={ad.image_url}
+                      alt="Ad"
+                      className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
+                    />
+                  )}
+                </div>
+              </a>
             </div>
-          </a>
+          ))}
         </div>
       </div>
     </div>

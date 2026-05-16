@@ -120,6 +120,8 @@ interface PricingPlan {
   is_popular: boolean;
   is_visible: boolean;
   sort_order: number;
+  card_bg_color?: string | null;
+  button_bg_color?: string | null;
 }
 
 interface CategoryProduct {
@@ -141,6 +143,7 @@ interface CategoryOverviewPoint {
   category_id: string;
   text: string;
   is_highlighted: boolean;
+  highlight_color?: 'green' | 'blue';
   sort_order: number;
 }
 
@@ -165,7 +168,7 @@ interface SubcategoryAboutSection {
 
 const RICH_HTML_CONTENT_CLASS =
   'rich-html-content text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none ' +
-  '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap ' +
+  '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_p]:mb-4 [&_p]:min-h-[1.5em] ' +
   '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-muted/60 ' +
   '[&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-4 [&_blockquote]:italic ' +
   '[&_blockquote_p]:my-0 [&_blockquote_p]:whitespace-normal ' +
@@ -538,6 +541,7 @@ export default function SubcategoryDetail() {
         category_id: categoryId,
         text: '',
         is_highlighted: false,
+        highlight_color: 'green',
         sort_order: current.length,
       },
     ]);
@@ -594,6 +598,7 @@ export default function SubcategoryDetail() {
           subcategory_id: subcategoryId,
           text: point.text.trim(),
           is_highlighted: point.is_highlighted,
+          highlight_color: point.highlight_color || 'green',
           sort_order: index,
         }))
         .filter((point) => point.text.length > 0);
@@ -623,7 +628,7 @@ export default function SubcategoryDetail() {
       {brands.map((brand) => {
         const externalUrl = normalizeExternalUrl(brand.link || '');
         const brandBoxClassName =
-          'flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-muted-foreground transition-all';
+          'flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all';
         const content = <span>{brand.name || 'Unnamed brand'}</span>;
 
         if (externalUrl) {
@@ -633,7 +638,7 @@ export default function SubcategoryDetail() {
               href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md`}
+              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md hover:text-primary`}
             >
               {content}
             </a>
@@ -646,6 +651,59 @@ export default function SubcategoryDetail() {
           </div>
         );
       })}
+    </div>
+  );
+
+  const renderPricingPlans = () => (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {pricingPlans.filter(p => p.is_visible !== false).map((plan) => (
+        <div
+          key={plan.id}
+          className={`relative rounded-2xl border-2 p-6 transition-all ${
+            plan.is_popular && !plan.card_bg_color
+              ? 'border-primary bg-primary/5 shadow-lg scale-105'
+              : 'border-border bg-background hover:border-primary/50'
+          }`}
+          style={plan.card_bg_color ? { backgroundColor: plan.card_bg_color, borderColor: plan.is_popular ? 'var(--primary)' : undefined } : {}}
+        >
+          {plan.is_popular && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
+              Popular
+            </div>
+          )}
+          <div className="mb-4 text-center">
+            <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
+            <div className="mt-2 flex items-baseline justify-center gap-1">
+              <span className="text-3xl font-bold text-foreground">{plan.currency}{plan.price}</span>
+              <span className="text-sm text-muted-foreground">{plan.duration}</span>
+            </div>
+          </div>
+          {plan.description && (
+            <p className="mb-4 text-center text-sm text-muted-foreground">{plan.description}</p>
+          )}
+          <ul className="mb-6 space-y-3">
+            {plan.features.map((feature, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href={plan.razorpay_link || plan.button_link || '#'}
+            target={plan.button_link ? '_blank' : undefined}
+            rel={plan.button_link ? 'noopener noreferrer' : undefined}
+            className={`block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold transition-all ${
+              !plan.button_bg_color && plan.is_popular
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : !plan.button_bg_color ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' : ''
+            }`}
+            style={plan.button_bg_color ? { backgroundColor: plan.button_bg_color, color: 'white' } : {}}
+          >
+            {plan.button_label}
+          </a>
+        </div>
+      ))}
     </div>
   );
 
@@ -770,15 +828,15 @@ export default function SubcategoryDetail() {
                         {displayedOverviewPoints.map((point) => (
                           <div
                             key={point.id}
-                                      className={`flex items-start gap-3 rounded-xl border border-border px-4 py-3.5 text-lg md:text-xl ${
+                                      className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all ${
                                         point.is_highlighted
-                                          ? 'bg-white font-medium text-emerald-700'
-                                          : 'bg-background font-medium text-foreground'
+                                          ? 'bg-white'
+                                          : 'bg-background'
                                       }`}
                                     >
                                       <CheckCircle2
-                                        className={`mt-0.5 h-5 w-5 flex-shrink-0 md:h-6 md:w-6 ${
-                                          point.is_highlighted ? 'text-emerald-600' : 'text-primary'
+                                        className={`h-5 w-5 flex-shrink-0 ${
+                                          point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
                                         }`}
                                       />
                             <span>{point.text}</span>
@@ -909,54 +967,7 @@ export default function SubcategoryDetail() {
                 {showPricingPlansInOverview && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
                     <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Pricing Plans</h2>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {pricingPlans.filter(p => p.is_visible !== false).map((plan) => (
-                        <div
-                          key={plan.id}
-                          className={`relative rounded-2xl border-2 p-6 transition-all ${
-                            plan.is_popular
-                              ? 'border-primary bg-primary/5 shadow-lg scale-105'
-                              : 'border-border bg-background hover:border-primary/50'
-                          }`}
-                        >
-                          {plan.is_popular && (
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
-                              Popular
-                            </div>
-                          )}
-                          <div className="mb-4 text-center">
-                            <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
-                            <div className="mt-2 flex items-baseline justify-center gap-1">
-                              <span className="text-3xl font-bold text-foreground">{plan.currency}{plan.price}</span>
-                              <span className="text-sm text-muted-foreground">{plan.duration}</span>
-                            </div>
-                          </div>
-                          {plan.description && (
-                            <p className="mb-4 text-center text-sm text-muted-foreground">{plan.description}</p>
-                          )}
-                          <ul className="mb-6 space-y-3">
-                            {plan.features.map((feature, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
-                                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                          <a
-                            href={plan.razorpay_link || plan.button_link || '#'}
-                            target={plan.button_link ? '_blank' : undefined}
-                            rel={plan.button_link ? 'noopener noreferrer' : undefined}
-                            className={`block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold transition-all ${
-                              plan.is_popular
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                            }`}
-                          >
-                            {plan.button_label}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
+                    {renderPricingPlans()}
                   </div>
                 )}
 
@@ -1189,55 +1200,8 @@ export default function SubcategoryDetail() {
 
           {activeTab === pricingTabIndex && showPricingPlansTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Pricing Plans</h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {pricingPlans.filter(p => p.is_visible !== false).map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`relative rounded-2xl border-2 p-6 transition-all ${
-                      plan.is_popular
-                        ? 'border-primary bg-primary/5 shadow-lg scale-105'
-                        : 'border-border bg-background hover:border-primary/50'
-                    }`}
-                  >
-                    {plan.is_popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
-                        Popular
-                      </div>
-                    )}
-                    <div className="mb-4 text-center">
-                      <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
-                      <div className="mt-2 flex items-baseline justify-center gap-1">
-                        <span className="text-3xl font-bold text-foreground">{plan.currency}{plan.price}</span>
-                        <span className="text-sm text-muted-foreground">{plan.duration}</span>
-                      </div>
-                    </div>
-                    {plan.description && (
-                      <p className="mb-4 text-center text-sm text-muted-foreground">{plan.description}</p>
-                    )}
-                    <ul className="mb-6 space-y-3">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <a
-                      href={plan.razorpay_link || plan.button_link || '#'}
-                      target={plan.button_link ? '_blank' : undefined}
-                      rel={plan.button_link ? 'noopener noreferrer' : undefined}
-                      className={`block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold transition-all ${
-                        plan.is_popular
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                      }`}
-                    >
-                      {plan.button_label}
-                    </a>
-                  </div>
-                ))}
-              </div>
+              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Pricing Plans</h2>
+              {renderPricingPlans()}
             </div>
           )}
 

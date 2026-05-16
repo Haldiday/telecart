@@ -1,160 +1,159 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
-    --primary: 213 88% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 17% 93%;
-    --secondary-foreground: 0 0% 13%;
-    --muted: 210 17% 95%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 30 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 100% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 89%;
-    --input: 210 14% 89%;
-    --ring: 213 88% 42%;
-    --radius: 0.5rem;
-    --success: 140 60% 30%;
-    --success-foreground: 0 0% 100%;
-    --sidebar-background: 220 25% 14%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 213 88% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 20%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 20% 22%;
-    --sidebar-ring: 213 88% 42%;
-  }
-
-  .dark {
-    --background: 220 20% 7%;
-    --foreground: 0 0% 95%;
-    --card: 220 20% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 20% 10%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 213 88% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 220 15% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 30 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 213 88% 55%;
-    --sidebar-background: 220 20% 7%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 213 88% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 15% 20%;
-    --sidebar-ring: 213 88% 55%;
-  }
+     :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 13%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 13%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 13%;
+        --primary: 213 88% 42%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 210 17% 93%;
+        --secondary-foreground: 0 0% 13%;
+        --muted: 210 17% 95%;
+        --muted-foreground: 0 0% 40%;
+        --accent: 30 100% 50%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 210 14% 89%;
+        --input: 210 14% 89%;
+        --ring: 213 88% 42%;
+        --radius: 0.5rem;
+        --success: 140 60% 30%;
+        --success-foreground: 0 0% 100%;
+        --sidebar-background: 220 25% 14%;
+        --sidebar-foreground: 0 0% 90%;
+        --sidebar-primary: 213 88% 55%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 220 25% 20%;
+        --sidebar-accent-foreground: 0 0% 95%;
+        --sidebar-border: 220 20% 22%;
+        --sidebar-ring: 213 88% 42%;
+    }
+    .dark {
+        --background: 220 20% 7%;
+        --foreground: 0 0% 95%;
+        --card: 220 20% 10%;
+        --card-foreground: 0 0% 95%;
+        --popover: 220 20% 10%;
+        --popover-foreground: 0 0% 95%;
+        --primary: 213 88% 55%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 220 15% 15%;
+        --secondary-foreground: 0 0% 95%;
+        --muted: 220 15% 15%;
+        --muted-foreground: 0 0% 60%;
+        --accent: 30 100% 50%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 220 15% 20%;
+        --input: 220 15% 20%;
+        --ring: 213 88% 55%;
+        --sidebar-background: 220 20% 7%;
+        --sidebar-foreground: 0 0% 95%;
+        --sidebar-primary: 213 88% 55%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 220 15% 15%;
+        --sidebar-accent-foreground: 0 0% 95%;
+        --sidebar-border: 220 15% 20%;
+        --sidebar-ring: 213 88% 55%;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-    letter-spacing: -0.02rem;
-    -webkit-font-smoothing: antialiased;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        letter-spacing: -0.02rem;
+        -webkit-font-smoothing: antialiased;
+    }
 }
+
 
 /* TipTap admin editor — blockquotes must stay visible while editing */
+
 .tiptap-editor-root .tiptap blockquote,
 .tiptap-editor-root .tiptap .rich-blockquote,
 .tiptap-editor-content blockquote,
 .tiptap-editor-content .rich-blockquote {
-  border-left: 4px solid hsl(var(--primary)) !important;
-  background-color: hsl(213 60% 94%) !important;
-  padding: 0.75rem 1rem !important;
-  margin: 1rem 0 !important;
-  font-style: italic !important;
-  display: block !important;
+    border-left: 4px solid hsl(var(--primary)) !important;
+    background-color: hsl(213 60% 94%) !important;
+    padding: 0.75rem 1rem !important;
+    margin: 1rem 0 !important;
+    font-style: italic !important;
+    display: block !important;
 }
 
 .tiptap-editor-root .tiptap blockquote p,
 .tiptap-editor-content blockquote p {
-  margin: 0 !important;
+    margin: 0 !important;
 }
 
+
 /* Rich text from TipTap / admin editor (lists, quotes, etc.) on public pages */
+
 @layer components {
-  .rich-html-content ul {
-    list-style-type: disc;
-    list-style-position: outside;
-    padding-left: 1.5rem;
-    margin-top: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .rich-html-content ol {
-    list-style-type: decimal;
-    list-style-position: outside;
-    padding-left: 1.5rem;
-    margin-top: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .rich-html-content li {
-    display: list-item;
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .rich-html-content li > p {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
-
-  .rich-html-content blockquote,
-  .rich-html-content .rich-blockquote {
-    display: block;
-    border-left: 4px solid hsl(var(--primary));
-    background-color: hsl(213 60% 94%);
-    padding: 0.75rem 1rem;
-    margin: 1rem 0;
-    color: hsl(var(--foreground) / 0.9);
-    font-style: italic;
-  }
-
-  .rich-html-content blockquote p,
-  .rich-html-content .rich-blockquote p {
-    margin-top: 0;
-    margin-bottom: 0;
-    white-space: normal;
-  }
-
-  /* Tailwind Typography resets list-style; keep blockquote visible over .prose */
-  .rich-html-content.prose blockquote,
-  .prose.rich-html-content blockquote {
-    border-left-width: 4px;
-    border-left-color: hsl(var(--primary));
-    background-color: hsl(var(--muted) / 0.55);
-    padding-left: 1rem;
-    padding-right: 1rem;
-    font-style: italic;
-    quotes: none;
-  }
+    .rich-html-content ul {
+        list-style-type: disc;
+        list-style-position: outside;
+        padding-left: 1.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .rich-html-content ol {
+        list-style-type: decimal;
+        list-style-position: outside;
+        padding-left: 1.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .rich-html-content li {
+        display: list-item;
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    .rich-html-content li>p {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .rich-html-content p {
+        margin-bottom: 1rem;
+        min-height: 1.5em;
+    }
+    .rich-html-content blockquote,
+    .rich-html-content .rich-blockquote {
+        display: block;
+        border-left: 4px solid hsl(var(--primary));
+        background-color: hsl(213 60% 94%);
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        color: hsl(var(--foreground) / 0.9);
+        font-style: italic;
+    }
+    .rich-html-content blockquote p,
+    .rich-html-content .rich-blockquote p {
+        margin-top: 0;
+        margin-bottom: 0;
+        white-space: normal;
+    }
+    /* Tailwind Typography resets list-style; keep blockquote visible over .prose */
+    .rich-html-content.prose blockquote,
+    .prose.rich-html-content blockquote {
+        border-left-width: 4px;
+        border-left-color: hsl(var(--primary));
+        background-color: hsl(var(--muted) / 0.55);
+        padding-left: 1rem;
+        padding-right: 1rem;
+        font-style: italic;
+        quotes: none;
+    }
 }

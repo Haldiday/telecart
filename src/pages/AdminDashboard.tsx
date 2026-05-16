@@ -847,7 +847,8 @@ export default function AdminDashboard() {
   }
 
   function getSectionDisplayName(section: PageSection | undefined) {
-    return section?.heading?.trim() || section?.name || '';
+    if (!section) return '';
+    return section.name || section.heading?.trim() || section.section_type;
   }
 
   async function handleSectionDragEnd(event: DragEndEvent) {
@@ -1865,30 +1866,18 @@ export default function AdminDashboard() {
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
           show_downloads: editShowDownloadsState[sub.id] ?? true,
+          show_brands: editShowBrandsState[sub.id] ?? true,
+          show_resources: editShowResourcesState[sub.id] ?? true,
           show_about_section: editShowAboutSectionState[sub.id] ?? true,
           show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
+          show_pricing_plans: editShowPricingPlansState[sub.id] ?? true,
+          resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
+          downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
+          brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
           sort_order: index,
         }));
         const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
         if (subError) throw subError;
-
-        // Combine all subcategory updates into parallel operations
-        await Promise.all(editSubs.map(async (sub) => {
-          try {
-            await supabase.from('subcategories').update({
-              show_brands: editShowBrandsState[sub.id] ?? true,
-              show_resources: editShowResourcesState[sub.id] ?? true,
-              show_about_section: editShowAboutSectionState[sub.id] ?? true,
-              show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
-              resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
-              downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
-              brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
-              hero_background_color: sub.hero_background_color || null,
-            } as any).eq('id', sub.id);
-          } catch (e) {
-            // Column may not exist yet - ignore
-          }
-        }));
 
         // Delete any subcategories in the database that are no longer in editSubs
         const subIds = editSubs.map(s => s.id);
@@ -2126,7 +2115,19 @@ export default function AdminDashboard() {
           subDownloadsToInsert.length > 0 ? supabase.from('subcategory_downloads' as any).insert(subDownloadsToInsert) : Promise.resolve(),
           subBrandsToInsert.length > 0 ? supabase.from('subcategory_brands' as any).insert(subBrandsToInsert) : Promise.resolve(),
           subOverviewPointsToInsert.length > 0 ? supabase.from('subcategory_overview_points' as any).insert(subOverviewPointsToInsert) : Promise.resolve(),
-          pricingPlansToInsert.length > 0 ? supabase.from('pricing_plans' as any).insert(pricingPlansToInsert) : Promise.resolve(),
+          (async () => {
+            if (pricingPlansToInsert.length === 0) return;
+            try {
+              const { error } = await supabase.from('pricing_plans' as any).insert(pricingPlansToInsert);
+              if (error) throw error;
+            } catch (err) {
+              console.warn('Failed to insert pricing plans with color fields, retrying without them...', err);
+              // Fallback: try inserting without the new color fields in case the migration hasn't been run
+              const safePricingPlans = pricingPlansToInsert.map(({ button_bg_color, card_bg_color, ...rest }) => rest);
+              const { error: secondError } = await supabase.from('pricing_plans' as any).insert(safePricingPlans);
+              if (secondError) throw secondError;
+            }
+          })(),
         ]);
 
         // Save About sections for each subcategory in parallel
@@ -2591,6 +2592,7 @@ export default function AdminDashboard() {
                         if (s.section_type === 'cards') itemCount = cards.filter(c => c.section_id === s.id).length;
                         else if (s.section_type === 'categories') itemCount = categories.filter(c => c.section_id === s.id).length;
                         else if (s.section_type === 'offers') itemCount = offers.filter(o => o.section_id === s.id).length;
+                        else if (s.section_type === 'ads_1col') itemCount = ads2.filter(a => a.section_id === s.id).length;
                         else if (s.section_type === 'ads_2col') itemCount = ads2.filter(a => a.section_id === s.id).length;
                         else if (s.section_type === 'ads_3col') itemCount = ads3.filter(a => a.section_id === s.id).length;
 
@@ -2601,7 +2603,7 @@ export default function AdminDashboard() {
                                 <div className="flex items-start md:items-center gap-2 md:gap-3 flex-1 min-w-0">
                                   <GripVertical className="w-6 md:w-8 h-6 md:h-8 text-muted-foreground cursor-grab active:cursor-grabbing opacity-50 group-hover:opacity-100 flex-shrink-0 mt-1 md:mt-0" />
                                   <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-sm md:text-base break-words">{s.name}</h3>
+                                    <h3 className="font-bold text-sm md:text-base break-words">{getSectionDisplayName(s)}</h3>
                                     <p className="text-xs md:text-sm text-muted-foreground">{itemCount} items • {s.section_type}</p>
                                   </div>
                                 </div>
@@ -2991,6 +2993,7 @@ export default function AdminDashboard() {
                                               setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
                                               setEditPricingPlans(editPricingPlansState[sub.id] || []);
+                                              setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
                                               setEditAboutSections(prev => ({
                                                 ...prev,
@@ -3300,6 +3303,7 @@ export default function AdminDashboard() {
                             show_resources: editShowResourcesState[editSubcategory.id || 'new'] ?? true,
                             show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
                             show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
+                            show_pricing_plans: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true,
                             sort_order: editSubs.length,
                           };
                           setEditSubs((current) => {
@@ -3317,6 +3321,7 @@ export default function AdminDashboard() {
                           setEditShowResourcesState((prev) => ({ ...prev, [subcategoryId]: editShowResourcesState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
+                          setEditShowPricingPlansState((prev) => ({ ...prev, [subcategoryId]: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true }));
                           setEditSubcategory(null);
                           toast.success('Subcategory added! Click the main Save button to persist changes.');
                         }}
@@ -3557,7 +3562,31 @@ export default function AdminDashboard() {
                                     />
                                       <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-2">
-                                          <label className="text-xs text-muted-foreground">Simple</label>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newPoints = [...editSubOverviewPoints];
+                                              newPoints[index] = { ...newPoints[index], highlight_color: 'green' };
+                                              setEditSubOverviewPoints(newPoints);
+                                            }}
+                                            className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
+                                            style={{ backgroundColor: '#10b981' }}
+                                            title="Green arrow"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newPoints = [...editSubOverviewPoints];
+                                              newPoints[index] = { ...newPoints[index], highlight_color: 'blue' };
+                                              setEditSubOverviewPoints(newPoints);
+                                            }}
+                                            className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
+                                            style={{ backgroundColor: '#2563eb' }}
+                                            title="Blue arrow"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-2 border-l pl-3">
+                                          <label className="text-xs text-muted-foreground">BG Highlight</label>
                                           <Switch
                                             checked={point.is_highlighted}
                                           onCheckedChange={(value) => {
@@ -3566,34 +3595,7 @@ export default function AdminDashboard() {
                                             setEditSubOverviewPoints(newPoints);
                                           }}
                                           />
-                                          <label className="text-xs text-muted-foreground">Point</label>
                                         </div>
-                                        {point.is_highlighted && (
-                                          <div className="flex items-center gap-2">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newPoints = [...editSubOverviewPoints];
-                                                newPoints[index] = { ...newPoints[index], highlight_color: 'green' };
-                                                setEditSubOverviewPoints(newPoints);
-                                              }}
-                                              className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
-                                              style={{ backgroundColor: '#10b981' }}
-                                              title="Green highlight"
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newPoints = [...editSubOverviewPoints];
-                                                newPoints[index] = { ...newPoints[index], highlight_color: 'blue' };
-                                                setEditSubOverviewPoints(newPoints);
-                                              }}
-                                              className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
-                                              style={{ backgroundColor: '#2563eb' }}
-                                              title="Blue highlight"
-                                            />
-                                          </div>
-                                        )}
                                         <button
                                           type="button"
                                           onClick={() => {
