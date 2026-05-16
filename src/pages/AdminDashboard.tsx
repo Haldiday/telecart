@@ -24,13 +24,14 @@ import {
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
-interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
+interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; }
 interface Subcategory {
   id: string;
   category_id: string;
   name: string;
   link: string | null;
+  custom_link?: string | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -48,24 +49,27 @@ interface Subcategory {
   show_brands?: boolean;
   show_resources?: boolean;
   show_pricing_plans?: boolean;
+  show_about_section?: boolean;
+  show_header_points_section?: boolean;
   sort_order: number;
   demo_form_heading?: string | null;
   demo_button_label?: string | null;
-  hero_background_image?: string | null;
+  image_url?: string | null;
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
+  hero_background_color?: string | null;
 }
 interface CategoryButton { id?: string; label: string; link: string | null; is_visible: boolean; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface SubcategoryBrand { id?: string; name: string; logo_url: string | null; link: string | null; is_visible: boolean; }
-interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; text: string; is_highlighted: boolean; sort_order: number; }
+interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
-interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
-interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
-interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
-interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; }
+interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; button_bg_color?: string | null; card_bg_color?: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
+interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
+interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
+interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
 
 // Product Tab Sections types and constants
@@ -107,6 +111,7 @@ interface FeaturedCardItem {
   section_id: string;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface OfferItem {
@@ -119,6 +124,7 @@ interface OfferItem {
   section_id: string;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface Ad2Item {
@@ -129,6 +135,7 @@ interface Ad2Item {
   section_id: string;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface Ad3Item extends Ad2Item {
@@ -362,10 +369,13 @@ export default function AdminDashboard() {
   const [editPricingPlans, setEditPricingPlans] = useState<PricingPlan[]>([]);
   const [editPricingPlansState, setEditPricingPlansState] = useState<Record<string, PricingPlan[]>>({});
   const [editShowPricingPlansState, setEditShowPricingPlansState] = useState<Record<string, boolean>>({});
+  const [editShowAboutSectionState, setEditShowAboutSectionState] = useState<Record<string, boolean>>({});
+  const [editShowHeaderPointsSectionState, setEditShowHeaderPointsSectionState] = useState<Record<string, boolean>>({});
 
   // State for multiple About sections
   const [aboutSections, setAboutSections] = useState<SubcategoryAboutSection[]>([]);
   const [editAboutSections, setEditAboutSections] = useState<Record<string, SubcategoryAboutSection[]>>({});
+  const [editAboutSectionVisibility, setEditAboutSectionVisibility] = useState<Record<string, Record<string, boolean>>>({});
   const [editingAboutSection, setEditingAboutSection] = useState<Partial<SubcategoryAboutSection> | null>(null);
 
   // Inline edit view state for subcategories
@@ -507,7 +517,7 @@ export default function AdminDashboard() {
 
       if (s.data) setSections(s.data);
       if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
-      if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false })));
+      if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
       if (cat.data) setCategories(cat.data);
       if (sub.data) {
         setSubcategories(sub.data);
@@ -516,9 +526,9 @@ export default function AdminDashboard() {
         setSubcategoriesMap(map);
       }
       if (downloads.data) setCategoryDownloads(downloads.data);
-      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false })));
-      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
-      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
+      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
       if (btns.data) {
         setButtons(btns.data);
         const buttonsBySubcategory: Record<string, CategoryButton[]> = {};
@@ -578,6 +588,7 @@ export default function AdminDashboard() {
             subcategory_id: point.subcategory_id,
             text: point.text,
             is_highlighted: point.is_highlighted,
+            highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
             sort_order: point.sort_order,
           });
         });
@@ -586,9 +597,11 @@ export default function AdminDashboard() {
       if (aboutSects.data) {
         setAboutSections(aboutSects.data as unknown as SubcategoryAboutSection[]);
         const aboutSectionsBySubcategory: Record<string, SubcategoryAboutSection[]> = {};
+        const aboutSectionVisibilityBySubcategory: Record<string, Record<string, boolean>> = {};
         aboutSects.data.forEach((section: any) => {
           if (!aboutSectionsBySubcategory[section.subcategory_id]) {
             aboutSectionsBySubcategory[section.subcategory_id] = [];
+            aboutSectionVisibilityBySubcategory[section.subcategory_id] = {};
           }
           aboutSectionsBySubcategory[section.subcategory_id].push({
             id: section.id,
@@ -601,8 +614,10 @@ export default function AdminDashboard() {
             created_at: section.created_at,
             updated_at: section.updated_at,
           });
+          aboutSectionVisibilityBySubcategory[section.subcategory_id][section.id] = section.is_visible ?? true;
         });
         setEditAboutSections(aboutSectionsBySubcategory);
+        setEditAboutSectionVisibility(aboutSectionVisibilityBySubcategory);
       }
       if (pricingPlans.data) {
         const pricingPlansBySubcategory: Record<string, PricingPlan[]> = {};
@@ -629,6 +644,8 @@ export default function AdminDashboard() {
             button_label: plan.button_label,
             button_link: plan.button_link,
             razorpay_link: plan.razorpay_link,
+            button_bg_color: plan.button_bg_color || null,
+            card_bg_color: plan.card_bg_color || null,
             is_popular: plan.is_popular,
             is_visible: plan.is_visible,
             sort_order: plan.sort_order,
@@ -700,13 +717,13 @@ export default function AdminDashboard() {
     }
     if (s.data) setSections(s.data);
     if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
-    if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false })));
+    if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     if (cat.data) setCategories(cat.data);
     if (sub.data) setSubcategories(sub.data);
     if (downloads.data) setCategoryDownloads(downloads.data);
-    if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false })));
-    if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
-    if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+    if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
+    if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+    if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
     if (btns.data) {
       setButtons(btns.data);
       // Populate editButtonsState with buttons keyed by subcategory_id
@@ -766,6 +783,7 @@ export default function AdminDashboard() {
           subcategory_id: point.subcategory_id,
           text: point.text,
           is_highlighted: point.is_highlighted,
+          highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
           sort_order: point.sort_order,
         });
       });
@@ -817,6 +835,8 @@ export default function AdminDashboard() {
           button_label: plan.button_label,
           button_link: plan.button_link,
           razorpay_link: plan.razorpay_link,
+          button_bg_color: plan.button_bg_color || null,
+          card_bg_color: plan.card_bg_color || null,
           is_popular: plan.is_popular,
           is_visible: plan.is_visible,
           sort_order: plan.sort_order,
@@ -993,6 +1013,7 @@ export default function AdminDashboard() {
         background_color: section.background_color || '#ffffff',
         heading_color: section.heading_color || '#000000',
         sort_order: index,
+        is_visible: editAboutSectionVisibility[subcategoryId]?.[section.id] ?? true,
       }));
 
       console.log('Sections to insert:', sectionsToInsert);
@@ -1137,14 +1158,14 @@ export default function AdminDashboard() {
     }
     try {
       if (editCard.id) {
-        const updateData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false };
+        const updateData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false, border_color: editCard.border_color ?? null };
         if (cardsFixedModeEnabled !== undefined) {
           updateData.is_fixed = cardsFixedModeEnabled;
         }
         const { error } = await supabase.from('featured_cards').update(updateData).eq('id', editCard.id);
         if (error) throw error;
       } else {
-        const insertData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false, sort_order: cards.length, section_id: selectedCardsSectionId };
+        const insertData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false, border_color: editCard.border_color ?? null, sort_order: cards.length, section_id: selectedCardsSectionId };
         if (cardsFixedModeEnabled !== undefined) {
           insertData.is_fixed = cardsFixedModeEnabled;
         }
@@ -1231,10 +1252,10 @@ export default function AdminDashboard() {
       db.from(PRODUCT_LOGO_STEPS_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
     ]);
 
-    setProductCards(((cardsData || []) as FeaturedCardItem[]).map((card) => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false })));
-    setProductOffers(((offersData || []) as OfferItem[]).map((offer) => ({ ...offer, link: offer.link ?? null, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false })));
-    setProductAds2(((ads2Data || []) as Ad2Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
-    setProductAds3(((ads3Data || []) as Ad3Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+    setProductCards(((cardsData || []) as FeaturedCardItem[]).map((card) => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
+    setProductOffers(((offersData || []) as OfferItem[]).map((offer) => ({ ...offer, link: offer.link ?? null, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
+    setProductAds2(((ads2Data || []) as Ad2Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+    setProductAds3(((ads3Data || []) as Ad3Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
     setProductLogoSteps(((logoStepsData || []) as LogoStepItem[]).map((step) => ({ ...step, description: step.description ?? null, logo_url: step.logo_url ?? null })));
   }, [productSections]);
 
@@ -1245,9 +1266,18 @@ export default function AdminDashboard() {
   };
 
   const productHandleAddSection = async (subcategoryId: string) => {
+    const sectionType = productAddSectionType === 'layout' ? 'cards' : productAddSectionType;
     try {
-      await addProductSection(productAddSectionType, productAddSectionName.trim() || undefined);
+      const newSection = await addProductSection(sectionType, productAddSectionName.trim() || undefined);
       setProductShowAddSectionModal(false);
+      if (newSection?.id) {
+        if (sectionType === 'logo_steps') setProductSelectedLogoStepsSectionId(newSection.id);
+        if (sectionType === 'cards') setProductSelectedCardsSectionId(newSection.id);
+        if (sectionType === 'offers') setProductSelectedOffersSectionId(newSection.id);
+        if (sectionType === 'ads_1col') setProductSelectedAds1SectionId(newSection.id);
+        if (sectionType === 'ads_2col') setProductSelectedAds2SectionId(newSection.id);
+        if (sectionType === 'ads_3col') setProductSelectedAds3SectionId(newSection.id);
+      }
       toast.success('Section added.');
       await loadProductSectionContent(subcategoryId);
     } catch (error) {
@@ -1378,6 +1408,7 @@ export default function AdminDashboard() {
             logo_url: productEditCard.logo_url || null,
             link: productEditCard.link || null,
             show_border: productEditCard.show_border ?? false,
+            border_color: productEditCard.border_color ?? null,
             is_fixed: cardsFixedModeEnabled,
           })
           .eq('id', productEditCard.id);
@@ -1388,6 +1419,7 @@ export default function AdminDashboard() {
           logo_url: productEditCard.logo_url || null,
           link: productEditCard.link || null,
           show_border: productEditCard.show_border ?? false,
+          border_color: productEditCard.border_color ?? null,
           sort_order: selectedCards.length,
           section_id: productSelectedCardsSectionId,
           is_fixed: cardsFixedModeEnabled,
@@ -1404,8 +1436,13 @@ export default function AdminDashboard() {
   };
 
   const productSaveOffer = async (subcategoryId: string) => {
-    if (!productEditOffer?.heading?.trim() || !productSelectedOffersSectionId) {
-      toast.error('Heading and section are required.');
+    const hasOfferContent =
+      Boolean(productEditOffer?.image_url) ||
+      Boolean(productEditOffer?.heading?.trim()) ||
+      Boolean(productEditOffer?.description?.trim());
+
+    if (!hasOfferContent || !productSelectedOffersSectionId) {
+      toast.error('Add an image, heading, or description.');
       return;
     }
 
@@ -1417,21 +1454,23 @@ export default function AdminDashboard() {
         await db
           .from(PRODUCT_OFFERS_TABLE)
           .update({
-            heading: productEditOffer.heading.trim(),
+            heading: productEditOffer.heading?.trim() || '',
             description: productEditOffer.description || null,
             image_url: productEditOffer.image_url || null,
             link: productEditOffer.link || null,
             show_border: productEditOffer.show_border ?? false,
+            border_color: productEditOffer.border_color ?? null,
             is_fixed: offersFixedModeEnabled,
           })
           .eq('id', productEditOffer.id);
       } else {
         await db.from(PRODUCT_OFFERS_TABLE).insert({
-          heading: productEditOffer.heading.trim(),
+          heading: productEditOffer.heading?.trim() || '',
           description: productEditOffer.description || null,
           image_url: productEditOffer.image_url || null,
           link: productEditOffer.link || null,
           show_border: productEditOffer.show_border ?? false,
+          border_color: productEditOffer.border_color ?? null,
           sort_order: selectedOffers.length,
           section_id: productSelectedOffersSectionId,
           is_fixed: offersFixedModeEnabled,
@@ -1464,6 +1503,7 @@ export default function AdminDashboard() {
             image_url: productEditAd1.image_url || null,
             link: productEditAd1.link || null,
             show_border: productEditAd1.show_border ?? false,
+            border_color: productEditAd1.border_color ?? null,
             is_fixed: ads1FixedModeEnabled,
           })
           .eq('id', productEditAd1.id);
@@ -1472,6 +1512,7 @@ export default function AdminDashboard() {
           image_url: productEditAd1?.image_url || null,
           link: productEditAd1?.link || null,
           show_border: productEditAd1?.show_border ?? false,
+          border_color: productEditAd1?.border_color ?? null,
           sort_order: selectedAds1.length,
           section_id: productSelectedAds1SectionId,
           is_fixed: ads1FixedModeEnabled,
@@ -1504,6 +1545,7 @@ export default function AdminDashboard() {
             image_url: productEditAd2.image_url || null,
             link: productEditAd2.link || null,
             show_border: productEditAd2.show_border ?? false,
+            border_color: productEditAd2.border_color ?? null,
             is_fixed: ads2FixedModeEnabled,
           })
           .eq('id', productEditAd2.id);
@@ -1512,6 +1554,7 @@ export default function AdminDashboard() {
           image_url: productEditAd2?.image_url || null,
           link: productEditAd2?.link || null,
           show_border: productEditAd2?.show_border ?? false,
+          border_color: productEditAd2?.border_color ?? null,
           sort_order: selectedAds2.length,
           section_id: productSelectedAds2SectionId,
           is_fixed: ads2FixedModeEnabled,
@@ -1546,6 +1589,7 @@ export default function AdminDashboard() {
             description: productEditAd3.description || null,
             link: productEditAd3.link || null,
             show_border: productEditAd3.show_border ?? false,
+            border_color: productEditAd3.border_color ?? null,
             is_fixed: ads3FixedModeEnabled,
           })
           .eq('id', productEditAd3.id);
@@ -1556,6 +1600,7 @@ export default function AdminDashboard() {
           description: productEditAd3?.description || null,
           link: productEditAd3?.link || null,
           show_border: productEditAd3?.show_border ?? false,
+          border_color: productEditAd3?.border_color ?? null,
           sort_order: selectedAds3.length,
           section_id: productSelectedAds3SectionId,
           is_fixed: ads3FixedModeEnabled,
@@ -1581,7 +1626,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditLogoStep.id) {
-        await db
+        const { error } = await db
           .from(PRODUCT_LOGO_STEPS_TABLE)
           .update({
             title: productEditLogoStep.title.trim(),
@@ -1589,14 +1634,16 @@ export default function AdminDashboard() {
             logo_url: productEditLogoStep.logo_url || null,
           })
           .eq('id', productEditLogoStep.id);
+        if (error) throw error;
       } else {
-        await db.from(PRODUCT_LOGO_STEPS_TABLE).insert({
+        const { error } = await db.from(PRODUCT_LOGO_STEPS_TABLE).insert({
           title: productEditLogoStep.title.trim(),
           description: productEditLogoStep.description || null,
           logo_url: productEditLogoStep.logo_url || null,
           sort_order: selectedLogoSteps.length,
           section_id: productSelectedLogoStepsSectionId,
         });
+        if (error) throw error;
       }
 
       setProductEditLogoStep(null);
@@ -1604,7 +1651,8 @@ export default function AdminDashboard() {
       toast.success('Logo step saved.');
     } catch (error) {
       console.error('Error saving logo step:', error);
-      toast.error('Failed to save logo step.');
+      const message = error instanceof Error ? error.message : 'Failed to save logo step.';
+      toast.error(message);
     }
   };
 
@@ -1804,6 +1852,7 @@ export default function AdminDashboard() {
           category_id: categoryId,
           name: sub.name,
           link: sub.link || null,
+          custom_link: sub.custom_link || null,
           video_url: sub.video_url,
           video_url_2: (sub.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
           schedule_link: sub.schedule_link,
@@ -1814,8 +1863,10 @@ export default function AdminDashboard() {
           about_content: sub.about_content || null,
           overview_points_heading: sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
+          hero_background_color: sub.hero_background_color || null,
           show_downloads: editShowDownloadsState[sub.id] ?? true,
-          hero_background_image: sub.hero_background_image || null,
+          show_about_section: editShowAboutSectionState[sub.id] ?? true,
+          show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
           sort_order: index,
         }));
         const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
@@ -1827,9 +1878,12 @@ export default function AdminDashboard() {
             await supabase.from('subcategories').update({
               show_brands: editShowBrandsState[sub.id] ?? true,
               show_resources: editShowResourcesState[sub.id] ?? true,
+              show_about_section: editShowAboutSectionState[sub.id] ?? true,
+              show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
               resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
               downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
               brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
+              hero_background_color: sub.hero_background_color || null,
             } as any).eq('id', sub.id);
           } catch (e) {
             // Column may not exist yet - ignore
@@ -1981,14 +2035,15 @@ export default function AdminDashboard() {
           const subOverviewPoints = effectiveSubOverviewPointsState[activeSubId] || [];
           subOverviewPoints.forEach((point, index) => {
             if (point.text.trim()) {
-              subOverviewPointsToInsert.push({
-                id: point.id || crypto.randomUUID(),
-                subcategory_id: activeSubId,
-                text: point.text.trim(),
-                is_highlighted: point.is_highlighted,
-                sort_order: index,
-              });
-            }
+                subOverviewPointsToInsert.push({
+                  id: point.id || crypto.randomUUID(),
+                  subcategory_id: activeSubId,
+                  text: point.text.trim(),
+                  is_highlighted: point.is_highlighted,
+                  highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
+                  sort_order: index,
+                });
+              }
           });
         } else {
           // Save overview points for all subcategories when editing the whole category
@@ -2001,6 +2056,7 @@ export default function AdminDashboard() {
                   subcategory_id: subId,
                   text: point.text.trim(),
                   is_highlighted: point.is_highlighted,
+                  highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
                   sort_order: index,
                 });
               }
@@ -2027,6 +2083,8 @@ export default function AdminDashboard() {
                 button_label: plan.button_label || 'Get started',
                 button_link: plan.button_link || null,
                 razorpay_link: plan.razorpay_link || null,
+                button_bg_color: plan.button_bg_color || null,
+                card_bg_color: plan.card_bg_color || null,
                 is_popular: plan.is_popular || false,
                 is_visible: plan.is_visible !== false,
                 sort_order: index,
@@ -2051,6 +2109,8 @@ export default function AdminDashboard() {
                   button_label: plan.button_label || 'Get started',
                   button_link: plan.button_link || null,
                   razorpay_link: plan.razorpay_link || null,
+                  button_bg_color: plan.button_bg_color || null,
+                  card_bg_color: plan.card_bg_color || null,
                   is_popular: plan.is_popular || false,
                   is_visible: plan.is_visible !== false,
                   sort_order: index,
@@ -2141,15 +2201,20 @@ export default function AdminDashboard() {
 
   async function saveOffer() {
     if (!editOffer) return;
-    if (!editOffer.heading?.trim()) {
-      toast.error('Heading is required.');
+    const hasOfferContent =
+      Boolean(editOffer.image_url) ||
+      Boolean(editOffer.heading?.trim()) ||
+      Boolean(editOffer.description?.trim());
+
+    if (!hasOfferContent) {
+      toast.error('Add an image, heading, or description.');
       return;
     }
     try {
       const selectedOffersCount = selectedOffers.length;
 
       if (editOffer.id) {
-        const updateData: any = { heading: editOffer.heading.trim(), description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false };
+        const updateData: any = { heading: editOffer.heading?.trim() || '', description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false, border_color: editOffer.border_color ?? null };
         if (offersFixedModeEnabled !== undefined) {
           updateData.is_fixed = offersFixedModeEnabled;
         }
@@ -2157,11 +2222,12 @@ export default function AdminDashboard() {
         if (error) throw error;
       } else {
         const insertData: any = {
-          heading: editOffer.heading.trim(),
+          heading: editOffer.heading?.trim() || '',
           description: editOffer.description,
           image_url: editOffer.image_url,
           link: editOffer.link,
           show_border: editOffer.show_border ?? false,
+          border_color: editOffer.border_color ?? null,
           sort_order: selectedOffersCount,
           section_id: selectedOffersSectionId,
         };
@@ -2194,14 +2260,14 @@ export default function AdminDashboard() {
     if (!editAd2) return;
     try {
       if (editAd2.id) {
-        const updateData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false };
+        const updateData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null };
         if (ads2FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads2FixedModeEnabled;
         }
         const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd2.id);
         if (error) throw error;
       } else {
-        const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, sort_order: ads2.length, section_id: selectedAds2SectionId };
+        const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, sort_order: ads2.length, section_id: selectedAds2SectionId };
         if (ads2FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads2FixedModeEnabled;
         }
@@ -2219,14 +2285,14 @@ export default function AdminDashboard() {
     if (!editAd1) return;
     try {
       if (editAd1.id) {
-        const updateData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false };
+        const updateData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null };
         if (ads1FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads1FixedModeEnabled;
         }
         const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd1.id);
         if (error) throw error;
       } else {
-        const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
+        const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
         if (ads1FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads1FixedModeEnabled;
         }
@@ -2262,6 +2328,7 @@ export default function AdminDashboard() {
           description: editAd3.description || null,
           link: editAd3.link,
           show_border: editAd3.show_border ?? false,
+          border_color: editAd3.border_color ?? null,
         };
         if (ads3FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads3FixedModeEnabled;
@@ -2275,6 +2342,7 @@ export default function AdminDashboard() {
           description: editAd3.description || null,
           link: editAd3.link,
           show_border: editAd3.show_border ?? false,
+          border_color: editAd3.border_color ?? null,
           sort_order: ads3.length,
           section_id: selectedAds3SectionId,
         };
@@ -2650,7 +2718,7 @@ export default function AdminDashboard() {
                       <span className="md:hidden">Delete</span>
                     </button>
                     <button
-                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false })}
+                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, border_color: null })}
                       className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
@@ -2716,6 +2784,26 @@ export default function AdminDashboard() {
                       <Switch checked={editCard.show_border ?? false} onCheckedChange={(checked) => setEditCard({ ...editCard, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
                     </label>
+                    {editCard.show_border && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={editCard.border_color || '#000000'}
+                            onChange={(e) => setEditCard({ ...editCard, border_color: e.target.value })}
+                            className="h-10 w-20 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={editCard.border_color || ''}
+                            onChange={(e) => setEditCard({ ...editCard, border_color: e.target.value || null })}
+                            placeholder="#000000"
+                            className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <button onClick={saveCard} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -2884,7 +2972,6 @@ export default function AdminDashboard() {
                                           <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
                                           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
                                             {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
-                                            {sub.image_url && <span className="rounded-full border border-border bg-background px-2 py-1">Image</span>}
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -2898,6 +2985,8 @@ export default function AdminDashboard() {
                                               setEditSubBrands(editSubBrandsState[sub.id] || []);
                                               setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
                                               setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
+                                              setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                              setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
                                               setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
                                               setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
@@ -3074,6 +3163,8 @@ export default function AdminDashboard() {
                                     setEditSubBrands(editSubBrandsState[sub.id] || []);
                                     setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
                                     setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
+                                    setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                    setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
                                     setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
                                     setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                     setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
@@ -3207,6 +3298,8 @@ export default function AdminDashboard() {
                             show_downloads: editShowDownloadsState[editSubcategory.id || 'new'] ?? true,
                             show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
                             show_resources: editShowResourcesState[editSubcategory.id || 'new'] ?? true,
+                            show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
+                            show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
                             sort_order: editSubs.length,
                           };
                           setEditSubs((current) => {
@@ -3222,6 +3315,8 @@ export default function AdminDashboard() {
                           setEditShowDownloadsState((prev) => ({ ...prev, [subcategoryId]: editShowDownloadsState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowBrandsState((prev) => ({ ...prev, [subcategoryId]: editShowBrandsState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowResourcesState((prev) => ({ ...prev, [subcategoryId]: editShowResourcesState[editSubcategory.id || 'new'] ?? true }));
+                          setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
+                          setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
                           setEditSubcategory(null);
                           toast.success('Subcategory added! Click the main Save button to persist changes.');
                         }}
@@ -3269,6 +3364,15 @@ export default function AdminDashboard() {
                                 setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
                                 setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                                 setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
+                                setEditShowDownloadsState(prev => ({ ...prev, [editingSub.id]: editShowDownloadsState[editingSub.id] ?? true }));
+                                setEditShowBrandsState(prev => ({ ...prev, [editingSub.id]: editShowBrandsState[editingSub.id] ?? true }));
+                                setEditShowResourcesState(prev => ({ ...prev, [editingSub.id]: editShowResourcesState[editingSub.id] ?? true }));
+                                setEditShowAboutSectionState(prev => ({ ...prev, [editingSub.id]: editShowAboutSectionState[editingSub.id] ?? true }));
+                                setEditShowHeaderPointsSectionState(prev => ({ ...prev, [editingSub.id]: editShowHeaderPointsSectionState[editingSub.id] ?? true }));
+                                setEditShowPricingPlansState(prev => ({ ...prev, [editingSub.id]: editShowPricingPlansState[editingSub.id] ?? true }));
+                                setEditResourcesTabLabelState(prev => ({ ...prev, [editingSub.id]: editResourcesTabLabelState[editingSub.id] ?? 'Resources' }));
+                                setEditDownloadsTabLabelState(prev => ({ ...prev, [editingSub.id]: editDownloadsTabLabelState[editingSub.id] ?? 'Downloads' }));
+                                setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
                                 await saveCategory();
                                 setEditingSubcategoryId(null);
                               }}
@@ -3293,17 +3397,6 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
-                      <ImageUpload
-                        label="Hero Background Image"
-                        value={editingSub.hero_background_image || null}
-                        onChange={(url) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, hero_background_image: url } : s));
-                        }}
-                        folder="hero-backgrounds"
-                      />
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
                       <label className="block text-sm font-medium">Description 1</label>
                       <textarea
                         value={editingSub.detail_description || ''}
@@ -3316,6 +3409,39 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
+                      <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
+                      <input
+                        type="text"
+                        value={editingSub.custom_link || ''}
+                        onChange={(e) => {
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: e.target.value || undefined } : s));
+                        }}
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+
+                    <div className="space-y-3 border-t pt-4">
+                      <label className="block text-sm font-medium">Hero Background Color (Optional)</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editingSub.hero_background_color || '#ffffff'}
+                          onChange={(e) => {
+                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, hero_background_color: e.target.value } : s));
+                          }}
+                          className="w-12 h-10 rounded border border-input cursor-pointer"
+                        />
+                        <input
+                          value={editingSub.hero_background_color || ''}
+                          onChange={(e) => {
+                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, hero_background_color: e.target.value } : s));
+                          }}
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          placeholder="#ffffff"
+                        />
+                      </div>
+                    </div>
                       <div className="flex items-center justify-between mb-4">
                         <label className="text-sm font-medium">About Sections</label>
                         <button
@@ -3340,108 +3466,159 @@ export default function AdminDashboard() {
                                       className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
                                       placeholder="About heading"
                                     />
-                                    <button
-                                      type="button"
-                                      onClick={() => deleteAboutSection(editingSub.id, section.id)}
-                                      className="text-destructive hover:text-destructive/80 p-1"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <Switch
+                                        checked={editAboutSectionVisibility[editingSub.id]?.[section.id] ?? true}
+                                        onCheckedChange={(value) => setEditAboutSectionVisibility(prev => ({
+                                          ...prev,
+                                          [editingSub.id]: {
+                                            ...(prev[editingSub.id] || {}),
+                                            [section.id]: value
+                                          }
+                                        }))}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteAboutSection(editingSub.id, section.id)}
+                                        className="text-destructive hover:text-destructive/80 p-1"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-3">
-                                    <label className="text-sm text-muted-foreground">Background:</label>
-                                    <input
-                                      type="color"
-                                      value={section.background_color || '#ffffff'}
-                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
-                                      className="w-10 h-10 rounded cursor-pointer border border-input"
-                                    />
-                                    <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
-                                    <input
-                                      type="color"
-                                      value={section.heading_color || '#000000'}
-                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading_color: e.target.value })}
-                                      className="w-10 h-10 rounded cursor-pointer border border-input"
-                                    />
-                                  </div>
-                                  <TipTapEditor
-                                    key={section.id}
-                                    value={section.content || ''}
-                                    onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
-                                    className="min-h-[100px] w-full"
-                                    placeholder="Enter about section content here..."
-                                  />
+                                  {editAboutSectionVisibility[editingSub.id]?.[section.id] !== false && (
+                                    <>
+                                      <div className="flex items-center gap-3">
+                                        <label className="text-sm text-muted-foreground">Background:</label>
+                                        <input
+                                          type="color"
+                                          value={section.background_color || '#ffffff'}
+                                          onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
+                                          className="w-10 h-10 rounded cursor-pointer border border-input"
+                                        />
+                                        <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
+                                        <input
+                                          type="color"
+                                          value={section.heading_color || '#000000'}
+                                          onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading_color: e.target.value })}
+                                          className="w-10 h-10 rounded cursor-pointer border border-input"
+                                        />
+                                      </div>
+                                      <TipTapEditor
+                                        key={section.id}
+                                        value={section.content || ''}
+                                        onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
+                                        className="min-h-[100px] w-full"
+                                        placeholder="Enter about section content here..."
+                                      />
+                                    </>
+                                  )}
                                 </div>
                               ))}
                             </div>
                       )}
-                    </div>
 
                     <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Header Points</label>
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium mb-1.5">Heading</label>
-                        <input
-                          value={editingSub.overview_points_heading || ''}
-                          onChange={(e) => {
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, overview_points_heading: e.target.value } : s));
-                          }}
-                          className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                          placeholder="Header points heading"
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium">Header Points</label>
+                        <Switch
+                          checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
+                          onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
                         />
                       </div>
-                      {editSubOverviewPoints.length > 0 ? (
-                        <div className="space-y-3">
-                          {editSubOverviewPoints.map((point, index) => (
-                            <div key={point.id || index} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
-                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <input
-                                  type="text"
-                                  value={point.text}
-                                  onChange={(e) => {
-                                    const newPoints = [...editSubOverviewPoints];
-                                    newPoints[index] = { ...newPoints[index], text: e.target.value };
-                                    setEditSubOverviewPoints(newPoints);
-                                  }}
-                                  placeholder={`Point ${index + 1}`}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <label className="text-xs text-muted-foreground">Simple</label>
-                                    <Switch
-                                      checked={point.is_highlighted}
-                                      onCheckedChange={(value) => {
+                      {editShowHeaderPointsSectionState[editingSub.id] !== false && (
+                        <>
+                          <div className="mb-3">
+                            <label className="block text-sm font-medium mb-1.5">Heading</label>
+                            <input
+                              value={editingSub.overview_points_heading || ''}
+                              onChange={(e) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, overview_points_heading: e.target.value } : s));
+                              }}
+                              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              placeholder="Header points heading"
+                            />
+                          </div>
+                          {editSubOverviewPoints.length > 0 ? (
+                            <div className="space-y-3">
+                              {editSubOverviewPoints.map((point, index) => (
+                                <div key={point.id || index} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                    <input
+                                      type="text"
+                                      value={point.text}
+                                      onChange={(e) => {
                                         const newPoints = [...editSubOverviewPoints];
-                                        newPoints[index] = { ...newPoints[index], is_highlighted: value };
+                                        newPoints[index] = { ...newPoints[index], text: e.target.value };
                                         setEditSubOverviewPoints(newPoints);
                                       }}
+                                      placeholder={`Point ${index + 1}`}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                     />
-                                    <label className="text-xs text-muted-foreground">Point</label>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2">
+                                          <label className="text-xs text-muted-foreground">Simple</label>
+                                          <Switch
+                                            checked={point.is_highlighted}
+                                          onCheckedChange={(value) => {
+                                            const newPoints = [...editSubOverviewPoints];
+                                            newPoints[index] = { ...newPoints[index], is_highlighted: value };
+                                            setEditSubOverviewPoints(newPoints);
+                                          }}
+                                          />
+                                          <label className="text-xs text-muted-foreground">Point</label>
+                                        </div>
+                                        {point.is_highlighted && (
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const newPoints = [...editSubOverviewPoints];
+                                                newPoints[index] = { ...newPoints[index], highlight_color: 'green' };
+                                                setEditSubOverviewPoints(newPoints);
+                                              }}
+                                              className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
+                                              style={{ backgroundColor: '#10b981' }}
+                                              title="Green highlight"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const newPoints = [...editSubOverviewPoints];
+                                                newPoints[index] = { ...newPoints[index], highlight_color: 'blue' };
+                                                setEditSubOverviewPoints(newPoints);
+                                              }}
+                                              className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
+                                              style={{ backgroundColor: '#2563eb' }}
+                                              title="Blue highlight"
+                                            />
+                                          </div>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newPoints = editSubOverviewPoints.filter((_, i) => i !== index);
+                                            setEditSubOverviewPoints(newPoints);
+                                        }}
+                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newPoints = editSubOverviewPoints.filter((_, i) => i !== index);
-                                      setEditSubOverviewPoints(newPoints);
-                                    }}
-                                    className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
                                 </div>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                          No header points added yet.
-                        </div>
+                          ) : (
+                            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                              No header points added yet.
+                            </div>
+                          )}
+                        </>
                       )}
                       <button
                         type="button"
-                        onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, text: '', is_highlighted: false, sort_order: editSubOverviewPoints.length }])}
+                        onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.length }])}
                         className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                       >
                         <Plus className="w-4 h-4" /> Add Header Point
@@ -3868,6 +4045,58 @@ export default function AdminDashboard() {
                                 }}
                                 className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                               />
+                              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                  <label className="mb-1.5 block text-xs font-medium">Card Background Color</label>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={plan.card_bg_color || '#ffffff'}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="h-10 w-12 cursor-pointer rounded border border-input"
+                                    />
+                                    <input
+                                      value={plan.card_bg_color || '#ffffff'}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                      placeholder="#ffffff"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="mb-1.5 block text-xs font-medium">Button Color</label>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={plan.button_bg_color || '#0f7fb3'}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="h-10 w-12 cursor-pointer rounded border border-input"
+                                    />
+                                    <input
+                                      value={plan.button_bg_color || '#0f7fb3'}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                      placeholder="#0f7fb3"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
                               <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-2 text-sm">
                                   <input
@@ -3888,7 +4117,7 @@ export default function AdminDashboard() {
                           ))}
                           <button
                             type="button"
-                            onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '$', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
+                            onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '$', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
                             className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                           >
                             <Plus className="w-4 h-4" /> Add Pricing Plan
@@ -3957,7 +4186,6 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => productOpenAddSectionModal('cards')} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Card Section</button>
                             <button
                               type="button"
                               onClick={() => {
@@ -4093,7 +4321,6 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => productOpenAddSectionModal('ads_1col')} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Ad 1 Section</button>
                             <button
                               type="button"
                               onClick={() => {
@@ -4169,7 +4396,6 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => productOpenAddSectionModal('ads_2col')} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Ad 2 Section</button>
                             <button
                               type="button"
                               onClick={() => {
@@ -4245,7 +4471,6 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => productOpenAddSectionModal('ads_3col')} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Ad 3 Section</button>
                             <button
                               type="button"
                               onClick={() => {
@@ -4319,7 +4544,25 @@ export default function AdminDashboard() {
                               <button type="button" onClick={() => productDeleteSection(selectedLogoSection.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
                             </div>
                           )}
-                          {productSelectedLogoStepsSectionId && <button type="button" onClick={() => setProductEditLogoStep({ title: '', description: '', logo_url: null })} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Add Logo Step</button>}
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!productSelectedLogoStepsSectionId) {
+                                  toast.error('Please add/select a Logo Steps section first.');
+                                  productOpenAddSectionModal('logo_steps');
+                                  return;
+                                }
+                                setProductEditLogoStep({ title: '', description: '', logo_url: null });
+                              }}
+                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                            >
+                              Add Logo Step
+                            </button>
+                          </div>
+                          {productSections.filter((s) => s.section_type === 'logo_steps').length === 0 && (
+                            <p className="text-xs text-muted-foreground">No Logo Steps section yet. Add a section first using the &quot;Add Section&quot; button, then add steps.</p>
+                          )}
                           <div className="grid gap-2">
                             <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedLogoSteps, PRODUCT_LOGO_STEPS_TABLE, true)}>
                               <SortableContext items={selectedLogoSteps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
@@ -4390,6 +4633,30 @@ export default function AdminDashboard() {
                           <input value={productEditCard.title || ''} onChange={(e) => setProductEditCard({ ...productEditCard, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditCard.description || ''} onChange={(e) => setProductEditCard({ ...productEditCard, description: e.target.value })} placeholder="Description" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditCard.link || ''} onChange={(e) => setProductEditCard({ ...productEditCard, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Switch checked={productEditCard.show_border ?? false} onCheckedChange={(checked) => setProductEditCard({ ...productEditCard, show_border: Boolean(checked) })} />
+                            <span>Enable Border</span>
+                          </label>
+                          {productEditCard.show_border && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={productEditCard.border_color || '#000000'}
+                                  onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value })}
+                                  className="h-10 w-20 rounded cursor-pointer border-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={productEditCard.border_color || ''}
+                                  onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value || null })}
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <button type="button" onClick={() => productSaveCard(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -4398,9 +4665,33 @@ export default function AdminDashboard() {
                       <Modal title={productEditOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setProductEditOffer(null)}>
                         <div className="space-y-3">
                           <ImageCropper label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" previewAspectRatio={16/9} previewLabel="Preview" />
-                          <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <textarea value={productEditOffer.description || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, description: e.target.value || null })} placeholder="Description" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
+                          <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <textarea value={productEditOffer.description || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Switch checked={productEditOffer.show_border ?? false} onCheckedChange={(checked) => setProductEditOffer({ ...productEditOffer, show_border: Boolean(checked) })} />
+                            <span>Enable Border</span>
+                          </label>
+                          {productEditOffer.show_border && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={productEditOffer.border_color || '#000000'}
+                                  onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value })}
+                                  className="h-10 w-20 rounded cursor-pointer border-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={productEditOffer.border_color || ''}
+                                  onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value || null })}
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <button type="button" onClick={() => productSaveOffer(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -4410,6 +4701,30 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           <ImageCropper label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Preview" />
                           <input value={productEditAd1.link || ''} onChange={(e) => setProductEditAd1({ ...productEditAd1, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Switch checked={productEditAd1.show_border ?? false} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_border: Boolean(checked) })} />
+                            <span>Enable Border</span>
+                          </label>
+                          {productEditAd1.show_border && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={productEditAd1.border_color || '#000000'}
+                                  onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value })}
+                                  className="h-10 w-20 rounded cursor-pointer border-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={productEditAd1.border_color || ''}
+                                  onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value || null })}
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <button type="button" onClick={() => productSaveAd1(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -4419,6 +4734,30 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           <ImageCropper label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Preview" />
                           <input value={productEditAd2.link || ''} onChange={(e) => setProductEditAd2({ ...productEditAd2, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Switch checked={productEditAd2.show_border ?? false} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_border: Boolean(checked) })} />
+                            <span>Enable Border</span>
+                          </label>
+                          {productEditAd2.show_border && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={productEditAd2.border_color || '#000000'}
+                                  onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value })}
+                                  className="h-10 w-20 rounded cursor-pointer border-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={productEditAd2.border_color || ''}
+                                  onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value || null })}
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <button type="button" onClick={() => productSaveAd2(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -4430,6 +4769,30 @@ export default function AdminDashboard() {
                           <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditAd3.description || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Switch checked={productEditAd3.show_border ?? false} onCheckedChange={(checked) => setProductEditAd3({ ...productEditAd3, show_border: Boolean(checked) })} />
+                            <span>Enable Border</span>
+                          </label>
+                          {productEditAd3.show_border && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={productEditAd3.border_color || '#000000'}
+                                  onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value })}
+                                  className="h-10 w-20 rounded cursor-pointer border-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={productEditAd3.border_color || ''}
+                                  onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value || null })}
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                />
+                              </div>
+                            </div>
+                          )}
                           <button type="button" onClick={() => productSaveAd3(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -4538,7 +4901,7 @@ export default function AdminDashboard() {
                       <span className="md:hidden">Delete</span>
                     </button>
                     <button
-                      onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_border: false })}
+                      onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_border: false, border_color: null })}
                       className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
@@ -4602,6 +4965,26 @@ export default function AdminDashboard() {
                       <Switch checked={editOffer.show_border ?? false} onCheckedChange={(checked) => setEditOffer({ ...editOffer, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
                     </label>
+                    {editOffer.show_border && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={editOffer.border_color || '#000000'}
+                            onChange={(e) => setEditOffer({ ...editOffer, border_color: e.target.value })}
+                            className="h-10 w-20 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={editOffer.border_color || ''}
+                            onChange={(e) => setEditOffer({ ...editOffer, border_color: e.target.value || null })}
+                            placeholder="#000000"
+                            className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <button onClick={saveOffer} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -4677,7 +5060,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd2({ image_url: null, link: null, show_border: false })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd2({ image_url: null, link: null, show_border: false, border_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -4730,6 +5113,26 @@ export default function AdminDashboard() {
                       <Switch checked={editAd2.show_border ?? false} onCheckedChange={(checked) => setEditAd2({ ...editAd2, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
                     </label>
+                    {editAd2.show_border && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={editAd2.border_color || '#000000'}
+                            onChange={(e) => setEditAd2({ ...editAd2, border_color: e.target.value })}
+                            className="h-10 w-20 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={editAd2.border_color || ''}
+                            onChange={(e) => setEditAd2({ ...editAd2, border_color: e.target.value || null })}
+                            placeholder="#000000"
+                            className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <button onClick={saveAd2} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -4805,7 +5208,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd1({ image_url: null, link: null, show_border: false })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd1({ image_url: null, link: null, show_border: false, border_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -4856,6 +5259,26 @@ export default function AdminDashboard() {
                       <Switch checked={editAd1.show_border ?? false} onCheckedChange={(checked) => setEditAd1({ ...editAd1, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
                     </label>
+                    {editAd1.show_border && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={editAd1.border_color || '#000000'}
+                            onChange={(e) => setEditAd1({ ...editAd1, border_color: e.target.value })}
+                            className="h-10 w-20 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={editAd1.border_color || ''}
+                            onChange={(e) => setEditAd1({ ...editAd1, border_color: e.target.value || null })}
+                            placeholder="#000000"
+                            className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <button onClick={saveAd1} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -4931,7 +5354,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_border: false })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_border: false, border_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -4993,6 +5416,26 @@ export default function AdminDashboard() {
                       <Switch checked={editAd3.show_border ?? false} onCheckedChange={(checked) => setEditAd3({ ...editAd3, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
                     </label>
+                    {editAd3.show_border && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={editAd3.border_color || '#000000'}
+                            onChange={(e) => setEditAd3({ ...editAd3, border_color: e.target.value })}
+                            className="h-10 w-20 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={editAd3.border_color || ''}
+                            onChange={(e) => setEditAd3({ ...editAd3, border_color: e.target.value || null })}
+                            placeholder="#000000"
+                            className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <button onClick={saveAd3} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>

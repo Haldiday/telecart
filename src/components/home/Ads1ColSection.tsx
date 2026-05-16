@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import SubcategorySectionShell from './SubcategorySectionShell';
 
 interface Ad {
   id: string;
@@ -8,6 +9,7 @@ interface Ad {
   sort_order: number;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface Ads1ColSectionProps {
@@ -16,6 +18,7 @@ interface Ads1ColSectionProps {
   adsTable?: string;
   mobileContainImage?: boolean;
   compact?: boolean;
+  backgroundColor?: string | null;
 }
 
 export default function Ads1ColSection({
@@ -24,6 +27,7 @@ export default function Ads1ColSection({
   adsTable = 'ads_2col',
   mobileContainImage = false,
   compact = false,
+  backgroundColor,
 }: Ads1ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -46,6 +50,7 @@ export default function Ads1ColSection({
                 ...ad,
                 is_fixed: ad.is_fixed ?? false,
                 show_border: ad.show_border ?? false,
+                border_color: ad.border_color ?? null,
               }))
             );
           }
@@ -97,6 +102,7 @@ export default function Ads1ColSection({
   if (!ad) return null;
 
   return (
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-6 md:py-10'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
@@ -106,7 +112,7 @@ export default function Ads1ColSection({
         )}
 
         {/* ✅ Reduced border radius */}
-        <div className={`rounded-[12px] overflow-hidden bg-muted shadow-sm ${ad.show_border ? 'border border-border' : ''}`}>
+        <div className={`rounded-[12px] overflow-hidden bg-muted shadow-sm ${ad.show_border ? 'border' : ''}`} style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}>
           <a
             href={ad.link || '#'}
             className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
@@ -125,5 +131,6 @@ export default function Ads1ColSection({
         </div>
       </div>
     </div>
+    </SubcategorySectionShell>
   );
 }

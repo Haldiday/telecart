@@ -109,7 +109,7 @@ export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading
   };
 
   return (
-    <div className="w-full lg:w-[400px] rounded-[12px] p-[33px_40px_40px] bg-[#f4f2f0] shadow-sm">
+    <div className="w-full lg:w-[400px] rounded-none p-[33px_40px_40px] bg-[#f4f2f0] shadow-sm">
       <div className="mb-3">
         <h3 className="text-lg font-semibold text-foreground text-center">{demoFormHeading || 'See The Software In Action\nWatch Free Demo!'}</h3>
       </div>

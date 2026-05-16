@@ -1,16 +1,58 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import { Extension } from '@tiptap/core';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Bold, Italic, Underline as UnderlineIcon, Strikethrough,
-  AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  List, ListOrdered, Link, Palette, Type, Quote, Undo, Redo
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  List,
+  ListOrdered,
+  Link,
+  Quote,
+  Undo,
+  Redo,
 } from 'lucide-react';
+
+const FONT_FAMILIES = [
+  'Arial',
+  'Times New Roman',
+  'Georgia',
+  'Courier New',
+  'Verdana',
+  'Comic Sans MS',
+] as const;
+
+const FONT_SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px'] as const;
+
+const DEFAULT_FONT_FAMILY = 'Arial';
+const DEFAULT_FONT_SIZE = '16px';
+
+const parseFontFamily = (value: string | null | undefined) => {
+  if (!value) return null;
+  return value.split(',')[0]?.trim().replace(/^["']|["']$/g, '') || null;
+};
+
+const normalizeFontFamily = (value: string | null | undefined) => {
+  const parsed = parseFontFamily(value);
+  if (!parsed) return DEFAULT_FONT_FAMILY;
+  const match = FONT_FAMILIES.find((font) => font.toLowerCase() === parsed.toLowerCase());
+  return match ?? parsed;
+};
+
+const normalizeFontSize = (value: string | null | undefined) => {
+  if (!value) return DEFAULT_FONT_SIZE;
+  return FONT_SIZES.includes(value as (typeof FONT_SIZES)[number]) ? value : value;
+};
 
 // Custom Font Size extension
 const FontSize = Extension.create({
@@ -27,8 +69,8 @@ const FontSize = Extension.create({
         attributes: {
           fontSize: {
             default: null,
-            parseHTML: element => element.style.fontSize.replace(/['"]+/g, ''),
-            renderHTML: attributes => {
+            parseHTML: (element) => element.style.fontSize?.replace(/['"]+/g, '') || null,
+            renderHTML: (attributes) => {
               if (!attributes.fontSize) {
                 return {};
               }
@@ -44,7 +86,7 @@ const FontSize = Extension.create({
   addCommands() {
     return {
       setFontSize:
-        fontSize =>
+        (fontSize) =>
         ({ chain }) => {
           return chain().setMark('textStyle', { fontSize }).run();
         },
@@ -72,8 +114,8 @@ const FontFamily = Extension.create({
         attributes: {
           fontFamily: {
             default: null,
-            parseHTML: element => element.style.fontFamily.replace(/['"]+/g, ''),
-            renderHTML: attributes => {
+            parseHTML: (element) => parseFontFamily(element.style.fontFamily),
+            renderHTML: (attributes) => {
               if (!attributes.fontFamily) {
                 return {};
               }
@@ -89,7 +131,7 @@ const FontFamily = Extension.create({
   addCommands() {
     return {
       setFontFamily:
-        fontFamily =>
+        (fontFamily) =>
         ({ chain }) => {
           return chain().setMark('textStyle', { fontFamily }).run();
         },
@@ -102,6 +144,20 @@ const FontFamily = Extension.create({
   },
 });
 
+/** Avoid Tailwind `prose` in the editor — it overrides blockquote/list visuals. */
+const EDITOR_CONTENT_CLASS =
+  'tiptap-editor-content max-w-none focus:outline-none min-h-[100px] px-3 py-2 ' +
+  '[&_p]:my-3 [&_h1]:my-3 [&_h2]:my-3 [&_h3]:my-3 [&_h4]:my-3 [&_h5]:my-3 [&_h6]:my-3 ' +
+  '[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1';
+
+const BLOCKQUOTE_INLINE_STYLE =
+  'border-left:4px solid #1a73c7;background-color:#e8f2fc;padding:12px 16px;margin:16px 0;font-style:italic;display:block;';
+
+/** Prevent toolbar clicks from stealing focus/selection before commands run. */
+const preventToolbarBlur = (event: React.MouseEvent) => {
+  event.preventDefault();
+};
+
 interface TipTapEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -109,43 +165,78 @@ interface TipTapEditorProps {
   className?: string;
 }
 
-const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholder = '', className = '' }) => {
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      TextStyle,
-      Color,
-      Underline,
-      FontSize,
-      FontFamily,
-    ],
-    content: value || '',
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] px-3 py-2 [&_p]:my-3 [&_h1]:my-3 [&_h2]:my-3 [&_h3]:my-3 [&_h4]:my-3 [&_h5]:my-3 [&_h6]:my-3',
-        placeholder: placeholder,
-      },
-    },
-    onUpdate: ({ editor }) => {
-      // Debounced update to prevent excessive re-renders
-      onChange(editor.getHTML());
-    },
-  }, [placeholder]); // Only reinitialize if placeholder changes
+function getToolbarState(editor: Editor) {
+  const textStyle = editor.getAttributes('textStyle');
+  return {
+    fontFamily: normalizeFontFamily(textStyle.fontFamily),
+    fontSize: normalizeFontSize(textStyle.fontSize),
+    isBold: editor.isActive('bold'),
+    isItalic: editor.isActive('italic'),
+    isUnderline: editor.isActive('underline'),
+    isStrike: editor.isActive('strike'),
+    isBulletList: editor.isActive('bulletList'),
+    isOrderedList: editor.isActive('orderedList'),
+    isBlockquote: editor.isActive('blockquote'),
+    isLink: editor.isActive('link'),
+    alignLeft: editor.isActive({ textAlign: 'left' }),
+    alignCenter: editor.isActive({ textAlign: 'center' }),
+    alignRight: editor.isActive({ textAlign: 'right' }),
+    alignJustify: editor.isActive({ textAlign: 'justify' }),
+    canUndo: editor.can().chain().focus().undo().run(),
+    canRedo: editor.can().chain().focus().redo().run(),
+  };
+}
 
-  // Sync editor content when value changes externally (e.g., after load/save)
-  // Only update if editor is not focused to avoid interfering with user input
+type SavedSelection = { from: number; to: number };
+
+function MenuBar({ editor }: { editor: Editor }) {
+  const [toolbar, setToolbar] = useState(() => getToolbarState(editor));
+  const savedSelectionRef = useRef<SavedSelection | null>(null);
+  const [fontControlActive, setFontControlActive] = useState(false);
+
+  const saveSelection = useCallback(() => {
+    const { from, to } = editor.state.selection;
+    savedSelectionRef.current = { from, to };
+  }, [editor]);
+
+  const applyWithSavedSelection = useCallback(
+    (run: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>) => {
+      const saved = savedSelectionRef.current;
+      let chain = editor.chain().focus();
+      if (saved) {
+        chain = chain.setTextSelection({ from: saved.from, to: saved.to });
+      }
+      run(chain).run();
+      savedSelectionRef.current = null;
+      setFontControlActive(false);
+      setToolbar(getToolbarState(editor));
+    },
+    [editor],
+  );
+
   useEffect(() => {
-    if (editor && value !== editor.getHTML() && !editor.isFocused) {
-      editor.commands.setContent(value || '', false);
-    }
-  }, [value, editor]);
+    const sync = () => {
+      if (fontControlActive) return;
+      setToolbar(getToolbarState(editor));
+    };
+    sync();
+    editor.on('selectionUpdate', sync);
+    editor.on('transaction', sync);
+    return () => {
+      editor.off('selectionUpdate', sync);
+      editor.off('transaction', sync);
+    };
+  }, [editor, fontControlActive]);
 
-  if (!editor) {
-    return <div className={className}>Loading editor...</div>;
-  }
+  const handleFontControlPointerDown = useCallback(() => {
+    saveSelection();
+    setFontControlActive(true);
+  }, [saveSelection]);
+
+  const handleFontControlBlur = useCallback(() => {
+    setFontControlActive(false);
+    setToolbar(getToolbarState(editor));
+  }, [editor]);
 
   const setLink = useCallback(() => {
     const url = window.prompt('Enter URL:');
@@ -154,36 +245,43 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
     }
   }, [editor]);
 
-  const MenuBar = () => (
+  const btnClass = (active: boolean) =>
+    `p-2 rounded ${active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`;
+
+  return (
     <div className="flex flex-wrap gap-1 border-b border-input p-2 mb-2">
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleBold().run()}
-        disabled={!editor.can().chain().focus().toggleBold().run()}
-        className={`p-2 rounded ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isBold)}
         title="Bold"
       >
         <Bold className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        disabled={!editor.can().chain().focus().toggleItalic().run()}
-        className={`p-2 rounded ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isItalic)}
         title="Italic"
       >
         <Italic className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        disabled={!editor.can().chain().focus().toggleUnderline().run()}
-        className={`p-2 rounded ${editor.isActive('underline') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isUnderline)}
         title="Underline"
       >
         <UnderlineIcon className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        disabled={!editor.can().chain().focus().toggleStrike().run()}
-        className={`p-2 rounded ${editor.isActive('strike') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isStrike)}
         title="Strike"
       >
         <Strikethrough className="w-4 h-4" />
@@ -192,61 +290,75 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
       <div className="w-px bg-border mx-1" />
 
       <select
-        onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
-        className="px-2 py-1 rounded border border-input bg-background text-sm"
+        value={toolbar.fontFamily}
+        onPointerDown={handleFontControlPointerDown}
+        onBlur={handleFontControlBlur}
+        onChange={(e) => applyWithSavedSelection((chain) => chain.setFontFamily(e.target.value))}
+        className="px-2 py-1 rounded border border-input bg-background text-sm cursor-pointer"
         title="Font Family"
       >
-        <option value="Arial">Arial</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Courier New">Courier New</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Comic Sans MS">Comic Sans MS</option>
+        {FONT_FAMILIES.map((font) => (
+          <option key={font} value={font}>
+            {font}
+          </option>
+        ))}
+        {!FONT_FAMILIES.includes(toolbar.fontFamily as (typeof FONT_FAMILIES)[number]) && (
+          <option value={toolbar.fontFamily}>{toolbar.fontFamily}</option>
+        )}
       </select>
 
       <select
-        onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
-        className="px-2 py-1 rounded border border-input bg-background text-sm"
+        value={toolbar.fontSize}
+        onPointerDown={handleFontControlPointerDown}
+        onBlur={handleFontControlBlur}
+        onChange={(e) => applyWithSavedSelection((chain) => chain.setFontSize(e.target.value))}
+        className="px-2 py-1 rounded border border-input bg-background text-sm cursor-pointer"
         title="Font Size"
       >
-        <option value="12px">12px</option>
-        <option value="14px">14px</option>
-        <option value="16px">16px</option>
-        <option value="18px">18px</option>
-        <option value="20px">20px</option>
-        <option value="24px">24px</option>
-        <option value="28px">28px</option>
-        <option value="32px">32px</option>
-        <option value="36px">36px</option>
-        <option value="48px">48px</option>
+        {FONT_SIZES.map((size) => (
+          <option key={size} value={size}>
+            {size}
+          </option>
+        ))}
+        {!FONT_SIZES.includes(toolbar.fontSize as (typeof FONT_SIZES)[number]) && (
+          <option value={toolbar.fontSize}>{toolbar.fontSize}</option>
+        )}
       </select>
 
       <div className="w-px bg-border mx-1" />
 
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={`p-2 rounded ${editor.isActive({ textAlign: 'left' }) ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.alignLeft)}
         title="Align Left"
       >
         <AlignLeft className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={`p-2 rounded ${editor.isActive({ textAlign: 'center' }) ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.alignCenter)}
         title="Align Center"
       >
         <AlignCenter className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={`p-2 rounded ${editor.isActive({ textAlign: 'right' }) ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.alignRight)}
         title="Align Right"
       >
         <AlignRight className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        className={`p-2 rounded ${editor.isActive({ textAlign: 'justify' }) ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.alignJustify)}
         title="Align Justify"
       >
         <AlignJustify className="w-4 h-4" />
@@ -255,15 +367,19 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
       <div className="w-px bg-border mx-1" />
 
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-2 rounded ${editor.isActive('bulletList') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isBulletList)}
         title="Bullet List"
       >
         <List className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-2 rounded ${editor.isActive('orderedList') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isOrderedList)}
         title="Ordered List"
       >
         <ListOrdered className="w-4 h-4" />
@@ -272,15 +388,25 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
       <div className="w-px bg-border mx-1" />
 
       <button
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-2 rounded ${editor.isActive('blockquote') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        type="button"
+        onMouseDown={preventToolbarBlur}
+        onClick={() => {
+          if (editor.isActive('blockquote')) {
+            editor.chain().focus().lift('blockquote').run();
+          } else {
+            editor.chain().focus().toggleBlockquote().run();
+          }
+        }}
+        className={btnClass(toolbar.isBlockquote)}
         title="Quote"
       >
         <Quote className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={setLink}
-        className={`p-2 rounded ${editor.isActive('link') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+        className={btnClass(toolbar.isLink)}
         title="Link"
       >
         <Link className="w-4 h-4" />
@@ -290,6 +416,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
 
       <input
         type="color"
+        onMouseDown={preventToolbarBlur}
         onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
         className="w-8 h-8 rounded cursor-pointer border border-input"
         title="Text Color"
@@ -298,28 +425,79 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
       <div className="w-px bg-border mx-1" />
 
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().chain().focus().undo().run()}
-        className="p-2 rounded hover:bg-muted"
+        disabled={!toolbar.canUndo}
+        className="p-2 rounded hover:bg-muted disabled:opacity-40"
         title="Undo"
       >
         <Undo className="w-4 h-4" />
       </button>
       <button
+        type="button"
+        onMouseDown={preventToolbarBlur}
         onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().chain().focus().redo().run()}
-        className="p-2 rounded hover:bg-muted"
+        disabled={!toolbar.canRedo}
+        className="p-2 rounded hover:bg-muted disabled:opacity-40"
         title="Redo"
       >
         <Redo className="w-4 h-4" />
       </button>
     </div>
   );
+}
+
+const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholder = '', className = '' }) => {
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit.configure({
+          underline: false,
+          blockquote: {
+            HTMLAttributes: {
+              class: 'rich-blockquote',
+              style: BLOCKQUOTE_INLINE_STYLE,
+            },
+          },
+        }),
+        TextAlign.configure({
+          types: ['heading', 'paragraph'],
+        }),
+        TextStyle,
+        Color,
+        Underline,
+        FontSize,
+        FontFamily,
+      ],
+      content: value || '',
+      editorProps: {
+        attributes: {
+          class: EDITOR_CONTENT_CLASS,
+          'data-placeholder': placeholder,
+        },
+      },
+      onUpdate: ({ editor: ed }) => {
+        onChange(ed.getHTML());
+      },
+    },
+    [placeholder],
+  );
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML() && !editor.isFocused) {
+      editor.commands.setContent(value || '', { emitUpdate: false });
+    }
+  }, [value, editor]);
+
+  if (!editor) {
+    return <div className={className}>Loading editor...</div>;
+  }
 
   return (
     <div className={`border border-input rounded-lg bg-background ${className}`}>
-      <MenuBar />
-      <EditorContent editor={editor} />
+      <MenuBar editor={editor} />
+      <EditorContent editor={editor} className="tiptap-editor-root" />
     </div>
   );
 };

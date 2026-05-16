@@ -80,3 +80,81 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+/* TipTap admin editor — blockquotes must stay visible while editing */
+.tiptap-editor-root .tiptap blockquote,
+.tiptap-editor-root .tiptap .rich-blockquote,
+.tiptap-editor-content blockquote,
+.tiptap-editor-content .rich-blockquote {
+  border-left: 4px solid hsl(var(--primary)) !important;
+  background-color: hsl(213 60% 94%) !important;
+  padding: 0.75rem 1rem !important;
+  margin: 1rem 0 !important;
+  font-style: italic !important;
+  display: block !important;
+}
+
+.tiptap-editor-root .tiptap blockquote p,
+.tiptap-editor-content blockquote p {
+  margin: 0 !important;
+}
+
+/* Rich text from TipTap / admin editor (lists, quotes, etc.) on public pages */
+@layer components {
+  .rich-html-content ul {
+    list-style-type: disc;
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rich-html-content ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rich-html-content li {
+    display: list-item;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .rich-html-content li > p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .rich-html-content blockquote,
+  .rich-html-content .rich-blockquote {
+    display: block;
+    border-left: 4px solid hsl(var(--primary));
+    background-color: hsl(213 60% 94%);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    color: hsl(var(--foreground) / 0.9);
+    font-style: italic;
+  }
+
+  .rich-html-content blockquote p,
+  .rich-html-content .rich-blockquote p {
+    margin-top: 0;
+    margin-bottom: 0;
+    white-space: normal;
+  }
+
+  /* Tailwind Typography resets list-style; keep blockquote visible over .prose */
+  .rich-html-content.prose blockquote,
+  .prose.rich-html-content blockquote {
+    border-left-width: 4px;
+    border-left-color: hsl(var(--primary));
+    background-color: hsl(var(--muted) / 0.55);
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-style: italic;
+    quotes: none;
+  }
+}

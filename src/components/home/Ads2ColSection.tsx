@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import SubcategorySectionShell from './SubcategorySectionShell';
 
 interface Ad {
   id: string;
@@ -11,6 +12,7 @@ interface Ad {
   sort_order: number;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface Ads2ColSectionProps {
@@ -19,6 +21,7 @@ interface Ads2ColSectionProps {
   adsTable?: string;
   mobileContainImage?: boolean;
   compact?: boolean;
+  backgroundColor?: string | null;
 }
 
 export default function Ads2ColSection({
@@ -27,6 +30,7 @@ export default function Ads2ColSection({
   adsTable = 'ads_2col',
   mobileContainImage = false,
   compact = false,
+  backgroundColor,
 }: Ads2ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -57,6 +61,7 @@ export default function Ads2ColSection({
             ...ad,
             is_fixed: ad.is_fixed ?? false,
             show_border: ad.show_border ?? false,
+            border_color: ad.border_color ?? null,
           })));
         }
       });
@@ -103,6 +108,7 @@ export default function Ads2ColSection({
   if (ads.length === 0) return null;
 
   return (
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-6 md:py-10'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
@@ -129,7 +135,8 @@ export default function Ads2ColSection({
                   >
                     <a
                       href={ad.link || '#'}
-                      className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border border-border' : ''}`}
+                      className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border' : ''}`}
+                      style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                     >
                       {ad.image_url && (
                         <img
@@ -150,7 +157,8 @@ export default function Ads2ColSection({
               <div key={ad.id} className="flex-1">
                 <a
                   href={ad.link || '#'}
-                  className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border border-border' : ''}`}
+                  className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted ${ad.show_border ? 'border' : ''}`}
+                  style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                 >
                   {ad.image_url && (
                     <img
@@ -166,5 +174,6 @@ export default function Ads2ColSection({
         )}
       </div>
     </div>
+    </SubcategorySectionShell>
   );
 }

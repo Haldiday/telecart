@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import SubcategorySectionShell from './SubcategorySectionShell';
 
 interface Card {
   id: string;
@@ -15,6 +16,7 @@ interface Card {
   section_id: string;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface FeaturedCardsProps {
@@ -23,6 +25,7 @@ interface FeaturedCardsProps {
   cardsTable?: string;
   hideSeeAllOnMobile?: boolean;
   compact?: boolean;
+  backgroundColor?: string | null;
 }
 
 export default function FeaturedCards({
@@ -31,6 +34,7 @@ export default function FeaturedCards({
   cardsTable = 'featured_cards',
   hideSeeAllOnMobile = false,
   compact = false,
+  backgroundColor,
 }: FeaturedCardsProps) {
   const db = supabase as any;
   const [cards, setCards] = useState<Card[]>([]);
@@ -68,6 +72,7 @@ export default function FeaturedCards({
               link: card.link ?? null,
               is_fixed: card.is_fixed ?? false,
               show_border: card.show_border ?? false,
+              border_color: card.border_color ?? null,
             })));
           }
         });
@@ -122,6 +127,7 @@ export default function FeaturedCards({
   if (cards.length === 0) return null;
 
   return (
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-10 md:py-14'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
@@ -142,7 +148,8 @@ export default function FeaturedCards({
                 <div key={card.id}>
                   <div
                     onClick={handleCardClick}
-                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    style={card.show_border && card.border_color ? { borderColor: card.border_color } : {}}
                   >
                     {card.logo_url && (
                       <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0">
@@ -190,7 +197,8 @@ export default function FeaturedCards({
                     >
                       <div
                         onClick={handleCardClick}
-                        className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                        className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    style={card.show_border && card.border_color ? { borderColor: card.border_color } : {}}
                       >
                         {card.logo_url && (
                           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl flex-shrink-0">
@@ -227,7 +235,8 @@ export default function FeaturedCards({
                 <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
                   <div
                     onClick={handleCardClick}
-                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    style={card.show_border && card.border_color ? { borderColor: card.border_color } : {}}
                   >
                     {card.logo_url && (
                       <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
@@ -258,5 +267,6 @@ export default function FeaturedCards({
         )}
       </div>
     </div>
+    </SubcategorySectionShell>
   );
 }

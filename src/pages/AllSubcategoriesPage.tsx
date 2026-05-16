@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -16,18 +17,24 @@ interface Subcategory {
   id: string;
   name: string;
   link: string | null;
+  custom_link?: string | null;
   sort_order: number;
 }
 
-const normalizeExternalUrl = (url: string) => {
-  const trimmedUrl = url.trim();
-  if (!trimmedUrl) return null;
-
-  return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+// Helper function to handle subcategory navigation
+const navigateToSubcategory = (subcategory: Subcategory, categoryId: string | undefined, navigate: ReturnType<typeof useNavigate>) => {
+  if (subcategory.custom_link) {
+    // If custom_link exists, redirect to it
+    window.location.href = subcategory.custom_link;
+  } else {
+    // Otherwise, navigate to the detail page
+    navigate(`/category/${categoryId}/subcategory/${subcategory.id}`);
+  }
 };
 
 export default function AllSubcategoriesPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,32 +131,16 @@ export default function AllSubcategoriesPage() {
               {subcategories.map((sub) => (
                 <div
                   key={sub.id}
-                  className="flex w-full max-w-[200px] sm:max-w-none items-center justify-between rounded-lg border border-border bg-card px-3 py-2 transition-all hover:border-primary/50 hover:shadow-sm"
+                  className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
                 >
-                  <Link
-                    to={`/category/${categoryId}/subcategory/${sub.id}`}
-                    className="group min-w-0 flex-1"
+                  <button
+                    onClick={() => navigateToSubcategory(sub, categoryId, navigate)}
+                    className="group min-w-0 flex-1 text-left"
                   >
-                    <span className="text-sm md:text-[15px] font-medium text-foreground group-hover:text-primary transition-colors">
+                    <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
                       {sub.name}
                     </span>
-                  </Link>
-
-                  {sub.link && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const externalUrl = normalizeExternalUrl(sub.link!);
-                        if (externalUrl) {
-                          window.open(externalUrl, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                      className="ml-2 flex-shrink-0 text-primary hover:text-primary/80"
-                      aria-label={`Open ${sub.name} link`}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </button>
-                  )}
+                  </button>
                 </div>
               ))}
             </div>

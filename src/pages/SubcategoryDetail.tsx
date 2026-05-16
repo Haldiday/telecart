@@ -8,6 +8,7 @@ import OffersSection from '@/components/home/OffersSection';
 import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
+import LogoStepsSection from '@/components/home/LogoStepsSection';
 import WatchDemoForm from '@/components/home/WatchDemoForm';
 import { toast } from 'sonner';
 import {
@@ -21,7 +22,6 @@ import {
   Maximize2,
   X,
   Package,
-  ExternalLink,
   FileText,
   CheckCircle2,
   Image,
@@ -48,6 +48,7 @@ interface Subcategory {
   id: string;
   name: string;
   link: string | null;
+  custom_link?: string | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -64,11 +65,14 @@ interface Subcategory {
   show_brands?: boolean;
   show_resources?: boolean;
   show_pricing_plans?: boolean;
+  show_about_section?: boolean;
+  show_header_points_section?: boolean;
   category_id: string;
-  hero_background_image?: string | null;
+  image_url?: string | null;
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
+  hero_background_color?: string | null;
 }
 
 interface Category {
@@ -154,9 +158,20 @@ interface SubcategoryAboutSection {
   background_color?: string;
   heading_color?: string;
   sort_order: number;
+  is_visible?: boolean;
   created_at: string;
   updated_at: string;
 }
+
+const RICH_HTML_CONTENT_CLASS =
+  'rich-html-content text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none ' +
+  '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap ' +
+  '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-muted/60 ' +
+  '[&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-4 [&_blockquote]:italic ' +
+  '[&_blockquote_p]:my-0 [&_blockquote_p]:whitespace-normal ' +
+  '[&_.rich-blockquote]:border-l-4 [&_.rich-blockquote]:border-primary [&_.rich-blockquote]:bg-muted/60 ' +
+  '[&_.rich-blockquote]:px-4 [&_.rich-blockquote]:py-3 [&_.rich-blockquote]:my-4 [&_.rich-blockquote]:italic ' +
+  '[&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline';
 
 interface SubcategoryPageSection {
   id: string;
@@ -260,6 +275,8 @@ export default function SubcategoryDetail() {
   const showPricingPlansInOverview = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
   const showResourcesTab = subcategory?.show_resources !== false;
+  const showAboutSection = subcategory?.show_about_section !== false;
+  const showHeaderPointsSection = subcategory?.show_header_points_section !== false;
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" /> },
@@ -276,6 +293,10 @@ export default function SubcategoryDetail() {
   const downloadsTabIndex = tabs.findIndex((tab) => tab.key === 'downloads');
   const brandsTabIndex = tabs.findIndex((tab) => tab.key === 'brands');
   const formTabIndex = tabs.findIndex((tab) => tab.key === 'form');
+
+  const resourcesTabLabel = subcategory?.resources_tab_label?.trim() || 'Resources';
+  const downloadsTabLabel = subcategory?.downloads_tab_label?.trim() || 'Downloads';
+  const brandsTabLabel = subcategory?.brands_tab_label?.trim() || 'Brands';
 
   const productItems: ProductCardItem[] = useMemo(
     () =>
@@ -354,7 +375,6 @@ export default function SubcategoryDetail() {
   const isGenericDetailDescription = (description: string, categoryName?: string | null) => {
     const trimmed = description.trim();
     if (!trimmed) return true;
-    if (trimmed === 'Connect with businesses to expand your brand presence.') return true;
     if (categoryName && trimmed === `Explore all subcategories, download resources, and discover key features related to ${categoryName}.`) return true;
     return false;
   };
@@ -430,6 +450,8 @@ export default function SubcategoryDetail() {
         const normalizedDetailDescription = isGenericDetailDescription((subcategoryData as any).detail_description || '', subcategoryData.name)
           ? ''
           : (subcategoryData as any).detail_description || '';
+        setDetailHeading(normalizedDetailHeading);
+        setDetailDescription(normalizedDetailDescription);
         setButtons(
           buttonData && buttonData.length > 0
             ? (buttonData as unknown as CategoryButton[])
@@ -597,12 +619,12 @@ export default function SubcategoryDetail() {
   };
 
   const renderBrandGrid = () => (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
       {brands.map((brand) => {
         const externalUrl = normalizeExternalUrl(brand.link || '');
-        const content = (
-          <span className="text-base font-semibold text-foreground">{brand.name || 'Unnamed brand'}</span>
-        );
+        const brandBoxClassName =
+          'flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-muted-foreground transition-all';
+        const content = <span>{brand.name || 'Unnamed brand'}</span>;
 
         if (externalUrl) {
           return (
@@ -611,7 +633,7 @@ export default function SubcategoryDetail() {
               href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-[72px] items-center rounded-xl border border-border bg-card px-4 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md`}
             >
               {content}
             </a>
@@ -619,10 +641,7 @@ export default function SubcategoryDetail() {
         }
 
         return (
-          <div
-            key={brand.id}
-            className="flex min-h-[72px] items-center rounded-xl border border-border bg-card px-4 py-4 text-left"
-          >
+          <div key={brand.id} className={brandBoxClassName}>
             {content}
           </div>
         );
@@ -639,30 +658,14 @@ export default function SubcategoryDetail() {
       <Header />
       <main className="flex-1">
         {/* Hero Section with colored background and video */}
-        <div className="relative w-full max-w-none overflow-hidden border-b border-border">
-          {subcategory?.hero_background_image ? (
-            <img
-              src={subcategory.hero_background_image}
-              alt="Hero Banner"
-              className="
-                w-full
-                h-[180px]
-                sm:h-[220px]
-                md:h-[280px]
-                lg:h-[360px]
-                xl:h-[430px]
-                object-fill
-                object-center
-              "
-            />
-          ) : (
-            <div className="w-full h-[180px] sm:h-[220px] md:h-[280px] lg:h-[360px] xl:h-[430px] bg-white" />
-          )}
-          <div className="flex w-full flex-col gap-x-6 gap-y-6 pl-8 pr-4 pb-5 pt-4 md:flex-row md:items-start md:gap-y-0 md:gap-x-4">
-            {/* Only show logo, name, and description when NO hero background image is present */}
-            {!subcategory?.hero_background_image && (
-              <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4 md:pl-8">
-                <div className="mt-4 flex flex-col gap-4 md:mt-10 md:flex-row md:items-center">
+        <div 
+          className="relative w-full max-w-none overflow-hidden border-b border-border"
+          style={subcategory?.hero_background_color ? { backgroundColor: subcategory.hero_background_color } : undefined}
+        >
+          <div className="container mx-auto px-4 md:px-8 lg:px-10">
+            <div className="flex w-full flex-col gap-y-6 pb-12 pt-12">
+              <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   {category.icon_url && (
                     <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff] shadow-lg">
                       <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
@@ -674,122 +677,45 @@ export default function SubcategoryDetail() {
                     </h1>
                   </div>
                 </div>
-                <div className="mt-2 w-full md:mt-3">
-                  <p 
-                    className="max-w-xl whitespace-pre-wrap" 
-                    style={{ 
-                      fontFamily: '"Plus Jakarta Sans", sans-serif',
-                      fontSize: '20px',
-                      fontWeight: 800,
-                      lineHeight: '28px',
-                      color: 'rgb(99, 101, 110)'
-                    }}
-                  >
-                    {detailDescription || `Connect with businesses to expand your brand presence.`}
-                  </p>
-                </div>
-              </div>
-            )}
-            {/* When hero background is present, show only video card */}
-            {subcategory?.hero_background_image && (
-              <div className="flex-1 min-w-0" />
-            )}
-            {/* Video Card on the right */}
-            {hasVideoResource && (() => {
-              const youtubeId = getYouTubeVideoId(videoUrl);
-              const isYouTube = youtubeId !== null;
-              return (
-                <div className="w-full md:w-[400px] max-w-[420px] md:mr-44 mt-10">
-                  <div className="overflow-hidden rounded-xl border border-white/20 bg-white/10 shadow-lg">
-                    <div className="group relative bg-black/30">
-                      {isYouTube ? (
-                        <iframe
-                          src={getYouTubeEmbedUrl(youtubeId)}
-                          title="Video Resource"
-                          className="h-[180px] md:h-[200px] w-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <>
-                          <video
-                            src={videoUrl}
-                            className="h-[180px] md:h-[200px] w-full object-cover"
-                            controls
-                            preload="metadata"
-                            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
-                          />
-                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
-                            <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
-                              <Play className="h-6 w-6 fill-current" />
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-
-        {/* Floating CTA Bar - PhonePe Style */}
-        {heroButtons.length > 0 && (
-          <div className="relative z-10" style={{ transform: 'translate3d(0,-44px,0)' }}>
-            <div className="mx-auto px-4 md:px-8" style={{ width: '90%' }}>
-              <div 
-                className="flex justify-center overflow-hidden"
-                style={{
-                  fontFamily: 'Inter Tight, sans-serif, Helvetica, Arial',
-                  fontSize: '16px',
-                  background: '#fff',
-                  borderRadius: '36px',
-                  boxShadow: '0 12px 26px 0 rgba(0,0,0,.14)',
-                  margin: '0 auto'
-                }}
-              >
-                <div className="flex flex-col md:flex-row w-full">
-                  {heroButtons.map((button, index) => (
-                    <a
-                      key={button.id}
-                      href={normalizeExternalUrl(button.link || '') || '#'}
-                      target={button.link ? '_blank' : undefined}
-                      rel={button.link ? 'noopener noreferrer' : undefined}
-                      className={`
-                        text-center transition-all duration-200
-                        bg-white text-[#6739b7] hover:bg-[#f8f9fc]
-                        ${index < heroButtons.length - 1 ? 'border-b border-gray-300' : ''}
-                        md:border-r md:border-b-0 md:border-gray-300
-                        ${index === 0 ? 'rounded-l-2xl' : ''}
-                        ${index === heroButtons.length - 1 ? 'rounded-r-2xl' : ''}
-                      `}
-                      style={{
-                        fontFamily: 'Inter Tight, sans-serif, Helvetica, Arial',
-                        fontSize: '1.125rem',
-                        fontWeight: '400',
-                        padding: '22px',
-                        textAlign: 'center',
-                        textDecoration: 'none',
-                        cursor: 'pointer',
-                        display: 'block',
-                        width: '100%',
-                        color: '#6739b7',
-                        position: 'relative',
-                        flex: heroButtons.length === 4 ? '0 0 25%' : '1'
-                      }}
+                {detailDescription.trim() && (
+                  <div className="mt-2 w-full md:mt-3">
+                    <p
+                      className="max-w-xl whitespace-pre-wrap text-base leading-7 text-muted-foreground md:text-lg md:leading-8"
+                      style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
                     >
-                      {button.label}
-                    </a>
-                  ))}
-                </div>
+                      {detailDescription}
+                    </p>
+                  </div>
+                )}
+                {/* Hero Buttons */}
+                {heroButtons.length > 0 && (
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {heroButtons.map((button, index) => (
+                      <a
+                        key={button.id}
+                        href={normalizeExternalUrl(button.link || '') || '#'}
+                        target={button.link ? '_blank' : undefined}
+                        rel={button.link ? 'noopener noreferrer' : undefined}
+                        className={`
+                          px-8 py-3 rounded-2xl text-lg font-medium transition-all duration-200
+                          ${index === 0 || index === 2 
+                            ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600 hover:shadow-lg' 
+                            : 'bg-white text-gray-800 border-2 border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'
+                          }
+                        `}
+                      >
+                        {button.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         <div className="border-b border-border bg-card">
-          <div className="w-full px-4 md:pl-8 md:pr-4">
+          <div className="container mx-auto px-4 md:px-8 lg:px-10">
             <div className="flex gap-1 overflow-x-auto">
               {tabs.map((tab, index) => (
                 <button
@@ -811,116 +737,74 @@ export default function SubcategoryDetail() {
         </div>
 
         <div className="w-full bg-slate-50 py-8">
-          <div className="w-full px-4 md:pl-8 md:pr-4">
+          <div className="container mx-auto px-4 md:px-8 lg:px-10">
             {activeTab === 0 && (
               <div className="w-full space-y-8">
-              <div className="w-full md:max-w-8xl">
                 {aboutSections.length > 0 && (
-                  <div className="mt-6 space-y-6">
-                    {aboutSections.map((section, index) => (
+                  <div className="space-y-6">
+                    {aboutSections
+                      .filter((section) => section.is_visible !== false)
+                      .map((section) => (
                       <div
                         key={section.id}
+                        className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
+                        style={{ backgroundColor: section.background_color || '#ffffff' }}
                       >
-                        {index === 0 ? (
-                          <div className="flex flex-col lg:flex-row gap-6 items-start">
-                            <div
-                              className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
-                              style={{ 
-                                backgroundColor: section.background_color || '#ffffff',
-                                height: '450px'
-                              }}
-                            >
-                              <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
-                              <div
-                                className="text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline overflow-hidden"
-                                style={{ 
-                                  maxHeight: expandedAboutSection ? 'none' : '280px',
-                                  transition: 'max-height 0.3s ease-in-out'
-                                }}
-                                dangerouslySetInnerHTML={{ __html: section.content || '' }}
-                              />
-                              {section.content && section.content.length > 500 && (
-                                <button
-                                  onClick={() => setExpandedAboutSection(!expandedAboutSection)}
-                                  className="mt-3 text-sm font-medium text-primary hover:underline"
-                                >
-                                  {expandedAboutSection ? 'See Less' : 'See More'}
-                                </button>
-                              )}
-                            </div>
-                            <div className="w-full lg:w-[400px] flex-shrink-0">
-                              {/* CTA buttons moved to floating bar above - no longer needed here */}
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
-                            style={{ backgroundColor: section.background_color || '#ffffff' }}
-                          >
-                            <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
-                            <div
-                              className="text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline"
-                              dangerouslySetInnerHTML={{ __html: section.content || '' }}
-                            />
-                          </div>
-                        )}
+                        <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
+                        <div
+                          className={RICH_HTML_CONTENT_CLASS}
+                          dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                        />
                       </div>
                     ))}
                   </div>
                 )}
 
-                {shouldShowOverviewCard && showOverviewPointsSection && (
-                  <div className={`mt-6 flex flex-col gap-4 ${secondaryButtons.length > 0 ? 'lg:flex-row lg:items-start lg:justify-between' : ''}`}>
-                    <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                      <div className="flex flex-col gap-6">
-                        {/* Left side: Title and Points */}
-                        <div className="flex-1">
-                          <h3 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">
-                            {overviewPointsHeading.trim() || defaultOverviewPointsHeading}
-                          </h3>
-
-                          <div className="max-w-[920px] space-y-4">
-                            {visibleOverviewPoints.length > 0 ? (
-                              <>
-                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                  {displayedOverviewPoints.map((point) => (
-                                    <div
-                                      key={point.id}
-                                      className={`flex items-start gap-2.5 rounded-xl border border-border px-4 py-3 text-sm ${
-                                        point.is_highlighted ? 'bg-white font-medium text-emerald-700' : 'bg-background text-muted-foreground'
+                {shouldShowOverviewCard && showOverviewPointsSection && showHeaderPointsSection && visibleOverviewPoints.length > 0 && (
+                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">
+                      {overviewPointsHeading.trim() || defaultOverviewPointsHeading}
+                    </h2>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {displayedOverviewPoints.map((point) => (
+                          <div
+                            key={point.id}
+                                      className={`flex items-start gap-3 rounded-xl border border-border px-4 py-3.5 text-lg md:text-xl ${
+                                        point.is_highlighted
+                                          ? 'bg-white font-medium text-emerald-700'
+                                          : 'bg-background font-medium text-foreground'
                                       }`}
                                     >
-                                      {point.is_highlighted && <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />}
-                                      <span>{point.text}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                                {hasMoreOverviewPoints && (
-                                  <div className="flex justify-end">
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowAllOverviewPoints((current) => !current)}
-                                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                                    >
-                                      {showAllOverviewPoints ? 'View Less' : 'View All'}
-                                      {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            ) : null}
+                                      <CheckCircle2
+                                        className={`mt-0.5 h-5 w-5 flex-shrink-0 md:h-6 md:w-6 ${
+                                          point.is_highlighted ? 'text-emerald-600' : 'text-primary'
+                                        }`}
+                                      />
+                            <span>{point.text}</span>
                           </div>
-                        </div>
+                        ))}
                       </div>
+                      {hasMoreOverviewPoints && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllOverviewPoints((current) => !current)}
+                            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                          >
+                            {showAllOverviewPoints ? 'View Less' : 'View All'}
+                            {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      )}
                     </div>
-
                   </div>
                 )}
 
                 {/* Video Resources in Overview - only show when Resources tab is visible */}
                 {showResourcesTab && videoUrl2.filter(url => url?.trim()).length > 0 && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Video Resources</h2>
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{resourcesTabLabel}</h2>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {videoUrl2.filter(url => url?.trim()).map((url, index) => {
                         const youtubeId = getYouTubeVideoId(url);
@@ -954,20 +838,16 @@ export default function SubcategoryDetail() {
                                 </>
                               )}
                             </div>
-                                                      </div>
+                          </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
 
-
-              </div>
-
-              <div className="space-y-8">
                 {showDownloadsTab && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Downloads</h2>
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{downloadsTabLabel}</h2>
                     {downloads.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No downloads available.</p>
                     ) : (
@@ -1015,12 +895,14 @@ export default function SubcategoryDetail() {
 
                 {showBrandsInOverview && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Brands</h2>
-                    {brands.length > 0 ? (
-                      renderBrandGrid()
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No brands available yet.</p>
-                    )}
+                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{brandsTabLabel}</h2>
+                    <div className="max-w-[920px]">
+                      {brands.length > 0 ? (
+                        renderBrandGrid()
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No brands available yet.</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1107,63 +989,79 @@ export default function SubcategoryDetail() {
                   .map((section) => {
                     if (section.section_type === 'cards') {
                       return (
-                        <div key={section.id} className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm" style={{ backgroundColor: section.background_color || 'var(--card)' }}>
-                          <FeaturedCards
-                            sectionId={section.id}
-                            sectionTable="subcategory_page_sections"
-                            cardsTable="subcategory_featured_cards"
-                            hideSeeAllOnMobile={true}
-                          />
-                        </div>
+                        <FeaturedCards
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          cardsTable="subcategory_featured_cards"
+                          hideSeeAllOnMobile={true}
+                          compact
+                          backgroundColor={section.background_color}
+                        />
                       );
                     }
                     if (section.section_type === 'offers') {
                       return (
-                        <div key={section.id} className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm" style={{ backgroundColor: section.background_color || 'var(--card)' }}>
-                          <OffersSection
-                            sectionId={section.id}
-                            sectionTable="subcategory_page_sections"
-                            offersTable="subcategory_offers"
-                          />
-                        </div>
+                        <OffersSection
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          offersTable="subcategory_offers"
+                          compact
+                          backgroundColor={section.background_color}
+                        />
                       );
                     }
                     if (section.section_type === 'ads_1col') {
                       return (
-                        <div key={section.id} className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm" style={{ backgroundColor: section.background_color || 'var(--card)' }}>
-                          <Ads1ColSection
-                            sectionId={section.id}
-                            sectionTable="subcategory_page_sections"
-                            adsTable="subcategory_ads_2col"
-                          />
-                        </div>
+                        <Ads1ColSection
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          adsTable="subcategory_ads_2col"
+                          compact
+                          backgroundColor={section.background_color}
+                        />
                       );
                     }
                     if (section.section_type === 'ads_2col') {
                       return (
-                        <div key={section.id} className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm" style={{ backgroundColor: section.background_color || 'var(--card)' }}>
-                          <Ads2ColSection
-                            sectionId={section.id}
-                            sectionTable="subcategory_page_sections"
-                            adsTable="subcategory_ads_2col"
-                          />
-                        </div>
+                        <Ads2ColSection
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          adsTable="subcategory_ads_2col"
+                          compact
+                          backgroundColor={section.background_color}
+                        />
                       );
                     }
                     if (section.section_type === 'ads_3col') {
                       return (
-                        <div key={section.id} className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm" style={{ backgroundColor: section.background_color || 'var(--card)' }}>
-                          <Ads3ColSection
-                            sectionId={section.id}
-                            sectionTable="subcategory_page_sections"
-                            adsTable="subcategory_ads_3col"
-                          />
-                        </div>
+                        <Ads3ColSection
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          adsTable="subcategory_ads_3col"
+                          compact
+                          backgroundColor={section.background_color}
+                        />
+                      );
+                    }
+                    if (section.section_type === 'logo_steps') {
+                      return (
+                        <LogoStepsSection
+                          key={section.id}
+                          sectionId={section.id}
+                          sectionTable="subcategory_page_sections"
+                          stepsTable="subcategory_logo_steps"
+                          compact
+                          backgroundColor={section.background_color}
+                        />
                       );
                     }
                     return null;
                   })}
-              </div>
 
               {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
                 <div className="w-full">
@@ -1181,7 +1079,7 @@ export default function SubcategoryDetail() {
 
           {activeTab === resourcesTabIndex && showResourcesTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Resources</h2>
+              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{resourcesTabLabel}</h2>
               {videoUrl2.filter(url => url?.trim()).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No resources available.
@@ -1230,9 +1128,7 @@ export default function SubcategoryDetail() {
 
           {activeTab === downloadsTabIndex && showDownloadsTab && (
             <div className="w-full md:px-4 lg:px-6 md:max-w-5xl">
-              <div className="mb-6">
-                <h2 className="text-lg font-bold">Downloads</h2>
-              </div>
+              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{downloadsTabLabel}</h2>
 
               {downloads.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No downloads available.</p>
@@ -1282,7 +1178,7 @@ export default function SubcategoryDetail() {
 
           {activeTab === brandsTabIndex && showBrandsTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Brands</h2>
+              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{brandsTabLabel}</h2>
               {brands.length > 0 ? (
                 renderBrandGrid()
               ) : (
@@ -1359,31 +1255,35 @@ export default function SubcategoryDetail() {
         </div>
       </main>
 
-      <section className="px-4 pb-10 md:pl-8 md:pr-4 md:pb-12">
-        <div className="w-full rounded-3xl bg-[#013737] p-5 md:pt-20 md:pl-20 md:pr-10 md:pb-10">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start md:gap-10">
-            <div className="text-white md:pl-4 md:pt-2">
-              <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-[#013737]">
-                {subcategory?.link?.trim() ? (
-                  <img src={subcategory.link.trim()} alt="Contact" className="h-8 w-8 object-contain" />
-                ) : (
-                  <Mail className="h-5 w-5" />
-                )}
+      {showAboutSection && (
+        <section className="pb-10 md:pb-12">
+          <div className="container mx-auto px-4 md:px-8 lg:px-10">
+            <div className="rounded-none bg-[#013737] p-5 md:pt-20 md:pl-20 md:pr-10 md:pb-10">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start md:gap-10">
+              <div className="text-white md:pl-4 md:pt-2">
+                <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-[#013737]">
+                  {subcategory?.link?.trim() ? (
+                    <img src={subcategory.link.trim()} alt="Contact" className="h-8 w-8 object-contain" />
+                  ) : (
+                    <Mail className="h-5 w-5" />
+                  )}
+                </div>
+                <h3 className="max-w-[560px] text-5xl font-medium leading-tight">
+                  {(aboutHeading || '').trim() || 'Need Help Deciding?'}
+                </h3>
+                <p className="mt-3 text-2xl font-semibold text-[#9af24d]">Talk to Solution Experts for Free.</p>
+                <p className="mt-5 max-w-[560px] text-base leading-7 text-white/90">
+                  {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
+                </p>
               </div>
-              <h3 className="max-w-[560px] text-5xl font-medium leading-tight">
-                {(aboutHeading || '').trim() || 'Need Help Deciding?'}
-              </h3>
-              <p className="mt-3 text-2xl font-semibold text-[#9af24d]">Talk to Solution Experts for Free.</p>
-              <p className="mt-5 max-w-[560px] text-base leading-7 text-white/90">
-                {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
-              </p>
+              <div className="flex justify-center md:justify-end">
+                <WatchDemoForm subcategoryId={subcategoryId} demoLink={subcategory?.schedule_link} demoFormHeading={demoFormHeading} demoButtonLabel={demoButtonLabel} />
+              </div>
             </div>
-            <div className="flex justify-center md:justify-end">
-              <WatchDemoForm subcategoryId={subcategoryId} demoLink={subcategory?.schedule_link} demoFormHeading={demoFormHeading} demoButtonLabel={demoButtonLabel} />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {showVideoFullscreen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black p-4">

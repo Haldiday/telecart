@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 type SearchResult =
   | { id: string; type: 'category'; name: string }
-  | { id: string; type: 'subcategory'; name: string; categoryId: string };
+  | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null };
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -89,7 +89,7 @@ export default function HeroSection() {
           .order('sort_order'),
         supabase
           .from('subcategories')
-          .select('id, category_id, name')
+          .select('id, category_id, name, custom_link')
           .ilike('name', `%${searchTerm}%`)
           .order('sort_order'),
       ]);
@@ -111,6 +111,7 @@ export default function HeroSection() {
         type: 'subcategory' as const,
         name: subcategory.name,
         categoryId: subcategory.category_id,
+        custom_link: subcategory.custom_link,
       }));
 
       setSearchResults([...categoryResults, ...subcategoryResults].slice(0, 10));
@@ -131,7 +132,12 @@ export default function HeroSection() {
       return;
     }
 
-    navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+    // For subcategories, check if custom_link exists
+    if (result.custom_link) {
+      window.location.href = result.custom_link;
+    } else {
+      navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+    }
   }
 
   function handleSearchButton() {

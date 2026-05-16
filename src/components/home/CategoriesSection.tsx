@@ -8,6 +8,7 @@ interface Subcategory {
   id: string;
   name: string;
   link: string | null;
+  custom_link?: string | null;
   sort_order: number;
 }
 
@@ -23,6 +24,17 @@ interface Category {
 interface CategoriesSectionProps {
   sectionId: string;
 }
+
+// Helper function to handle subcategory navigation
+const navigateToSubcategory = (subcategory: Subcategory, categoryId: string, navigate: ReturnType<typeof useNavigate>) => {
+  if (subcategory.custom_link) {
+    // If custom_link exists, redirect to it
+    window.location.href = subcategory.custom_link;
+  } else {
+    // Otherwise, navigate to the detail page
+    navigate(`/category/${categoryId}/subcategory/${subcategory.id}`);
+  }
+};
 
 export default function CategoriesSection({ sectionId }: CategoriesSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -146,7 +158,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       {category.subcategories.map((sub) => (
                         <button
                           key={sub.id}
-                          onClick={() => navigate(`/category/${category.id}/subcategory/${sub.id}`)}
+                          onClick={() => navigateToSubcategory(sub, category.id, navigate)}
                           className="block w-full text-left text-sm !text-black hover:!text-blue-600 hover:underline transition-colors"
 
                         >
@@ -202,7 +214,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                     {visibleSubs.map((sub) => (
                       <button
                         key={sub.id}
-                        onClick={() => navigate(`/category/${category.id}/subcategory/${sub.id}`)}
+                        onClick={() => navigateToSubcategory(sub, category.id, navigate)}
                         className="w-full text-left border-b border-border/30 py-2 last:border-b-0 text-sm md:text-base text-foreground hover:text-primary hover:underline transition-colors"
                       >
                         {sub.name}

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import SubcategorySectionShell from './SubcategorySectionShell';
 
 interface Ad {
   description: string | null;
@@ -13,6 +14,7 @@ interface Ad {
   sort_order: number;
   is_fixed: boolean;
   show_border: boolean;
+  border_color: string | null;
 }
 
 interface Ads3ColSectionProps {
@@ -21,6 +23,7 @@ interface Ads3ColSectionProps {
   adsTable?: string;
   mobileContainImage?: boolean;
   compact?: boolean;
+  backgroundColor?: string | null;
 }
 
 export default function Ads3ColSection({
@@ -29,6 +32,7 @@ export default function Ads3ColSection({
   adsTable = 'ads_3col',
   mobileContainImage = false,
   compact = false,
+  backgroundColor,
 }: Ads3ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -63,7 +67,7 @@ export default function Ads3ColSection({
     
     const loadAds = () => {
       db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
-        if (data && mounted) setAds((data as any[]).map((ad) => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false })));
+        if (data && mounted) setAds((data as any[]).map((ad) => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
       });
     };
 
@@ -108,6 +112,7 @@ export default function Ads3ColSection({
   if (ads.length === 0) return null;
 
   return (
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-6 md:py-10'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
@@ -135,19 +140,20 @@ export default function Ads3ColSection({
                   >
                     <a
                       href={ad.link || '#'}
-                      className={`block group rounded-[28px] ${ad.show_border ? 'border border-border p-3' : ''}`}
+                      className={`block group rounded-[28px] overflow-hidden ${ad.show_border ? 'border' : ''}`}
+                      style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                     >
                       <div
-                        className={`overflow-hidden rounded-[28px] bg-muted ${
+                        className={`overflow-hidden bg-muted ${
                           ads.length < 3
                             ? 'h-[160px] md:h-[300px]'
                             : 'h-[160px] md:h-auto md:aspect-[16/9]'
-                        } ${ad.show_border ? 'border border-border/70' : ''}`}
+                        }`}
                       >
                         {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
                       </div>
                       {(ad.heading || ad.description) && (
-                        <div className={ad.show_border ? 'pt-4 px-1 pb-1' : 'px-1 pt-4'}>
+                        <div className="p-3">
                           {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
                           {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
                         </div>
@@ -164,19 +170,20 @@ export default function Ads3ColSection({
               <div key={ad.id} className="flex-1">
                 <a
                   href={ad.link || '#'}
-                  className={`block group rounded-[28px] ${ad.show_border ? 'border border-border p-3' : ''}`}
+                  className={`block group rounded-[28px] overflow-hidden ${ad.show_border ? 'border' : ''}`}
+                  style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                 >
                   <div
-                    className={`overflow-hidden rounded-[28px] bg-muted ${
+                    className={`overflow-hidden bg-muted ${
                       adsToDisplay.length < 3
                         ? 'h-[160px] md:h-[300px]'
                         : 'h-[160px] md:h-auto md:aspect-[16/9]'
-                    } ${ad.show_border ? 'border border-border/70' : ''}`}
+                    }`}
                   >
                     {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
                   </div>
                   {(ad.heading || ad.description) && (
-                    <div className={ad.show_border ? 'pt-4 px-1 pb-1' : 'px-1 pt-4'}>
+                    <div className="p-3">
                       {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
                       {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
                     </div>
@@ -188,5 +195,6 @@ export default function Ads3ColSection({
         )}
       </div>
     </div>
+    </SubcategorySectionShell>
   );
 }
