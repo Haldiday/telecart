@@ -36,10 +36,10 @@ const SUBCATEGORY_BRANDS_TABLE = 'subcategory_brands';
 const INITIAL_OVERVIEW_POINTS_COUNT = 8;
 
 const defaultCategoryButtons = [
-  { label: 'Try For Free', link: null, is_visible: true },
-  { label: 'Get Quote', link: null, is_visible: true },
-  { label: 'Call Now', link: null, is_visible: true },
-  { label: 'Contact', link: null, is_visible: true },
+  { label: 'Try For Free', link: null, is_visible: false },
+  { label: 'Get Quote', link: null, is_visible: false },
+  { label: 'Call Now', link: null, is_visible: false },
+  { label: 'Contact', link: null, is_visible: false },
 ];
 
 const defaultOverviewPointsHeading = 'Header';
@@ -482,7 +482,7 @@ export default function SubcategoryDetail() {
             ? (buttonData as unknown as CategoryButton[])
             : defaultCategoryButtons.map((button, index) => ({
                 id: `default-${index}`,
-                category_id: subcategoryId,
+                subcategory_id: subcategoryId,
                 label: button.label,
                 link: button.link || null,
                 is_visible: button.is_visible,

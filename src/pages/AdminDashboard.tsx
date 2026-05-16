@@ -60,14 +60,8 @@ interface Subcategory {
   brands_tab_label?: string | null;
   key_features_tab_label?: string | null;
   hero_background_color?: string | null;
-  about_bg_color?: string | null;
-  about_heading_color?: string | null;
-  about_subheading_color?: string | null;
-  about_description_color?: string | null;
-  about_button_bg_color?: string | null;
-  about_button_text_color?: string | null;
 }
-interface CategoryButton { id?: string; label: string; link: string | null; is_visible: boolean; }
+interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface SubcategoryBrand { id?: string; name: string; logo_url: string | null; link: string | null; is_visible: boolean; }
@@ -343,12 +337,6 @@ export default function AdminDashboard() {
   const [leadsCtaLogo, setLeadsCtaLogo] = useState<string | null>(null);
   const [leadsCtaHeading, setLeadsCtaHeading] = useState('');
   const [leadsCtaDescription, setLeadsCtaDescription] = useState('');
-  const [aboutBgColor, setAboutBgColor] = useState('#013737');
-  const [aboutHeadingColor, setAboutHeadingColor] = useState('#ffffff');
-  const [aboutSubheadingColor, setAboutSubheadingColor] = useState('#9af24d');
-  const [aboutDescriptionColor, setAboutDescriptionColor] = useState('#ffffff');
-  const [aboutButtonBgColor, setAboutButtonBgColor] = useState('#16a34a');
-  const [aboutButtonTextColor, setAboutButtonTextColor] = useState('#ffffff');
   const [demoFormHeading, setDemoFormHeading] = useState('See The Software In Action\nWatch Free Demo!');
   const [demoButtonLabel, setDemoButtonLabel] = useState('Get Free Advice');
   const [leadsCtaSaving, setLeadsCtaSaving] = useState(false);
@@ -488,12 +476,6 @@ export default function AdminDashboard() {
     setLeadsCtaLogo(first.link || null);
     setLeadsCtaHeading(first.about_heading || '');
     setLeadsCtaDescription(first.about_content || '');
-    setAboutBgColor(first.about_bg_color || '#013737');
-    setAboutHeadingColor(first.about_heading_color || '#ffffff');
-    setAboutSubheadingColor(first.about_subheading_color || '#9af24d');
-    setAboutDescriptionColor(first.about_description_color || '#ffffff');
-    setAboutButtonBgColor(first.about_button_bg_color || '#16a34a');
-    setAboutButtonTextColor(first.about_button_text_color || '#ffffff');
     setDemoFormHeading((first as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
     setDemoButtonLabel((first as any).demo_button_label || 'Get Free Advice');
   }, [subcategories]);
@@ -1882,12 +1864,6 @@ export default function AdminDashboard() {
           show_schedule_2_in_separate_tab: sub.show_schedule_2_in_separate_tab ?? false,
           about_heading: sub.about_heading || 'About',
           about_content: sub.about_content || null,
-          about_bg_color: sub.about_bg_color || null,
-          about_heading_color: sub.about_heading_color || null,
-          about_subheading_color: sub.about_subheading_color || null,
-          about_description_color: sub.about_description_color || null,
-          about_button_bg_color: sub.about_button_bg_color || null,
-          about_button_text_color: sub.about_button_text_color || null,
           overview_points_heading: editKeyFeaturesTabLabelState[sub.id] || sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
@@ -1942,12 +1918,12 @@ export default function AdminDashboard() {
           // Only save buttons for the actively edited subcategory
           const subButtons = effectiveButtonsState[activeSubId] || [];
           subButtons.forEach((button, index) => {
-            if (button.label || button.link) {
+            if (button.label?.trim() || button.link?.trim()) {
               buttonsToInsert.push({
                 id: button.id || crypto.randomUUID(),
                 subcategory_id: activeSubId,
-                label: button.label || `Button ${index + 1}`,
-                link: button.link || null,
+                label: button.label?.trim() || 'Button',
+                link: button.link?.trim() || null,
                 is_visible: button.is_visible,
                 sort_order: index,
               });
@@ -1958,12 +1934,12 @@ export default function AdminDashboard() {
           for (const sub of editSubs) {
             const subButtons = effectiveButtonsState[sub.id] || [];
             subButtons.forEach((button, index) => {
-              if (button.label || button.link) {
+              if (button.label?.trim() || button.link?.trim()) {
                 buttonsToInsert.push({
                   id: button.id || crypto.randomUUID(),
                   subcategory_id: sub.id,
-                  label: button.label || `Button ${index + 1}`,
-                  link: button.link || null,
+                  label: button.label?.trim() || 'Button',
+                  link: button.link?.trim() || null,
                   is_visible: button.is_visible,
                   sort_order: index,
                 });
@@ -2183,10 +2159,9 @@ export default function AdminDashboard() {
       setEditSubs([]);
       setEditDownloads([]);
       loadAll();
-    } catch (error: any) {
-      console.error('Error saving category:', error);
-      const message = error?.message || 'Save failed.';
-      toast.error(`Failed to save category: ${message}`);
+    } catch (error) {
+      console.error('Error saving category:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to save category.');
     } finally {
       setIsSavingCategory(false);
     }
@@ -2211,12 +2186,6 @@ export default function AdminDashboard() {
           link: leadsCtaLogo || null,
           about_heading: leadsCtaHeading || null,
           about_content: leadsCtaDescription || null,
-          about_bg_color: aboutBgColor || null,
-          about_heading_color: aboutHeadingColor || null,
-          about_subheading_color: aboutSubheadingColor || null,
-          about_description_color: aboutDescriptionColor || null,
-          about_button_bg_color: aboutButtonBgColor || null,
-          about_button_text_color: aboutButtonTextColor || null,
           demo_form_heading: demoFormHeading || 'See The Software In Action\nWatch Free Demo!',
           demo_button_label: demoButtonLabel || 'Get Free Advice',
         } as any)
@@ -2225,15 +2194,10 @@ export default function AdminDashboard() {
       await loadAll();
       toast.success('Bottom demo section content saved for all subcategories.');
       setLeadsCtaStatus({ type: 'success', text: 'Saved for all subcategories.' });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving bottom demo section content:', error);
-      const message = error?.message || 'Save failed.';
-      if (message.includes('column') && message.includes('does not exist')) {
-        toast.error('Save failed: Database columns missing. Please run the SQL migration in Supabase.');
-      } else {
-        toast.error(`Failed to save: ${message}`);
-      }
-      setLeadsCtaStatus({ type: 'error', text: `Save failed: ${message}` });
+      toast.error('Failed to save bottom demo section content.');
+      setLeadsCtaStatus({ type: 'error', text: 'Save failed. Please try again.' });
     } finally {
       setLeadsCtaSaving(false);
     }
@@ -3687,7 +3651,7 @@ export default function AdminDashboard() {
                                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                 />
                                 <Switch
-                                  checked={button.is_visible}
+                                  checked={button.is_visible ?? false}
                                   onCheckedChange={(value) => {
                                     const newButtons = [...editButtons];
                                     newButtons[index] = { ...newButtons[index], is_visible: value };
@@ -5521,116 +5485,6 @@ export default function AdminDashboard() {
                     className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     placeholder="We'll help you find the right tools..."
                   />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Background Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutBgColor}
-                        onChange={(e) => setAboutBgColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutBgColor}
-                        onChange={(e) => setAboutBgColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#013737"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Heading Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutHeadingColor}
-                        onChange={(e) => setAboutHeadingColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutHeadingColor}
-                        onChange={(e) => setAboutHeadingColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#ffffff"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Subheading Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutSubheadingColor}
-                        onChange={(e) => setAboutSubheadingColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutSubheadingColor}
-                        onChange={(e) => setAboutSubheadingColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#9af24d"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Description Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutDescriptionColor}
-                        onChange={(e) => setAboutDescriptionColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutDescriptionColor}
-                        onChange={(e) => setAboutDescriptionColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#ffffff"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Button Background Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutButtonBgColor}
-                        onChange={(e) => setAboutButtonBgColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutButtonBgColor}
-                        onChange={(e) => setAboutButtonBgColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#16a34a"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Button Text Color</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={aboutButtonTextColor}
-                        onChange={(e) => setAboutButtonTextColor(e.target.value)}
-                        className="h-10 w-16 rounded cursor-pointer border border-input"
-                      />
-                      <input
-                        type="text"
-                        value={aboutButtonTextColor}
-                        onChange={(e) => setAboutButtonTextColor(e.target.value)}
-                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="#ffffff"
-                      />
-                    </div>
-                  </div>
                 </div>
                 <div className="border-t border-border pt-4">
                   <h4 className="text-sm font-semibold mb-3">Demo Form Settings</h4>

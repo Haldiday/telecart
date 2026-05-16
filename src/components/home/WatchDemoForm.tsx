@@ -16,7 +16,14 @@ interface WatchDemoFormProps {
   buttonTextColor?: string | null;
 }
 
-export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading, demoButtonLabel, buttonBgColor, buttonTextColor }: WatchDemoFormProps) {
+export default function WatchDemoForm({ 
+  subcategoryId, 
+  demoLink, 
+  demoFormHeading, 
+  demoButtonLabel,
+  buttonBgColor,
+  buttonTextColor
+}: WatchDemoFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -199,10 +206,10 @@ export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading
 
         <Button
           type="submit"
-          className="w-full h-11 transition-all"
+          className="w-full h-11 transition-colors"
           style={{ 
-            backgroundColor: buttonBgColor || undefined, 
-            color: buttonTextColor || undefined 
+            backgroundColor: buttonBgColor || '#16a34a',
+            color: buttonTextColor || '#ffffff'
           }}
           disabled={isSubmitting}
         >
