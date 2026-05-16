@@ -12,9 +12,11 @@ interface WatchDemoFormProps {
   demoLink?: string | null;
   demoFormHeading?: string | null;
   demoButtonLabel?: string | null;
+  buttonBgColor?: string | null;
+  buttonTextColor?: string | null;
 }
 
-export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading, demoButtonLabel }: WatchDemoFormProps) {
+export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading, demoButtonLabel, buttonBgColor, buttonTextColor }: WatchDemoFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -197,7 +199,11 @@ export default function WatchDemoForm({ subcategoryId, demoLink, demoFormHeading
 
         <Button
           type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 h-11"
+          className="w-full h-11 transition-all"
+          style={{ 
+            backgroundColor: buttonBgColor || undefined, 
+            color: buttonTextColor || undefined 
+          }}
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Submitting...' : (demoButtonLabel || 'Get Free Advice')}

@@ -72,7 +72,14 @@ interface Subcategory {
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
+  key_features_tab_label?: string | null;
   hero_background_color?: string | null;
+  about_bg_color?: string | null;
+  about_heading_color?: string | null;
+  about_subheading_color?: string | null;
+  about_description_color?: string | null;
+  about_button_bg_color?: string | null;
+  about_button_text_color?: string | null;
 }
 
 interface Category {
@@ -167,14 +174,17 @@ interface SubcategoryAboutSection {
 }
 
 const RICH_HTML_CONTENT_CLASS =
-  'rich-html-content text-base leading-relaxed text-foreground/80 prose prose-sm max-w-none ' +
-  '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_p]:mb-4 [&_p]:min-h-[1.5em] ' +
+  'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] prose prose-sm max-w-none ' +
+  '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_p]:mb-4 [&_p]:min-h-[1.5em] ' +
   '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-muted/60 ' +
   '[&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-4 [&_blockquote]:italic ' +
   '[&_blockquote_p]:my-0 [&_blockquote_p]:whitespace-normal ' +
   '[&_.rich-blockquote]:border-l-4 [&_.rich-blockquote]:border-primary [&_.rich-blockquote]:bg-muted/60 ' +
   '[&_.rich-blockquote]:px-4 [&_.rich-blockquote]:py-3 [&_.rich-blockquote]:my-4 [&_.rich-blockquote]:italic ' +
   '[&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline';
+
+const SECTION_HEADING_CLASS = 'font-inter font-bold text-[32px] leading-[40px] text-[#111111] mb-6';
+const SECTION_SUBTEXT_CLASS = 'font-inter font-normal text-[20px] leading-[32px] text-[#333333]';
 
 interface SubcategoryPageSection {
   id: string;
@@ -216,9 +226,6 @@ const getDownloadFileType = (fileName?: string | null) => {
 };
 
 // Adjust these values to control the desktop download card size.
-const DOWNLOAD_CARD_WIDTH = 220;
-const DOWNLOAD_CARD_MIN_HEIGHT = 180;
-const DOWNLOAD_CARD_BACKGROUND = '#ffffff';
 
 export default function SubcategoryDetail() {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
@@ -259,6 +266,12 @@ export default function SubcategoryDetail() {
   const [showFormTab, setShowFormTab] = useState(false);
   const [aboutHeading, setAboutHeading] = useState('About');
   const [aboutContent, setAboutContent] = useState('');
+  const [aboutBgColor, setAboutBgColor] = useState('#013737');
+  const [aboutHeadingColor, setAboutHeadingColor] = useState('#ffffff');
+  const [aboutSubheadingColor, setAboutSubheadingColor] = useState('#9af24d');
+  const [aboutDescriptionColor, setAboutDescriptionColor] = useState('#ffffff');
+  const [aboutButtonBgColor, setAboutButtonBgColor] = useState('#16a34a');
+  const [aboutButtonTextColor, setAboutButtonTextColor] = useState('#ffffff');
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [aboutSections, setAboutSections] = useState<SubcategoryAboutSection[]>([]);
   const [expandedAboutSection, setExpandedAboutSection] = useState(false);
@@ -280,6 +293,7 @@ export default function SubcategoryDetail() {
   const showResourcesTab = subcategory?.show_resources !== false;
   const showAboutSection = subcategory?.show_about_section !== false;
   const showHeaderPointsSection = subcategory?.show_header_points_section !== false;
+  const showHeaderPointsTab = showHeaderPointsSection && overviewPoints.length > 0;
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" /> },
@@ -287,6 +301,7 @@ export default function SubcategoryDetail() {
 
   if (showResourcesTab) tabs.push({ key: 'resources', label: subcategory?.resources_tab_label || 'Resources', icon: <Play className="h-4 w-4" /> });
   if (showDownloadsTab) tabs.push({ key: 'downloads', label: subcategory?.downloads_tab_label || 'Downloads', icon: <Download className="h-4 w-4" /> });
+  if (showHeaderPointsTab) tabs.push({ key: 'key_features', label: subcategory?.key_features_tab_label || 'Key Features', icon: <CheckCircle2 className="h-4 w-4" /> });
   if (showPricingPlansTab) tabs.push({ key: 'pricing', label: 'Pricing', icon: <Package className="h-4 w-4" /> });
   if (showBrandsTab) tabs.push({ key: 'brands', label: subcategory?.brands_tab_label || 'Brands', icon: <Image className="h-4 w-4" /> });
   if (showFormAsTab) tabs.push({ key: 'form', label: 'Form', icon: <FileText className="h-4 w-4" /> });
@@ -296,6 +311,7 @@ export default function SubcategoryDetail() {
   const downloadsTabIndex = tabs.findIndex((tab) => tab.key === 'downloads');
   const brandsTabIndex = tabs.findIndex((tab) => tab.key === 'brands');
   const formTabIndex = tabs.findIndex((tab) => tab.key === 'form');
+  const keyFeaturesTabIndex = tabs.findIndex((tab) => tab.key === 'key_features');
 
   const resourcesTabLabel = subcategory?.resources_tab_label?.trim() || 'Resources';
   const downloadsTabLabel = subcategory?.downloads_tab_label?.trim() || 'Downloads';
@@ -443,7 +459,13 @@ export default function SubcategoryDetail() {
         setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
         setAboutHeading((subcategoryData as any).about_heading || 'About');
         setAboutContent((subcategoryData as any).about_content || '');
-        setOverviewPointsHeading((subcategoryData as any).overview_points_heading || defaultOverviewPointsHeading);
+        setAboutBgColor((subcategoryData as any).about_bg_color || '#013737');
+        setAboutHeadingColor((subcategoryData as any).about_heading_color || '#ffffff');
+        setAboutSubheadingColor((subcategoryData as any).about_subheading_color || '#9af24d');
+        setAboutDescriptionColor((subcategoryData as any).about_description_color || '#ffffff');
+        setAboutButtonBgColor((subcategoryData as any).about_button_bg_color || '#16a34a');
+        setAboutButtonTextColor((subcategoryData as any).about_button_text_color || '#ffffff');
+        setOverviewPointsHeading((subcategoryData as any).key_features_tab_label || (subcategoryData as any).overview_points_heading || defaultOverviewPointsHeading);
         setDemoFormHeading((subcategoryData as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
         setDemoButtonLabel((subcategoryData as any).demo_button_label || 'Get Free Advice');
         setShowOverviewPointsSection(true);
@@ -582,7 +604,14 @@ export default function SubcategoryDetail() {
             show_form_in_separate_tab: showFormTab,
             about_heading: aboutHeading.trim() || 'About',
             about_content: aboutContent.trim() || null,
+            about_bg_color: aboutBgColor || null,
+            about_heading_color: aboutHeadingColor || null,
+            about_subheading_color: aboutSubheadingColor || null,
+            about_description_color: aboutDescriptionColor || null,
+            about_button_bg_color: aboutButtonBgColor || null,
+            about_button_text_color: aboutButtonTextColor || null,
             overview_points_heading: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
+            key_features_tab_label: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
             detail_heading:
               !isGenericDetailHeading(detailHeading.trim(), subcategory?.name || '') && detailHeading.trim()
                 ? detailHeading.trim()
@@ -615,9 +644,10 @@ export default function SubcategoryDetail() {
       if (refreshedButtons) setButtons(refreshedButtons);
       if (refreshedOverviewPoints) setOverviewPoints(refreshedOverviewPoints as unknown as CategoryOverviewPoint[]);
       toast.success('Overview updated.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving subcategory detail:', error);
-      toast.error('Failed to save changes.');
+      const message = error?.message || 'Save failed.';
+      toast.error(`Failed to save changes: ${message}`);
     } finally {
       setIsSaving(false);
     }
@@ -651,6 +681,57 @@ export default function SubcategoryDetail() {
           </div>
         );
       })}
+    </div>
+  );
+
+  const renderDownloadGrid = () => (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      {downloads.map((download) => (
+        <a
+          key={download.id}
+          href={download.file_url}
+          download
+          className="flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all hover:border-primary/50 hover:shadow-md hover:text-primary"
+        >
+          <span>{download.file_name}</span>
+        </a>
+      ))}
+    </div>
+  );
+
+  const renderHeaderPoints = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {(activeTab === 0 && !showAllOverviewPoints ? visibleOverviewPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT) : visibleOverviewPoints).map((point) => (
+          <div
+            key={point.id}
+            className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all ${
+              point.is_highlighted
+                ? 'bg-white'
+                : 'bg-background'
+            }`}
+          >
+            <CheckCircle2
+              className={`h-5 w-5 flex-shrink-0 ${
+                point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
+              }`}
+            />
+            <span>{point.text}</span>
+          </div>
+        ))}
+      </div>
+      {activeTab === 0 && hasMoreOverviewPoints && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowAllOverviewPoints((current) => !current)}
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            {showAllOverviewPoints ? 'View Less' : 'View All'}
+            {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -730,17 +811,14 @@ export default function SubcategoryDetail() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h1 className="break-words whitespace-normal text-2xl font-bold text-foreground md:text-3xl">
+                    <h1 className={`break-words whitespace-normal ${SECTION_HEADING_CLASS}`}>
                       {subcategory.name}
                     </h1>
                   </div>
                 </div>
                 {detailDescription.trim() && (
                   <div className="mt-2 w-full md:mt-3">
-                    <p
-                      className="max-w-xl whitespace-pre-wrap text-base leading-7 text-muted-foreground md:text-lg md:leading-8"
-                      style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
-                    >
+                    <p className={`max-w-xl whitespace-pre-wrap ${SECTION_SUBTEXT_CLASS}`}>
                       {detailDescription}
                     </p>
                   </div>
@@ -808,7 +886,7 @@ export default function SubcategoryDetail() {
                         className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
                         style={{ backgroundColor: section.background_color || '#ffffff' }}
                       >
-                        <h2 className="mb-6 text-2xl font-semibold md:text-3xl" style={{ color: section.heading_color || '#000000' }}>{section.heading}</h2>
+                        <h2 className={`${SECTION_HEADING_CLASS} !mb-6`} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
                         <div
                           className={RICH_HTML_CONTENT_CLASS}
                           dangerouslySetInnerHTML={{ __html: section.content || '' }}
@@ -820,49 +898,17 @@ export default function SubcategoryDetail() {
 
                 {shouldShowOverviewCard && showOverviewPointsSection && showHeaderPointsSection && visibleOverviewPoints.length > 0 && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">
-                      {overviewPointsHeading.trim() || defaultOverviewPointsHeading}
+                    <h2 className={SECTION_HEADING_CLASS}>
+                      {subcategory?.key_features_tab_label || defaultOverviewPointsHeading}
                     </h2>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        {displayedOverviewPoints.map((point) => (
-                          <div
-                            key={point.id}
-                                      className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all ${
-                                        point.is_highlighted
-                                          ? 'bg-white'
-                                          : 'bg-background'
-                                      }`}
-                                    >
-                                      <CheckCircle2
-                                        className={`h-5 w-5 flex-shrink-0 ${
-                                          point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
-                                        }`}
-                                      />
-                            <span>{point.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {hasMoreOverviewPoints && (
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => setShowAllOverviewPoints((current) => !current)}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                          >
-                            {showAllOverviewPoints ? 'View Less' : 'View All'}
-                            {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {renderHeaderPoints()}
                   </div>
                 )}
 
                 {/* Video Resources in Overview - only show when Resources tab is visible */}
                 {showResourcesTab && videoUrl2.filter(url => url?.trim()).length > 0 && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{resourcesTabLabel}</h2>
+                    <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {videoUrl2.filter(url => url?.trim()).map((url, index) => {
                         const youtubeId = getYouTubeVideoId(url);
@@ -905,75 +951,36 @@ export default function SubcategoryDetail() {
 
                 {showDownloadsTab && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{downloadsTabLabel}</h2>
+                    <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
                     {downloads.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No downloads available.</p>
                     ) : (
-                      <div
-                        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
-                        style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
-                      >
-                        {downloads.map((download) => (
-                          <div
-                            key={download.id}
-                            className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
-                            style={{
-                              ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
-                              backgroundColor: DOWNLOAD_CARD_BACKGROUND,
-                              minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
-                            }}
-                          >
-                            <div className="flex h-full flex-col">
-                              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                                <Download className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="min-h-0 flex-1">
-                                <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
-                                <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
-                              </div>
-                              <a
-                                href={download.file_url}
-                                download
-                                className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
-                              >
-                                <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
-                                  Download
-                                </span>
-                                <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
-                                  <Download className="h-5 w-5" />
-                                </span>
-                              </a>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      renderDownloadGrid()
                     )}
                   </div>
                 )}
 
                 {showBrandsInOverview && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{brandsTabLabel}</h2>
-                    <div className="max-w-[920px]">
-                      {brands.length > 0 ? (
-                        renderBrandGrid()
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No brands available yet.</p>
-                      )}
-                    </div>
+                    <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
+                    {brands.length > 0 ? (
+                      renderBrandGrid()
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No brands available yet.</p>
+                    )}
                   </div>
                 )}
 
                 {showPricingPlansInOverview && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Pricing Plans</h2>
+                    <h2 className={SECTION_HEADING_CLASS}>Pricing Plans</h2>
                     {renderPricingPlans()}
                   </div>
                 )}
 
                 {productItems.length > 0 && (
                   <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Products</h2>
+                    <h2 className={SECTION_HEADING_CLASS}>Products</h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {productItems.map((product) => (
                         <button
@@ -1008,6 +1015,7 @@ export default function SubcategoryDetail() {
                           hideSeeAllOnMobile={true}
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1020,6 +1028,7 @@ export default function SubcategoryDetail() {
                           offersTable="subcategory_offers"
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1032,6 +1041,7 @@ export default function SubcategoryDetail() {
                           adsTable="subcategory_ads_2col"
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1044,6 +1054,7 @@ export default function SubcategoryDetail() {
                           adsTable="subcategory_ads_2col"
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1056,6 +1067,7 @@ export default function SubcategoryDetail() {
                           adsTable="subcategory_ads_3col"
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1068,6 +1080,7 @@ export default function SubcategoryDetail() {
                           stepsTable="subcategory_logo_steps"
                           compact
                           backgroundColor={section.background_color}
+                          headingClassName={SECTION_HEADING_CLASS}
                         />
                       );
                     }
@@ -1076,7 +1089,7 @@ export default function SubcategoryDetail() {
 
               {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
                 <div className="w-full">
-                  <h2 className="mb-6 text-lg font-bold">Form</h2>
+                  <h2 className={SECTION_HEADING_CLASS}>Form</h2>
                   <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
                     <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
                       <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
@@ -1088,9 +1101,18 @@ export default function SubcategoryDetail() {
           )}
 
 
+          {activeTab === keyFeaturesTabIndex && showHeaderPointsTab && (
+            <div className="w-full">
+              <h2 className={SECTION_HEADING_CLASS}>
+                {subcategory?.key_features_tab_label || 'Key Features'}
+              </h2>
+              {renderHeaderPoints()}
+            </div>
+          )}
+
           {activeTab === resourcesTabIndex && showResourcesTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{resourcesTabLabel}</h2>
+              <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
               {videoUrl2.filter(url => url?.trim()).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No resources available.
@@ -1138,50 +1160,13 @@ export default function SubcategoryDetail() {
           )}
 
           {activeTab === downloadsTabIndex && showDownloadsTab && (
-            <div className="w-full md:px-4 lg:px-6 md:max-w-5xl">
-              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{downloadsTabLabel}</h2>
+            <div className="w-full">
+              <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
 
               {downloads.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No downloads available.</p>
               ) : (
-                <div
-                  className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:[grid-template-columns:repeat(5,minmax(var(--download-card-width),var(--download-card-width)))] xl:justify-start"
-                  style={{ ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px` }}
-                >
-                  {downloads.map((download) => (
-                    <div
-                      key={download.id}
-                      className="w-full overflow-hidden rounded-2xl border border-border p-4 shadow-sm xl:w-[var(--download-card-width)]"
-                      style={{
-                        ['--download-card-width' as string]: `${DOWNLOAD_CARD_WIDTH}px`,
-                        backgroundColor: DOWNLOAD_CARD_BACKGROUND,
-                        minHeight: `${DOWNLOAD_CARD_MIN_HEIGHT}px`,
-                      }}
-                    >
-                      <div className="flex h-full flex-col">
-                        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                          <Download className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="min-h-0 flex-1">
-                          <p className="line-clamp-3 break-words text-sm font-semibold leading-6 text-foreground">{download.file_name}</p>
-                          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{download.file_type}</p>
-                        </div>
-                        <a
-                          href={download.file_url}
-                          download
-                          className="mt-4 inline-flex h-12 w-full items-center overflow-hidden rounded-full bg-gradient-to-r from-[#0f7fb3] to-[#195f9a] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-[1.01]"
-                        >
-                          <span className="flex-1 pl-5 text-left text-base font-bold tracking-wide drop-shadow-sm">
-                            Download
-                          </span>
-                          <span className="mr-1.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#7fd3ff] text-[#145b95] shadow-inner">
-                            <Download className="h-5 w-5" />
-                          </span>
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                renderDownloadGrid()
               )}
             </div>
           )}
@@ -1189,7 +1174,7 @@ export default function SubcategoryDetail() {
 
           {activeTab === brandsTabIndex && showBrandsTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">{brandsTabLabel}</h2>
+              <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
               {brands.length > 0 ? (
                 renderBrandGrid()
               ) : (
@@ -1200,14 +1185,14 @@ export default function SubcategoryDetail() {
 
           {activeTab === pricingTabIndex && showPricingPlansTab && (
             <div className="w-full">
-              <h2 className="mb-6 text-2xl font-semibold text-foreground md:text-3xl">Pricing Plans</h2>
+              <h2 className={SECTION_HEADING_CLASS}>Pricing Plans</h2>
               {renderPricingPlans()}
             </div>
           )}
 
           {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
             <div className="w-full">
-              <h2 className="mb-6 text-lg font-bold">Form</h2>
+              <h2 className={SECTION_HEADING_CLASS}>Form</h2>
               <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
                 <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
                   <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
@@ -1222,26 +1207,50 @@ export default function SubcategoryDetail() {
       {showAboutSection && (
         <section className="pb-10 md:pb-12">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
-            <div className="rounded-none bg-[#013737] p-5 md:pt-20 md:pl-20 md:pr-10 md:pb-10">
+            <div 
+              className="rounded-none p-5 md:pt-20 md:pl-20 md:pr-10 md:pb-10"
+              style={{ backgroundColor: aboutBgColor }}
+            >
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start md:gap-10">
-              <div className="text-white md:pl-4 md:pt-2">
-                <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-[#013737]">
+              <div className="md:pl-4 md:pt-2">
+                <div 
+                  className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${aboutHeadingColor}e6`, color: aboutBgColor }}
+                >
                   {subcategory?.link?.trim() ? (
                     <img src={subcategory.link.trim()} alt="Contact" className="h-8 w-8 object-contain" />
                   ) : (
                     <Mail className="h-5 w-5" />
                   )}
                 </div>
-                <h3 className="max-w-[560px] text-5xl font-medium leading-tight">
+                <h3 
+                  className={`max-w-[560px] ${SECTION_HEADING_CLASS}`}
+                  style={{ color: aboutHeadingColor }}
+                >
                   {(aboutHeading || '').trim() || 'Need Help Deciding?'}
                 </h3>
-                <p className="mt-3 text-2xl font-semibold text-[#9af24d]">Talk to Solution Experts for Free.</p>
-                <p className="mt-5 max-w-[560px] text-base leading-7 text-white/90">
+                <p 
+                  className={`mt-3 ${SECTION_SUBTEXT_CLASS} font-semibold`}
+                  style={{ color: aboutSubheadingColor }}
+                >
+                  Talk to Solution Experts for Free.
+                </p>
+                <p 
+                  className={`mt-5 max-w-[560px] ${SECTION_SUBTEXT_CLASS}`}
+                  style={{ color: aboutDescriptionColor }}
+                >
                   {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
                 </p>
               </div>
               <div className="flex justify-center md:justify-end">
-                <WatchDemoForm subcategoryId={subcategoryId} demoLink={subcategory?.schedule_link} demoFormHeading={demoFormHeading} demoButtonLabel={demoButtonLabel} />
+                <WatchDemoForm 
+                  subcategoryId={subcategoryId} 
+                  demoLink={subcategory?.schedule_link} 
+                  demoFormHeading={demoFormHeading} 
+                  demoButtonLabel={demoButtonLabel}
+                  buttonBgColor={aboutButtonBgColor}
+                  buttonTextColor={aboutButtonTextColor}
+                />
               </div>
             </div>
             </div>

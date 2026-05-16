@@ -26,6 +26,7 @@ interface FeaturedCardsProps {
   hideSeeAllOnMobile?: boolean;
   compact?: boolean;
   backgroundColor?: string | null;
+  headingClassName?: string;
 }
 
 export default function FeaturedCards({
@@ -35,6 +36,7 @@ export default function FeaturedCards({
   hideSeeAllOnMobile = false,
   compact = false,
   backgroundColor,
+  headingClassName,
 }: FeaturedCardsProps) {
   const db = supabase as any;
   const [cards, setCards] = useState<Card[]>([]);
@@ -131,7 +133,7 @@ export default function FeaturedCards({
     <div className={compact ? '' : 'py-10 md:py-14'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
-          <h2 className={`mb-6 text-2xl md:text-3xl font-semibold ${compact ? 'mt-0' : ''}`}>
+          <h2 className={headingClassName || `mb-6 text-2xl md:text-3xl font-semibold ${compact ? 'mt-0' : ''}`}>
             {heading}
           </h2>
         )}

@@ -58,7 +58,14 @@ interface Subcategory {
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
+  key_features_tab_label?: string | null;
   hero_background_color?: string | null;
+  about_bg_color?: string | null;
+  about_heading_color?: string | null;
+  about_subheading_color?: string | null;
+  about_description_color?: string | null;
+  about_button_bg_color?: string | null;
+  about_button_text_color?: string | null;
 }
 interface CategoryButton { id?: string; label: string; link: string | null; is_visible: boolean; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
@@ -336,6 +343,12 @@ export default function AdminDashboard() {
   const [leadsCtaLogo, setLeadsCtaLogo] = useState<string | null>(null);
   const [leadsCtaHeading, setLeadsCtaHeading] = useState('');
   const [leadsCtaDescription, setLeadsCtaDescription] = useState('');
+  const [aboutBgColor, setAboutBgColor] = useState('#013737');
+  const [aboutHeadingColor, setAboutHeadingColor] = useState('#ffffff');
+  const [aboutSubheadingColor, setAboutSubheadingColor] = useState('#9af24d');
+  const [aboutDescriptionColor, setAboutDescriptionColor] = useState('#ffffff');
+  const [aboutButtonBgColor, setAboutButtonBgColor] = useState('#16a34a');
+  const [aboutButtonTextColor, setAboutButtonTextColor] = useState('#ffffff');
   const [demoFormHeading, setDemoFormHeading] = useState('See The Software In Action\nWatch Free Demo!');
   const [demoButtonLabel, setDemoButtonLabel] = useState('Get Free Advice');
   const [leadsCtaSaving, setLeadsCtaSaving] = useState(false);
@@ -361,6 +374,7 @@ export default function AdminDashboard() {
   const [editResourcesTabLabelState, setEditResourcesTabLabelState] = useState<Record<string, string>>({});
   const [editDownloadsTabLabelState, setEditDownloadsTabLabelState] = useState<Record<string, string>>({});
   const [editBrandsTabLabelState, setEditBrandsTabLabelState] = useState<Record<string, string>>({});
+  const [editKeyFeaturesTabLabelState, setEditKeyFeaturesTabLabelState] = useState<Record<string, string>>({});
   const [editAd1, setEditAd1] = useState<Partial<Ad2> | null>(null);
   const [editSubOverviewPoints, setEditSubOverviewPoints] = useState<SubcategoryOverviewPoint[]>([]);
   const [editSubOverviewPointsState, setEditSubOverviewPointsState] = useState<Record<string, SubcategoryOverviewPoint[]>>({});
@@ -474,6 +488,12 @@ export default function AdminDashboard() {
     setLeadsCtaLogo(first.link || null);
     setLeadsCtaHeading(first.about_heading || '');
     setLeadsCtaDescription(first.about_content || '');
+    setAboutBgColor(first.about_bg_color || '#013737');
+    setAboutHeadingColor(first.about_heading_color || '#ffffff');
+    setAboutSubheadingColor(first.about_subheading_color || '#9af24d');
+    setAboutDescriptionColor(first.about_description_color || '#ffffff');
+    setAboutButtonBgColor(first.about_button_bg_color || '#16a34a');
+    setAboutButtonTextColor(first.about_button_text_color || '#ffffff');
     setDemoFormHeading((first as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
     setDemoButtonLabel((first as any).demo_button_label || 'Get Free Advice');
   }, [subcategories]);
@@ -1862,7 +1882,13 @@ export default function AdminDashboard() {
           show_schedule_2_in_separate_tab: sub.show_schedule_2_in_separate_tab ?? false,
           about_heading: sub.about_heading || 'About',
           about_content: sub.about_content || null,
-          overview_points_heading: sub.overview_points_heading || 'Header',
+          about_bg_color: sub.about_bg_color || null,
+          about_heading_color: sub.about_heading_color || null,
+          about_subheading_color: sub.about_subheading_color || null,
+          about_description_color: sub.about_description_color || null,
+          about_button_bg_color: sub.about_button_bg_color || null,
+          about_button_text_color: sub.about_button_text_color || null,
+          overview_points_heading: editKeyFeaturesTabLabelState[sub.id] || sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
           show_downloads: editShowDownloadsState[sub.id] ?? true,
@@ -1874,6 +1900,7 @@ export default function AdminDashboard() {
           resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
           downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
           brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
+          key_features_tab_label: editKeyFeaturesTabLabelState[sub.id] ?? 'Key Features',
           sort_order: index,
         }));
         const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
@@ -2156,9 +2183,10 @@ export default function AdminDashboard() {
       setEditSubs([]);
       setEditDownloads([]);
       loadAll();
-    } catch (error) {
-      console.error('Error saving category:', error instanceof Error ? error.message : JSON.stringify(error));
-      toast.error('Failed to save category.');
+    } catch (error: any) {
+      console.error('Error saving category:', error);
+      const message = error?.message || 'Save failed.';
+      toast.error(`Failed to save category: ${message}`);
     } finally {
       setIsSavingCategory(false);
     }
@@ -2183,6 +2211,12 @@ export default function AdminDashboard() {
           link: leadsCtaLogo || null,
           about_heading: leadsCtaHeading || null,
           about_content: leadsCtaDescription || null,
+          about_bg_color: aboutBgColor || null,
+          about_heading_color: aboutHeadingColor || null,
+          about_subheading_color: aboutSubheadingColor || null,
+          about_description_color: aboutDescriptionColor || null,
+          about_button_bg_color: aboutButtonBgColor || null,
+          about_button_text_color: aboutButtonTextColor || null,
           demo_form_heading: demoFormHeading || 'See The Software In Action\nWatch Free Demo!',
           demo_button_label: demoButtonLabel || 'Get Free Advice',
         } as any)
@@ -2191,10 +2225,15 @@ export default function AdminDashboard() {
       await loadAll();
       toast.success('Bottom demo section content saved for all subcategories.');
       setLeadsCtaStatus({ type: 'success', text: 'Saved for all subcategories.' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving bottom demo section content:', error);
-      toast.error('Failed to save bottom demo section content.');
-      setLeadsCtaStatus({ type: 'error', text: 'Save failed. Please try again.' });
+      const message = error?.message || 'Save failed.';
+      if (message.includes('column') && message.includes('does not exist')) {
+        toast.error('Save failed: Database columns missing. Please run the SQL migration in Supabase.');
+      } else {
+        toast.error(`Failed to save: ${message}`);
+      }
+      setLeadsCtaStatus({ type: 'error', text: `Save failed: ${message}` });
     } finally {
       setLeadsCtaSaving(false);
     }
@@ -2983,7 +3022,7 @@ export default function AdminDashboard() {
                                               setEditingSubcategoryId(sub.id);
                                               setEditButtons(editButtonsState[sub.id] || []);
                                               setEditSubDownloads(editSubDownloadsState[sub.id] || []);
-                                              setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: prev[sub.id] ?? true }));
+                                              setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? true }));
                                               setEditSubBrands(editSubBrandsState[sub.id] || []);
                                               setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
                                               setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
@@ -2992,6 +3031,7 @@ export default function AdminDashboard() {
                                               setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
                                               setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                              setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
                                               setEditPricingPlans(editPricingPlansState[sub.id] || []);
                                               setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
@@ -3162,7 +3202,7 @@ export default function AdminDashboard() {
                                     setEditingSubcategoryId(sub.id);
                                     setEditButtons(editButtonsState[sub.id] || []);
                                     setEditSubDownloads(editSubDownloadsState[sub.id] || []);
-                                    setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: prev[sub.id] ?? true }));
+                                    setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? true }));
                                     setEditSubBrands(editSubBrandsState[sub.id] || []);
                                     setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
                                     setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
@@ -3378,6 +3418,7 @@ export default function AdminDashboard() {
                                 setEditResourcesTabLabelState(prev => ({ ...prev, [editingSub.id]: editResourcesTabLabelState[editingSub.id] ?? 'Resources' }));
                                 setEditDownloadsTabLabelState(prev => ({ ...prev, [editingSub.id]: editDownloadsTabLabelState[editingSub.id] ?? 'Downloads' }));
                                 setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
+                                setEditKeyFeaturesTabLabelState(prev => ({ ...prev, [editingSub.id]: editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features' }));
                                 await saveCategory();
                                 setEditingSubcategoryId(null);
                               }}
@@ -3525,7 +3566,7 @@ export default function AdminDashboard() {
 
                     <div className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Header Points</label>
+                        <label className="block text-sm font-medium">Key Features</label>
                         <Switch
                           checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
                           onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
@@ -3534,14 +3575,14 @@ export default function AdminDashboard() {
                       {editShowHeaderPointsSectionState[editingSub.id] !== false && (
                         <>
                           <div className="mb-3">
-                            <label className="block text-sm font-medium mb-1.5">Heading</label>
+
                             <input
-                              value={editingSub.overview_points_heading || ''}
+                              value={editKeyFeaturesTabLabelState[editingSub.id] || ''}
                               onChange={(e) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, overview_points_heading: e.target.value } : s));
+                                setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value });
                               }}
                               className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                              placeholder="Header points heading"
+                              placeholder="Key Features"
                             />
                           </div>
                           {editSubOverviewPoints.length > 0 ? (
@@ -3684,6 +3725,25 @@ export default function AdminDashboard() {
 
                     
                     <div className="space-y-3 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium">Resources</label>
+                        <Switch
+                          checked={editShowResourcesState[editingSub.id] ?? true}
+                          onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                        <input
+                          value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
+                          onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="Resources"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-t pt-4">
                       <label className="block text-sm font-medium">Video URLs (Resources)</label>
                       <div className="space-y-3">
                         {(editingSub.video_url_2 || []).map((url, index) => (
@@ -3726,114 +3786,97 @@ export default function AdminDashboard() {
 
                     <div className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Resources</label>
-                        <Switch
-                          checked={editShowResourcesState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                        <input
-                          value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
-                          onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Resources"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
                         <label className="block text-sm font-medium">Downloads</label>
                         <Switch
                           checked={editShowDownloadsState[editingSub.id] ?? true}
                           onCheckedChange={(value) => setEditShowDownloadsState({ ...editShowDownloadsState, [editingSub.id]: value })}
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                        <input
-                          value={editDownloadsTabLabelState[editingSub.id] ?? 'Downloads'}
-                          onChange={(e) => setEditDownloadsTabLabelState({ ...editDownloadsTabLabelState, [editingSub.id]: e.target.value })}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Downloads"
-                        />
-                      </div>
                       {editShowDownloadsState[editingSub.id] !== false && (
-                        <div className="space-y-3">
-                          {editSubDownloads.map((download, index) => (
-                            <div key={download.id || index} className="rounded-xl border border-border p-3">
-                              <div className="mb-3 flex items-center justify-between">
-                                <span className="text-sm font-medium">Download {index + 1}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                            <input
+                              value={editDownloadsTabLabelState[editingSub.id] ?? 'Downloads'}
+                              onChange={(e) => setEditDownloadsTabLabelState({ ...editDownloadsTabLabelState, [editingSub.id]: e.target.value })}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Downloads"
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            {editSubDownloads.map((download, index) => (
+                              <div key={download.id || index} className="rounded-xl border border-border p-3">
+                                <div className="mb-3 flex items-center justify-between">
+                                  <span className="text-sm font-medium">Download {index + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newDownloads = [...editSubDownloads];
+                                      newDownloads.splice(index, 1);
+                                      setEditSubDownloads(newDownloads);
+                                    }}
+                                    className="p-1 text-destructive"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <input
+                                  placeholder="File name"
+                                  value={download.file_name || ''}
+                                  onChange={(e) => {
                                     const newDownloads = [...editSubDownloads];
-                                    newDownloads.splice(index, 1);
+                                    newDownloads[index] = { ...newDownloads[index], file_name: e.target.value };
                                     setEditSubDownloads(newDownloads);
                                   }}
-                                  className="p-1 text-destructive"
+                                  className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                />
+                                <FileUpload
+                                  label="Upload File"
+                                  value={download.file_url || null}
+                                  fileName={download.file_name || undefined}
+                                  folder="downloads"
+                                  onChange={({ url, name }) => {
+                                    const newDownloads = [...editSubDownloads];
+                                    newDownloads[index] = {
+                                      ...newDownloads[index],
+                                      file_url: url,
+                                      file_name: newDownloads[index].file_name?.trim() ? newDownloads[index].file_name : name,
+                                    };
+                                    setEditSubDownloads(newDownloads);
+                                  }}
+                                  onRemove={() => {
+                                    const newDownloads = [...editSubDownloads];
+                                    newDownloads[index] = { ...newDownloads[index], file_url: '' };
+                                    setEditSubDownloads(newDownloads);
+                                  }}
+                                />
+                                <select
+                                  value={download.file_type || 'pdf'}
+                                  onChange={(e) => {
+                                    const newDownloads = [...editSubDownloads];
+                                    newDownloads[index] = { ...newDownloads[index], file_type: e.target.value };
+                                    setEditSubDownloads(newDownloads);
+                                  }}
+                                  className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                  <X className="w-4 h-4" />
-                                </button>
+                                  <option value="pdf">PDF</option>
+                                  <option value="file">File</option>
+                                  <option value="image">Image</option>
+                                  <option value="video">Video</option>
+                                </select>
                               </div>
-                              <input
-                                placeholder="File name"
-                                value={download.file_name || ''}
-                                onChange={(e) => {
-                                  const newDownloads = [...editSubDownloads];
-                                  newDownloads[index] = { ...newDownloads[index], file_name: e.target.value };
-                                  setEditSubDownloads(newDownloads);
-                                }}
-                                className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                              <FileUpload
-                                label="Upload File"
-                                value={download.file_url || null}
-                                fileName={download.file_name || undefined}
-                                folder="downloads"
-                                onChange={({ url, name }) => {
-                                  const newDownloads = [...editSubDownloads];
-                                  newDownloads[index] = {
-                                    ...newDownloads[index],
-                                    file_url: url,
-                                    file_name: newDownloads[index].file_name?.trim() ? newDownloads[index].file_name : name,
-                                  };
-                                  setEditSubDownloads(newDownloads);
-                                }}
-                                onRemove={() => {
-                                  const newDownloads = [...editSubDownloads];
-                                  newDownloads[index] = { ...newDownloads[index], file_url: '' };
-                                  setEditSubDownloads(newDownloads);
-                                }}
-                              />
-                              <select
-                                value={download.file_type || 'pdf'}
-                                onChange={(e) => {
-                                  const newDownloads = [...editSubDownloads];
-                                  newDownloads[index] = { ...newDownloads[index], file_type: e.target.value };
-                                  setEditSubDownloads(newDownloads);
-                                }}
-                                className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              >
-                                <option value="pdf">PDF</option>
-                                <option value="file">File</option>
-                                <option value="image">Image</option>
-                                <option value="video">Video</option>
-                              </select>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {editSubDownloads.length < 10 && (
-                        <button
-                          type="button"
-                          onClick={() => setEditSubDownloads([...editSubDownloads, { id: crypto.randomUUID(), file_name: '', file_url: '', file_type: 'pdf' }])}
-                          className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                        >
-                          <Plus className="w-4 h-4" /> Add Download
-                        </button>
+                            ))}
+                          </div>
+                          {editSubDownloads.length < 10 && (
+                            <button
+                              type="button"
+                              onClick={() => setEditSubDownloads([...editSubDownloads, { id: crypto.randomUUID(), file_name: '', file_url: '', file_type: 'pdf' }])}
+                              className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                            >
+                              <Plus className="w-4 h-4" /> Add Download
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -5478,6 +5521,116 @@ export default function AdminDashboard() {
                     className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     placeholder="We'll help you find the right tools..."
                   />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutBgColor}
+                        onChange={(e) => setAboutBgColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutBgColor}
+                        onChange={(e) => setAboutBgColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#013737"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Heading Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutHeadingColor}
+                        onChange={(e) => setAboutHeadingColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutHeadingColor}
+                        onChange={(e) => setAboutHeadingColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#ffffff"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Subheading Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutSubheadingColor}
+                        onChange={(e) => setAboutSubheadingColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutSubheadingColor}
+                        onChange={(e) => setAboutSubheadingColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#9af24d"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Description Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutDescriptionColor}
+                        onChange={(e) => setAboutDescriptionColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutDescriptionColor}
+                        onChange={(e) => setAboutDescriptionColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#ffffff"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Button Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutButtonBgColor}
+                        onChange={(e) => setAboutButtonBgColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutButtonBgColor}
+                        onChange={(e) => setAboutButtonBgColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#16a34a"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Button Text Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={aboutButtonTextColor}
+                        onChange={(e) => setAboutButtonTextColor(e.target.value)}
+                        className="h-10 w-16 rounded cursor-pointer border border-input"
+                      />
+                      <input
+                        type="text"
+                        value={aboutButtonTextColor}
+                        onChange={(e) => setAboutButtonTextColor(e.target.value)}
+                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="#ffffff"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="border-t border-border pt-4">
                   <h4 className="text-sm font-semibold mb-3">Demo Form Settings</h4>

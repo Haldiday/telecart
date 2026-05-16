@@ -23,6 +23,7 @@ interface OffersSectionProps {
   offersTable?: string;
   compact?: boolean;
   backgroundColor?: string | null;
+  headingClassName?: string;
 }
 
 export default function OffersSection({
@@ -31,6 +32,7 @@ export default function OffersSection({
   offersTable = 'offers',
   compact = false,
   backgroundColor,
+  headingClassName,
 }: OffersSectionProps) {
   const db = supabase as any;
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -106,7 +108,7 @@ export default function OffersSection({
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         <div className={`mb-6 flex items-center justify-between ${compact ? 'mb-4' : ''}`}>
           {showHeading && (
-            <h2 className="text-2xl md:text-3xl font-semibold">
+            <h2 className={headingClassName || "text-2xl md:text-3xl font-semibold"}>
               {heading}
             </h2>
           )}

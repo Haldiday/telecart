@@ -22,6 +22,7 @@ interface Ads2ColSectionProps {
   mobileContainImage?: boolean;
   compact?: boolean;
   backgroundColor?: string | null;
+  headingClassName?: string;
 }
 
 export default function Ads2ColSection({
@@ -31,6 +32,7 @@ export default function Ads2ColSection({
   mobileContainImage = false,
   compact = false,
   backgroundColor,
+  headingClassName,
 }: Ads2ColSectionProps) {
   const db = supabase as any;
   const [ads, setAds] = useState<Ad[]>([]);
@@ -112,7 +114,7 @@ export default function Ads2ColSection({
     <div className={compact ? '' : 'py-6 md:py-10'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
-          <h2 className="mb-6 text-2xl md:text-3xl font-semibold">
+          <h2 className={headingClassName || "mb-6 text-2xl md:text-3xl font-semibold"}>
             {heading}
           </h2>
         )}
