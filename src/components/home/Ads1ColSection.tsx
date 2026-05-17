@@ -107,7 +107,7 @@ export default function Ads1ColSection({
     <div className={compact ? '' : 'py-6 md:py-10'}>
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         {showHeading && (
-          <h2 className={headingClassName || "mb-6 text-2xl md:text-3xl font-semibold"}>
+          <h2 className={headingClassName || "section-heading mb-6"}>
             {heading}
           </h2>
         )}
@@ -124,7 +124,7 @@ export default function Ads1ColSection({
                 className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
               >
                 {/* ✅ Banner size */}
-                <div className="h-[110px] md:h-[130px] lg:h-[140px] w-full bg-[#f5f5f5] flex items-center justify-center">
+                <div className="h-[110px] md:h-[130px] lg:h-[200px] w-full bg-[#f5f5f5] flex items-center justify-center">
                   {ad.image_url && (
                     <img
                       src={ad.image_url}

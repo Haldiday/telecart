@@ -87,7 +87,7 @@ export default function HeroSection() {
           .select('id, name')
           .ilike('name', `%${searchTerm}%`)
           .order('sort_order'),
-        supabase
+        (supabase as any)
           .from('subcategories')
           .select('id, category_id, name, custom_link')
           .ilike('name', `%${searchTerm}%`)

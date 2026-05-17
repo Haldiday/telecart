@@ -108,7 +108,7 @@ export default function OffersSection({
       <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
         <div className={`mb-6 flex items-center justify-between ${compact ? 'mb-4' : ''}`}>
           {showHeading && (
-            <h2 className={headingClassName || "text-2xl md:text-3xl font-semibold"}>
+            <h2 className={headingClassName || "section-heading"}>
               {heading}
             </h2>
           )}

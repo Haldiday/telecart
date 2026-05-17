@@ -183,8 +183,8 @@ const RICH_HTML_CONTENT_CLASS =
   '[&_.rich-blockquote]:px-4 [&_.rich-blockquote]:py-3 [&_.rich-blockquote]:my-4 [&_.rich-blockquote]:italic ' +
   '[&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline';
 
-const SECTION_HEADING_CLASS = 'font-inter font-bold text-[32px] leading-[40px] text-[#111111] mb-6';
-const SECTION_SUBTEXT_CLASS = 'font-inter font-normal text-[20px] leading-[32px] text-[#333333]';
+const SECTION_HEADING_CLASS = 'section-heading mb-6';
+const SECTION_SUBTEXT_CLASS = 'section-subtext';
 
 interface SubcategoryPageSection {
   id: string;
@@ -755,7 +755,7 @@ export default function SubcategoryDetail() {
           <div className="mb-4 text-center">
             <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
             <div className="mt-2 flex items-baseline justify-center gap-1">
-              <span className="text-3xl font-bold text-foreground">{plan.currency}{plan.price}</span>
+              <span className="text-3xl font-bold text-foreground">{plan.currency || '₹'}{plan.price}</span>
               <span className="text-sm text-muted-foreground">{plan.duration}</span>
             </div>
           </div>
@@ -1242,7 +1242,7 @@ export default function SubcategoryDetail() {
                   {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
                 </p>
               </div>
-              <div className="flex justify-center md:justify-end">
+              <div className="flex justify-center md:justify-center my-10 md:my-14">
                 <WatchDemoForm 
                   subcategoryId={subcategoryId} 
                   demoLink={subcategory?.schedule_link} 

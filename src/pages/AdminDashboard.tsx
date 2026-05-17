@@ -2068,7 +2068,7 @@ export default function AdminDashboard() {
                 subcategory_id: activeSubId,
                 plan_name: plan.plan_name.trim(),
                 price: plan.price.trim(),
-                currency: plan.currency || '$',
+                currency: plan.currency || '₹',
                 duration: plan.duration || '/month',
                 description: plan.description?.trim() || null,
                 features: plan.features || [],
@@ -2094,7 +2094,7 @@ export default function AdminDashboard() {
                   subcategory_id: subId,
                   plan_name: plan.plan_name.trim(),
                   price: plan.price.trim(),
-                  currency: plan.currency || '$',
+                  currency: plan.currency || '₹',
                   duration: plan.duration || '/month',
                   description: plan.description?.trim() || null,
                   features: plan.features || [],
@@ -3965,16 +3965,21 @@ export default function AdminDashboard() {
                                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                 />
                                 <div className="flex gap-2">
-                                  <input
-                                    placeholder="Currency ($)"
-                                    value={plan.currency || '$'}
+                                  <select
+                                    value={plan.currency || '₹'}
                                     onChange={(e) => {
                                       const newPlans = [...editPricingPlans];
                                       newPlans[index] = { ...newPlans[index], currency: e.target.value };
                                       setEditPricingPlans(newPlans);
                                     }}
-                                    className="w-16 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  />
+                                    className="w-16 rounded-lg border border-input bg-background px-1 py-2 text-sm"
+                                  >
+                                    <option value="₹">₹</option>
+                                    <option value="$">$</option>
+                                    <option value="£">£</option>
+                                    <option value="€">€</option>
+                                    <option value="¥">¥</option>
+                                  </select>
                                   <input
                                     placeholder="Price"
                                     value={plan.price || ''}
@@ -4126,7 +4131,7 @@ export default function AdminDashboard() {
                           ))}
                           <button
                             type="button"
-                            onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '$', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
+                            onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '₹', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
                             className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                           >
                             <Plus className="w-4 h-4" /> Add Pricing Plan

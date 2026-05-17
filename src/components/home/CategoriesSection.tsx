@@ -101,12 +101,9 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
-          <h2 className="mb-8 text-[24px] leading-[1.2] font-[575] text-[#2d2f29]">
-  {heading}
-</h2>
-
-
-
+          <h2 className="section-heading mb-6">
+            {heading}
+          </h2>
         )}
 
         {/* Mobile: Collapsible View */}
@@ -141,7 +138,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                           className="h-6 w-6 object-contain"
                         />
                       )}
-                      <h3 className="text-[14px] font-base text-foreground">
+                      <h3 className="category-card-heading text-left">
                         {category.name}
                       </h3>
                     </div>
@@ -159,8 +156,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         <button
                           key={sub.id}
                           onClick={() => navigateToSubcategory(sub, category.id, navigate)}
-                          className="block w-full text-left text-sm !text-black hover:!text-blue-600 hover:underline transition-colors"
-
+                          className="block w-full text-left section-subtext hover:!text-blue-600 hover:underline transition-colors"
                         >
                           {sub.name}
                         </button>
@@ -205,7 +201,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         className="mx-auto mb-2 h-10 w-10 md:h-14 md:w-14 object-contain"
                       />
                     )}
-                    <h3 className="text-lg md:text-lg font-medium">
+                    <h3 className="category-card-heading">
                       {category.name}
                     </h3>
                   </button>
@@ -215,7 +211,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       <button
                         key={sub.id}
                         onClick={() => navigateToSubcategory(sub, category.id, navigate)}
-                        className="w-full text-left border-b border-border/30 py-2 last:border-b-0 text-sm md:text-base text-foreground hover:text-primary hover:underline transition-colors"
+                        className="w-full text-left border-b border-border/30 py-2 last:border-b-0 section-subtext hover:text-primary hover:underline transition-colors"
                       >
                         {sub.name}
                       </button>

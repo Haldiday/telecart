@@ -1,7 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer components {
+    .section-heading {
+        @apply font-inter font-bold text-[32px] leading-[40px] text-[#111111];
+    }
+    .section-subtext {
+        @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
+    }
+    .category-card-heading {
+        @apply font-inter font-bold text-[20px] leading-[32px] text-[#111111];
+    }
+}
+
 @layer base {
      :root {
         --background: 0 0% 100%;
