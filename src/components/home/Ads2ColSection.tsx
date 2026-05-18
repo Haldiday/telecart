@@ -112,9 +112,9 @@ export default function Ads2ColSection({
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-6 md:py-10'}>
-      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
-          <h2 className={headingClassName || "section-heading mb-6"}>
+          <h2 className={headingClassName || "section-heading"}>
             {heading}
           </h2>
         )}
@@ -154,7 +154,7 @@ export default function Ads2ColSection({
             </div>
           </div>
         ) : (
-          <div className="flex gap-3">
+          <div className="flex gap-5">
             {adsToDisplay.map((ad) => (
               <div key={ad.id} className="flex-1">
                 <a

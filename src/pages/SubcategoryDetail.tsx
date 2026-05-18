@@ -15,8 +15,10 @@ import {
   Download,
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Info,
   Play,
   Maximize2,
@@ -183,7 +185,7 @@ const RICH_HTML_CONTENT_CLASS =
   '[&_.rich-blockquote]:px-4 [&_.rich-blockquote]:py-3 [&_.rich-blockquote]:my-4 [&_.rich-blockquote]:italic ' +
   '[&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_a]:text-primary [&_a]:hover:underline';
 
-const SECTION_HEADING_CLASS = 'section-heading mb-6';
+const SECTION_HEADING_CLASS = 'section-heading';
 const SECTION_SUBTEXT_CLASS = 'section-subtext';
 
 interface SubcategoryPageSection {
@@ -658,7 +660,7 @@ export default function SubcategoryDetail() {
       {brands.map((brand) => {
         const externalUrl = normalizeExternalUrl(brand.link || '');
         const brandBoxClassName =
-          'flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all';
+          'flex items-center rounded-xl border border-border/50 bg-background px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all';
         const content = <span>{brand.name || 'Unnamed brand'}</span>;
 
         if (externalUrl) {
@@ -668,7 +670,7 @@ export default function SubcategoryDetail() {
               href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md hover:text-primary`}
+              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md hover:text-primary hover:underline`}
             >
               {content}
             </a>
@@ -691,7 +693,7 @@ export default function SubcategoryDetail() {
           key={download.id}
           href={download.file_url}
           download
-          className="flex items-center rounded-xl border border-border bg-background px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all hover:border-primary/50 hover:shadow-md hover:text-primary"
+          className="flex items-center rounded-xl border border-border/50 bg-background px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:border-primary/50 hover:shadow-md hover:text-primary hover:underline"
         >
           <span>{download.file_name}</span>
         </a>
@@ -705,14 +707,14 @@ export default function SubcategoryDetail() {
         {(activeTab === 0 && !showAllOverviewPoints ? visibleOverviewPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT) : visibleOverviewPoints).map((point) => (
           <div
             key={point.id}
-            className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-left text-base md:text-lg text-black font-medium transition-all ${
+            className={`flex items-center gap-3 rounded-xl border border-border/50 px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:text-primary hover:underline ${
               point.is_highlighted
                 ? 'bg-white'
                 : 'bg-background'
             }`}
           >
             <CheckCircle2
-              className={`h-5 w-5 flex-shrink-0 ${
+              className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${
                 point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
               }`}
             />
@@ -725,7 +727,7 @@ export default function SubcategoryDetail() {
           <button
             type="button"
             onClick={() => setShowAllOverviewPoints((current) => !current)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
           >
             {showAllOverviewPoints ? 'View Less' : 'View All'}
             {showAllOverviewPoints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -803,46 +805,73 @@ export default function SubcategoryDetail() {
         >
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
             <div className="flex w-full flex-col gap-y-6 pb-12 pt-12">
-              <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left md:gap-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                  {category.icon_url && (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff] shadow-lg">
-                      <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <h1 className={`break-words whitespace-normal ${SECTION_HEADING_CLASS}`}>
-                      {subcategory.name}
-                    </h1>
-                  </div>
+              <div className="flex-1 min-w-0 flex flex-col items-start justify-start gap-3 text-left">
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+                  <ChevronRight className="h-3 w-3" />
+                  <Link to={`/category/${category.id}/subcategories`} className="hover:text-foreground transition-colors">{category.name}</Link>
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="text-foreground font-medium">{subcategory.name}</span>
                 </div>
+
+                {/* Category Name below breadcrumb */}
+                <div className="text-sm md:text-base text-muted-foreground mb-2">
+                  {category.name}
+                </div>
+
+                {/* Logo */}
+                {category.icon_url && (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#e9ddff] shadow-sm mb-2">
+                    <img src={category.icon_url} alt={category.name} className="h-11 w-11 object-contain" />
+                  </div>
+                )}
+
+                {/* Subcategory Name */}
+                <div className="min-w-0 mb-1">
+                  <h1 className="break-words whitespace-normal font-inter font-bold text-[32px] leading-[40px] text-[#111111]">
+                    {subcategory.name}
+                  </h1>
+                </div>
+
+                {/* Description */}
                 {detailDescription.trim() && (
-                  <div className="mt-2 w-full md:mt-3">
+                  <div className="mb-2 w-full">
                     <p className={`max-w-xl whitespace-pre-wrap ${SECTION_SUBTEXT_CLASS}`}>
                       {detailDescription}
                     </p>
                   </div>
                 )}
+
                 {/* Hero Buttons */}
                 {heroButtons.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    {heroButtons.map((button, index) => (
-                      <a
-                        key={button.id}
-                        href={normalizeExternalUrl(button.link || '') || '#'}
-                        target={button.link ? '_blank' : undefined}
-                        rel={button.link ? 'noopener noreferrer' : undefined}
-                        className={`
-                          px-8 py-3 rounded-2xl text-lg font-medium transition-all duration-200
-                          ${index === 0 || index === 2 
-                            ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600 hover:shadow-lg' 
-                            : 'bg-white text-gray-800 border-2 border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md'
-                          }
-                        `}
-                      >
-                        {button.label}
-                      </a>
-                    ))}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {heroButtons.map((button, index) => {
+                      let buttonStyle = "";
+                      if (index === 0) {
+                        buttonStyle = "bg-[#1A1A1A] text-white hover:bg-black";
+                      } else if (index === 1) {
+                        buttonStyle = "bg-[#2563EB] text-white hover:bg-blue-700";
+                      } else {
+                        buttonStyle = "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50";
+                      }
+
+                      return (
+                        <a
+                          key={button.id}
+                          href={normalizeExternalUrl(button.link || '') || '#'}
+                          target={button.link ? '_blank' : undefined}
+                          rel={button.link ? 'noopener noreferrer' : undefined}
+                          className={`
+                            inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm
+                            ${buttonStyle}
+                          `}
+                        >
+                          {button.label}
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </a>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -886,7 +915,7 @@ export default function SubcategoryDetail() {
                         className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
                         style={{ backgroundColor: section.background_color || '#ffffff' }}
                       >
-                        <h2 className={`${SECTION_HEADING_CLASS} !mb-6`} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
+                        <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
                         <div
                           className={RICH_HTML_CONTENT_CLASS}
                           dangerouslySetInnerHTML={{ __html: section.content || '' }}
@@ -897,7 +926,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {shouldShowOverviewCard && showOverviewPointsSection && showHeaderPointsSection && visibleOverviewPoints.length > 0 && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>
                       {subcategory?.key_features_tab_label || defaultOverviewPointsHeading}
                     </h2>
@@ -950,7 +979,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showDownloadsTab && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
                     {downloads.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No downloads available.</p>
@@ -961,7 +990,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showBrandsInOverview && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
                     {brands.length > 0 ? (
                       renderBrandGrid()
@@ -972,14 +1001,14 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showPricingPlansInOverview && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>Pricing Plans</h2>
                     {renderPricingPlans()}
                   </div>
                 )}
 
                 {productItems.length > 0 && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>Products</h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {productItems.map((product) => (
@@ -992,9 +1021,9 @@ export default function SubcategoryDetail() {
                               window.open(externalUrl, '_blank', 'noopener,noreferrer');
                             }
                           }}
-                          className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+                          className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-5 py-2 text-left transition-all hover:border-primary/50 hover:shadow-md"
                         >
-                          <span className="truncate pr-4 text-base font-medium text-foreground">{product.title}</span>
+                          <span className="truncate pr-4 text-sm md:text-base font-normal text-foreground group-hover:text-primary group-hover:underline">{product.title}</span>
                         </button>
                       ))}
                     </div>

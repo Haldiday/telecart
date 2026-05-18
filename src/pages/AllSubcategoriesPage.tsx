@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -97,10 +97,13 @@ export default function AllSubcategoriesPage() {
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-6">
-            <Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" /> Back to Home
-            </Link>
+          <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-foreground font-medium">{category.name}</span>
+            </div>
 
             <div className="flex items-center gap-4">
               {category.icon_url && (
@@ -122,11 +125,11 @@ export default function AllSubcategoriesPage() {
         </div>
 
         {/* 🔥 Compact Subcategories Grid */}
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
           {subcategories.length === 0 ? (
             <p className="text-center text-muted-foreground">No subcategories available.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
               {subcategories.map((sub) => (
                 <div
@@ -137,7 +140,7 @@ export default function AllSubcategoriesPage() {
                     onClick={() => navigateToSubcategory(sub, categoryId, navigate)}
                     className="group min-w-0 flex-1 text-left"
                   >
-                    <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
+                    <span className="block max-w-full text-sm md:text-base font-normal text-foreground transition-all group-hover:text-primary group-hover:underline">
                       {sub.name}
                     </span>
                   </button>

@@ -105,8 +105,8 @@ export default function OffersSection({
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
-        <div className={`mb-6 flex items-center justify-between ${compact ? 'mb-4' : ''}`}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+        <div className="flex items-center justify-between">
           {showHeading && (
             <h2 className={headingClassName || "section-heading"}>
               {heading}
@@ -137,9 +137,12 @@ export default function OffersSection({
                     className="flex-none"
                     style={{ width: `calc(${slideWidth}% - 1.5rem)` }}
                   >
-                    <a href={offer.link || '#'} className={`flex flex-col group rounded-xl overflow-hidden ${offer.show_border ? 'border' : ''}`} style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}>
+                    <a href={offer.link || '#'} className="flex flex-col group">
                       {offer.image_url && (
-                        <div className="h-[300px] overflow-hidden bg-white">
+                        <div 
+                          className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
+                          style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                        >
                           <img
                             src={offer.image_url}
                             alt={offer.heading || 'Offer'}
@@ -148,7 +151,7 @@ export default function OffersSection({
                         </div>
                       )}
                       {(offer.heading || offer.description) && (
-                        <div className="p-3">
+                        <div className="pt-3 px-1">
                           {offer.heading && (
                             <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                               {offer.heading}
@@ -176,9 +179,12 @@ export default function OffersSection({
           <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             {offersToDisplay.map((offer) => (
               <div key={offer.id} className="flex h-full">
-                <a href={offer.link || '#'} className={`flex flex-col w-full group rounded-xl overflow-hidden ${offer.show_border ? 'border' : ''}`} style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}>
+                <a href={offer.link || '#'} className="flex flex-col w-full group">
                   {offer.image_url && (
-                    <div className="h-[300px] overflow-hidden bg-white">
+                    <div 
+                      className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
+                      style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                    >
                       <img
                         src={offer.image_url}
                         alt={offer.heading || 'Offer'}
@@ -187,7 +193,7 @@ export default function OffersSection({
                     </div>
                   )}
                   {(offer.heading || offer.description) && (
-                    <div className="p-3">
+                    <div className="pt-3 px-1">
                       {offer.heading && (
                         <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                           {offer.heading}

@@ -131,9 +131,9 @@ export default function FeaturedCards({
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-10 md:py-14'}>
-      <div className={compact ? '' : 'container mx-auto px-4 md:px-8 lg:px-12'}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
-          <h2 className={headingClassName || `section-heading mb-6 ${compact ? 'mt-0' : ''}`}>
+          <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>
             {heading}
           </h2>
         )}

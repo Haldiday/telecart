@@ -101,7 +101,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
-          <h2 className="section-heading mb-6">
+          <h2 className="section-heading">
             {heading}
           </h2>
         )}
@@ -138,7 +138,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                           className="h-6 w-6 object-contain"
                         />
                       )}
-                      <h3 className="category-card-heading text-left">
+                      <h3 className="text-[14px] font-normal text-left">
                         {category.name}
                       </h3>
                     </div>
@@ -156,7 +156,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         <button
                           key={sub.id}
                           onClick={() => navigateToSubcategory(sub, category.id, navigate)}
-                          className="block w-full text-left section-subtext hover:!text-blue-600 hover:underline transition-colors"
+                          className="block w-full text-left text-sm font-normal text-black hover:text-blue-600 hover:underline transition-colors"
                         >
                           {sub.name}
                         </button>
@@ -191,7 +191,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                   <button
                     type="button"
                     onClick={() => navigate(`/category/${category.id}`)}
-                    className="block w-full border-b py-2 md:py-4 px-2 text-center transition-opacity hover:opacity-90"
+                    className="block w-full border-b py-4 px-2 text-center transition-opacity hover:opacity-90"
                     style={{ backgroundColor: category.bg_color }}
                   >
                     {category.icon_url && (
@@ -201,17 +201,17 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         className="mx-auto mb-2 h-10 w-10 md:h-14 md:w-14 object-contain"
                       />
                     )}
-                    <h3 className="category-card-heading">
+                    <h3 className="text-lg font-medium">
                       {category.name}
                     </h3>
                   </button>
 
-                  <div className="p-4 pl-6 md:pl-8 text-center md:text-left">
+                  <div className="py-4 pl-8 text-left">
                     {visibleSubs.map((sub) => (
                       <button
                         key={sub.id}
                         onClick={() => navigateToSubcategory(sub, category.id, navigate)}
-                        className="w-full text-left border-b border-border/30 py-2 last:border-b-0 section-subtext hover:text-primary hover:underline transition-colors"
+                        className="block w-full text-left border-b border-border/30 py-2 last:border-b-0 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
                       >
                         {sub.name}
                       </button>
@@ -236,7 +236,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                             [category.id]: false,
                           }))
                         }
-                        className="mt-3 text-sm md:text-base font-medium text-primary hover:underline"
+                        className="mt-3 text-sm md:text-base font-semibold text-primary hover:underline"
                       >
                         Show less
                       </button>

@@ -21,7 +21,7 @@ export default function Header() {
             </div>
 
             {/* TEXT */}
-            <span className="text-2xl md:text-3xl font-bold text-foreground">
+            <span className="text-2xl md:text-3xl font-bold text-[#034EA0]">
               BizReq
             </span>
 
