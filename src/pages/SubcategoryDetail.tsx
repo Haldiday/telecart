@@ -177,7 +177,8 @@ interface SubcategoryAboutSection {
 
 const RICH_HTML_CONTENT_CLASS =
   'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] prose prose-sm max-w-none ' +
-  '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-4 [&_p]:whitespace-pre-wrap [&_p]:mb-4 [&_p]:min-h-[1.5em] ' +
+  '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-3 [&_p]:whitespace-pre-wrap [&_p]:mb-3 ' +
+  '[&_>_*:last-child]:mb-0!important [&_*:last-child]:mb-0!important [&_>_*:first-child]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 [&_li]:mb-1 [&_p:empty]:hidden ' +
   '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-muted/60 ' +
   '[&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-4 [&_blockquote]:italic ' +
   '[&_blockquote_p]:my-0 [&_blockquote_p]:whitespace-normal ' +
@@ -758,20 +759,20 @@ export default function SubcategoryDetail() {
             <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
             <div className="mt-2 flex items-baseline justify-center gap-1">
               <span className="text-3xl font-bold text-foreground">{plan.currency || '₹'}{plan.price}</span>
-              <span className="text-sm text-muted-foreground">{plan.duration}</span>
-            </div>
+            <span className="text-[15px] text-muted-foreground">{plan.duration}</span>
           </div>
-          {plan.description && (
-            <p className="mb-4 text-center text-sm text-muted-foreground">{plan.description}</p>
-          )}
-          <ul className="mb-6 space-y-3">
-            {plan.features.map((feature, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
+        </div>
+        {plan.description && (
+          <p className="mb-4 text-center text-[15px] text-muted-foreground">{plan.description}</p>
+        )}
+        <ul className="mb-6 space-y-3">
+          {plan.features.map((feature, idx) => (
+            <li key={idx} className="flex items-start gap-2 text-[15px] text-foreground">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
           <a
             href={plan.razorpay_link || plan.button_link || '#'}
             target={plan.button_link ? '_blank' : undefined}
@@ -848,7 +849,7 @@ export default function SubcategoryDetail() {
                   <div className="mt-4 flex flex-wrap gap-3">
                     {heroButtons.map((button, index) => {
                       let buttonStyle = "";
-                      if (index === 0) {
+                      if (index === 0 || index === 3) {
                         buttonStyle = "bg-[#1A1A1A] text-white hover:bg-black";
                       } else if (index === 1) {
                         buttonStyle = "bg-[#2563EB] text-white hover:bg-blue-700";
@@ -904,29 +905,25 @@ export default function SubcategoryDetail() {
         <div className="w-full bg-slate-50 py-8">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
             {activeTab === 0 && (
-              <div className="w-full space-y-8">
-                {aboutSections.length > 0 && (
-                  <div className="space-y-6">
-                    {aboutSections
-                      .filter((section) => section.is_visible !== false)
-                      .map((section) => (
-                      <div
-                        key={section.id}
-                        className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm text-left"
-                        style={{ backgroundColor: section.background_color || '#ffffff' }}
-                      >
-                        <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
-                        <div
-                          className={RICH_HTML_CONTENT_CLASS}
-                          dangerouslySetInnerHTML={{ __html: section.content || '' }}
-                        />
-                      </div>
-                    ))}
+              <div className="w-full space-y-5">
+                {aboutSections
+                  .filter((section) => section.is_visible !== false)
+                  .map((section) => (
+                  <div
+                    key={section.id}
+                    className="w-full rounded-none border border-border pt-3 pb-4 px-6 md:pl-8 shadow-sm text-left"
+                    style={{ backgroundColor: section.background_color || '#ffffff' }}
+                  >
+                    <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
+                    <div
+                      className={RICH_HTML_CONTENT_CLASS}
+                      dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                    />
                   </div>
-                )}
+                ))}
 
                 {shouldShowOverviewCard && showOverviewPointsSection && showHeaderPointsSection && visibleOverviewPoints.length > 0 && (
-                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>
                       {subcategory?.key_features_tab_label || defaultOverviewPointsHeading}
                     </h2>
@@ -936,7 +933,7 @@ export default function SubcategoryDetail() {
 
                 {/* Video Resources in Overview - only show when Resources tab is visible */}
                 {showResourcesTab && videoUrl2.filter(url => url?.trim()).length > 0 && (
-                  <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card p-6 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {videoUrl2.filter(url => url?.trim()).map((url, index) => {
@@ -979,7 +976,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showDownloadsTab && (
-                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
                     {downloads.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No downloads available.</p>
@@ -990,7 +987,7 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showBrandsInOverview && (
-                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
                     {brands.length > 0 ? (
                       renderBrandGrid()
@@ -1001,14 +998,14 @@ export default function SubcategoryDetail() {
                 )}
 
                 {showPricingPlansInOverview && (
-                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>Pricing Plans</h2>
                     {renderPricingPlans()}
                   </div>
                 )}
 
                 {productItems.length > 0 && (
-                  <div className="w-full rounded-2xl border border-border bg-card py-4 px-6 md:pl-8 shadow-sm">
+                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>Products</h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {productItems.map((product) => (
@@ -1119,7 +1116,7 @@ export default function SubcategoryDetail() {
               {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
                 <div className="w-full">
                   <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-                  <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="w-full overflow-hidden rounded-none border border-border bg-card">
                     <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
                       <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
                     </div>
@@ -1222,7 +1219,7 @@ export default function SubcategoryDetail() {
           {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-              <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
+              <div className="w-full overflow-hidden rounded-none border border-border bg-card">
                 <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
                   <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
                 </div>
@@ -1237,11 +1234,11 @@ export default function SubcategoryDetail() {
         <section className="pb-10 md:pb-12">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
             <div 
-              className="rounded-none p-5 md:pt-20 md:pl-20 md:pr-10 md:pb-10"
+              className="rounded-none py-10 md:py-16 px-6 md:px-12 shadow-sm"
               style={{ backgroundColor: aboutBgColor }}
             >
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start md:gap-10">
-              <div className="md:pl-4 md:pt-2">
+              <div className="md:pl-4">
                 <div 
                   className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full"
                   style={{ backgroundColor: `${aboutHeadingColor}e6`, color: aboutBgColor }}
@@ -1271,7 +1268,7 @@ export default function SubcategoryDetail() {
                   {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
                 </p>
               </div>
-              <div className="flex justify-center md:justify-center my-10 md:my-14">
+              <div className="flex justify-center md:justify-center">
                 <WatchDemoForm 
                   subcategoryId={subcategoryId} 
                   demoLink={subcategory?.schedule_link} 

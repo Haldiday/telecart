@@ -153,7 +153,7 @@ interface LogoStepItem {
   section_id: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads';
+type Tab = 'dashboard' | 'hero' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'contact';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -300,6 +300,7 @@ const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'ads_2col', label: '2-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_3col', label: '3-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'leads', label: 'Demo Leads', icon: <Star className="w-5 h-5" /> },
+  { key: 'contact', label: 'Contact Page', icon: <Home className="w-5 h-5" /> },
 ];
 
 export default function AdminDashboard() {
@@ -334,13 +335,16 @@ export default function AdminDashboard() {
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
-  const [leadsCtaLogo, setLeadsCtaLogo] = useState<string | null>(null);
-  const [leadsCtaHeading, setLeadsCtaHeading] = useState('');
-  const [leadsCtaDescription, setLeadsCtaDescription] = useState('');
-  const [demoFormHeading, setDemoFormHeading] = useState('See The Software In Action\nWatch Free Demo!');
-  const [demoButtonLabel, setDemoButtonLabel] = useState('Get Free Advice');
-  const [leadsCtaSaving, setLeadsCtaSaving] = useState(false);
-  const [leadsCtaStatus, setLeadsCtaStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [contactSettings, setContactSettings] = useState({
+    heading: '',
+    email_label: '',
+    email: '',
+    description_1: '',
+    description_2: '',
+    image_url: '',
+  });
+  const [isSavingContact, setIsSavingContact] = useState(false);
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -471,20 +475,10 @@ export default function AdminDashboard() {
   }, [loading, user, isAdmin]);
 
   useEffect(() => {
-    if (subcategories.length === 0) return;
-    const first = subcategories[0];
-    setLeadsCtaLogo(first.link || null);
-    setLeadsCtaHeading(first.about_heading || '');
-    setLeadsCtaDescription(first.about_content || '');
-    setDemoFormHeading((first as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
-    setDemoButtonLabel((first as any).demo_button_label || 'Get Free Advice');
-  }, [subcategories]);
-
-  useEffect(() => {
     let mounted = true;
     
     const loadAllSafe = async () => {
-      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans] = await Promise.all([
+      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact] = await Promise.all([
         supabase.from('page_sections').select('*').order('sort_order'),
         supabase.from('hero_settings').select('*').limit(1).single(),
         supabase.from('featured_cards').select('*').order('sort_order'),
@@ -499,6 +493,7 @@ export default function AdminDashboard() {
         supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
         supabase.from('leads' as any).select('*').order('created_at', { ascending: false }),
         supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
+        supabase.from('contact_settings' as any).select('*').limit(1).single(),
       ]);
       let subBrands;
       try {
@@ -518,6 +513,7 @@ export default function AdminDashboard() {
       if (!mounted) return;
 
       if (s.data) setSections(s.data);
+      if (contact.data) setContactSettings(contact.data);
       if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
       if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
       if (cat.data) setCategories(cat.data);
@@ -1864,6 +1860,8 @@ export default function AdminDashboard() {
           show_schedule_2_in_separate_tab: sub.show_schedule_2_in_separate_tab ?? false,
           about_heading: sub.about_heading || 'About',
           about_content: sub.about_content || null,
+          demo_form_heading: sub.demo_form_heading || 'See The Software In Action\nWatch Free Demo!',
+          demo_button_label: sub.demo_button_label || 'Get Free Advice',
           overview_points_heading: editKeyFeaturesTabLabelState[sub.id] || sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
@@ -2167,39 +2165,23 @@ export default function AdminDashboard() {
     }
   }
 
-  async function saveLeadsCtaSection() {
-    if (subcategories.length === 0) {
-      toast.error('No subcategories found.');
-      setLeadsCtaStatus({ type: 'error', text: 'No subcategories found.' });
-      return;
-    }
-    setLeadsCtaSaving(true);
-    setLeadsCtaStatus(null);
+  async function saveContactSettings() {
+    setIsSavingContact(true);
     try {
-      const subcategoryIds = subcategories.map((s) => s.id).filter(Boolean);
-      if (subcategoryIds.length === 0) {
-        throw new Error('No valid subcategory IDs found.');
-      }
       const { error } = await supabase
-        .from('subcategories')
-        .update({
-          link: leadsCtaLogo || null,
-          about_heading: leadsCtaHeading || null,
-          about_content: leadsCtaDescription || null,
-          demo_form_heading: demoFormHeading || 'See The Software In Action\nWatch Free Demo!',
-          demo_button_label: demoButtonLabel || 'Get Free Advice',
-        } as any)
-        .in('id', subcategoryIds);
+        .from('contact_settings' as any)
+        .upsert({
+          ...contactSettings,
+          updated_at: new Date().toISOString(),
+        });
+
       if (error) throw error;
-      await loadAll();
-      toast.success('Bottom demo section content saved for all subcategories.');
-      setLeadsCtaStatus({ type: 'success', text: 'Saved for all subcategories.' });
+      toast.success('Contact page settings saved successfully');
     } catch (error) {
-      console.error('Error saving bottom demo section content:', error);
-      toast.error('Failed to save bottom demo section content.');
-      setLeadsCtaStatus({ type: 'error', text: 'Save failed. Please try again.' });
+      console.error('Error saving contact settings:', error);
+      toast.error('Failed to save contact settings');
     } finally {
-      setLeadsCtaSaving(false);
+      setIsSavingContact(false);
     }
   }
 
@@ -3452,6 +3434,73 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
+
+                    {/* Bottom Watch Demo Section Content */}
+                    <div className="space-y-4 border-t pt-6">
+                      <h3 className="text-lg font-bold">Bottom Watch Demo Section</h3>
+                      <p className="text-sm text-muted-foreground">Manage the "About / Need Help Deciding?" section for this specific subcategory.</p>
+                      
+                      <ImageUpload
+                        label="Logo"
+                        value={editingSub.link || ''}
+                        onChange={(url) => {
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, link: url } : s));
+                        }}
+                        folder="logos"
+                      />
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Section Heading</label>
+                        <input
+                          value={editingSub.about_heading || ''}
+                          onChange={(e) => {
+                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
+                          }}
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="Need Help Deciding?"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Section Description</label>
+                        <textarea
+                          value={editingSub.about_content || ''}
+                          onChange={(e) => {
+                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
+                          }}
+                          className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="We'll help you find the right tools..."
+                        />
+                      </div>
+
+                      <div className="space-y-3 border-t pt-4">
+                        <h4 className="text-sm font-semibold">Demo Form Settings</h4>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
+                          <textarea
+                            value={editingSub.demo_form_heading || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
+                            }}
+                            className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="See The Software In Action\nWatch Free Demo!"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
+                          <input
+                            value={editingSub.demo_button_label || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
+                            }}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="Get Free Advice"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border-t pt-6">
                       <div className="flex items-center justify-between mb-4">
                         <label className="text-sm font-medium">About Sections</label>
                         <button
@@ -3527,6 +3576,7 @@ export default function AdminDashboard() {
                               ))}
                             </div>
                       )}
+                    </div>
 
                     <div className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between">
@@ -4827,7 +4877,7 @@ export default function AdminDashboard() {
               })()}
                 </>
               )}
-                          </div>
+            </div>
           )}
 
           {/* OFFERS */}
@@ -5464,70 +5514,6 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold">Demo Requests</h2>
               </div>
 
-              <div className="mb-6 rounded-xl border border-border bg-card p-4 md:p-5 space-y-4">
-                <h3 className="text-base font-semibold">Bottom Watch Demo Section Content</h3>
-                <p className="text-sm text-muted-foreground">These values will be applied to all subcategory detail pages.</p>
-                <ImageUpload
-                  label="Logo"
-                  value={leadsCtaLogo}
-                  onChange={(url) => setLeadsCtaLogo(url)}
-                  folder="logos"
-                />
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Heading</label>
-                  <input
-                    value={leadsCtaHeading}
-                    onChange={(e) => setLeadsCtaHeading(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="Need Help Deciding?"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Description</label>
-                  <textarea
-                    value={leadsCtaDescription}
-                    onChange={(e) => setLeadsCtaDescription(e.target.value)}
-                    className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    placeholder="We'll help you find the right tools..."
-                  />
-                </div>
-                <div className="border-t border-border pt-4">
-                  <h4 className="text-sm font-semibold mb-3">Demo Form Settings</h4>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
-                    <textarea
-                      value={demoFormHeading}
-                      onChange={(e) => setDemoFormHeading(e.target.value)}
-                      className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="See The Software In Action
-Watch Free Demo!"
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
-                    <input
-                      value={demoButtonLabel}
-                      onChange={(e) => setDemoButtonLabel(e.target.value)}
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Get Free Advice"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={saveLeadsCtaSection}
-                  disabled={leadsCtaSaving}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {leadsCtaSaving ? 'Saving...' : 'Save Content'}
-                </button>
-                {leadsCtaStatus && (
-                  <p className={`text-sm ${leadsCtaStatus.type === 'success' ? 'text-green-600' : 'text-destructive'}`}>
-                    {leadsCtaStatus.text}
-                  </p>
-                )}
-              </div>
-
               {leads.length === 0 ? (
                 <div className="text-center py-12 bg-card rounded-xl border border-border">
                   <p className="text-muted-foreground">No demo requests yet.</p>
@@ -5576,6 +5562,88 @@ Watch Free Demo!"
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* CONTACT PAGE SETTINGS */}
+          {tab === 'contact' && (
+            <div className="max-w-4xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Contact Page Settings</h2>
+                <button
+                  onClick={saveContactSettings}
+                  disabled={isSavingContact}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingContact ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+
+              <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                      <input
+                        value={contactSettings.heading}
+                        onChange={(e) => setContactSettings({ ...contactSettings, heading: e.target.value })}
+                        placeholder="e.g., Contact"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Email Label</label>
+                      <input
+                        value={contactSettings.email_label}
+                        onChange={(e) => setContactSettings({ ...contactSettings, email_label: e.target.value })}
+                        placeholder="e.g., You can contact our Support Team by email:"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Email Address</label>
+                      <input
+                        type="email"
+                        value={contactSettings.email}
+                        onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
+                        placeholder="e.g., office@freeprivacypolicy.com"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <ImageUpload
+                      label="Side Image"
+                      value={contactSettings.image_url}
+                      onChange={(url) => setContactSettings({ ...contactSettings, image_url: url })}
+                      folder="site"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t pt-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
+                    <textarea
+                      value={contactSettings.description_1}
+                      onChange={(e) => setContactSettings({ ...contactSettings, description_1: e.target.value })}
+                      placeholder="Enter the first paragraph of description"
+                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
+                    <textarea
+                      value={contactSettings.description_2}
+                      onChange={(e) => setContactSettings({ ...contactSettings, description_2: e.target.value })}
+                      placeholder="Enter the second paragraph of description"
+                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

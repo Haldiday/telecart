@@ -4,7 +4,7 @@
 @tailwind utilities;
 @layer components {
     .section-heading {
-        @apply font-inter font-[575] text-[24px] leading-[1.2] text-[#2d2f29] mb-8;
+        @apply font-inter font-[575] text-[24px] leading-[1.2] text-[#2d2f29] mb-3 mt-0;
     }
     .section-subtext {
         @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
@@ -135,8 +135,7 @@
         margin-bottom: 0;
     }
     .rich-html-content p {
-        margin-bottom: 1rem;
-        min-height: 1.5em;
+        margin-bottom: 0.75rem;
     }
     .rich-html-content blockquote,
     .rich-html-content .rich-blockquote {

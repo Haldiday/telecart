@@ -15,7 +15,7 @@ export default function SubcategorySectionShell({
 
   return (
     <div
-      className="w-full rounded-2xl border border-border p-4 md:p-6 shadow-sm"
+      className="w-full rounded-none border border-border pt-3 pb-4 px-4 md:px-6 shadow-sm"
       style={{ backgroundColor: backgroundColor || 'var(--card)' }}
     >
       {children}

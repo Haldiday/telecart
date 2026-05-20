@@ -130,7 +130,7 @@ export default function FeaturedCards({
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
-    <div className={compact ? '' : 'py-10 md:py-14'}>
+    <div className={compact ? '' : 'py-6 md:py-8'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
           <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>
@@ -200,10 +200,10 @@ export default function FeaturedCards({
                       <div
                         onClick={handleCardClick}
                         className={`h-[240px] rounded-[28px] bg-[#fcf9f5] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                    style={card.show_border && card.border_color ? { borderColor: card.border_color } : {}}
+                        style={card.show_border && card.border_color ? { borderColor: card.border_color } : {}}
                       >
                         {card.logo_url && (
-                          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl flex-shrink-0">
+                          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0">
                             <img
                               src={card.logo_url}
                               alt={card.title}

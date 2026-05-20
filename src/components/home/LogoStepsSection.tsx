@@ -82,7 +82,7 @@ export default function LogoStepsSection({
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
-    <div className={compact ? '' : 'py-10 md:py-14'}>
+    <div className={compact ? '' : 'py-6 md:py-8'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
           <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>

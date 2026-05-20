@@ -13,12 +13,14 @@ import CategoryDetail from "./pages/CategoryDetail";
 import SubcategoryDetail from "./pages/SubcategoryDetail";
 import FeaturedCardsPage from "./pages/FeaturedCardsPage";
 import AllSubcategoriesPage from "./pages/AllSubcategoriesPage";
+import ContactUs from "./pages/ContactUs";
 
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter(
   [
     { path: "/", element: <Index /> },
+    { path: "/contact", element: <ContactUs /> },
     { path: "/category/:id", element: <CategoryDetail /> },
     { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
     { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
@@ -36,6 +38,7 @@ const router = createBrowserRouter(
 
 const App = () => {
   useEffect(() => {
+    /*
     // Disable right-click
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -83,6 +86,7 @@ const App = () => {
       document.removeEventListener("keydown", handleKeyDown);
       clearInterval(devToolsCheck);
     };
+    */
   }, []);
 
   return (

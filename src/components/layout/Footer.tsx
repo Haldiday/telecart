@@ -1,115 +1,24 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-
-interface FooterCategory {
-  id: string;
-  name: string;
-  sort_order: number;
-}
 
 export default function Footer() {
-  const [categories, setCategories] = useState<FooterCategory[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name, sort_order')
-        .order('sort_order');
-
-      if (mounted && data) {
-        setCategories(data);
-      }
-    };
-
-    loadCategories();
-
-    const channel = supabase
-      .channel('footer_categories')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadCategories)
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
   return (
     <footer className="bg-foreground text-primary-foreground">
       <div className="container mx-auto px-4 md:px-8 lg:px-12 py-12">
-        <div className="mb-12 pb-8 border-b border-primary-foreground/10">
-          <h3 className="text-base font-semibold mb-3">Popular Categories</h3>
-          {categories.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-              {categories.map((category, index) => (
-                <span key={category.id} className="inline-flex items-center gap-2">
-                  {index > 0 && <span className="opacity-30">|</span>}
-                  <Link
-                    to={`/category/${category.id}/subcategories`}
-                    className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary"
-                  >
-                    {category.name}
-                  </Link>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm opacity-50">No categories available yet.</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-8">
-          <div>
-            <h4 className="font-semibold mb-4 text-sm">Discover</h4>
-            <ul className="space-y-2">
-              <li><Link to="/" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Home</Link></li>
-              <li><a href="#categories" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Categories</a></li>
-              <li><a href="#offers" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Trending Offers</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Latest Products</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4 text-sm">Services</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Free Trial</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Pricing Plans</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Compare Tools</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Webinars</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4 text-sm">Resources</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Blog</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Case Studies</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Documentation</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">API Reference</a></li>
-            </ul>
-          </div>
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
             <h4 className="font-semibold mb-4 text-sm">Help & Support</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Contact Us</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">FAQs</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Support Ticket</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Live Chat</a></li>
+              <li><Link to="/contact" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Contact Us</Link></li>
+              <li><Link to="/faqs" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">FAQs</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4 text-sm">Company</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">About Us</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Privacy Policy</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Terms of Service</a></li>
-              <li><a href="#" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Careers</a></li>
+              <li><Link to="/about" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">About Us</Link></li>
+              <li><Link to="/privacy-policy" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Privacy Policy</Link></li>
+              <li><Link to="/terms-of-service" className="text-sm opacity-60 hover:opacity-100 transition-opacity hover:text-primary">Terms of Service</Link></li>
             </ul>
           </div>
         </div>

@@ -115,7 +115,7 @@ export default function Ads3ColSection({
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
-    <div className={compact ? '' : 'py-6 md:py-10'}>
+    <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
           <h2 className={headingClassName || "section-heading"}>
