@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import { Button } from '@/components/ui/button';
 
 interface Offer {
   id: string;
@@ -41,8 +42,22 @@ export default function OffersSection({
   const isMobile = useIsMobile();
   const visibleCount = isMobile ? 1 : 4;
   const fixedMode = offers.some((offer) => offer.is_fixed);
-  const offersToDisplay = fixedMode ? offers.slice(0, 4) : offers;
+  const [fixedPageIndex, setFixedPageIndex] = useState(0);
+
+  const totalFixedPages = Math.ceil(offers.length / visibleCount);
+
+  // Group offers into pages for fixed mode sliding
+  const fixedPages = useMemo(() => {
+    if (!fixedMode) return [];
+    const pages = [];
+    for (let i = 0; i < offers.length; i += visibleCount) {
+      pages.push(offers.slice(i, i + visibleCount));
+    }
+    return pages;
+  }, [fixedMode, offers, visibleCount]);
+
   const needsCarousel = !fixedMode && offers.length > visibleCount;
+  const showFixedControls = fixedMode && offers.length > visibleCount;
 
   const {
     index,
@@ -52,6 +67,14 @@ export default function OffersSection({
     slideWidth,
     duplicatedCount,
   } = useInfiniteStepCarousel(offers.length, visibleCount, needsCarousel);
+
+  const handleFixedPrev = () => {
+    setFixedPageIndex((prev) => (prev > 0 ? prev - 1 : totalFixedPages - 1));
+  };
+
+  const handleFixedNext = () => {
+    setFixedPageIndex((prev) => (prev < totalFixedPages - 1 ? prev + 1 : 0));
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -95,9 +118,9 @@ export default function OffersSection({
     };
   }, [db, offersTable, sectionId, sectionTable]);
 
-  const displayOffers = useMemo(
-    () => !fixedMode && needsCarousel ? [...offers, ...offers.slice(0, duplicatedCount)] : offersToDisplay,
-    [offers, duplicatedCount, fixedMode, needsCarousel, offersToDisplay],
+    const displayOffers = useMemo(
+    () => !fixedMode && needsCarousel ? [...offers, ...offers.slice(0, duplicatedCount)] : offers,
+    [offers, duplicatedCount, fixedMode, needsCarousel],
   );
 
   if (offers.length === 0) return null;
@@ -106,22 +129,38 @@ export default function OffersSection({
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           {showHeading && (
-            <h2 className={headingClassName || "section-heading"}>
+            <h2 className={headingClassName || "section-heading !mb-0"}>
               {heading}
             </h2>
           )}
-
-          {needsCarousel && (
-            <div className="hidden gap-2 md:flex">
-              
-            </div>
-          )}
         </div>
 
-        {needsCarousel ? (
-          <div className="relative">
+        <div className="relative group/fixed">
+          {showFixedControls && (
+            <>
+              <button
+                onClick={handleFixedPrev}
+                className="absolute -left-2 md:-left-12 top-[150px] -translate-y-1/2 z-10 p-2 text-black hover:text-black/70 transition-colors disabled:opacity-10"
+                disabled={fixedPageIndex === 0}
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="h-10 w-10 md:h-12 md:w-12 stroke-[1.5px]" />
+              </button>
+              <button
+                onClick={handleFixedNext}
+                className="absolute -right-2 md:-right-12 top-[150px] -translate-y-1/2 z-10 p-2 text-black hover:text-black/70 transition-colors disabled:opacity-10"
+                disabled={fixedPageIndex === totalFixedPages - 1}
+                aria-label="Next slide"
+              >
+                <ChevronRight className="h-10 w-10 md:h-12 md:w-12 stroke-[1.5px]" />
+              </button>
+            </>
+          )}
+
+          {needsCarousel ? (
+            <div className="relative">
             <div className="overflow-hidden rounded-lg">
               <div
                 className="flex gap-6"
@@ -176,41 +215,55 @@ export default function OffersSection({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            {offersToDisplay.map((offer) => (
-              <div key={offer.id} className="flex h-full">
-                <a href={offer.link || '#'} className="flex flex-col w-full group">
-                  {offer.image_url && (
-                    <div 
-                      className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
-                      style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
-                    >
-                      <img
-                        src={offer.image_url}
-                        alt={offer.heading || 'Offer'}
-                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                      />
+          <div className="overflow-hidden">
+            <div 
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
+            >
+              {fixedPages.map((page, pageIdx) => (
+                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 md:grid-cols-4">
+                  {page.map((offer) => (
+                    <div key={offer.id} className="flex h-full">
+                      <a href={offer.link || '#'} className="flex flex-col w-full group">
+                        {offer.image_url && (
+                          <div 
+                            className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
+                            style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                          >
+                            <img
+                              src={offer.image_url}
+                              alt={offer.heading || 'Offer'}
+                              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            />
+                          </div>
+                        )}
+                        {(offer.heading || offer.description) && (
+                          <div className="pt-3 px-1">
+                            {offer.heading && (
+                              <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
+                                {offer.heading}
+                              </h3>
+                            )}
+                            {offer.description && (
+                              <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
+                                {offer.description}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </a>
                     </div>
-                  )}
-                  {(offer.heading || offer.description) && (
-                    <div className="pt-3 px-1">
-                      {offer.heading && (
-                        <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
-                          {offer.heading}
-                        </h3>
-                      )}
-                      {offer.description && (
-                        <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                          {offer.description}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </a>
-              </div>
-            ))}
+                  ))}
+                  {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
+                  {Array.from({ length: visibleCount - page.length }).map((_, i) => (
+                    <div key={`empty-${i}`} className="hidden md:flex h-full" />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
+        </div>
       </div>
     </div>
     </SubcategorySectionShell>

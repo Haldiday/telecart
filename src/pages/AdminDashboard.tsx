@@ -58,6 +58,7 @@ interface Subcategory {
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
+  pricing_plans_tab_label?: string | null;
   key_features_tab_label?: string | null;
   hero_background_color?: string | null;
 }
@@ -65,7 +66,8 @@ interface CategoryButton { id?: string; subcategory_id?: string; label: string; 
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface SubcategoryBrand { id?: string; name: string; logo_url: string | null; link: string | null; is_visible: boolean; }
-interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
+interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; section_id?: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
+interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
 interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; button_bg_color?: string | null; card_bg_color?: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
@@ -366,10 +368,13 @@ export default function AdminDashboard() {
   const [editResourcesTabLabelState, setEditResourcesTabLabelState] = useState<Record<string, string>>({});
   const [editDownloadsTabLabelState, setEditDownloadsTabLabelState] = useState<Record<string, string>>({});
   const [editBrandsTabLabelState, setEditBrandsTabLabelState] = useState<Record<string, string>>({});
+  const [editPricingPlansTabLabelState, setEditPricingPlansTabLabelState] = useState<Record<string, string>>({});
   const [editKeyFeaturesTabLabelState, setEditKeyFeaturesTabLabelState] = useState<Record<string, string>>({});
   const [editAd1, setEditAd1] = useState<Partial<Ad2> | null>(null);
   const [editSubOverviewPoints, setEditSubOverviewPoints] = useState<SubcategoryOverviewPoint[]>([]);
   const [editSubOverviewPointsState, setEditSubOverviewPointsState] = useState<Record<string, SubcategoryOverviewPoint[]>>({});
+  const [keyFeaturesSections, setKeyFeaturesSections] = useState<SubcategoryKeyFeaturesSection[]>([]);
+  const [editKeyFeaturesSections, setEditKeyFeaturesSections] = useState<Record<string, SubcategoryKeyFeaturesSection[]>>({});
 
   // State for pricing plans
   const [editPricingPlans, setEditPricingPlans] = useState<PricingPlan[]>([]);
@@ -478,7 +483,7 @@ export default function AdminDashboard() {
     let mounted = true;
     
     const loadAllSafe = async () => {
-      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact] = await Promise.all([
+      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections] = await Promise.all([
         supabase.from('page_sections').select('*').order('sort_order'),
         supabase.from('hero_settings').select('*').limit(1).single(),
         supabase.from('featured_cards').select('*').order('sort_order'),
@@ -494,6 +499,7 @@ export default function AdminDashboard() {
         supabase.from('leads' as any).select('*').order('created_at', { ascending: false }),
         supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
         supabase.from('contact_settings' as any).select('*').limit(1).single(),
+        supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
       ]);
       let subBrands;
       try {
@@ -513,15 +519,33 @@ export default function AdminDashboard() {
       if (!mounted) return;
 
       if (s.data) setSections(s.data);
-      if (contact.data) setContactSettings(contact.data);
+      if (contact.data) setContactSettings(contact.data as any);
       if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
       if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
       if (cat.data) setCategories(cat.data);
       if (sub.data) {
         setSubcategories(sub.data);
         const map: Record<string, string> = {};
-        sub.data.forEach((s: any) => { map[s.id] = s.name; });
+        const pricingLabels: Record<string, string> = {};
+        const keyFeaturesLabels: Record<string, string> = {};
+        const brandsLabels: Record<string, string> = {};
+        const downloadsLabels: Record<string, string> = {};
+        const resourcesLabels: Record<string, string> = {};
+        
+        sub.data.forEach((s: any) => { 
+          map[s.id] = s.name; 
+          pricingLabels[s.id] = s.pricing_plans_tab_label || 'Pricing Plans';
+          keyFeaturesLabels[s.id] = s.key_features_tab_label || 'Key Features';
+          brandsLabels[s.id] = s.brands_tab_label || 'Brands';
+          downloadsLabels[s.id] = s.downloads_tab_label || 'Downloads';
+          resourcesLabels[s.id] = s.resources_tab_label || 'Resources';
+        });
         setSubcategoriesMap(map);
+        setEditPricingPlansTabLabelState(pricingLabels);
+        setEditKeyFeaturesTabLabelState(keyFeaturesLabels);
+        setEditBrandsTabLabelState(brandsLabels);
+        setEditDownloadsTabLabelState(downloadsLabels);
+        setEditResourcesTabLabelState(resourcesLabels);
       }
       if (downloads.data) setCategoryDownloads(downloads.data);
       if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
@@ -584,6 +608,7 @@ export default function AdminDashboard() {
           pointsBySubcategory[point.subcategory_id].push({
             id: point.id,
             subcategory_id: point.subcategory_id,
+            section_id: point.section_id,
             text: point.text,
             is_highlighted: point.is_highlighted,
             highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
@@ -652,6 +677,21 @@ export default function AdminDashboard() {
         console.log('Loaded pricing plans by subcategory:', pricingPlansBySubcategory);
         setEditPricingPlansState(pricingPlansBySubcategory);
       }
+      if (kfSections.data) {
+        setKeyFeaturesSections(kfSections.data as SubcategoryKeyFeaturesSection[]);
+        const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
+        kfSections.data.forEach((section: any) => {
+          if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
+          groupedKFSections[section.subcategory_id].push({
+            id: section.id,
+            subcategory_id: section.subcategory_id,
+            heading: section.heading,
+            is_visible: section.is_visible,
+            sort_order: section.sort_order,
+          });
+        });
+        setEditKeyFeaturesSections(groupedKFSections);
+      }
       if (leadsData.data) setLeads(leadsData.data as unknown as Lead[]);
     };
 
@@ -673,6 +713,7 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_about_sections' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_key_features_sections' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadAllSafe)
       .subscribe();
@@ -684,7 +725,7 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
-    const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans] = await Promise.all([
+    const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, kfSections] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).single(),
       supabase.from('featured_cards').select('*').order('sort_order'),
@@ -698,6 +739,7 @@ export default function AdminDashboard() {
       supabase.from('subcategory_downloads' as any).select('*'),
       supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
       supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
+      supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
     ]);
     let subBrands;
     try {
@@ -779,6 +821,7 @@ export default function AdminDashboard() {
         pointsBySubcategory[point.subcategory_id].push({
           id: point.id,
           subcategory_id: point.subcategory_id,
+          section_id: point.section_id,
           text: point.text,
           is_highlighted: point.is_highlighted,
           highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
@@ -841,6 +884,21 @@ export default function AdminDashboard() {
         });
       });
       setEditPricingPlansState(pricingPlansBySubcategory);
+    }
+    if (kfSections.data) {
+      setKeyFeaturesSections(kfSections.data as SubcategoryKeyFeaturesSection[]);
+      const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
+      kfSections.data.forEach((section: any) => {
+        if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
+        groupedKFSections[section.subcategory_id].push({
+          id: section.id,
+          subcategory_id: section.subcategory_id,
+          heading: section.heading,
+          is_visible: section.is_visible,
+          sort_order: section.sort_order,
+        });
+      });
+      setEditKeyFeaturesSections(groupedKFSections);
     }
   }
 
@@ -988,6 +1046,85 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting about section:', error);
       toast.error('Failed to delete about section.');
+    }
+  };
+
+  // Functions for managing multiple Key Features sections
+  const addKeyFeaturesSection = (subcategoryId: string) => {
+    const newSection: SubcategoryKeyFeaturesSection = {
+      id: `temp-${crypto.randomUUID()}`,
+      subcategory_id: subcategoryId,
+      heading: 'Key Features',
+      is_visible: true,
+      sort_order: (editKeyFeaturesSections[subcategoryId] || []).length,
+    };
+
+    setEditKeyFeaturesSections(prev => ({
+      ...prev,
+      [subcategoryId]: [...(prev[subcategoryId] || []), newSection]
+    }));
+  };
+
+  const updateKeyFeaturesSection = (subcategoryId: string, sectionId: string, updates: Partial<SubcategoryKeyFeaturesSection>) => {
+    setEditKeyFeaturesSections(prev => ({
+      ...prev,
+      [subcategoryId]: (prev[subcategoryId] || []).map(section =>
+        section.id === sectionId ? { ...section, ...updates } : section
+      )
+    }));
+  };
+
+  const deleteKeyFeaturesSection = async (subcategoryId: string, sectionId: string) => {
+    if (!window.confirm('Delete this Key Features section?')) return;
+
+    setEditKeyFeaturesSections(prev => ({
+      ...prev,
+      [subcategoryId]: (prev[subcategoryId] || []).filter(section => section.id !== sectionId)
+    }));
+    // Associated points will be filtered out by UI and re-saved correctly
+  };
+
+  const saveKeyFeaturesSections = async (subcategoryId: string, points: SubcategoryOverviewPoint[]) => {
+    const sections = editKeyFeaturesSections[subcategoryId] || [];
+
+    try {
+      // Clear existing sections and points for this subcategory
+      // Points will be deleted by cascade when sections are deleted, but we also delete points without sections
+      await supabase.from('subcategory_overview_points' as any).delete().eq('subcategory_id', subcategoryId);
+      await supabase.from('subcategory_key_features_sections' as any).delete().eq('subcategory_id', subcategoryId);
+
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        const { data: newSection, error: sectionError } = await supabase
+          .from('subcategory_key_features_sections' as any)
+          .insert({
+            subcategory_id: subcategoryId,
+            heading: section.heading || 'Key Features',
+            is_visible: section.is_visible,
+            sort_order: section.sort_order,
+          })
+          .select()
+          .single();
+
+        if (sectionError) throw sectionError;
+
+        const sectionPoints = points.filter(p => p.section_id === section.id);
+        if (sectionPoints.length > 0) {
+          const pointsToInsert = sectionPoints.map((p, idx) => ({
+            subcategory_id: subcategoryId,
+            section_id: newSection.id,
+            text: p.text.trim(),
+            is_highlighted: p.is_highlighted,
+            highlight_color: p.highlight_color || 'green',
+            sort_order: idx,
+          }));
+          const { error: pointsError } = await supabase.from('subcategory_overview_points' as any).insert(pointsToInsert);
+          if (pointsError) throw pointsError;
+        }
+      }
+    } catch (error) {
+      console.error('Error saving key features sections:', error);
+      throw error;
     }
   };
 
@@ -1874,7 +2011,8 @@ export default function AdminDashboard() {
           resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
           downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
           brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
-          key_features_tab_label: editKeyFeaturesTabLabelState[sub.id] ?? 'Key Features',
+          pricing_plans_tab_label: editPricingPlansTabLabelState[sub.id] || 'Pricing Plans',
+          key_features_tab_label: editKeyFeaturesTabLabelState[sub.id] || 'Key Features',
           sort_order: index,
         }));
         const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
@@ -1893,9 +2031,6 @@ export default function AdminDashboard() {
         const deleteSubBrands = activeSubId
           ? supabase.from('subcategory_brands' as any).delete().eq('subcategory_id', activeSubId)
           : supabase.from('subcategory_brands' as any).delete().in('subcategory_id', subIds);
-        const deleteOverviewPoints = activeSubId
-          ? supabase.from('subcategory_overview_points' as any).delete().eq('subcategory_id', activeSubId)
-          : supabase.from('subcategory_overview_points' as any).delete().in('subcategory_id', subIds);
         const deletePricingPlans = activeSubId
           ? supabase.from('pricing_plans' as any).delete().eq('subcategory_id', activeSubId)
           : supabase.from('pricing_plans' as any).delete().in('subcategory_id', subIds);
@@ -1906,7 +2041,6 @@ export default function AdminDashboard() {
           deleteButtons,
           deleteSubDownloads,
           deleteSubBrands,
-          deleteOverviewPoints,
           deletePricingPlans,
         ]);
 
@@ -2018,42 +2152,6 @@ export default function AdminDashboard() {
           }
         }
 
-        // Insert new subcategory overview points
-        const subOverviewPointsToInsert = [];
-        if (activeSubId) {
-          // Only save overview points for the actively edited subcategory
-          const subOverviewPoints = effectiveSubOverviewPointsState[activeSubId] || [];
-          subOverviewPoints.forEach((point, index) => {
-            if (point.text.trim()) {
-                subOverviewPointsToInsert.push({
-                  id: point.id || crypto.randomUUID(),
-                  subcategory_id: activeSubId,
-                  text: point.text.trim(),
-                  is_highlighted: point.is_highlighted,
-                  highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
-                  sort_order: index,
-                });
-              }
-          });
-        } else {
-          // Save overview points for all subcategories when editing the whole category
-          for (const subId of subIds) {
-            const subOverviewPoints = effectiveSubOverviewPointsState[subId] || [];
-            subOverviewPoints.forEach((point, index) => {
-              if (point.text.trim()) {
-                subOverviewPointsToInsert.push({
-                  id: point.id || crypto.randomUUID(),
-                  subcategory_id: subId,
-                  text: point.text.trim(),
-                  is_highlighted: point.is_highlighted,
-                  highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
-                  sort_order: index,
-                });
-              }
-            });
-          }
-        }
-
         // Insert new pricing plans
         const pricingPlansToInsert = [];
         if (activeSubId) {
@@ -2115,7 +2213,6 @@ export default function AdminDashboard() {
           buttonsToInsert.length > 0 ? supabase.from('category_buttons').insert(buttonsToInsert) : Promise.resolve(),
           subDownloadsToInsert.length > 0 ? supabase.from('subcategory_downloads' as any).insert(subDownloadsToInsert) : Promise.resolve(),
           subBrandsToInsert.length > 0 ? supabase.from('subcategory_brands' as any).insert(subBrandsToInsert) : Promise.resolve(),
-          subOverviewPointsToInsert.length > 0 ? supabase.from('subcategory_overview_points' as any).insert(subOverviewPointsToInsert) : Promise.resolve(),
           (async () => {
             if (pricingPlansToInsert.length === 0) return;
             try {
@@ -2133,6 +2230,8 @@ export default function AdminDashboard() {
 
         // Save About sections for each subcategory in parallel
         await Promise.all(subIds.map(subId => saveAboutSections(subId)));
+        // Save Key Features sections for each subcategory in parallel
+        await Promise.all(subIds.map(subId => saveKeyFeaturesSections(subId, effectiveSubOverviewPointsState[subId] || [])));
       }
 
       // Save downloads
@@ -2977,10 +3076,15 @@ export default function AdminDashboard() {
                                               setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
                                               setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                              setEditPricingPlansTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).pricing_plans_tab_label || 'Pricing Plans' }));
                                               setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
                                               setEditPricingPlans(editPricingPlansState[sub.id] || []);
                                               setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                              setEditKeyFeaturesSections(prev => ({
+                                                ...prev,
+                                                [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                              }));
                                               setEditAboutSections(prev => ({
                                                 ...prev,
                                                 [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
@@ -3159,6 +3263,11 @@ export default function AdminDashboard() {
                                     setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
                                     setEditPricingPlans(editPricingPlansState[sub.id] || []);
                                     setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
+                                    setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                    setEditKeyFeaturesSections(prev => ({
+                                      ...prev,
+                                      [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                    }));
                                     setEditAboutSections(prev => ({
                                       ...prev,
                                       [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
@@ -3364,6 +3473,7 @@ export default function AdminDashboard() {
                                 setEditResourcesTabLabelState(prev => ({ ...prev, [editingSub.id]: editResourcesTabLabelState[editingSub.id] ?? 'Resources' }));
                                 setEditDownloadsTabLabelState(prev => ({ ...prev, [editingSub.id]: editDownloadsTabLabelState[editingSub.id] ?? 'Downloads' }));
                                 setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
+                                setEditPricingPlansTabLabelState(prev => ({ ...prev, [editingSub.id]: editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans' }));
                                 setEditKeyFeaturesTabLabelState(prev => ({ ...prev, [editingSub.id]: editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features' }));
                                 await saveCategory();
                                 setEditingSubcategoryId(null);
@@ -3578,108 +3688,139 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Key Features</label>
-                        <Switch
-                          checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
-                        />
+                    <div className="space-y-4 border-t pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <label className="text-sm font-medium">Key Features Sections</label>
+                        <button
+                          type="button"
+                          onClick={() => addKeyFeaturesSection(editingSub.id)}
+                          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                        >
+                          <Plus className="h-4 w-4" /> Add More
+                        </button>
                       </div>
-                      {editShowHeaderPointsSectionState[editingSub.id] !== false && (
-                        <>
-                          <div className="mb-3">
-
-                            <input
-                              value={editKeyFeaturesTabLabelState[editingSub.id] || ''}
-                              onChange={(e) => {
-                                setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value });
-                              }}
-                              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                              placeholder="Key Features"
-                            />
-                          </div>
-                          {editSubOverviewPoints.length > 0 ? (
-                            <div className="space-y-3">
-                              {editSubOverviewPoints.map((point, index) => (
-                                <div key={point.id || index} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
-                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                    <input
-                                      type="text"
-                                      value={point.text}
-                                      onChange={(e) => {
-                                        const newPoints = [...editSubOverviewPoints];
-                                        newPoints[index] = { ...newPoints[index], text: e.target.value };
-                                        setEditSubOverviewPoints(newPoints);
-                                      }}
-                                      placeholder={`Point ${index + 1}`}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                      <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const newPoints = [...editSubOverviewPoints];
-                                              newPoints[index] = { ...newPoints[index], highlight_color: 'green' };
-                                              setEditSubOverviewPoints(newPoints);
-                                            }}
-                                            className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
-                                            style={{ backgroundColor: '#10b981' }}
-                                            title="Green arrow"
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const newPoints = [...editSubOverviewPoints];
-                                              newPoints[index] = { ...newPoints[index], highlight_color: 'blue' };
-                                              setEditSubOverviewPoints(newPoints);
-                                            }}
-                                            className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
-                                            style={{ backgroundColor: '#2563eb' }}
-                                            title="Blue arrow"
-                                          />
-                                        </div>
-                                        <div className="flex items-center gap-2 border-l pl-3">
-                                          <label className="text-xs text-muted-foreground">BG Highlight</label>
-                                          <Switch
-                                            checked={point.is_highlighted}
-                                          onCheckedChange={(value) => {
-                                            const newPoints = [...editSubOverviewPoints];
-                                            newPoints[index] = { ...newPoints[index], is_highlighted: value };
-                                            setEditSubOverviewPoints(newPoints);
-                                          }}
-                                          />
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newPoints = editSubOverviewPoints.filter((_, i) => i !== index);
-                                            setEditSubOverviewPoints(newPoints);
-                                        }}
-                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
+                      
+                      {(editKeyFeaturesSections[editingSub.id] || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">No Key Features sections added yet. Click "Add More" to create your first section.</p>
+                      ) : (
+                        <div className="space-y-6">
+                          {(editKeyFeaturesSections[editingSub.id] || []).map((section, sectionIndex) => (
+                            <div key={section.id} className="w-full space-y-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+                              <div className="flex items-center justify-between gap-3">
+                                <input
+                                  value={section.heading}
+                                  onChange={(e) => updateKeyFeaturesSection(editingSub.id, section.id, { heading: e.target.value })}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-bold"
+                                  placeholder="Section heading (e.g., Key Features)"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={section.is_visible}
+                                    onCheckedChange={(value) => updateKeyFeaturesSection(editingSub.id, section.id, { is_visible: value })}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteKeyFeaturesSection(editingSub.id, section.id)}
+                                    className="text-destructive hover:text-destructive/80 p-1"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
                                 </div>
-                              ))}
+                              </div>
+
+                              {section.is_visible && (
+                                <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                                  {editSubOverviewPoints
+                                    .filter(p => p.section_id === section.id)
+                                    .map((point, pointIndex) => {
+                                      return (
+                                        <div key={point.id || pointIndex} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                            <input
+                                              type="text"
+                                              value={point.text}
+                                              onChange={(e) => {
+                                                const newPoints = [...editSubOverviewPoints];
+                                                const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                if (pointToUpdateIdx !== -1) {
+                                                  newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], text: e.target.value };
+                                                  setEditSubOverviewPoints(newPoints);
+                                                }
+                                              }}
+                                              placeholder={`Point ${pointIndex + 1}`}
+                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                            />
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex items-center gap-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newPoints = [...editSubOverviewPoints];
+                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                    if (pointToUpdateIdx !== -1) {
+                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'green' };
+                                                      setEditSubOverviewPoints(newPoints);
+                                                    }
+                                                  }}
+                                                  className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
+                                                  style={{ backgroundColor: '#10b981' }}
+                                                />
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newPoints = [...editSubOverviewPoints];
+                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                    if (pointToUpdateIdx !== -1) {
+                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'blue' };
+                                                      setEditSubOverviewPoints(newPoints);
+                                                    }
+                                                  }}
+                                                  className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
+                                                  style={{ backgroundColor: '#2563eb' }}
+                                                />
+                                              </div>
+                                              <div className="flex items-center gap-2 border-l pl-3">
+                                                <label className="text-xs text-muted-foreground">Highlight</label>
+                                                <Switch
+                                                  checked={point.is_highlighted}
+                                                  onCheckedChange={(value) => {
+                                                    const newPoints = [...editSubOverviewPoints];
+                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                    if (pointToUpdateIdx !== -1) {
+                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], is_highlighted: value };
+                                                      setEditSubOverviewPoints(newPoints);
+                                                    }
+                                                  }}
+                                                />
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newPoints = editSubOverviewPoints.filter(p => p.id !== point.id);
+                                                  setEditSubOverviewPoints(newPoints);
+                                                }}
+                                                className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                              >
+                                                <Trash2 className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, section_id: section.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.filter(p => p.section_id === section.id).length }])}
+                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                  >
+                                    <Plus className="w-4 h-4" /> Add Point
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                              No header points added yet.
-                            </div>
-                          )}
-                        </>
+                          ))}
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.length }])}
-                        className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                      >
-                        <Plus className="w-4 h-4" /> Add Header Point
-                      </button>
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
@@ -3966,7 +4107,7 @@ export default function AdminDashboard() {
 
                     <div className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Pricing Plans</label>
+                        <label className="block text-sm font-medium">Pricing</label>
                         <Switch
                           checked={editShowPricingPlansState[editingSub.id] ?? true}
                           onCheckedChange={(value) => setEditShowPricingPlansState({ ...editShowPricingPlansState, [editingSub.id]: value })}
@@ -3974,6 +4115,14 @@ export default function AdminDashboard() {
                       </div>
                       {editShowPricingPlansState[editingSub.id] !== false && (
                         <div className="space-y-3">
+                          <div>
+                            <input
+                              value={editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans'}
+                              onChange={(e) => setEditPricingPlansTabLabelState({ ...editPricingPlansTabLabelState, [editingSub.id]: e.target.value })}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Pricing Plans"
+                            />
+                          </div>
                           {editPricingPlans.map((plan, index) => (
                             <div key={plan.id || index} className="rounded-xl border border-border p-3">
                               <div className="mb-3 flex items-center justify-between">

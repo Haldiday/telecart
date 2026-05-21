@@ -96,10 +96,8 @@ export default function LogoStepsSection({
               className="flex items-start gap-4 rounded-xl border border-border bg-background p-4 md:p-5"
             >
               <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-[#fcf9f5] text-lg font-semibold text-primary md:h-16 md:w-16">
-                {step.logo_url ? (
+                {step.logo_url && (
                   <img src={step.logo_url} alt={step.title} className="h-10 w-10 object-contain md:h-12 md:w-12" />
-                ) : (
-                  <span>{index + 1}</span>
                 )}
               </div>
               <div className="min-w-0 flex-1">

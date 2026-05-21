@@ -141,10 +141,11 @@ export default function Ads3ColSection({
                     style={{ width: `${slideWidth}%` }}
                   >
                     <a
-                      href={ad.link || '#'}
-                      className={`block group rounded-[28px] overflow-hidden ${ad.show_border ? 'border' : ''}`}
-                      style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
-                    >
+                    key={ad.id}
+                    href={ad.link || '#'}
+                    className={`block group rounded-2xl overflow-hidden ${ad.show_border ? 'border' : ''}`}
+                    style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                  >
                       <div
                         className={`overflow-hidden bg-muted ${
                           ads.length < 3
@@ -152,7 +153,7 @@ export default function Ads3ColSection({
                             : 'h-[160px] md:h-auto md:aspect-[16/9]'
                         }`}
                       >
-                        {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
+                        {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-contain md:object-cover`} />}
                       </div>
                       {(ad.heading || ad.description) && (
                         <div className="p-3">
@@ -172,7 +173,7 @@ export default function Ads3ColSection({
               <div key={ad.id} className="flex-1">
                 <a
                   href={ad.link || '#'}
-                  className={`block group rounded-[28px] overflow-hidden ${ad.show_border ? 'border' : ''}`}
+                  className={`block group rounded-2xl overflow-hidden ${ad.show_border ? 'border' : ''}`}
                   style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                 >
                   <div
@@ -182,7 +183,7 @@ export default function Ads3ColSection({
                         : 'h-[160px] md:h-auto md:aspect-[16/9]'
                     }`}
                   >
-                    {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-cover`} />}
+                    {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-contain md:object-cover`} />}
                   </div>
                   {(ad.heading || ad.description) && (
                     <div className="p-3">
