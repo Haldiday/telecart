@@ -3935,56 +3935,60 @@ export default function AdminDashboard() {
                           onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                        <input
-                          value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
-                          onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Resources"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Video URLs (Resources)</label>
-                      <div className="space-y-3">
-                        {(editingSub.video_url_2 || []).map((url, index) => (
-                          <div key={index} className="flex gap-2">
+                      {editShowResourcesState[editingSub.id] !== false && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
                             <input
-                              type="text"
-                              value={url || ''}
-                              onChange={(e) => {
-                                const newUrls = [...(editingSub.video_url_2 || [])];
-                                newUrls[index] = e.target.value;
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                              }}
-                              placeholder="Enter YouTube or video URL"
-                              className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
+                              value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
+                              onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Resources"
                             />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUrls = (editingSub.video_url_2 || []).filter((_, i) => i !== index);
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                              }}
-                              className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newUrls = [...(editingSub.video_url_2 || []), ''];
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                          }}
-                          className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                        >
-                          <Plus className="w-4 h-4" /> Add Video URL
-                        </button>
-                      </div>
+
+                          <div className="space-y-3 pt-2">
+                            <label className="block text-sm font-medium">Video URLs (Resources)</label>
+                            <div className="space-y-3">
+                              {(editingSub.video_url_2 || []).map((url, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={url || ''}
+                                    onChange={(e) => {
+                                      const newUrls = [...(editingSub.video_url_2 || [])];
+                                      newUrls[index] = e.target.value;
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                    }}
+                                    placeholder="Enter YouTube or video URL"
+                                    className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newUrls = (editingSub.video_url_2 || []).filter((_, i) => i !== index);
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                    }}
+                                    className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newUrls = [...(editingSub.video_url_2 || []), ''];
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                }}
+                                className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                              >
+                                <Plus className="w-4 h-4" /> Add Video URL
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
@@ -4091,65 +4095,67 @@ export default function AdminDashboard() {
                           onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                        <input
-                          value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
-                          onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Brands"
-                        />
-                      </div>
                       {editShowBrandsState[editingSub.id] !== false && (
-                        <div className="space-y-3">
-                          {editSubBrands.map((brand, index) => (
-                            <div key={brand.id || index} className="rounded-xl border border-border p-3">
-                              <div className="mb-3 flex items-center justify-between">
-                                <span className="text-sm font-medium">Brand {index + 1}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                            <input
+                              value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
+                              onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Brands"
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            {editSubBrands.map((brand, index) => (
+                              <div key={brand.id || index} className="rounded-xl border border-border p-3">
+                                <div className="mb-3 flex items-center justify-between">
+                                  <span className="text-sm font-medium">Brand {index + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newBrands = [...editSubBrands];
+                                      newBrands.splice(index, 1);
+                                      setEditSubBrands(newBrands);
+                                    }}
+                                    className="p-1 text-destructive"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <input
+                                  placeholder="Brand name"
+                                  value={brand.name || ''}
+                                  onChange={(e) => {
                                     const newBrands = [...editSubBrands];
-                                    newBrands.splice(index, 1);
+                                    newBrands[index] = { ...newBrands[index], name: e.target.value };
                                     setEditSubBrands(newBrands);
                                   }}
-                                  className="p-1 text-destructive"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                />
+                                <input
+                                  placeholder="Brand link (optional)"
+                                  value={brand.link || ''}
+                                  onChange={(e) => {
+                                    const newBrands = [...editSubBrands];
+                                    newBrands[index] = { ...newBrands[index], link: e.target.value || null };
+                                    setEditSubBrands(newBrands);
+                                  }}
+                                  className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                />
                               </div>
-                              <input
-                                placeholder="Brand name"
-                                value={brand.name || ''}
-                                onChange={(e) => {
-                                  const newBrands = [...editSubBrands];
-                                  newBrands[index] = { ...newBrands[index], name: e.target.value };
-                                  setEditSubBrands(newBrands);
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                              <input
-                                placeholder="Brand link (optional)"
-                                value={brand.link || ''}
-                                onChange={(e) => {
-                                  const newBrands = [...editSubBrands];
-                                  newBrands[index] = { ...newBrands[index], link: e.target.value || null };
-                                  setEditSubBrands(newBrands);
-                                }}
-                                className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                            </div>
-                          ))}
-                          {editSubBrands.length < 10 && (
-                            <button
-                              type="button"
-                              onClick={() => setEditSubBrands([...editSubBrands, { id: crypto.randomUUID(), name: '', logo_url: null, link: null, is_visible: true }])}
-                              className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                            >
-                              <Plus className="w-4 h-4" /> Add Brand
-                            </button>
-                          )}
-                        </div>
+                            ))}
+                            {editSubBrands.length < 10 && (
+                              <button
+                                type="button"
+                                onClick={() => setEditSubBrands([...editSubBrands, { id: crypto.randomUUID(), name: '', logo_url: null, link: null, is_visible: true }])}
+                                className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                              >
+                                <Plus className="w-4 h-4" /> Add Brand
+                              </button>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
 
