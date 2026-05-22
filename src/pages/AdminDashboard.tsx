@@ -61,6 +61,7 @@ interface Subcategory {
   pricing_plans_tab_label?: string | null;
   key_features_tab_label?: string | null;
   hero_background_color?: string | null;
+  tab_order?: string[] | null;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
@@ -370,6 +371,7 @@ export default function AdminDashboard() {
   const [editBrandsTabLabelState, setEditBrandsTabLabelState] = useState<Record<string, string>>({});
   const [editPricingPlansTabLabelState, setEditPricingPlansTabLabelState] = useState<Record<string, string>>({});
   const [editKeyFeaturesTabLabelState, setEditKeyFeaturesTabLabelState] = useState<Record<string, string>>({});
+  const [editTabOrderState, setEditTabOrderState] = useState<Record<string, string[]>>({});
   const [editAd1, setEditAd1] = useState<Partial<Ad2> | null>(null);
   const [editSubOverviewPoints, setEditSubOverviewPoints] = useState<SubcategoryOverviewPoint[]>([]);
   const [editSubOverviewPointsState, setEditSubOverviewPointsState] = useState<Record<string, SubcategoryOverviewPoint[]>>({});
@@ -524,7 +526,7 @@ export default function AdminDashboard() {
       if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
       if (cat.data) setCategories(cat.data);
       if (sub.data) {
-        setSubcategories(sub.data);
+        setSubcategories(sub.data as unknown as Subcategory[]);
         const map: Record<string, string> = {};
         const pricingLabels: Record<string, string> = {};
         const keyFeaturesLabels: Record<string, string> = {};
@@ -678,7 +680,7 @@ export default function AdminDashboard() {
         setEditPricingPlansState(pricingPlansBySubcategory);
       }
       if (kfSections.data) {
-        setKeyFeaturesSections(kfSections.data as SubcategoryKeyFeaturesSection[]);
+        setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
         const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
         kfSections.data.forEach((section: any) => {
           if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
@@ -759,7 +761,7 @@ export default function AdminDashboard() {
     if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     if (cat.data) setCategories(cat.data);
-    if (sub.data) setSubcategories(sub.data);
+    if (sub.data) setSubcategories(sub.data as unknown as Subcategory[]);
     if (downloads.data) setCategoryDownloads(downloads.data);
     if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
     if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
@@ -886,7 +888,7 @@ export default function AdminDashboard() {
       setEditPricingPlansState(pricingPlansBySubcategory);
     }
     if (kfSections.data) {
-      setKeyFeaturesSections(kfSections.data as SubcategoryKeyFeaturesSection[]);
+      setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
       const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
       kfSections.data.forEach((section: any) => {
         if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
@@ -1112,7 +1114,7 @@ export default function AdminDashboard() {
         if (sectionPoints.length > 0) {
           const pointsToInsert = sectionPoints.map((p, idx) => ({
             subcategory_id: subcategoryId,
-            section_id: newSection.id,
+            section_id: (newSection as any).id,
             text: p.text.trim(),
             is_highlighted: p.is_highlighted,
             highlight_color: p.highlight_color || 'green',
@@ -2013,6 +2015,9 @@ export default function AdminDashboard() {
           brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
           pricing_plans_tab_label: editPricingPlansTabLabelState[sub.id] || 'Pricing Plans',
           key_features_tab_label: editKeyFeaturesTabLabelState[sub.id] || 'Key Features',
+          form_link: sub.form_link || null,
+          show_form_in_separate_tab: sub.show_form_in_separate_tab ?? false,
+          tab_order: editTabOrderState[sub.id] || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'],
           sort_order: index,
         }));
         const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
@@ -2167,7 +2172,7 @@ export default function AdminDashboard() {
                 currency: plan.currency || '₹',
                 duration: plan.duration || '/month',
                 description: plan.description?.trim() || null,
-                features: plan.features || [],
+                features: (plan.features || []).filter(f => f.trim()),
                 button_label: plan.button_label || 'Get started',
                 button_link: plan.button_link || null,
                 razorpay_link: plan.razorpay_link || null,
@@ -2193,7 +2198,7 @@ export default function AdminDashboard() {
                   currency: plan.currency || '₹',
                   duration: plan.duration || '/month',
                   description: plan.description?.trim() || null,
-                  features: plan.features || [],
+                  features: (plan.features || []).filter(f => f.trim()),
                   button_label: plan.button_label || 'Get started',
                   button_link: plan.button_link || null,
                   razorpay_link: plan.razorpay_link || null,
@@ -3078,6 +3083,7 @@ export default function AdminDashboard() {
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
                                               setEditPricingPlansTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).pricing_plans_tab_label || 'Pricing Plans' }));
                                               setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
+                                              setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'] }));
                                               setEditPricingPlans(editPricingPlansState[sub.id] || []);
                                               setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
@@ -3261,6 +3267,7 @@ export default function AdminDashboard() {
                                     setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
                                     setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                     setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'] }));
                                     setEditPricingPlans(editPricingPlansState[sub.id] || []);
                                     setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
                                     setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
@@ -3608,6 +3615,29 @@ export default function AdminDashboard() {
                           />
                         </div>
                       </div>
+
+                      <div className="space-y-3 border-t pt-4">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-sm font-medium">Form Tab</label>
+                          <Switch
+                            checked={editingSub.show_form_in_separate_tab ?? false}
+                            onCheckedChange={(value) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, show_form_in_separate_tab: value } : s));
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Form Link (Google Form, etc.)</label>
+                          <input
+                            value={editingSub.form_link || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, form_link: e.target.value } : s));
+                            }}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="https://docs.google.com/forms/..."
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-4 border-t pt-6">
@@ -3879,6 +3909,35 @@ export default function AdminDashboard() {
                     </div>
 
                     
+                    <div className="space-y-3 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium">Overview (About Section)</label>
+                        <Switch
+                          checked={editShowAboutSectionState[editingSub.id] ?? true}
+                          onCheckedChange={(value) => setEditShowAboutSectionState({ ...editShowAboutSectionState, [editingSub.id]: value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium">Key Features Tab</label>
+                        <Switch
+                          checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
+                          onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                        <input
+                          value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
+                          onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          placeholder="Key Features"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-3 border-t pt-4">
                       <div className="flex items-center justify-between">
                         <label className="block text-sm font-medium">Resources</label>
@@ -4219,7 +4278,7 @@ export default function AdminDashboard() {
                                   value={plan.features.join('\n') || ''}
                                   onChange={(e) => {
                                     const newPlans = [...editPricingPlans];
-                                    newPlans[index] = { ...newPlans[index], features: e.target.value.split('\n').filter(f => f.trim()) };
+                                    newPlans[index] = { ...newPlans[index], features: e.target.value.split('\n') };
                                     setEditPricingPlans(newPlans);
                                   }}
                                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
@@ -4337,6 +4396,79 @@ export default function AdminDashboard() {
                           </button>
                         </div>
                       )}
+                    </div>
+
+                    <div className="space-y-4 border-t pt-4">
+                      <label className="block text-sm font-medium">Reorder Tabs</label>
+                      <p className="text-xs text-muted-foreground">Drag to change the order of tabs in the detail page.</p>
+                      {(() => {
+                        const defaultOrder = ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'];
+                        const savedOrder = editTabOrderState[editingSub.id] || defaultOrder;
+                        
+                        // Merge saved order with default order to ensure all tabs are present
+                        const currentOrder = [...savedOrder];
+                        defaultOrder.forEach(key => {
+                          if (!currentOrder.includes(key)) {
+                            currentOrder.push(key);
+                          }
+                        });
+
+                        const visibleTabs = currentOrder.filter(tabKey => {
+                          if (tabKey === 'overview') return editShowAboutSectionState[editingSub.id] ?? true;
+                          if (tabKey === 'resources') return editShowResourcesState[editingSub.id] ?? true;
+                          if (tabKey === 'downloads') return editShowDownloadsState[editingSub.id] ?? true;
+                          if (tabKey === 'key_features') return editShowHeaderPointsSectionState[editingSub.id] ?? true;
+                          if (tabKey === 'pricing') return editShowPricingPlansState[editingSub.id] ?? true;
+                          if (tabKey === 'brands') return editShowBrandsState[editingSub.id] ?? true;
+                          if (tabKey === 'form') return (editingSub.show_form_in_separate_tab ?? false) && Boolean(editingSub.form_link?.trim());
+                          return true;
+                        });
+
+                        return (
+                          <DndContext 
+                            sensors={productSensors} 
+                            collisionDetection={closestCenter} 
+                            onDragEnd={(event) => {
+                              const { active, over } = event;
+                              if (!over || active.id === over.id) return;
+                              
+                              const oldIndex = currentOrder.indexOf(active.id as string);
+                              const newIndex = currentOrder.indexOf(over.id as string);
+                              
+                              if (oldIndex !== -1 && newIndex !== -1) {
+                                const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
+                                setEditTabOrderState(prev => ({ ...prev, [editingSub.id]: newOrder }));
+                              }
+                            }}
+                          >
+                            <SortableContext 
+                              items={visibleTabs} 
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="grid gap-2">
+                                {visibleTabs.map((tabKey) => {
+                                  const tabLabels: Record<string, string> = {
+                                    overview: 'Overview',
+                                    resources: editResourcesTabLabelState[editingSub.id] || 'Resources',
+                                    downloads: editDownloadsTabLabelState[editingSub.id] || 'Downloads',
+                                    key_features: editKeyFeaturesTabLabelState[editingSub.id] || 'Key Features',
+                                    pricing: editPricingPlansTabLabelState[editingSub.id] || 'Pricing Plans',
+                                    brands: editBrandsTabLabelState[editingSub.id] || 'Brands',
+                                    form: 'Form'
+                                  };
+                                  return (
+                                    <SortableAdminItem key={tabKey} id={tabKey}>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">{tabLabels[tabKey] || tabKey}</span>
+                                      </div>
+                                    </SortableAdminItem>
+                                  );
+                                })}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        );
+                      })()}
                     </div>
 
                     <div className="space-y-4 border-t pt-4">

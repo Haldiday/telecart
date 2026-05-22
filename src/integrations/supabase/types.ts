@@ -475,6 +475,7 @@ export type Database = {
           schedule_link: string | null
           show_schedule_in_separate_tab: boolean
           sort_order: number
+          tab_order: Json | null
           video_url?: string | null
         }
         Insert: {
@@ -486,6 +487,7 @@ export type Database = {
           schedule_link?: string | null
           show_schedule_in_separate_tab?: boolean
           sort_order?: number
+          tab_order?: Json | null
           video_url?: string | null
         }
         Update: {
@@ -497,6 +499,7 @@ export type Database = {
           schedule_link?: string | null
           show_schedule_in_separate_tab?: boolean
           sort_order?: number
+          tab_order?: Json | null
           video_url?: string | null
         }
         Relationships: [

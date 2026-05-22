@@ -77,6 +77,7 @@ interface Subcategory {
   key_features_tab_label?: string | null;
   pricing_plans_tab_label?: string | null;
   hero_background_color?: string | null;
+  tab_order?: string[] | null;
   about_bg_color?: string | null;
   about_heading_color?: string | null;
   about_subheading_color?: string | null;
@@ -305,27 +306,38 @@ export default function SubcategoryDetail() {
   const showPricingPlansInOverview = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
   const showResourcesTab = subcategory?.show_resources !== false;
-  const showAboutSection = subcategory?.show_about_section !== false;
   const showHeaderPointsSection = subcategory?.show_header_points_section !== false;
   const showHeaderPointsTab = showHeaderPointsSection && overviewPoints.length > 0;
+  const showAboutSection = subcategory?.show_about_section ?? true;
 
-  const tabs = [
-    { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" /> },
+  const allPossibleTabs = [
+    { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" />, visible: showAboutSection },
+    { key: 'resources', label: subcategory?.resources_tab_label || 'Resources', icon: <Play className="h-4 w-4" />, visible: showResourcesTab },
+    { key: 'downloads', label: subcategory?.downloads_tab_label || 'Downloads', icon: <Download className="h-4 w-4" />, visible: showDownloadsTab },
+    { key: 'key_features', label: subcategory?.key_features_tab_label || 'Key Features', icon: <CheckCircle2 className="h-4 w-4" />, visible: showHeaderPointsTab },
+    { key: 'pricing', label: subcategory?.pricing_plans_tab_label || 'Pricing', icon: <Package className="h-4 w-4" />, visible: showPricingPlansTab },
+    { key: 'brands', label: subcategory?.brands_tab_label || 'Brands', icon: <Image className="h-4 w-4" />, visible: showBrandsTab },
+    { key: 'form', label: 'Form', icon: <FileText className="h-4 w-4" />, visible: showFormAsTab },
   ];
 
-  if (showResourcesTab) tabs.push({ key: 'resources', label: subcategory?.resources_tab_label || 'Resources', icon: <Play className="h-4 w-4" /> });
-  if (showDownloadsTab) tabs.push({ key: 'downloads', label: subcategory?.downloads_tab_label || 'Downloads', icon: <Download className="h-4 w-4" /> });
-  if (showHeaderPointsTab) tabs.push({ key: 'key_features', label: subcategory?.key_features_tab_label || 'Key Features', icon: <CheckCircle2 className="h-4 w-4" /> });
-  if (showPricingPlansTab) tabs.push({ key: 'pricing', label: subcategory?.pricing_plans_tab_label || 'Pricing', icon: <Package className="h-4 w-4" /> });
-  if (showBrandsTab) tabs.push({ key: 'brands', label: subcategory?.brands_tab_label || 'Brands', icon: <Image className="h-4 w-4" /> });
-  if (showFormAsTab) tabs.push({ key: 'form', label: 'Form', icon: <FileText className="h-4 w-4" /> });
+  const tabOrder = subcategory?.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'];
 
-  const resourcesTabIndex = tabs.findIndex((tab) => tab.key === 'resources');
-  const pricingTabIndex = tabs.findIndex((tab) => tab.key === 'pricing');
-  const downloadsTabIndex = tabs.findIndex((tab) => tab.key === 'downloads');
-  const brandsTabIndex = tabs.findIndex((tab) => tab.key === 'brands');
-  const formTabIndex = tabs.findIndex((tab) => tab.key === 'form');
-  const keyFeaturesTabIndex = tabs.findIndex((tab) => tab.key === 'key_features');
+  const tabs = useMemo(() => {
+    const orderedTabs = tabOrder
+      .map(key => allPossibleTabs.find(t => t.key === key))
+      .filter((t): t is typeof allPossibleTabs[0] => !!t && t.visible);
+
+    // Add any missing tabs that might be visible but not in tabOrder
+    allPossibleTabs.forEach(t => {
+      if (t.visible && !orderedTabs.find(ot => ot.key === t.key)) {
+        orderedTabs.push(t);
+      }
+    });
+
+    return orderedTabs;
+  }, [tabOrder, subcategory, showResourcesTab, showDownloadsTab, showHeaderPointsTab, showPricingPlansTab, showBrandsTab, showFormAsTab]);
+
+  const activeTabKey = useMemo(() => tabs[activeTab]?.key, [tabs, activeTab]);
 
   const resourcesTabLabel = subcategory?.resources_tab_label?.trim() || 'Resources';
   const downloadsTabLabel = subcategory?.downloads_tab_label?.trim() || 'Downloads';
@@ -468,7 +480,7 @@ export default function SubcategoryDetail() {
       }
 
       if (subcategoryData) {
-        setSubcategory(subcategoryData);
+        setSubcategory(subcategoryData as unknown as Subcategory);
         setVideoUrl((subcategoryData as any).video_url || '');
         setVideoUrl2((subcategoryData as any).video_url_2 || []);
         setFormLink((subcategoryData as any).form_link || '');
@@ -577,7 +589,7 @@ export default function SubcategoryDetail() {
       ...current,
       {
         id: `temp-${crypto.randomUUID()}`,
-        category_id: categoryId,
+        subcategory_id: subcategoryId,
         text: '',
         is_highlighted: false,
         highlight_color: 'green',
@@ -725,7 +737,7 @@ export default function SubcategoryDetail() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {(activeTab === 0 && !showAllOverviewPoints ? sectionPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT) : sectionPoints).map((point) => (
+          {(activeTabKey === 'overview' && !showAllOverviewPoints ? sectionPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT) : sectionPoints).map((point) => (
             <div
               key={point.id}
               className={`flex items-center gap-3 rounded-xl border border-border/50 px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:text-primary ${
@@ -745,7 +757,7 @@ export default function SubcategoryDetail() {
             </div>
           ))}
         </div>
-        {activeTab === 0 && sectionPoints.length > INITIAL_OVERVIEW_POINTS_COUNT && (
+        {activeTabKey === 'overview' && sectionPoints.length > INITIAL_OVERVIEW_POINTS_COUNT && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -789,7 +801,7 @@ export default function SubcategoryDetail() {
           <p className="mb-4 text-center text-[15px] text-muted-foreground">{plan.description}</p>
         )}
         <ul className="mb-6 space-y-3">
-          {plan.features.map((feature, idx) => (
+          {(plan.features || []).filter(f => f && f.trim()).map((feature, idx) => (
             <li key={idx} className="flex items-start gap-2 text-[15px] text-foreground">
               <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
               <span>{feature}</span>
@@ -927,7 +939,7 @@ export default function SubcategoryDetail() {
 
         <div className="w-full bg-slate-50 py-8">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
-            {activeTab === 0 && (
+            {activeTabKey === 'overview' && (
               <div className="w-full space-y-5">
                 {aboutSections
                   .filter((section) => section.is_visible !== false)
@@ -1146,22 +1158,11 @@ export default function SubcategoryDetail() {
                     }
                     return null;
                   })}
-
-              {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
-                <div className="w-full">
-                  <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-                  <div className="w-full overflow-hidden rounded-none border border-border bg-card">
-                    <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
-                      <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
 
-          {activeTab === keyFeaturesTabIndex && showHeaderPointsTab && (
+          {activeTabKey === 'key_features' && showHeaderPointsTab && (
             <div className="w-full space-y-8">
               {keyFeaturesSections
                 .filter(section => section.is_visible)
@@ -1184,7 +1185,7 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
-          {activeTab === resourcesTabIndex && showResourcesTab && (
+          {activeTabKey === 'resources' && showResourcesTab && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
               {videoUrl2.filter(url => url?.trim()).length === 0 ? (
@@ -1233,7 +1234,7 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
-          {activeTab === downloadsTabIndex && showDownloadsTab && (
+          {activeTabKey === 'downloads' && showDownloadsTab && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
 
@@ -1246,7 +1247,7 @@ export default function SubcategoryDetail() {
           )}
 
 
-          {activeTab === brandsTabIndex && showBrandsTab && (
+          {activeTabKey === 'brands' && showBrandsTab && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
               {brands.length > 0 ? (
@@ -1257,14 +1258,14 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
-          {activeTab === pricingTabIndex && showPricingPlansTab && (
+          {activeTabKey === 'pricing' && showPricingPlansTab && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>{pricingPlansTabLabel}</h2>
               {renderPricingPlans()}
             </div>
           )}
 
-          {activeTab === formTabIndex && showFormAsTab && formLink.trim() && (
+          {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>Form</h2>
               <div className="w-full overflow-hidden rounded-none border border-border bg-card">

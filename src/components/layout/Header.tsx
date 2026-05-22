@@ -7,6 +7,7 @@ interface Subcategory {
   id: string;
   name: string;
   link: string | null;
+  custom_link?: string | null;
   category_id: string;
 }
 
@@ -21,7 +22,7 @@ interface Category {
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'software' | 'service'>('software');
+  const [activeTab, setActiveTab] = useState<'categories' | 'service'>('categories');
   const [categories, setCategories] = useState<Category[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -35,7 +36,10 @@ export default function Header() {
         .eq('section_type', 'categories')
         .eq('is_visible', true);
 
-      if (!sections || sections.length === 0) return;
+      if (!sections || sections.length === 0) {
+        setCategories([]);
+        return;
+      }
 
       const sectionIds = sections.map(s => s.id);
 
@@ -46,7 +50,10 @@ export default function Header() {
         .in('section_id', sectionIds)
         .order('sort_order');
 
-      if (!cats) return;
+      if (!cats) {
+        setCategories([]);
+        return;
+      }
 
       // 3. Fetch subcategories
       const { data: subs } = await supabase
@@ -64,6 +71,22 @@ export default function Header() {
 
     loadCategories();
 
+    // Subscribe to changes in page_sections, categories, and subcategories
+    const sectionsChannel = supabase
+      .channel('header_sections_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, () => loadCategories())
+      .subscribe();
+
+    const categoriesChannel = supabase
+      .channel('header_categories_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => loadCategories())
+      .subscribe();
+
+    const subcategoriesChannel = supabase
+      .channel('header_subcategories_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => loadCategories())
+      .subscribe();
+
     // Close menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -72,7 +95,12 @@ export default function Header() {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      sectionsChannel.unsubscribe();
+      categoriesChannel.unsubscribe();
+      subcategoriesChannel.unsubscribe();
+    };
   }, []);
 
   const handleCategoryClick = (categoryId: string) => {
@@ -80,9 +108,14 @@ export default function Header() {
     setMegaMenuOpen(false);
   };
 
-  const handleSubcategoryClick = (categoryId: string, subcategoryId: string) => {
-    navigate(`/category/${categoryId}/subcategory/${subcategoryId}`);
+  const handleSubcategoryClick = (categoryId: string, sub: Subcategory) => {
+    if (sub.custom_link) {
+      window.location.href = sub.custom_link;
+    } else {
+      navigate(`/category/${categoryId}/subcategory/${sub.id}`);
+    }
     setMegaMenuOpen(false);
+    setMobileOpen(false);
   };
 
   return (
@@ -122,84 +155,56 @@ export default function Header() {
 
               {/* Mega Menu */}
               {megaMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-[90vw] max-w-[1200px] bg-white border border-border shadow-2xl rounded-xl overflow-hidden z-50">
+                <div className="absolute top-full right-[-150px] mt-0 w-[90vw] max-w-[1100px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
                   {/* Tabs */}
-                  <div className="flex border-b border-border">
+                  <div className="flex border-b border-gray-100 bg-white px-6">
                     <button
-                      onClick={() => setActiveTab('software')}
-                      className={`px-8 py-4 text-lg font-semibold transition-colors relative ${
-                        activeTab === 'software' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                      onClick={() => setActiveTab('categories')}
+                      className={`px-4 py-3 text-[14px] font-bold transition-colors relative ${
+                        activeTab === 'categories' ? 'text-[#1d4ed8]' : 'text-[#4b5563] hover:text-[#1d4ed8]'
                       }`}
                     >
-                      Software Hub
-                      {activeTab === 'software' && (
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-primary" />
+                      Categories
+                      {activeTab === 'categories' && (
+                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1d4ed8]" />
                       )}
                     </button>
                     <button
                       onClick={() => setActiveTab('service')}
-                      className={`px-8 py-4 text-lg font-semibold transition-colors relative ${
-                        activeTab === 'service' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                      className={`px-4 py-3 text-[14px] font-bold transition-colors relative ${
+                        activeTab === 'service' ? 'text-[#1d4ed8]' : 'text-[#4b5563] hover:text-[#1d4ed8]'
                       }`}
                     >
                       Service Hub
                       {activeTab === 'service' && (
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-primary" />
+                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1d4ed8]" />
                       )}
                     </button>
                   </div>
 
                   {/* Content */}
-                  <div className="p-8 bg-[#f9f8f5]">
-                    {activeTab === 'software' ? (
-                      <div className="grid grid-cols-4 gap-y-10 gap-x-8 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
+                  <div className="px-6 py-5 bg-white">
+                    {activeTab === 'categories' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                         {categories.map((category) => (
-                          <div key={category.id} className="space-y-4">
+                          <div key={category.id}>
                             <button
                               onClick={() => handleCategoryClick(category.id)}
-                              className="flex items-center gap-2 group text-left"
+                              className="flex items-center gap-1 group text-left w-full transition-all py-1 hover:bg-primary/5 rounded px-2"
                             >
-                              <h3 className="text-[#001a41] font-bold text-[16px] group-hover:text-primary transition-colors">
+                              <h3 className="text-[#001a41] font-bold text-[14px] group-hover:text-[#1d4ed8] transition-colors leading-tight">
                                 {category.name}
                               </h3>
-                              <ChevronRight className="w-4 h-4 text-[#001a41] group-hover:text-primary transition-colors" />
+                              <ChevronRight className="w-3 h-3 ml-auto text-[#001a41] group-hover:text-[#1d4ed8] transition-colors" />
                             </button>
-                            <ul className="space-y-2">
-                              {category.subcategories.slice(0, 6).map((sub) => (
-                                <li key={sub.id}>
-                                  <button
-                                    onClick={() => handleSubcategoryClick(category.id, sub.id)}
-                                    className="text-[#4b5563] hover:text-primary text-[14px] text-left transition-colors font-medium"
-                                  >
-                                    {sub.name}
-                                  </button>
-                                </li>
-                              ))}
-                              {category.subcategories.length > 6 && (
-                                <li>
-                                  <button
-                                    onClick={() => handleCategoryClick(category.id)}
-                                    className="text-primary font-semibold text-[13px] hover:underline"
-                                  >
-                                    + {category.subcategories.length - 6} more
-                                  </button>
-                                </li>
-                              )}
-                            </ul>
                           </div>
                         ))}
-                        <div className="flex items-start justify-center pt-4">
-                           <Link
-                            to="/#categories"
-                            onClick={() => setMegaMenuOpen(false)}
-                            className="bg-[#001a41] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#001a41]/90 transition-all shadow-lg hover:shadow-xl active:scale-95"
-                          >
-                            All Softwares Categories
-                          </Link>
-                        </div>
+                        
+                        {/* All Categories Button */}
+                        
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-48 text-muted-foreground font-medium">
+                      <div className="flex items-center justify-center h-48 text-muted-foreground text-[14px]">
                         Service Hub content will be available soon.
                       </div>
                     )}
@@ -237,30 +242,16 @@ export default function Header() {
             </div>
             <div className="pl-4 space-y-2 border-l border-border">
               {categories.map(cat => (
-                <div key={cat.id} className="space-y-1">
+                <div key={cat.id} className="py-1">
                   <button
                     onClick={() => {
                       handleCategoryClick(cat.id);
                       setMobileOpen(false);
                     }}
-                    className="text-sm font-semibold text-primary block py-1"
+                    className="text-sm font-semibold text-primary block w-full text-left py-2 px-3 rounded-md hover:bg-primary/5 transition-colors"
                   >
                     {cat.name}
                   </button>
-                  <div className="pl-2 space-y-1">
-                    {cat.subcategories.slice(0, 3).map(sub => (
-                      <button
-                        key={sub.id}
-                        onClick={() => {
-                          handleSubcategoryClick(cat.id, sub.id);
-                          setMobileOpen(false);
-                        }}
-                        className="text-xs text-muted-foreground block py-1"
-                      >
-                        {sub.name}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               ))}
             </div>
