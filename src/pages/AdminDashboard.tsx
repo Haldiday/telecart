@@ -3616,28 +3616,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      <div className="space-y-3 border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <label className="block text-sm font-medium">Form Tab</label>
-                          <Switch
-                            checked={editingSub.show_form_in_separate_tab ?? false}
-                            onCheckedChange={(value) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, show_form_in_separate_tab: value } : s));
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Form Link (Google Form, etc.)</label>
-                          <input
-                            value={editingSub.form_link || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, form_link: e.target.value } : s));
-                            }}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            placeholder="https://docs.google.com/forms/..."
-                          />
-                        </div>
-                      </div>
                     </div>
 
                     <div className="space-y-4 border-t pt-6">
@@ -4397,7 +4375,7 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium">Reorder Tabs</label>
                       <p className="text-xs text-muted-foreground">Drag to change the order of tabs in the detail page.</p>
                       {(() => {
-                        const defaultOrder = ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'];
+                        const defaultOrder = ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands'];
                         const savedOrder = editTabOrderState[editingSub.id] || defaultOrder;
                         
                         // Merge saved order with default order to ensure all tabs are present
@@ -4415,7 +4393,6 @@ export default function AdminDashboard() {
                           if (tabKey === 'key_features') return editShowHeaderPointsSectionState[editingSub.id] ?? true;
                           if (tabKey === 'pricing') return editShowPricingPlansState[editingSub.id] ?? true;
                           if (tabKey === 'brands') return editShowBrandsState[editingSub.id] ?? true;
-                          if (tabKey === 'form') return (editingSub.show_form_in_separate_tab ?? false) && Boolean(editingSub.form_link?.trim());
                           return true;
                         });
 
@@ -4443,14 +4420,13 @@ export default function AdminDashboard() {
                               <div className="grid gap-2">
                                 {visibleTabs.map((tabKey) => {
                                   const tabLabels: Record<string, string> = {
-                                    overview: 'Overview',
-                                    resources: editResourcesTabLabelState[editingSub.id] || 'Resources',
-                                    downloads: editDownloadsTabLabelState[editingSub.id] || 'Downloads',
-                                    key_features: editKeyFeaturesTabLabelState[editingSub.id] || 'Key Features',
-                                    pricing: editPricingPlansTabLabelState[editingSub.id] || 'Pricing Plans',
-                                    brands: editBrandsTabLabelState[editingSub.id] || 'Brands',
-                                    form: 'Form'
-                                  };
+                                      overview: 'Overview',
+                                      resources: editResourcesTabLabelState[editingSub.id] || 'Resources',
+                                      downloads: editDownloadsTabLabelState[editingSub.id] || 'Downloads',
+                                      key_features: editKeyFeaturesTabLabelState[editingSub.id] || 'Key Features',
+                                      pricing: editPricingPlansTabLabelState[editingSub.id] || 'Pricing Plans',
+                                      brands: editBrandsTabLabelState[editingSub.id] || 'Brands'
+                                    };
                                   return (
                                     <SortableAdminItem key={tabKey} id={tabKey}>
                                       <div className="flex items-center gap-2">
