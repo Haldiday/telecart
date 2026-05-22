@@ -71,19 +71,11 @@ export default function Header() {
 
     loadCategories();
 
-    // Subscribe to changes in page_sections, categories, and subcategories
-    const sectionsChannel = supabase
-      .channel('header_sections_changes')
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('header_categories_live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, () => loadCategories())
-      .subscribe();
-
-    const categoriesChannel = supabase
-      .channel('header_categories_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => loadCategories())
-      .subscribe();
-
-    const subcategoriesChannel = supabase
-      .channel('header_subcategories_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => loadCategories())
       .subscribe();
 
@@ -97,9 +89,7 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      sectionsChannel.unsubscribe();
-      categoriesChannel.unsubscribe();
-      subcategoriesChannel.unsubscribe();
+      channel.unsubscribe();
     };
   }, []);
 
@@ -190,18 +180,26 @@ export default function Header() {
                           <div key={category.id}>
                             <button
                               onClick={() => handleCategoryClick(category.id)}
-                              className="flex items-center gap-1 group text-left w-full transition-all py-1 hover:bg-primary/5 rounded px-2"
+                              className="flex items-center gap-1 group text-left w-full transition-all py-1 px-2 rounded hover:bg-primary/5"
                             >
                               <h3 className="text-[#001a41] font-bold text-[14px] group-hover:text-[#1d4ed8] transition-colors leading-tight">
                                 {category.name}
                               </h3>
-                              <ChevronRight className="w-3 h-3 ml-auto text-[#001a41] group-hover:text-[#1d4ed8] transition-colors" />
+                              <ChevronRight className="w-3 h-3 ml-auto text-gray-300 group-hover:text-[#1d4ed8] transition-colors" />
                             </button>
                           </div>
                         ))}
                         
                         {/* All Categories Button */}
-                        
+                        <div className="col-span-full flex justify-center mt-6 pt-4 border-t border-gray-50">
+                          <Link
+                            to="/#categories"
+                            onClick={() => setMegaMenuOpen(false)}
+                            className="bg-[#001a41] text-white px-6 py-2 rounded text-[14px] font-bold hover:bg-[#001a41]/90 transition-all shadow-md active:scale-95"
+                          >
+                            All Softwares Categories
+                          </Link>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-48 text-muted-foreground text-[14px]">

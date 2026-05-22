@@ -3719,8 +3719,27 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-4 border-t pt-6">
+                      <div className="space-y-3 border-b pb-6">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-sm font-medium">Key Features Tab</label>
+                          <Switch
+                            checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
+                            onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                          <input
+                            value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
+                            onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="Key Features"
+                          />
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-medium">Key Features Sections</label>
+                        
                         <button
                           type="button"
                           onClick={() => addKeyFeaturesSection(editingSub.id)}
@@ -3906,36 +3925,6 @@ export default function AdminDashboard() {
                           <Plus className="w-4 h-4" /> Add Button
                         </button>
                       )}
-                    </div>
-
-                    
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Overview (About Section)</label>
-                        <Switch
-                          checked={editShowAboutSectionState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowAboutSectionState({ ...editShowAboutSectionState, [editingSub.id]: value })}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Key Features Tab</label>
-                        <Switch
-                          checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                        <input
-                          value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
-                          onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Key Features"
-                        />
-                      </div>
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
