@@ -138,28 +138,63 @@ export default function OffersSection({
         </div>
 
         <div className="relative group/fixed">
-          {showFixedControls && (
+          {showFixedControls && !isMobile && (
             <>
               <button
                 onClick={handleFixedPrev}
-                className="absolute -left-2 md:-left-12 top-[150px] -translate-y-1/2 z-10 p-2 text-black hover:text-black/70 transition-colors disabled:opacity-10"
+                className="absolute -left-8 md:-left-12 top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
                 disabled={fixedPageIndex === 0}
                 aria-label="Previous slide"
               >
-                <ChevronLeft className="h-10 w-10 md:h-12 md:w-12 stroke-[1.5px]" />
+                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
               </button>
               <button
                 onClick={handleFixedNext}
-                className="absolute -right-2 md:-right-12 top-[150px] -translate-y-1/2 z-10 p-2 text-black hover:text-black/70 transition-colors disabled:opacity-10"
+                className="absolute -right-8 md:-right-12 top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
                 disabled={fixedPageIndex === totalFixedPages - 1}
                 aria-label="Next slide"
               >
-                <ChevronRight className="h-10 w-10 md:h-12 md:w-12 stroke-[1.5px]" />
+                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
               </button>
             </>
           )}
 
-          {needsCarousel ? (
+          {fixedMode && isMobile ? (
+            <div className="flex flex-col gap-6">
+              {offers.map((offer) => (
+                <div key={offer.id} className="flex h-full">
+                  <a href={offer.link || '#'} className="flex flex-col w-full group">
+                    {offer.image_url && (
+                      <div 
+                        className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
+                        style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                      >
+                        <img
+                          src={offer.image_url}
+                          alt={offer.heading || 'Offer'}
+                          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
+                    {(offer.heading || offer.description) && (
+                      <div className="pt-3 px-1">
+                        {offer.heading && (
+                          <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
+                            {offer.heading}
+                          </h3>
+                        )}
+                        {offer.description && (
+                          <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
+                            {offer.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : needsCarousel ? (
             <div className="relative">
             <div className="overflow-hidden rounded-lg">
               <div

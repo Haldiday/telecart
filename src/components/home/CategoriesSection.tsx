@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Subcategory {
   id: string;
@@ -25,25 +25,24 @@ interface CategoriesSectionProps {
   sectionId: string;
 }
 
-// Helper function to handle subcategory navigation
-const navigateToSubcategory = (subcategory: Subcategory, categoryId: string, navigate: ReturnType<typeof useNavigate>) => {
-  if (subcategory.custom_link) {
-    // If custom_link exists, redirect to it
-    window.location.href = subcategory.custom_link;
-  } else {
-    // Otherwise, navigate to the detail page
-    navigate(`/category/${categoryId}/subcategory/${subcategory.id}`);
-  }
-};
-
 export default function CategoriesSection({ sectionId }: CategoriesSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { checkAuthAndNavigate } = useMSG91Auth();
+
+  // Helper function to handle subcategory navigation
+  const handleSubcategoryClick = (subcategory: Subcategory, categoryId: string) => {
+    const targetPath = subcategory.custom_link || `/category/${categoryId}/subcategory/${subcategory.id}`;
+    checkAuthAndNavigate(targetPath);
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+    checkAuthAndNavigate(`/category/${categoryId}`);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -155,7 +154,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       {category.subcategories.map((sub) => (
                         <button
                           key={sub.id}
-                          onClick={() => navigateToSubcategory(sub, category.id, navigate)}
+                          onClick={() => handleSubcategoryClick(sub, category.id)}
                           className="block w-full text-left text-sm font-normal text-black hover:text-blue-600 hover:underline transition-colors"
                         >
                           {sub.name}
@@ -163,7 +162,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       ))}
                       <button
                         type="button"
-                        onClick={() => navigate(`/category/${category.id}`)}
+                        onClick={() => handleCategoryClick(category.id)}
                         className="mt-4 w-full rounded-lg bg-primary/10 py-2 text-center text-sm font-medium text-primary hover:bg-primary/20"
                       >
                         Explore all
@@ -190,7 +189,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                 >
                   <button
                     type="button"
-                    onClick={() => navigate(`/category/${category.id}`)}
+                    onClick={() => handleCategoryClick(category.id)}
                     className="block w-full border-b py-4 px-2 text-center transition-opacity hover:opacity-90"
                     style={{ backgroundColor: category.bg_color }}
                   >
@@ -210,7 +209,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                     {visibleSubs.map((sub) => (
                       <button
                         key={sub.id}
-                        onClick={() => navigateToSubcategory(sub, category.id, navigate)}
+                        onClick={() => handleSubcategoryClick(sub, category.id)}
                         className="block w-full text-left border-b border-border/30 py-2 last:border-b-0 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
                       >
                         {sub.name}
@@ -220,7 +219,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                     {category.subcategories.length > 5 && !showAll && (
                       <button
                         type="button"
-                        onClick={() => navigate(`/category/${category.id}/subcategories`)}
+                        onClick={() => checkAuthAndNavigate(`/category/${category.id}/subcategories`)}
                         className="mt-3 text-sm md:text-base font-semibold text-primary hover:underline text-left"
                       >
                         See all {'->'}

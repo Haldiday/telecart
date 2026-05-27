@@ -20,7 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save,
-  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, Eye
+  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
@@ -53,6 +53,7 @@ interface Subcategory {
   show_header_points_section?: boolean;
   sort_order: number;
   demo_form_heading?: string | null;
+  about_subheading?: string | null;
   demo_button_label?: string | null;
   image_url?: string | null;
   resources_tab_label?: string | null;
@@ -66,7 +67,15 @@ interface Subcategory {
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
 interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
-interface SubcategoryBrand { id?: string; name: string; logo_url: string | null; link: string | null; is_visible: boolean; }
+interface SubcategoryBrand { 
+  id?: string; 
+  name: string; 
+  logo_url: string | null; 
+  link: string | null; 
+  description?: string | null;
+  buttons?: CategoryButton[];
+  is_visible: boolean; 
+}
 interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; section_id?: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
@@ -338,6 +347,7 @@ export default function AdminDashboard() {
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
+  const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
 
   const [contactSettings, setContactSettings] = useState({
     heading: '',
@@ -443,6 +453,7 @@ export default function AdminDashboard() {
   const [productEditAd2, setProductEditAd2] = useState<Partial<Ad2Item> | null>(null);
   const [productEditAd3, setProductEditAd3] = useState<Partial<Ad3Item> | null>(null);
   const [productEditLogoStep, setProductEditLogoStep] = useState<Partial<LogoStepItem> | null>(null);
+  const [productSectionsLocal, setProductSectionsLocal] = useState<ScopedPageSection[]>([]);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const productSensors = sensors;
@@ -476,6 +487,10 @@ export default function AdminDashboard() {
   const selectedOffersSection = sections.find(s => s.id === selectedOffersSectionId);
   const selectedAds2Section = sections.find(s => s.id === selectedAds2SectionId);
   const selectedAds3Section = sections.find(s => s.id === selectedAds3SectionId) || sections.find(s => s.section_type === 'ads_3col');
+
+  useEffect(() => {
+    setProductSectionsLocal(productSections);
+  }, [productSections]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate('/admin/login');
@@ -596,7 +611,9 @@ export default function AdminDashboard() {
             name: brand.name,
             logo_url: brand.logo_url,
             link: brand.link,
-            is_visible: brand.is_visible,
+            description: brand.description,
+            buttons: brand.buttons || [],
+            is_visible: brand.is_visible
           });
         });
         setEditSubBrandsState(brandsBySubcategory);
@@ -809,7 +826,9 @@ export default function AdminDashboard() {
           name: brand.name,
           logo_url: brand.logo_url,
           link: brand.link,
-          is_visible: brand.is_visible,
+          description: brand.description,
+          buttons: brand.buttons || [],
+          is_visible: brand.is_visible
         });
       });
       setEditSubBrandsState(brandsBySubcategory);
@@ -1472,22 +1491,33 @@ export default function AdminDashboard() {
   };
 
   const productUpdateSectionOrder = async (orderedSections: ScopedPageSection[]) => {
-    for (const [index, section] of orderedSections.entries()) {
-      await db.from(PRODUCT_SECTION_TABLE).update({ sort_order: index }).eq('id', section.id);
-    }
+    const updates = orderedSections.map((section, index) =>
+      db.from(PRODUCT_SECTION_TABLE).update({ sort_order: index }).eq('id', section.id)
+    );
+    const results = await Promise.all(updates);
+    const failed = results.find((result) => result.error);
+    if (failed?.error) throw failed.error;
+    void refetchProductSections();
     toast.success('Section order saved.');
   };
 
-  const productHandleSectionDragEnd = async (event: DragEndEvent, productSections: ScopedPageSection[], subcategoryId: string) => {
+  const productHandleSectionDragEnd = async (event: DragEndEvent, currentSections: ScopedPageSection[], subcategoryId: string) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = productSections.findIndex((section) => section.id === active.id);
-    const newIndex = productSections.findIndex((section) => section.id === over.id);
+    const oldIndex = currentSections.findIndex((section) => section.id === active.id);
+    const newIndex = currentSections.findIndex((section) => section.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(productSections, oldIndex, newIndex);
-    await productUpdateSectionOrder(reordered);
+    const reordered = arrayMove(currentSections, oldIndex, newIndex);
+    setProductSectionsLocal(reordered);
+    try {
+      await productUpdateSectionOrder(reordered);
+    } catch (error) {
+      console.error('Error updating section order:', error);
+      toast.error('Failed to save section order.');
+      await refetchProductSections();
+    }
   };
 
   const productUpdateItemOrder = async (tableName: string, items: { id: string }[]) => {
@@ -1998,6 +2028,7 @@ export default function AdminDashboard() {
           schedule_link_2: sub.schedule_link_2,
           show_schedule_2_in_separate_tab: sub.show_schedule_2_in_separate_tab ?? false,
           about_heading: sub.about_heading || 'About',
+          about_subheading: sub.about_subheading || null,
           about_content: sub.about_content || null,
           demo_form_heading: sub.demo_form_heading || 'See The Software In Action\nWatch Free Demo!',
           demo_button_label: sub.demo_button_label || 'Get Free Advice',
@@ -2020,8 +2051,26 @@ export default function AdminDashboard() {
           tab_order: editTabOrderState[sub.id] || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'],
           sort_order: index,
         }));
-        const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
-        if (subError) throw subError;
+        
+        try {
+          const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
+          if (subError) throw subError;
+        } catch (err) {
+          console.warn('Failed to upsert subcategories with new columns, retrying without them...', err);
+          // Remove columns that might not exist in the database yet
+          const safeSubsToUpsert = subsToUpsert.map(({ 
+            about_heading, about_subheading, about_content, 
+            demo_form_heading, demo_button_label,
+            show_about_section, show_header_points_section, show_pricing_plans,
+            resources_tab_label, downloads_tab_label, brands_tab_label,
+            pricing_plans_tab_label, key_features_tab_label,
+            hero_background_color, form_link, show_form_in_separate_tab,
+            ...rest 
+          }) => rest);
+          const { error: secondSubError } = await supabase.from('subcategories').upsert(safeSubsToUpsert as any);
+          if (secondSubError) throw secondSubError;
+          toast.info('Some new fields (like subheading) could not be saved because the database columns are missing.');
+        }
 
         // Delete any subcategories in the database that are no longer in editSubs
         const subIds = editSubs.map(s => s.id);
@@ -2132,6 +2181,8 @@ export default function AdminDashboard() {
                 name: brand.name,
                 logo_url: brand.logo_url,
                 link: brand.link,
+                description: brand.description,
+                buttons: brand.buttons || [],
                 is_visible: brand.is_visible,
                 sort_order: index,
               });
@@ -2149,6 +2200,8 @@ export default function AdminDashboard() {
                   name: brand.name,
                   logo_url: brand.logo_url,
                   link: brand.link,
+                  description: brand.description,
+                  buttons: brand.buttons || [],
                   is_visible: brand.is_visible,
                   sort_order: index,
                 });
@@ -2217,16 +2270,27 @@ export default function AdminDashboard() {
         await Promise.all([
           buttonsToInsert.length > 0 ? supabase.from('category_buttons').insert(buttonsToInsert) : Promise.resolve(),
           subDownloadsToInsert.length > 0 ? supabase.from('subcategory_downloads' as any).insert(subDownloadsToInsert) : Promise.resolve(),
-          subBrandsToInsert.length > 0 ? supabase.from('subcategory_brands' as any).insert(subBrandsToInsert) : Promise.resolve(),
+          (async () => {
+            if (subBrandsToInsert.length === 0) return;
+            try {
+              const { error } = await supabase.from('subcategory_brands' as any).insert(subBrandsToInsert);
+              if (error) throw error;
+            } catch (err) {
+              console.warn('Failed to insert subcategory brands, retrying without is_visible column...', err);
+              const safeBrands = subBrandsToInsert.map(({ is_visible, ...rest }) => rest);
+              const { error: secondError } = await supabase.from('subcategory_brands' as any).insert(safeBrands);
+              if (secondError) throw secondError;
+            }
+          })(),
           (async () => {
             if (pricingPlansToInsert.length === 0) return;
             try {
               const { error } = await supabase.from('pricing_plans' as any).insert(pricingPlansToInsert);
               if (error) throw error;
             } catch (err) {
-              console.warn('Failed to insert pricing plans with color fields, retrying without them...', err);
-              // Fallback: try inserting without the new color fields in case the migration hasn't been run
-              const safePricingPlans = pricingPlansToInsert.map(({ button_bg_color, card_bg_color, ...rest }) => rest);
+              console.warn('Failed to insert pricing plans, retrying with safe fields...', err);
+              // Fallback: try inserting without potentially new columns
+              const safePricingPlans = pricingPlansToInsert.map(({ button_bg_color, card_bg_color, is_visible, ...rest }) => rest);
               const { error: secondError } = await supabase.from('pricing_plans' as any).insert(safePricingPlans);
               if (secondError) throw secondError;
             }
@@ -3062,7 +3126,6 @@ export default function AdminDashboard() {
                                         <div className="min-w-0">
                                           <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
                                           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                            {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -3245,7 +3308,6 @@ export default function AdminDashboard() {
                               <div className="min-w-0">
                                 <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
                                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                  {sub.video_url && <span className="rounded-full border border-border bg-background px-2 py-1">Video</span>}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -3551,902 +3613,1047 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
-
-                    {/* Bottom Watch Demo Section Content */}
-                    <div className="space-y-4 border-t pt-6">
-                      <h3 className="text-lg font-bold">Bottom Watch Demo Section</h3>
-                      <p className="text-sm text-muted-foreground">Manage the "About / Need Help Deciding?" section for this specific subcategory.</p>
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'about-sections' ? null : 'about-sections')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">About Sections</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'about-sections' ? 'rotate-180' : ''}`} />
+                      </button>
                       
-                      <ImageUpload
-                        label="Logo"
-                        value={editingSub.link || ''}
-                        onChange={(url) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, link: url } : s));
-                        }}
-                        folder="logos"
-                      />
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Section Heading</label>
-                        <input
-                          value={editingSub.about_heading || ''}
-                          onChange={(e) => {
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
-                          }}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="Need Help Deciding?"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Section Description</label>
-                        <textarea
-                          value={editingSub.about_content || ''}
-                          onChange={(e) => {
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
-                          }}
-                          className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          placeholder="We'll help you find the right tools..."
-                        />
-                      </div>
-
-                      <div className="space-y-3 border-t pt-4">
-                        <h4 className="text-sm font-semibold">Demo Form Settings</h4>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
-                          <textarea
-                            value={editingSub.demo_form_heading || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
-                            }}
-                            className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            placeholder="See The Software In Action\nWatch Free Demo!"
-                          />
+                      {activeAccordion === 'about-sections' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between mb-4">
+                            <label className="text-sm font-medium">Manage multiple about content sections</label>
+                            <button
+                              type="button"
+                              onClick={() => addAboutSection(editingSub.id)}
+                              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            >
+                              <Plus className="h-4 w-4" /> Add More
+                            </button>
+                          </div>
+                          
+                          {(editAboutSections[editingSub.id] || []).length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-4">No About sections added yet. Click "Add More" to create your first About section.</p>
+                          ) : (
+                            <div className="space-y-3">
+                                  {(editAboutSections[editingSub.id] || []).map((section, index) => (
+                                    <div key={section.id} className="w-full space-y-3" style={{ backgroundColor: section.background_color || '#ffffff', padding: '16px', borderRadius: '8px' }}>
+                                      <div className="flex items-center justify-between gap-3">
+                                        <input
+                                          value={section.heading}
+                                          onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading: e.target.value })}
+                                          className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                          placeholder="About heading"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                          <Switch
+                                            checked={editAboutSectionVisibility[editingSub.id]?.[section.id] ?? true}
+                                            onCheckedChange={(value) => setEditAboutSectionVisibility(prev => ({
+                                              ...prev,
+                                              [editingSub.id]: {
+                                                ...(prev[editingSub.id] || {}),
+                                                [section.id]: value
+                                              }
+                                            }))}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => deleteAboutSection(editingSub.id, section.id)}
+                                            className="text-destructive hover:text-destructive/80 p-1"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {editAboutSectionVisibility[editingSub.id]?.[section.id] !== false && (
+                                        <>
+                                          <div className="flex items-center gap-3">
+                                            <label className="text-sm text-muted-foreground">Background:</label>
+                                            <input
+                                              type="color"
+                                              value={section.background_color || '#ffffff'}
+                                              onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
+                                              className="w-10 h-10 rounded cursor-pointer border border-input"
+                                            />
+                                            <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
+                                            <input
+                                              type="color"
+                                              value={section.heading_color || '#000000'}
+                                              onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading_color: e.target.value })}
+                                              className="w-10 h-10 rounded cursor-pointer border border-input"
+                                            />
+                                          </div>
+                                          <TipTapEditor
+                                            key={section.id}
+                                            value={section.content || ''}
+                                            onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
+                                            className="min-h-[100px] w-full"
+                                            placeholder="Enter about section content here..."
+                                          />
+                                        </>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                          )}
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
-                          <input
-                            value={editingSub.demo_button_label || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
-                            }}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            placeholder="Get Free Advice"
-                          />
-                        </div>
-                      </div>
-
+                      )}
                     </div>
 
-                    <div className="space-y-4 border-t pt-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-medium">About Sections</label>
-                        <button
-                          type="button"
-                          onClick={() => addAboutSection(editingSub.id)}
-                          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                        >
-                          <Plus className="h-4 w-4" /> Add More
-                        </button>
-                      </div>
-                      
-                      {(editAboutSections[editingSub.id] || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4">No About sections added yet. Click "Add More" to create your first About section.</p>
-                      ) : (
-                        <div className="space-y-3">
-                              {(editAboutSections[editingSub.id] || []).map((section, index) => (
-                                <div key={section.id} className="w-full space-y-3" style={{ backgroundColor: section.background_color || '#ffffff', padding: '16px', borderRadius: '8px' }}>
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'key-features' ? null : 'key-features')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Key Features Tab</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'key-features' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'key-features' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="space-y-3 border-b pb-6">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-sm font-medium">Enable Key Features Tab</label>
+                              <Switch
+                                checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
+                                onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                              <input
+                                value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
+                                onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="Key Features"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between mb-4">
+                            <button
+                              type="button"
+                              onClick={() => addKeyFeaturesSection(editingSub.id)}
+                              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            >
+                              <Plus className="h-4 w-4" /> Add More
+                            </button>
+                          </div>
+                          
+                          {(editKeyFeaturesSections[editingSub.id] || []).length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-4">No Key Features sections added yet. Click "Add More" to create your first section.</p>
+                          ) : (
+                            <div className="space-y-6">
+                              {(editKeyFeaturesSections[editingSub.id] || []).map((section, sectionIndex) => (
+                                <div key={section.id} className="w-full space-y-4 rounded-xl border border-border bg-card p-4 shadow-sm">
                                   <div className="flex items-center justify-between gap-3">
                                     <input
                                       value={section.heading}
-                                      onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading: e.target.value })}
-                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                      placeholder="About heading"
+                                      onChange={(e) => updateKeyFeaturesSection(editingSub.id, section.id, { heading: e.target.value })}
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-bold"
+                                      placeholder="Section heading (e.g., Key Features)"
                                     />
                                     <div className="flex items-center gap-2">
                                       <Switch
-                                        checked={editAboutSectionVisibility[editingSub.id]?.[section.id] ?? true}
-                                        onCheckedChange={(value) => setEditAboutSectionVisibility(prev => ({
-                                          ...prev,
-                                          [editingSub.id]: {
-                                            ...(prev[editingSub.id] || {}),
-                                            [section.id]: value
-                                          }
-                                        }))}
+                                        checked={section.is_visible}
+                                        onCheckedChange={(value) => updateKeyFeaturesSection(editingSub.id, section.id, { is_visible: value })}
                                       />
                                       <button
                                         type="button"
-                                        onClick={() => deleteAboutSection(editingSub.id, section.id)}
+                                        onClick={() => deleteKeyFeaturesSection(editingSub.id, section.id)}
                                         className="text-destructive hover:text-destructive/80 p-1"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </button>
                                     </div>
                                   </div>
-                                  {editAboutSectionVisibility[editingSub.id]?.[section.id] !== false && (
-                                    <>
-                                      <div className="flex items-center gap-3">
-                                        <label className="text-sm text-muted-foreground">Background:</label>
-                                        <input
-                                          type="color"
-                                          value={section.background_color || '#ffffff'}
-                                          onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
-                                          className="w-10 h-10 rounded cursor-pointer border border-input"
-                                        />
-                                        <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
-                                        <input
-                                          type="color"
-                                          value={section.heading_color || '#000000'}
-                                          onChange={(e) => updateAboutSection(editingSub.id, section.id, { heading_color: e.target.value })}
-                                          className="w-10 h-10 rounded cursor-pointer border border-input"
-                                        />
-                                      </div>
-                                      <TipTapEditor
-                                        key={section.id}
-                                        value={section.content || ''}
-                                        onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
-                                        className="min-h-[100px] w-full"
-                                        placeholder="Enter about section content here..."
-                                      />
-                                    </>
+
+                                  {section.is_visible && (
+                                    <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                                      {editSubOverviewPoints
+                                        .filter(p => p.section_id === section.id)
+                                        .map((point, pointIndex) => {
+                                          return (
+                                            <div key={point.id || pointIndex} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                                <input
+                                                  type="text"
+                                                  value={point.text}
+                                                  onChange={(e) => {
+                                                    const newPoints = [...editSubOverviewPoints];
+                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                    if (pointToUpdateIdx !== -1) {
+                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], text: e.target.value };
+                                                      setEditSubOverviewPoints(newPoints);
+                                                    }
+                                                  }}
+                                                  placeholder={`Point ${pointIndex + 1}`}
+                                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                                />
+                                                <div className="flex items-center gap-3">
+                                                  <div className="flex items-center gap-2">
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const newPoints = [...editSubOverviewPoints];
+                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                        if (pointToUpdateIdx !== -1) {
+                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'green' };
+                                                          setEditSubOverviewPoints(newPoints);
+                                                        }
+                                                      }}
+                                                      className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
+                                                      style={{ backgroundColor: '#10b981' }}
+                                                    />
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const newPoints = [...editSubOverviewPoints];
+                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                        if (pointToUpdateIdx !== -1) {
+                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'blue' };
+                                                          setEditSubOverviewPoints(newPoints);
+                                                        }
+                                                      }}
+                                                      className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
+                                                      style={{ backgroundColor: '#2563eb' }}
+                                                    />
+                                                  </div>
+                                                  <div className="flex items-center gap-2 border-l pl-3">
+                                                    <label className="text-xs text-muted-foreground">Highlight</label>
+                                                    <Switch
+                                                      checked={point.is_highlighted}
+                                                      onCheckedChange={(value) => {
+                                                        const newPoints = [...editSubOverviewPoints];
+                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                        if (pointToUpdateIdx !== -1) {
+                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], is_highlighted: value };
+                                                          setEditSubOverviewPoints(newPoints);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </div>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const newPoints = editSubOverviewPoints.filter(p => p.id !== point.id);
+                                                      setEditSubOverviewPoints(newPoints);
+                                                    }}
+                                                    className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                                  >
+                                                    <Trash2 className="w-4 h-4" />
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, section_id: section.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.filter(p => p.section_id === section.id).length }])}
+                                        className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                      >
+                                        <Plus className="w-4 h-4" /> Add Point
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               ))}
                             </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4 border-t pt-6">
-                      <div className="space-y-3 border-b pb-6">
-                        <div className="flex items-center justify-between">
-                          <label className="block text-sm font-medium">Key Features Tab</label>
-                          <Switch
-                            checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
-                            onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                          <input
-                            value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
-                            onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            placeholder="Key Features"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mb-4">
-                        
-                        <button
-                          type="button"
-                          onClick={() => addKeyFeaturesSection(editingSub.id)}
-                          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                        >
-                          <Plus className="h-4 w-4" /> Add More
-                        </button>
-                      </div>
-                      
-                      {(editKeyFeaturesSections[editingSub.id] || []).length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4">No Key Features sections added yet. Click "Add More" to create your first section.</p>
-                      ) : (
-                        <div className="space-y-6">
-                          {(editKeyFeaturesSections[editingSub.id] || []).map((section, sectionIndex) => (
-                            <div key={section.id} className="w-full space-y-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-                              <div className="flex items-center justify-between gap-3">
-                                <input
-                                  value={section.heading}
-                                  onChange={(e) => updateKeyFeaturesSection(editingSub.id, section.id, { heading: e.target.value })}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-bold"
-                                  placeholder="Section heading (e.g., Key Features)"
-                                />
-                                <div className="flex items-center gap-2">
-                                  <Switch
-                                    checked={section.is_visible}
-                                    onCheckedChange={(value) => updateKeyFeaturesSection(editingSub.id, section.id, { is_visible: value })}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => deleteKeyFeaturesSection(editingSub.id, section.id)}
-                                    className="text-destructive hover:text-destructive/80 p-1"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {section.is_visible && (
-                                <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                                  {editSubOverviewPoints
-                                    .filter(p => p.section_id === section.id)
-                                    .map((point, pointIndex) => {
-                                      return (
-                                        <div key={point.id || pointIndex} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
-                                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                            <input
-                                              type="text"
-                                              value={point.text}
-                                              onChange={(e) => {
-                                                const newPoints = [...editSubOverviewPoints];
-                                                const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                if (pointToUpdateIdx !== -1) {
-                                                  newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], text: e.target.value };
-                                                  setEditSubOverviewPoints(newPoints);
-                                                }
-                                              }}
-                                              placeholder={`Point ${pointIndex + 1}`}
-                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                            />
-                                            <div className="flex items-center gap-3">
-                                              <div className="flex items-center gap-2">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const newPoints = [...editSubOverviewPoints];
-                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                    if (pointToUpdateIdx !== -1) {
-                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'green' };
-                                                      setEditSubOverviewPoints(newPoints);
-                                                    }
-                                                  }}
-                                                  className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
-                                                  style={{ backgroundColor: '#10b981' }}
-                                                />
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    const newPoints = [...editSubOverviewPoints];
-                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                    if (pointToUpdateIdx !== -1) {
-                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'blue' };
-                                                      setEditSubOverviewPoints(newPoints);
-                                                    }
-                                                  }}
-                                                  className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
-                                                  style={{ backgroundColor: '#2563eb' }}
-                                                />
-                                              </div>
-                                              <div className="flex items-center gap-2 border-l pl-3">
-                                                <label className="text-xs text-muted-foreground">Highlight</label>
-                                                <Switch
-                                                  checked={point.is_highlighted}
-                                                  onCheckedChange={(value) => {
-                                                    const newPoints = [...editSubOverviewPoints];
-                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                    if (pointToUpdateIdx !== -1) {
-                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], is_highlighted: value };
-                                                      setEditSubOverviewPoints(newPoints);
-                                                    }
-                                                  }}
-                                                />
-                                              </div>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const newPoints = editSubOverviewPoints.filter(p => p.id !== point.id);
-                                                  setEditSubOverviewPoints(newPoints);
-                                                }}
-                                                className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                              >
-                                                <Trash2 className="w-4 h-4" />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, section_id: section.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.filter(p => p.section_id === section.id).length }])}
-                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                  >
-                                    <Plus className="w-4 h-4" /> Add Point
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Buttons</label>
-                      {editButtons.length > 0 && (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {editButtons.map((button, index) => (
-                            <div key={button.id || index} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
-                              <div className="flex items-center justify-between gap-3">
-                                <input
-                                  type="text"
-                                  value={button.label}
-                                  onChange={(e) => {
-                                    const newButtons = [...editButtons];
-                                    newButtons[index] = { ...newButtons[index], label: e.target.value };
-                                    setEditButtons(newButtons);
-                                  }}
-                                  placeholder="Button label"
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <Switch
-                                  checked={button.is_visible ?? false}
-                                  onCheckedChange={(value) => {
-                                    const newButtons = [...editButtons];
-                                    newButtons[index] = { ...newButtons[index], is_visible: value };
-                                    setEditButtons(newButtons);
-                                  }}
-                                  className="shrink-0"
-                                />
-                              </div>
-                              <input
-                                type="text"
-                                value={button.link || ''}
-                                onChange={(e) => {
-                                  const newButtons = [...editButtons];
-                                  newButtons[index] = { ...newButtons[index], link: e.target.value || null };
-                                  setEditButtons(newButtons);
-                                }}
-                                placeholder="Button link"
-                                className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                              <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {editButtons.length < 4 && (
-                        <button
-                          type="button"
-                          onClick={() => setEditButtons([...editButtons, { id: crypto.randomUUID(), label: '', link: null, is_visible: true }])}
-                          className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                        >
-                          <Plus className="w-4 h-4" /> Add Button
-                        </button>
-                      )}
-                    </div>
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'buttons' ? null : 'buttons')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Buttons</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'buttons' ? 'rotate-180' : ''}`} />
+                      </button>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Resources</label>
-                        <Switch
-                          checked={editShowResourcesState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      {editShowResourcesState[editingSub.id] !== false && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                            <input
-                              value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
-                              onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Resources"
-                            />
-                          </div>
-
-                          <div className="space-y-3 pt-2">
-                            <label className="block text-sm font-medium">Video URLs (Resources)</label>
-                            <div className="space-y-3">
-                              {(editingSub.video_url_2 || []).map((url, index) => (
-                                <div key={index} className="flex gap-2">
+                      {activeAccordion === 'buttons' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <p className="text-sm text-muted-foreground">Add up to 4 custom buttons for this subcategory.</p>
+                          {editButtons.length > 0 && (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {editButtons.map((button, index) => (
+                                <div key={button.id || index} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <input
+                                      type="text"
+                                      value={button.label}
+                                      onChange={(e) => {
+                                        const newButtons = [...editButtons];
+                                        newButtons[index] = { ...newButtons[index], label: e.target.value };
+                                        setEditButtons(newButtons);
+                                      }}
+                                      placeholder="Button label"
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <Switch
+                                      checked={button.is_visible ?? false}
+                                      onCheckedChange={(value) => {
+                                        const newButtons = [...editButtons];
+                                        newButtons[index] = { ...newButtons[index], is_visible: value };
+                                        setEditButtons(newButtons);
+                                      }}
+                                      className="shrink-0"
+                                    />
+                                  </div>
                                   <input
                                     type="text"
-                                    value={url || ''}
+                                    value={button.link || ''}
                                     onChange={(e) => {
-                                      const newUrls = [...(editingSub.video_url_2 || [])];
-                                      newUrls[index] = e.target.value;
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                      const newButtons = [...editButtons];
+                                      newButtons[index] = { ...newButtons[index], link: e.target.value || null };
+                                      setEditButtons(newButtons);
                                     }}
-                                    placeholder="Enter YouTube or video URL"
-                                    className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
+                                    placeholder="Button link"
+                                    className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                   />
+                                  <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {editButtons.length < 4 && (
+                            <button
+                              type="button"
+                              onClick={() => setEditButtons([...editButtons, { id: crypto.randomUUID(), label: '', link: null, is_visible: true }])}
+                              className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                            >
+                              <Plus className="w-4 h-4" /> Add Button
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'resources' ? null : 'resources')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Resources</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'resources' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'resources' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Enable Resources Section</label>
+                            <Switch
+                              checked={editShowResourcesState[editingSub.id] ?? true}
+                              onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
+                            />
+                          </div>
+                          {editShowResourcesState[editingSub.id] !== false && (
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                <input
+                                  value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
+                                  onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Resources"
+                                />
+                              </div>
+
+                              <div className="space-y-3 pt-2">
+                                <label className="block text-sm font-medium">Video URLs (Resources)</label>
+                                <div className="space-y-3">
+                                  {(editingSub.video_url_2 || []).map((url, index) => (
+                                    <div key={index} className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={url || ''}
+                                        onChange={(e) => {
+                                          const newUrls = [...(editingSub.video_url_2 || [])];
+                                          newUrls[index] = e.target.value;
+                                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                        }}
+                                        placeholder="Enter YouTube or video URL"
+                                        className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newUrls = (editingSub.video_url_2 || []).filter((_, i) => i !== index);
+                                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
+                                        }}
+                                        className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ))}
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const newUrls = (editingSub.video_url_2 || []).filter((_, i) => i !== index);
+                                      const newUrls = [...(editingSub.video_url_2 || []), ''];
                                       setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
                                     }}
-                                    className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground"
+                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Plus className="w-4 h-4" /> Add Video URL
                                   </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'downloads' ? null : 'downloads')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Downloads</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'downloads' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'downloads' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Downloads</label>
+                            <Switch
+                              checked={editShowDownloadsState[editingSub.id] ?? true}
+                              onCheckedChange={(value) => setEditShowDownloadsState({ ...editShowDownloadsState, [editingSub.id]: value })}
+                            />
+                          </div>
+                          {editShowDownloadsState[editingSub.id] !== false && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                <input
+                                  value={editDownloadsTabLabelState[editingSub.id] ?? 'Downloads'}
+                                  onChange={(e) => setEditDownloadsTabLabelState({ ...editDownloadsTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Downloads"
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                {editSubDownloads.map((download, index) => (
+                                  <div key={download.id || index} className="rounded-xl border border-border p-3">
+                                    <div className="mb-3 flex items-center justify-between">
+                                      <span className="text-sm font-medium">Download {index + 1}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newDownloads = [...editSubDownloads];
+                                          newDownloads.splice(index, 1);
+                                          setEditSubDownloads(newDownloads);
+                                        }}
+                                        className="p-1 text-destructive"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    <input
+                                      placeholder="File name"
+                                      value={download.file_name || ''}
+                                      onChange={(e) => {
+                                        const newDownloads = [...editSubDownloads];
+                                        newDownloads[index] = { ...newDownloads[index], file_name: e.target.value };
+                                        setEditSubDownloads(newDownloads);
+                                      }}
+                                      className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <FileUpload
+                                      label="Upload File"
+                                      value={download.file_url || null}
+                                      fileName={download.file_name || undefined}
+                                      folder="downloads"
+                                      onChange={({ url, name }) => {
+                                        const newDownloads = [...editSubDownloads];
+                                        newDownloads[index] = {
+                                          ...newDownloads[index],
+                                          file_url: url,
+                                          file_name: newDownloads[index].file_name?.trim() ? newDownloads[index].file_name : name,
+                                        };
+                                        setEditSubDownloads(newDownloads);
+                                      }}
+                                      onRemove={() => {
+                                        const newDownloads = [...editSubDownloads];
+                                        newDownloads[index] = { ...newDownloads[index], file_url: '' };
+                                        setEditSubDownloads(newDownloads);
+                                      }}
+                                    />
+                                    <select
+                                      value={download.file_type || 'pdf'}
+                                      onChange={(e) => {
+                                        const newDownloads = [...editSubDownloads];
+                                        newDownloads[index] = { ...newDownloads[index], file_type: e.target.value };
+                                        setEditSubDownloads(newDownloads);
+                                      }}
+                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                      <option value="pdf">PDF</option>
+                                      <option value="file">File</option>
+                                      <option value="image">Image</option>
+                                      <option value="video">Video</option>
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+                              {editSubDownloads.length < 10 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditSubDownloads([...editSubDownloads, { id: crypto.randomUUID(), file_name: '', file_url: '', file_type: 'pdf' }])}
+                                  className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                >
+                                  <Plus className="w-4 h-4" /> Add Download
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Brands</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'brands' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Enable Brands Section</label>
+                            <Switch
+                              checked={editShowBrandsState[editingSub.id] ?? true}
+                              onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
+                            />
+                          </div>
+                          {editShowBrandsState[editingSub.id] !== false && (
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                <input
+                                  value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
+                                  onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Brands"
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                {editSubBrands.map((brand, index) => (
+                                  <div key={brand.id || index} className="rounded-xl border border-border p-3">
+                                    <div className="mb-3 flex items-center justify-between">
+                                      <span className="text-sm font-medium">Brand {index + 1}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands.splice(index, 1);
+                                          setEditSubBrands(newBrands);
+                                        }}
+                                        className="p-1 text-destructive"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    <div className="mb-3">
+                                      <ImageUpload
+                                        label="Logo"
+                                        value={brand.logo_url}
+                                        onChange={(url) => {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands[index] = { ...newBrands[index], logo_url: url };
+                                          setEditSubBrands(newBrands);
+                                        }}
+                                        folder="brands"
+                                      />
+                                    </div>
+                                    <input
+                                      placeholder="Brand name"
+                                      value={brand.name || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], name: e.target.value };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <textarea
+                                      placeholder="Description"
+                                      value={brand.description || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], description: e.target.value };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                                    />
+                                    <input
+                                      placeholder="Primary link (optional)"
+                                      value={brand.link || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], link: e.target.value || null };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <div className="mt-4 space-y-2 border-t pt-3">
+                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Buttons</label>
+                                      {(brand.buttons || []).map((btn, btnIndex) => (
+                                        <div key={btnIndex} className="flex gap-2 items-center">
+                                          <input
+                                            placeholder="Label"
+                                            value={btn.label}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons[btnIndex] = { ...newButtons[btnIndex], label: e.target.value };
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Link"
+                                            value={btn.link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons[btnIndex] = { ...newButtons[btnIndex], link: e.target.value };
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="flex-[2] rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+                                          />
+                                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                                            <Switch
+                                              checked={btn.is_visible ?? true}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                const newButtons = [...(newBrands[index].buttons || [])];
+                                                newButtons[btnIndex] = { ...newButtons[btnIndex], is_visible: Boolean(checked) };
+                                                newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(btn.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons.splice(btnIndex, 1);
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="p-1.5 text-destructive"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                      {(brand.buttons || []).length < 4 && (
+                                         <button
+                                           type="button"
+                                           onClick={() => {
+                                             const newBrands = [...editSubBrands];
+                                             const newButtons = [...(newBrands[index].buttons || []), { label: '', link: '', is_visible: true }];
+                                             newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                             setEditSubBrands(newBrands);
+                                           }}
+                                           className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                                         >
+                                           <Plus className="w-3.5 h-3.5" /> Add Button
+                                         </button>
+                                       )}
+                                    </div>
+                                  </div>
+                                ))}
+                                {editSubBrands.length < 10 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSubBrands([...editSubBrands, { id: crypto.randomUUID(), name: '', logo_url: null, link: null, description: '', buttons: [], is_visible: true }])}
+                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                  >
+                                    <Plus className="w-4 h-4" /> Add Brand
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'pricing' ? null : 'pricing')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Pricing</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'pricing' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'pricing' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Enable Pricing Section</label>
+                            <Switch
+                              checked={editShowPricingPlansState[editingSub.id] ?? true}
+                              onCheckedChange={(value) => setEditShowPricingPlansState({ ...editShowPricingPlansState, [editingSub.id]: value })}
+                            />
+                          </div>
+                          {editShowPricingPlansState[editingSub.id] !== false && (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                <input
+                                  value={editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans'}
+                                  onChange={(e) => setEditPricingPlansTabLabelState({ ...editPricingPlansTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Pricing Plans"
+                                />
+                              </div>
+                              {editPricingPlans.map((plan, index) => (
+                                <div key={plan.id || index} className="rounded-xl border border-border p-3">
+                                  <div className="mb-3 flex items-center justify-between">
+                                    <span className="text-sm font-medium">Plan {index + 1}</span>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                                        <Switch
+                                          checked={plan.is_visible ?? true}
+                                          onCheckedChange={(checked) => {
+                                            const newPlans = [...editPricingPlans];
+                                            newPlans[index] = { ...newPlans[index], is_visible: Boolean(checked) };
+                                            setEditPricingPlans(newPlans);
+                                          }}
+                                        />
+                                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{(plan.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newPlans = [...editPricingPlans];
+                                          newPlans.splice(index, 1);
+                                          setEditPricingPlans(newPlans);
+                                        }}
+                                        className="p-1 text-destructive"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <input
+                                      placeholder="Plan name (e.g., Basic plan)"
+                                      value={plan.plan_name || ''}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], plan_name: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <div className="flex gap-2">
+                                      <select
+                                        value={plan.currency || '₹'}
+                                        onChange={(e) => {
+                                          const newPlans = [...editPricingPlans];
+                                          newPlans[index] = { ...newPlans[index], currency: e.target.value };
+                                          setEditPricingPlans(newPlans);
+                                        }}
+                                        className="w-16 rounded-lg border border-input bg-background px-1 py-2 text-sm"
+                                      >
+                                        <option value="₹">₹</option>
+                                        <option value="$">$</option>
+                                        <option value="£">£</option>
+                                        <option value="€">€</option>
+                                        <option value="¥">¥</option>
+                                      </select>
+                                      <input
+                                        placeholder="Price"
+                                        value={plan.price || ''}
+                                        onChange={(e) => {
+                                          const newPlans = [...editPricingPlans];
+                                          newPlans[index] = { ...newPlans[index], price: e.target.value };
+                                          setEditPricingPlans(newPlans);
+                                        }}
+                                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                  <input
+                                    placeholder="Duration (e.g., /month)"
+                                    value={plan.duration || '/month'}
+                                    onChange={(e) => {
+                                      const newPlans = [...editPricingPlans];
+                                      newPlans[index] = { ...newPlans[index], duration: e.target.value };
+                                      setEditPricingPlans(newPlans);
+                                    }}
+                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  />
+                                  <textarea
+                                    placeholder="Description (optional)"
+                                    value={plan.description || ''}
+                                    onChange={(e) => {
+                                      const newPlans = [...editPricingPlans];
+                                      newPlans[index] = { ...newPlans[index], description: e.target.value };
+                                      setEditPricingPlans(newPlans);
+                                    }}
+                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    rows={2}
+                                  />
+                                  <div className="mb-3">
+                                    <label className="block text-xs font-medium mb-1.5">Features (one per line)</label>
+                                    <textarea
+                                      placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                                      value={plan.features.join('\n') || ''}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], features: e.target.value.split('\n') };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                      rows={4}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <input
+                                      placeholder="Button label (e.g., Get started)"
+                                      value={plan.button_label || 'Get started'}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], button_label: e.target.value };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    <input
+                                      placeholder="Button link"
+                                      value={plan.button_link || ''}
+                                      onChange={(e) => {
+                                        const newPlans = [...editPricingPlans];
+                                        newPlans[index] = { ...newPlans[index], button_link: e.target.value || null };
+                                        setEditPricingPlans(newPlans);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                  </div>
+                                  <input
+                                    placeholder="Razorpay payment link (optional)"
+                                    value={plan.razorpay_link || ''}
+                                    onChange={(e) => {
+                                      const newPlans = [...editPricingPlans];
+                                      newPlans[index] = { ...newPlans[index], razorpay_link: e.target.value || null };
+                                      setEditPricingPlans(newPlans);
+                                    }}
+                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  />
+                                  <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                      <label className="mb-1.5 block text-xs font-medium">Card Background Color</label>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="color"
+                                          value={plan.card_bg_color || '#ffffff'}
+                                          onChange={(e) => {
+                                            const newPlans = [...editPricingPlans];
+                                            newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
+                                            setEditPricingPlans(newPlans);
+                                          }}
+                                          className="h-10 w-12 cursor-pointer rounded border border-input"
+                                        />
+                                        <input
+                                          value={plan.card_bg_color || '#ffffff'}
+                                          onChange={(e) => {
+                                            const newPlans = [...editPricingPlans];
+                                            newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
+                                            setEditPricingPlans(newPlans);
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          placeholder="#ffffff"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="mb-1.5 block text-xs font-medium">Button Color</label>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="color"
+                                          value={plan.button_bg_color || '#0f7fb3'}
+                                          onChange={(e) => {
+                                            const newPlans = [...editPricingPlans];
+                                            newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
+                                            setEditPricingPlans(newPlans);
+                                          }}
+                                          className="h-10 w-12 cursor-pointer rounded border border-input"
+                                        />
+                                        <input
+                                          value={plan.button_bg_color || '#0f7fb3'}
+                                          onChange={(e) => {
+                                            const newPlans = [...editPricingPlans];
+                                            newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
+                                            setEditPricingPlans(newPlans);
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          placeholder="#0f7fb3"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <input
+                                        type="checkbox"
+                                        checked={plan.is_popular}
+                                        onChange={(e) => {
+                                          const newPlans = [...editPricingPlans];
+                                          newPlans[index] = { ...newPlans[index], is_popular: e.target.checked };
+                                          setEditPricingPlans(newPlans);
+                                        }}
+                                        className="w-4 h-4"
+                                      />
+                                      Mark as Popular
+                                    </label>
+                                    <span className="text-xs text-muted-foreground">{plan.is_visible ? 'Visible' : 'Hidden'}</span>
+                                  </div>
                                 </div>
                               ))}
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const newUrls = [...(editingSub.video_url_2 || []), ''];
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                                }}
+                                onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '₹', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
                                 className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                               >
-                                <Plus className="w-4 h-4" /> Add Video URL
+                                <Plus className="w-4 h-4" /> Add Pricing Plan
                               </button>
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Downloads</label>
-                        <Switch
-                          checked={editShowDownloadsState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowDownloadsState({ ...editShowDownloadsState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      {editShowDownloadsState[editingSub.id] !== false && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                            <input
-                              value={editDownloadsTabLabelState[editingSub.id] ?? 'Downloads'}
-                              onChange={(e) => setEditDownloadsTabLabelState({ ...editDownloadsTabLabelState, [editingSub.id]: e.target.value })}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Downloads"
-                            />
-                          </div>
-                          <div className="space-y-3">
-                            {editSubDownloads.map((download, index) => (
-                              <div key={download.id || index} className="rounded-xl border border-border p-3">
-                                <div className="mb-3 flex items-center justify-between">
-                                  <span className="text-sm font-medium">Download {index + 1}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newDownloads = [...editSubDownloads];
-                                      newDownloads.splice(index, 1);
-                                      setEditSubDownloads(newDownloads);
-                                    }}
-                                    className="p-1 text-destructive"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <input
-                                  placeholder="File name"
-                                  value={download.file_name || ''}
-                                  onChange={(e) => {
-                                    const newDownloads = [...editSubDownloads];
-                                    newDownloads[index] = { ...newDownloads[index], file_name: e.target.value };
-                                    setEditSubDownloads(newDownloads);
-                                  }}
-                                  className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <FileUpload
-                                  label="Upload File"
-                                  value={download.file_url || null}
-                                  fileName={download.file_name || undefined}
-                                  folder="downloads"
-                                  onChange={({ url, name }) => {
-                                    const newDownloads = [...editSubDownloads];
-                                    newDownloads[index] = {
-                                      ...newDownloads[index],
-                                      file_url: url,
-                                      file_name: newDownloads[index].file_name?.trim() ? newDownloads[index].file_name : name,
-                                    };
-                                    setEditSubDownloads(newDownloads);
-                                  }}
-                                  onRemove={() => {
-                                    const newDownloads = [...editSubDownloads];
-                                    newDownloads[index] = { ...newDownloads[index], file_url: '' };
-                                    setEditSubDownloads(newDownloads);
-                                  }}
-                                />
-                                <select
-                                  value={download.file_type || 'pdf'}
-                                  onChange={(e) => {
-                                    const newDownloads = [...editSubDownloads];
-                                    newDownloads[index] = { ...newDownloads[index], file_type: e.target.value };
-                                    setEditSubDownloads(newDownloads);
-                                  }}
-                                  className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                >
-                                  <option value="pdf">PDF</option>
-                                  <option value="file">File</option>
-                                  <option value="image">Image</option>
-                                  <option value="video">Video</option>
-                                </select>
-                              </div>
-                            ))}
-                          </div>
-                          {editSubDownloads.length < 10 && (
-                            <button
-                              type="button"
-                              onClick={() => setEditSubDownloads([...editSubDownloads, { id: crypto.randomUUID(), file_name: '', file_url: '', file_type: 'pdf' }])}
-                              className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                            >
-                              <Plus className="w-4 h-4" /> Add Download
-                            </button>
                           )}
-                        </>
-                      )}
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Brands</label>
-                        <Switch
-                          checked={editShowBrandsState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      {editShowBrandsState[editingSub.id] !== false && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                            <input
-                              value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
-                              onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Brands"
-                            />
-                          </div>
-                          <div className="space-y-3">
-                            {editSubBrands.map((brand, index) => (
-                              <div key={brand.id || index} className="rounded-xl border border-border p-3">
-                                <div className="mb-3 flex items-center justify-between">
-                                  <span className="text-sm font-medium">Brand {index + 1}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newBrands = [...editSubBrands];
-                                      newBrands.splice(index, 1);
-                                      setEditSubBrands(newBrands);
-                                    }}
-                                    className="p-1 text-destructive"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <input
-                                  placeholder="Brand name"
-                                  value={brand.name || ''}
-                                  onChange={(e) => {
-                                    const newBrands = [...editSubBrands];
-                                    newBrands[index] = { ...newBrands[index], name: e.target.value };
-                                    setEditSubBrands(newBrands);
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <input
-                                  placeholder="Brand link (optional)"
-                                  value={brand.link || ''}
-                                  onChange={(e) => {
-                                    const newBrands = [...editSubBrands];
-                                    newBrands[index] = { ...newBrands[index], link: e.target.value || null };
-                                    setEditSubBrands(newBrands);
-                                  }}
-                                  className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                              </div>
-                            ))}
-                            {editSubBrands.length < 10 && (
-                              <button
-                                type="button"
-                                onClick={() => setEditSubBrands([...editSubBrands, { id: crypto.randomUUID(), name: '', logo_url: null, link: null, is_visible: true }])}
-                                className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                              >
-                                <Plus className="w-4 h-4" /> Add Brand
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="space-y-3 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Pricing</label>
-                        <Switch
-                          checked={editShowPricingPlansState[editingSub.id] ?? true}
-                          onCheckedChange={(value) => setEditShowPricingPlansState({ ...editShowPricingPlansState, [editingSub.id]: value })}
-                        />
-                      </div>
-                      {editShowPricingPlansState[editingSub.id] !== false && (
-                        <div className="space-y-3">
-                          <div>
-                            <input
-                              value={editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans'}
-                              onChange={(e) => setEditPricingPlansTabLabelState({ ...editPricingPlansTabLabelState, [editingSub.id]: e.target.value })}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Pricing Plans"
-                            />
-                          </div>
-                          {editPricingPlans.map((plan, index) => (
-                            <div key={plan.id || index} className="rounded-xl border border-border p-3">
-                              <div className="mb-3 flex items-center justify-between">
-                                <span className="text-sm font-medium">Plan {index + 1}</span>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], is_visible: !newPlans[index].is_visible };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className={`p-1 ${plan.is_visible ? 'text-green-600' : 'text-muted-foreground'}`}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans.splice(index, 1);
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="p-1 text-destructive"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-3 mb-3">
-                                <input
-                                  placeholder="Plan name (e.g., Basic plan)"
-                                  value={plan.plan_name || ''}
-                                  onChange={(e) => {
-                                    const newPlans = [...editPricingPlans];
-                                    newPlans[index] = { ...newPlans[index], plan_name: e.target.value };
-                                    setEditPricingPlans(newPlans);
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <div className="flex gap-2">
-                                  <select
-                                    value={plan.currency || '₹'}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], currency: e.target.value };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="w-16 rounded-lg border border-input bg-background px-1 py-2 text-sm"
-                                  >
-                                    <option value="₹">₹</option>
-                                    <option value="$">$</option>
-                                    <option value="£">£</option>
-                                    <option value="€">€</option>
-                                    <option value="¥">¥</option>
-                                  </select>
-                                  <input
-                                    placeholder="Price"
-                                    value={plan.price || ''}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], price: e.target.value };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  />
-                                </div>
-                              </div>
-                              <input
-                                placeholder="Duration (e.g., /month)"
-                                value={plan.duration || '/month'}
-                                onChange={(e) => {
-                                  const newPlans = [...editPricingPlans];
-                                  newPlans[index] = { ...newPlans[index], duration: e.target.value };
-                                  setEditPricingPlans(newPlans);
-                                }}
-                                className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                              <textarea
-                                placeholder="Description (optional)"
-                                value={plan.description || ''}
-                                onChange={(e) => {
-                                  const newPlans = [...editPricingPlans];
-                                  newPlans[index] = { ...newPlans[index], description: e.target.value };
-                                  setEditPricingPlans(newPlans);
-                                }}
-                                className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                rows={2}
-                              />
-                              <div className="mb-3">
-                                <label className="block text-xs font-medium mb-1.5">Features (one per line)</label>
-                                <textarea
-                                  placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
-                                  value={plan.features.join('\n') || ''}
-                                  onChange={(e) => {
-                                    const newPlans = [...editPricingPlans];
-                                    newPlans[index] = { ...newPlans[index], features: e.target.value.split('\n') };
-                                    setEditPricingPlans(newPlans);
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  rows={4}
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-3 mb-3">
-                                <input
-                                  placeholder="Button label (e.g., Get started)"
-                                  value={plan.button_label || 'Get started'}
-                                  onChange={(e) => {
-                                    const newPlans = [...editPricingPlans];
-                                    newPlans[index] = { ...newPlans[index], button_label: e.target.value };
-                                    setEditPricingPlans(newPlans);
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                                <input
-                                  placeholder="Button link"
-                                  value={plan.button_link || ''}
-                                  onChange={(e) => {
-                                    const newPlans = [...editPricingPlans];
-                                    newPlans[index] = { ...newPlans[index], button_link: e.target.value || null };
-                                    setEditPricingPlans(newPlans);
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                />
-                              </div>
-                              <input
-                                placeholder="Razorpay payment link (optional)"
-                                value={plan.razorpay_link || ''}
-                                onChange={(e) => {
-                                  const newPlans = [...editPricingPlans];
-                                  newPlans[index] = { ...newPlans[index], razorpay_link: e.target.value || null };
-                                  setEditPricingPlans(newPlans);
-                                }}
-                                className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div>
-                                  <label className="mb-1.5 block text-xs font-medium">Card Background Color</label>
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="color"
-                                      value={plan.card_bg_color || '#ffffff'}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="h-10 w-12 cursor-pointer rounded border border-input"
-                                    />
-                                    <input
-                                      value={plan.card_bg_color || '#ffffff'}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                      placeholder="#ffffff"
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="mb-1.5 block text-xs font-medium">Button Color</label>
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="color"
-                                      value={plan.button_bg_color || '#0f7fb3'}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="h-10 w-12 cursor-pointer rounded border border-input"
-                                    />
-                                    <input
-                                      value={plan.button_bg_color || '#0f7fb3'}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                      placeholder="#0f7fb3"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 text-sm">
-                                  <input
-                                    type="checkbox"
-                                    checked={plan.is_popular}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], is_popular: e.target.checked };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="w-4 h-4"
-                                  />
-                                  Mark as Popular
-                                </label>
-                                <span className="text-xs text-muted-foreground">{plan.is_visible ? 'Visible' : 'Hidden'}</span>
-                              </div>
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '₹', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
-                            className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                          >
-                            <Plus className="w-4 h-4" /> Add Pricing Plan
-                          </button>
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-4 border-t pt-4">
-                      <label className="block text-sm font-medium">Reorder Tabs</label>
-                      <p className="text-xs text-muted-foreground">Drag to change the order of tabs in the detail page.</p>
-                      {(() => {
-                        const defaultOrder = ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands'];
-                        const savedOrder = editTabOrderState[editingSub.id] || defaultOrder;
-                        
-                        // Merge saved order with default order to ensure all tabs are present
-                        const currentOrder = [...savedOrder];
-                        defaultOrder.forEach(key => {
-                          if (!currentOrder.includes(key)) {
-                            currentOrder.push(key);
-                          }
-                        });
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'bottom-demo' ? null : 'bottom-demo')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <h3 className="text-lg font-bold">Watch Demo Section</h3>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'bottom-demo' ? 'rotate-180' : ''}`} />
+                      </button>
 
-                        const visibleTabs = currentOrder.filter(tabKey => {
-                          if (tabKey === 'overview') return editShowAboutSectionState[editingSub.id] ?? true;
-                          if (tabKey === 'resources') return editShowResourcesState[editingSub.id] ?? true;
-                          if (tabKey === 'downloads') return editShowDownloadsState[editingSub.id] ?? true;
-                          if (tabKey === 'key_features') return editShowHeaderPointsSectionState[editingSub.id] ?? true;
-                          if (tabKey === 'pricing') return editShowPricingPlansState[editingSub.id] ?? true;
-                          if (tabKey === 'brands') return editShowBrandsState[editingSub.id] ?? true;
-                          return true;
-                        });
+                      {activeAccordion === 'bottom-demo' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <p className="text-sm text-muted-foreground">Manage the "About / Need Help Deciding?" section for this specific subcategory.</p>
 
-                        return (
-                          <DndContext 
-                            sensors={productSensors} 
-                            collisionDetection={closestCenter} 
-                            onDragEnd={(event) => {
-                              const { active, over } = event;
-                              if (!over || active.id === over.id) return;
-                              
-                              const oldIndex = currentOrder.indexOf(active.id as string);
-                              const newIndex = currentOrder.indexOf(over.id as string);
-                              
-                              if (oldIndex !== -1 && newIndex !== -1) {
-                                const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
-                                setEditTabOrderState(prev => ({ ...prev, [editingSub.id]: newOrder }));
-                              }
+                          <ImageUpload
+                            label="Logo"
+                            value={editingSub.link || ''}
+                            onChange={(url) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, link: url } : s));
                             }}
-                          >
-                            <SortableContext 
-                              items={visibleTabs} 
-                              strategy={verticalListSortingStrategy}
-                            >
-                              <div className="grid gap-2">
-                                {visibleTabs.map((tabKey) => {
-                                  const tabLabels: Record<string, string> = {
-                                      overview: 'Overview',
-                                      resources: editResourcesTabLabelState[editingSub.id] || 'Resources',
-                                      downloads: editDownloadsTabLabelState[editingSub.id] || 'Downloads',
-                                      key_features: editKeyFeaturesTabLabelState[editingSub.id] || 'Key Features',
-                                      pricing: editPricingPlansTabLabelState[editingSub.id] || 'Pricing Plans',
-                                      brands: editBrandsTabLabelState[editingSub.id] || 'Brands'
-                                    };
-                                  return (
-                                    <SortableAdminItem key={tabKey} id={tabKey}>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium">{tabLabels[tabKey] || tabKey}</span>
-                                      </div>
-                                    </SortableAdminItem>
-                                  );
-                                })}
-                              </div>
-                            </SortableContext>
-                          </DndContext>
-                        );
-                      })()}
+                            folder="logos"
+                          />
+
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Section Heading</label>
+                            <input
+                              value={editingSub.about_heading || ''}
+                              onChange={(e) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
+                              }}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Need Help Deciding?"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Section Subheading</label>
+                            <input
+                              value={editingSub.about_subheading || ''}
+                              onChange={(e) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading: e.target.value } : s));
+                              }}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Talk to Solution Experts for Free."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Section Description</label>
+                            <textarea
+                              value={editingSub.about_content || ''}
+                              onChange={(e) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
+                              }}
+                              className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="We'll help you find the right tools..."
+                            />
+                          </div>
+
+                          <div className="space-y-3 border-t pt-4">
+                            <h4 className="text-sm font-semibold">Demo Form Settings</h4>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
+                              <textarea
+                                value={editingSub.demo_form_heading || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
+                                }}
+                                className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="See The Software In Action&#10;Watch Free Demo!"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
+                              <input
+                                value={editingSub.demo_button_label || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
+                                }}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="Get Free Advice"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="space-y-4 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium">Admin Sections</label>
-                        <button type="button" onClick={() => productOpenAddSectionModal(productAdminTab === 'layout' ? 'cards' : productAdminTab)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Section</button>
-                      </div>
+                    <div className="border-t">
+                      <button
+                        type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'admin-sections' ? null : 'admin-sections')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Section Layout</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'admin-sections' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'admin-sections' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Manage Section Data</label>
+                            <button type="button" onClick={() => productOpenAddSectionModal(productAdminTab === 'layout' ? 'cards' : productAdminTab)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Section</button>
+                          </div>
                       <div className="flex flex-wrap gap-2">
                         {PRODUCT_ADMIN_TABS.map((item) => (
                           <button
@@ -4460,22 +4667,22 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                       {productAdminTab === 'layout' ? (
-                        <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={(event) => productHandleSectionDragEnd(event, productSections, editingSub.id)}>
-                          <SortableContext items={productSections.map((section) => section.id)} strategy={verticalListSortingStrategy}>
+                        <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={(event) => productHandleSectionDragEnd(event, productSectionsLocal, editingSub.id)}>
+                          <SortableContext items={productSectionsLocal.map((section) => section.id)} strategy={verticalListSortingStrategy}>
                             <div className="grid gap-2">
-                              {productSections.map((section) => (
+                              {productSectionsLocal.map((section) => (
                                 <SortableAdminItem key={section.id} id={section.id}>
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-sm font-medium">{section.heading?.trim() || section.name}</span>
                                     <div className="flex items-center gap-2">
                                       <Switch checked={section.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(section.id, Boolean(checked), editingSub.id)} />
-                                      <button type="button" onClick={() => productOpenHeadingModal(section.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
+                                      <button type="button" onClick={() => productOpenHeadingModal(section.id, productSectionsLocal)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
                                       <button type="button" onClick={() => productDeleteSection(section.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
                                     </div>
                                   </div>
                                 </SortableAdminItem>
                               ))}
-                              {productSections.length === 0 && <p className="text-xs text-muted-foreground">No sections added yet.</p>}
+                              {productSectionsLocal.length === 0 && <p className="text-xs text-muted-foreground">No sections added yet.</p>}
                             </div>
                           </SortableContext>
                         </DndContext>
@@ -4529,6 +4736,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedCards.map((card) => (
                                     <SortableOfferItem key={card.id} id={card.id} disabled={!cardsFixedModeEnabled}>
+                                      {card.logo_url && (
+                                        <img src={card.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">{card.title}</span></div>
                                       <button type="button" onClick={() => setProductEditCard(card)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_CARDS_TABLE, card.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4541,7 +4751,12 @@ export default function AdminDashboard() {
                             <div className="grid gap-2">
                               {selectedCards.map((card) => (
                                 <div key={card.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <span className="text-sm font-medium">{card.title}</span>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {card.logo_url && (
+                                      <img src={card.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
+                                    )}
+                                    <span className="text-sm font-medium truncate">{card.title}</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setProductEditCard(card)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                     <button type="button" onClick={() => productDeleteItem(PRODUCT_CARDS_TABLE, card.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4589,6 +4804,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedOffers.map((offer) => (
                                     <SortableOfferItem key={offer.id} id={offer.id} disabled={!offersFixedModeEnabled}>
+                                      {offer.image_url && (
+                                        <img src={offer.image_url} alt="" className="w-12 h-12 object-cover rounded bg-muted/50" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">{offer.heading}</span></div>
                                       <button type="button" onClick={() => setProductEditOffer(offer)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_OFFERS_TABLE, offer.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4601,7 +4819,12 @@ export default function AdminDashboard() {
                             <div className="grid gap-2">
                               {selectedOffers.map((offer) => (
                                 <div key={offer.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <span className="text-sm font-medium">{offer.heading}</span>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {offer.image_url && (
+                                      <img src={offer.image_url} alt="" className="w-12 h-12 object-cover rounded bg-muted/50" />
+                                    )}
+                                    <span className="text-sm font-medium truncate">{offer.heading}</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setProductEditOffer(offer)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                     <button type="button" onClick={() => productDeleteItem(PRODUCT_OFFERS_TABLE, offer.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4664,6 +4887,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedAds1.map((ad) => (
                                     <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads1FixedModeEnabled}>
+                                      {ad.image_url && (
+                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">Ad</span></div>
                                       <button type="button" onClick={() => setProductEditAd1(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4676,7 +4902,12 @@ export default function AdminDashboard() {
                             <div className="grid gap-2">
                               {selectedAds1.map((ad) => (
                                 <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <span className="text-sm font-medium">Ad</span>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {ad.image_url && (
+                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                    )}
+                                    <span className="text-sm font-medium">Ad</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setProductEditAd1(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                     <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4739,6 +4970,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedAds2.map((ad) => (
                                     <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads2FixedModeEnabled}>
+                                      {ad.image_url && (
+                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">Ad</span></div>
                                       <button type="button" onClick={() => setProductEditAd2(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4751,7 +4985,12 @@ export default function AdminDashboard() {
                             <div className="grid gap-2">
                               {selectedAds2.map((ad) => (
                                 <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <span className="text-sm font-medium">Ad</span>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {ad.image_url && (
+                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                    )}
+                                    <span className="text-sm font-medium">Ad</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setProductEditAd2(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                     <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4814,6 +5053,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedAds3.map((ad) => (
                                     <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads3FixedModeEnabled}>
+                                      {ad.image_url && (
+                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">{ad.heading?.trim() || 'Ad'}</span></div>
                                       <button type="button" onClick={() => setProductEditAd3(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_3_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4826,7 +5068,12 @@ export default function AdminDashboard() {
                             <div className="grid gap-2">
                               {selectedAds3.map((ad) => (
                                 <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <span className="text-sm font-medium">{ad.heading?.trim() || 'Ad'}</span>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {ad.image_url && (
+                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
+                                    )}
+                                    <span className="text-sm font-medium truncate">{ad.heading?.trim() || 'Ad'}</span>
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setProductEditAd3(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                     <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_3_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4885,6 +5132,9 @@ export default function AdminDashboard() {
                                 <div className="grid gap-2">
                                   {selectedLogoSteps.map((step) => (
                                     <SortableOfferItem key={step.id} id={step.id} disabled={false}>
+                                      {step.logo_url && (
+                                        <img src={step.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
+                                      )}
                                       <div className="flex-1 min-w-0"><span className="text-sm font-medium">{step.title}</span></div>
                                       <button type="button" onClick={() => setProductEditLogoStep(step)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
                                       <button type="button" onClick={() => productDeleteItem(PRODUCT_LOGO_STEPS_TABLE, step.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
@@ -4900,6 +5150,8 @@ export default function AdminDashboard() {
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
 
                     {productShowAddSectionModal && (
                       <Modal title="Add Subcategory Section" onClose={() => setProductShowAddSectionModal(false)}>

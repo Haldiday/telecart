@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 import { ArrowLeft, List } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -30,27 +31,22 @@ interface SubFeature {
   feature_id: string;
 }
 
-// Helper function to handle subcategory navigation
-const navigateToSubcategory = (subcategory: Subcategory, categoryId: string | undefined, navigate: ReturnType<typeof useNavigate>) => {
-  if (subcategory.custom_link) {
-    // If custom_link exists, redirect to it
-    window.location.href = subcategory.custom_link;
-  } else {
-    // Otherwise, navigate to the detail page
-    navigate(`/category/${categoryId}/subcategory/${subcategory.id}`);
-  }
-};
-
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { checkAuthAndNavigate } = useMSG91Auth();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [detailDescription, setDetailDescription] = useState('');
   const [subcategoriesTabLabel, setSubcategoriesTabLabel] = useState('Subcategories');
   const [activeTab, setActiveTab] = useState(1);
+
+  // Helper function to handle subcategory navigation
+  const handleSubcategoryClick = (subcategory: Subcategory) => {
+    const targetPath = subcategory.custom_link || `/category/${id}/subcategory/${subcategory.id}`;
+    checkAuthAndNavigate(targetPath);
+  };
 
   const tabs = [
     { key: 'subcategories', label: subcategoriesTabLabel, icon: <List className="h-4 w-4" /> },
@@ -186,7 +182,7 @@ export default function CategoryDetail() {
                   className="rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
                 >
                   <button
-                    onClick={() => navigateToSubcategory(sub, id, navigate)}
+                    onClick={() => handleSubcategoryClick(sub)}
                     className="group w-full text-left"
                   >
                     <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">

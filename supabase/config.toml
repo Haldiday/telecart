@@ -1,1 +1,4 @@
-project_id = "jcanfgmzroygrqhvapla"
+project_id = "yjpuvjvjdwlnbezdkdau"
+
+[functions.msg91-otp]
+verify_jwt = false

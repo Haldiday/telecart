@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Ad {
   description: string | null;
@@ -41,8 +42,10 @@ export default function Ads3ColSection({
   const [heading, setHeading] = useState('3 Column Ads');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
+  const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const fixedMode = ads.some((ad) => ad.is_fixed);
-  const adsToDisplay = fixedMode ? ads.slice(0, 3) : ads;
+  const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed) : ads;
+  const [fixedPageIndex, setFixedPageIndex] = useState(0);
   
   // Dynamic layout based on number of ads
   let visibleCount: number;
@@ -54,7 +57,29 @@ export default function Ads3ColSection({
     visibleCount = isMobile ? 1 : 3;
   }
   
+  const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
+
+  // Group ads into pages for fixed mode sliding
+  const fixedPages = useMemo(() => {
+    if (!fixedMode) return [];
+    const pages = [];
+    for (let i = 0; i < adsToDisplay.length; i += visibleCount) {
+      pages.push(adsToDisplay.slice(i, i + visibleCount));
+    }
+    return pages;
+  }, [fixedMode, adsToDisplay, visibleCount]);
+
+  const handleFixedPrev = () => {
+    setFixedPageIndex((prev) => (prev > 0 ? prev - 1 : totalFixedPages - 1));
+  };
+
+  const handleFixedNext = () => {
+    setFixedPageIndex((prev) => (prev < totalFixedPages - 1 ? prev + 1 : 0));
+  };
+
   const needsCarousel = !fixedMode && adsToDisplay.length > visibleCount;
+  const showFixedControls = fixedMode && adsToDisplay.length > visibleCount;
+
   const {
     index,
     animate,
@@ -122,80 +147,200 @@ export default function Ads3ColSection({
             {heading}
           </h2>
         )}
-        {needsCarousel ? (
-          <div className="relative">
-            
-            <div className="overflow-hidden">
-              <div
-                className="flex"
-                onTransitionEnd={handleTransitionEnd}
-                style={{
-                  transform: `translateX(-${index * slideWidth}%)`,
-                  transition: animate ? 'transform 650ms ease' : 'none',
-                }}
+        <div className="relative group/fixed">
+          {showFixedControls && !isMobile && (
+            <>
+              <button
+                onClick={handleFixedPrev}
+                className={`absolute -left-8 md:-left-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+                disabled={fixedPageIndex === 0}
+                aria-label="Previous slide"
               >
-                {displayAds.map((ad, displayIndex) => (
+                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+              </button>
+              <button
+                onClick={handleFixedNext}
+                className={`absolute -right-8 md:-right-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+                disabled={fixedPageIndex === totalFixedPages - 1}
+                aria-label="Next slide"
+              >
+                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+              </button>
+            </>
+          )}
+
+          {fixedMode && isMobile ? (
+            <div className="flex flex-col gap-5">
+              {adsToDisplay.map((ad) => (
+                <div key={ad.id} className="w-full">
                   <div
-                    key={`${ad.id}-${displayIndex}`}
-                    className="flex-none px-1.5"
-                    style={{ width: `${slideWidth}%` }}
-                  >
-                    <a
-                    key={ad.id}
-                    href={ad.link || '#'}
-                    className={`block group rounded-2xl overflow-hidden ${ad.show_border ? 'border' : ''}`}
+                    onClick={() => {
+                      if (ad.link) {
+                        window.location.href = ad.link;
+                      }
+                    }}
+                    className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
                     style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                   >
-                      <div
-                        className={`overflow-hidden bg-muted ${
-                          ads.length < 3
-                            ? 'h-[160px] md:h-[300px]'
-                            : 'h-[160px] md:h-auto md:aspect-[16/9]'
-                        }`}
-                      >
-                        {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-contain md:object-cover`} />}
+                    <div
+                      className={`overflow-hidden bg-muted h-[160px] md:h-auto md:aspect-[16/9]`}
+                    >
+                      {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
+                    </div>
+                    {(ad.heading || ad.description) && (
+                      <div className="p-3">
+                        {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                        {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
                       </div>
-                      {(ad.heading || ad.description) && (
-                        <div className="p-3">
-                          {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                          {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : needsCarousel ? (
+            <div className="relative">
+              <div className="overflow-hidden">
+                <div
+                  className="flex"
+                  onTransitionEnd={handleTransitionEnd}
+                  style={{
+                    transform: `translateX(-${index * slideWidth}%)`,
+                    transition: animate ? 'transform 650ms ease' : 'none',
+                  }}
+                >
+                  {displayAds.map((ad, displayIndex) => (
+                    <div
+                      key={`${ad.id}-${displayIndex}`}
+                      className="flex-none px-1.5"
+                      style={{ width: `${slideWidth}%` }}
+                    >
+                      <div
+                        onClick={() => {
+                          if (ad.link) {
+                            /*
+                            if (isLoggedIn) {
+                              window.location.href = ad.link;
+                            } else {
+                              checkAuthAndNavigate(ad.link);
+                            }
+                            */
+                            window.location.href = ad.link;
+                          }
+                        }}
+                        className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                      >
+                        <div
+                          className={`overflow-hidden bg-muted ${
+                            ads.length < 3
+                              ? 'h-[160px] md:h-[300px]'
+                              : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                          }`}
+                        >
+                          {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
                         </div>
-                      )}
-                    </a>
+                        {(ad.heading || ad.description) && (
+                          <div className="p-3">
+                            {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                            {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
+            <div className="overflow-hidden">
+              <div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
+              >
+                {fixedPages.map((page, pageIdx) => (
+                  <div key={pageIdx} className={`w-full flex-none grid grid-cols-1 gap-3 ${visibleCount === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                    {page.map((ad) => (
+                      <div key={ad.id} className="flex h-full">
+                        <div
+                          onClick={() => {
+                            if (ad.link) {
+                              /*
+                              if (isLoggedIn) {
+                                window.location.href = ad.link;
+                              } else {
+                                checkAuthAndNavigate(ad.link);
+                              }
+                              */
+                              window.location.href = ad.link;
+                            }
+                          }}
+                          className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                          style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                        >
+                          <div
+                            className={`overflow-hidden bg-muted ${
+                              visibleCount === 2
+                                ? 'h-[160px] md:h-[300px]'
+                                : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                            }`}
+                          >
+                            {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
+                          </div>
+                          {(ad.heading || ad.description) && (
+                            <div className="p-3">
+                              {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                              {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
+                    {Array.from({ length: visibleCount - page.length }).map((_, i) => (
+                      <div key={`empty-${i}`} className="hidden md:flex h-full" />
+                    ))}
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            {adsToDisplay.map((ad) => (
-              <div key={ad.id} className="flex-1">
-                <a
-                  href={ad.link || '#'}
-                  className={`block group rounded-2xl overflow-hidden ${ad.show_border ? 'border' : ''}`}
-                  style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
-                >
+          ) : (
+            <div className={`flex gap-3 ${adsToDisplay.length < 3 ? 'justify-center' : ''}`}>
+              {adsToDisplay.map((ad) => (
+                <div key={ad.id} className={adsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-6px)]' : 'flex-1'}>
                   <div
-                    className={`overflow-hidden bg-muted ${
-                      adsToDisplay.length < 3
-                        ? 'h-[160px] md:h-[300px]'
-                        : 'h-[160px] md:h-auto md:aspect-[16/9]'
-                    }`}
+                    onClick={() => {
+                      if (ad.link) {
+                        if (isLoggedIn) {
+                          window.location.href = ad.link;
+                        } else {
+                          checkAuthAndNavigate(ad.link);
+                        }
+                      }
+                    }}
+                    className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                    style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                   >
-                    {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 object-contain md:object-cover`} />}
-                  </div>
-                  {(ad.heading || ad.description) && (
-                    <div className="p-3">
-                      {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                      {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                    <div
+                      className={`overflow-hidden bg-muted ${
+                        adsToDisplay.length < 3
+                          ? 'h-[160px] md:h-[300px]'
+                          : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                      }`}
+                    >
+                      {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
                     </div>
-                  )}
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
+                    {(ad.heading || ad.description) && (
+                      <div className="p-3">
+                        {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                        {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                      </div>
+                    )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
     </SubcategorySectionShell>

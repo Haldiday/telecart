@@ -60,6 +60,7 @@ interface Subcategory {
   form_link?: string | null;
   show_form_in_separate_tab?: boolean;
   about_heading?: string | null;
+  about_subheading?: string | null;
   about_content?: string | null;
   detail_heading?: string | null;
   detail_description?: string | null;
@@ -146,6 +147,9 @@ interface BrandItem {
   id: string;
   name: string;
   link: string;
+  logo_url?: string | null;
+  description?: string | null;
+  buttons?: CategoryButton[];
   sort_order: number;
 }
 
@@ -278,7 +282,8 @@ export default function SubcategoryDetail() {
   const [videoUrl2, setVideoUrl2] = useState<string[]>([]);
   const [formLink, setFormLink] = useState('');
   const [showFormTab, setShowFormTab] = useState(false);
-  const [aboutHeading, setAboutHeading] = useState('About');
+  const [aboutHeading, setAboutHeading] = useState('');
+  const [aboutSubheading, setAboutSubheading] = useState('');
   const [aboutContent, setAboutContent] = useState('');
   const [aboutBgColor, setAboutBgColor] = useState('#013737');
   const [aboutHeadingColor, setAboutHeadingColor] = useState('#ffffff');
@@ -439,6 +444,9 @@ export default function SubcategoryDetail() {
               id: brand.id,
               name: brand.name || '',
               link: brand.link || '',
+              logo_url: brand.logo_url || null,
+              description: brand.description || null,
+              buttons: brand.buttons || [],
               sort_order: brand.sort_order ?? 0,
             }));
             setBrands(nextBrands);
@@ -486,6 +494,7 @@ export default function SubcategoryDetail() {
         setFormLink((subcategoryData as any).form_link || '');
         setShowFormTab((subcategoryData as any).show_form_in_separate_tab || false);
         setAboutHeading((subcategoryData as any).about_heading || 'About');
+        setAboutSubheading((subcategoryData as any).about_subheading || 'Talk to Solution Experts for Free.');
         setAboutContent((subcategoryData as any).about_content || '');
         setAboutBgColor((subcategoryData as any).about_bg_color || '#013737');
         setAboutHeadingColor((subcategoryData as any).about_heading_color || '#ffffff');
@@ -524,6 +533,9 @@ export default function SubcategoryDetail() {
           id: brand.id,
           name: brand.name || '',
           link: brand.link || '',
+          logo_url: brand.logo_url || null,
+          description: brand.description || null,
+          buttons: brand.buttons || [],
           sort_order: brand.sort_order ?? 0,
         })));
       } else {
@@ -683,36 +695,135 @@ export default function SubcategoryDetail() {
     }
   };
 
-  const renderBrandGrid = () => (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-      {brands.map((brand) => {
-        const externalUrl = normalizeExternalUrl(brand.link || '');
-        const brandBoxClassName =
-          'flex items-center rounded-xl border border-border/50 bg-background px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all';
-        const content = <span>{brand.name || 'Unnamed brand'}</span>;
+  const renderBrandGrid = () => {
+    const detailedBrands = brands.filter(
+      (b) => b.logo_url || (b.description && b.description.trim()) || (b.buttons && b.buttons.length > 0)
+    );
+    const simpleBrands = brands.filter((b) => !detailedBrands.some((db) => db.id === b.id));
 
-        if (externalUrl) {
-          return (
-            <a
-              key={brand.id}
-              href={externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${brandBoxClassName} hover:border-primary/50 hover:shadow-md hover:text-primary`}
-            >
-              {content}
-            </a>
-          );
-        }
+    return (
+      <div className="space-y-8">
+        {/* Detailed Brands Section */}
+        {detailedBrands.length > 0 && (
+          <div className="grid grid-cols-1 gap-8">
+            {detailedBrands.map((brand, bIndex) => (
+              <div
+                key={brand.id}
+                className={`flex flex-col ${
+                  bIndex !== detailedBrands.length - 1 ? 'border-b border-border/50 pb-8' : ''
+                }`}
+              >
+                <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                  {/* Logo and Name row for mobile */}
+                  <div className="flex flex-row md:flex-col items-center md:items-start gap-4 md:gap-0 w-full md:w-auto">
+                    {/* Logo */}
+                    <div className="flex h-20 w-20 md:h-24 md:w-40 flex-shrink-0 items-center justify-center rounded-xl border border-border/50 p-3 md:p-4 shadow-sm" style={{ backgroundColor: '#F2F1F6' }}>
+                      {brand.logo_url ? (
+                        <img src={brand.logo_url} alt={brand.name} className="h-full w-full object-contain" />
+                      ) : (
+                        <Image className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/20" />
+                      )}
+                    </div>
+                    
+                    {/* Name for mobile - shows next to logo */}
+                    <div className="md:hidden">
+                      <h3 className={`${SECTION_HEADING_CLASS} !mb-0 text-lg`}>{brand.name}</h3>
+                    </div>
+                  </div>
 
-        return (
-          <div key={brand.id} className={brandBoxClassName}>
-            {content}
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 w-full">
+                    {/* Name for desktop - shows in right column */}
+                    <h3 className={`hidden md:block ${SECTION_HEADING_CLASS}`}>{brand.name}</h3>
+                    
+                    {brand.description && brand.description.trim() && (
+                      <p className="text-[18px] leading-relaxed text-muted-foreground mb-5">
+                        {brand.description}
+                      </p>
+                    )}
+
+                    {/* Buttons */}
+                    {brand.buttons && brand.buttons.filter(btn => btn.is_visible !== false).length > 0 && (
+                      <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3">
+                        {brand.buttons
+                          .filter(btn => btn.is_visible !== false)
+                          .map((button, index) => {
+                          let buttonStyle = '';
+                          if (index === 0) {
+                            buttonStyle = 'bg-[#1A1A1A] text-white hover:bg-black';
+                          } else if (index === 1) {
+                            buttonStyle = 'bg-[#2563EB] text-white hover:bg-blue-700';
+                          } else if (index === 2) {
+                            buttonStyle = 'bg-[#14B8A6] text-white hover:bg-[#0D9488]';
+                          } else if (index === 3) {
+                            buttonStyle = 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]';
+                          } else {
+                            buttonStyle = 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50';
+                          }
+
+                          return (
+                            <a
+                              key={button.id || index}
+                              href={normalizeExternalUrl(button.link || '') || '#'}
+                              target={button.link ? '_blank' : undefined}
+                              rel={button.link ? 'noopener noreferrer' : undefined}
+                              className={`
+                                inline-flex items-center justify-center gap-1.5 md:gap-2 px-2.5 py-2 md:px-6 md:py-3 rounded-md text-[13px] md:text-base font-medium transition-all duration-200 shadow-sm w-full md:w-auto
+                                ${buttonStyle}
+                              `}
+                            >
+                              <span className="truncate">{button.label}</span>
+                              <ArrowUpRight className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        );
-      })}
-    </div>
-  );
+        )}
+
+        {/* Simple Brands Section (Old UI Style) */}
+        {simpleBrands.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {simpleBrands.map((brand) => {
+              const externalUrl = normalizeExternalUrl(brand.link || '');
+              const brandBoxClassName =
+                'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';
+              const content = (
+                <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
+                  {brand.name || 'Unnamed brand'}
+                </span>
+              );
+
+              if (externalUrl) {
+                return (
+                  <a
+                    key={brand.id}
+                    href={externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={brandBoxClassName}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+
+              return (
+                <div key={brand.id} className={brandBoxClassName}>
+                  {content}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderDownloadGrid = () => (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -884,10 +995,14 @@ export default function SubcategoryDetail() {
                   <div className="mt-4 flex flex-wrap gap-3">
                     {heroButtons.map((button, index) => {
                       let buttonStyle = "";
-                      if (index === 0 || index === 3) {
+                      if (index === 0) {
                         buttonStyle = "bg-[#1A1A1A] text-white hover:bg-black";
                       } else if (index === 1) {
                         buttonStyle = "bg-[#2563EB] text-white hover:bg-blue-700";
+                      } else if (index === 2) {
+                        buttonStyle = "bg-[#14B8A6] text-white hover:bg-[#0D9488]";
+                      } else if (index === 3) {
+                        buttonStyle = "bg-[#7C3AED] text-white hover:bg-[#6D28D9]";
                       } else {
                         buttonStyle = "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50";
                       }
@@ -1308,7 +1423,7 @@ export default function SubcategoryDetail() {
                   className={`mt-3 ${SECTION_SUBTEXT_CLASS} font-semibold`}
                   style={{ color: aboutSubheadingColor }}
                 >
-                  Talk to Solution Experts for Free.
+                  {aboutSubheading}
                 </p>
                 <p 
                   className={`mt-5 max-w-[560px] ${SECTION_SUBTEXT_CLASS}`}

@@ -1,7 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Subcategory {
   id: string;
@@ -22,10 +23,9 @@ interface Category {
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'categories' | 'service'>('categories');
   const [categories, setCategories] = useState<Category[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const { isLoggedIn, logout, checkAuthAndNavigate } = useMSG91Auth();
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -48,7 +48,7 @@ export default function Header() {
         .from('categories')
         .select('*')
         .in('section_id', sectionIds)
-        .order('sort_order');
+        .order('name');
 
       if (!cats) {
         setCategories([]);
@@ -59,7 +59,7 @@ export default function Header() {
       const { data: subs } = await supabase
         .from('subcategories')
         .select('*')
-        .order('sort_order');
+        .order('name');
 
       const merged = cats.map((category) => ({
         ...category,
@@ -94,16 +94,14 @@ export default function Header() {
   }, []);
 
   const handleCategoryClick = (categoryId: string) => {
-    navigate(`/category/${categoryId}`);
+    checkAuthAndNavigate(`/category/${categoryId}`);
     setMegaMenuOpen(false);
   };
 
   const handleSubcategoryClick = (categoryId: string, sub: Subcategory) => {
-    if (sub.custom_link) {
-      window.location.href = sub.custom_link;
-    } else {
-      navigate(`/category/${categoryId}/subcategory/${sub.id}`);
-    }
+    const targetPath = sub.custom_link || `/category/${categoryId}/subcategory/${sub.id}`;
+    checkAuthAndNavigate(targetPath);
+    
     setMegaMenuOpen(false);
     setMobileOpen(false);
   };
@@ -117,11 +115,7 @@ export default function Header() {
           <Link to="/" className="flex items-center gap-2">
 
             {/* ICON */}
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm md:text-base">
-                B
-              </span>
-            </div>
+            
 
             {/* TEXT */}
             <span className="text-2xl md:text-3xl font-bold text-[black]">Biz<span className="text-[#1d4ed8]">Req</span></span>
@@ -146,66 +140,42 @@ export default function Header() {
               {/* Mega Menu */}
               {megaMenuOpen && (
                 <div className="absolute top-full right-[-150px] mt-0 w-[90vw] max-w-[1100px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
-                  {/* Tabs */}
+                  {/* Heading */}
                   <div className="flex border-b border-gray-100 bg-white px-6">
-                    <button
-                      onClick={() => setActiveTab('categories')}
-                      className={`px-4 py-3 text-[14px] font-bold transition-colors relative ${
-                        activeTab === 'categories' ? 'text-[#1d4ed8]' : 'text-[#4b5563] hover:text-[#1d4ed8]'
-                      }`}
-                    >
+                    <div className="px-4 py-3 text-sm md:text-base font-bold text-[#1d4ed8] relative">
                       Categories
-                      {activeTab === 'categories' && (
-                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1d4ed8]" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('service')}
-                      className={`px-4 py-3 text-[14px] font-bold transition-colors relative ${
-                        activeTab === 'service' ? 'text-[#1d4ed8]' : 'text-[#4b5563] hover:text-[#1d4ed8]'
-                      }`}
-                    >
-                      Service Hub
-                      {activeTab === 'service' && (
-                        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1d4ed8]" />
-                      )}
-                    </button>
+                      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1d4ed8]" />
+                    </div>
                   </div>
 
                   {/* Content */}
                   <div className="px-6 py-5 bg-white">
-                    {activeTab === 'categories' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {categories.map((category) => (
-                          <div key={category.id}>
-                            <button
-                              onClick={() => handleCategoryClick(category.id)}
-                              className="flex items-center gap-1 group text-left w-full transition-all py-1 px-2 rounded hover:bg-primary/5"
-                            >
-                              <h3 className="text-[#001a41] font-bold text-[14px] group-hover:text-[#1d4ed8] transition-colors leading-tight">
-                                {category.name}
-                              </h3>
-                              <ChevronRight className="w-3 h-3 ml-auto text-gray-300 group-hover:text-[#1d4ed8] transition-colors" />
-                            </button>
-                          </div>
-                        ))}
-                        
-                        {/* All Categories Button */}
-                        <div className="col-span-full flex justify-center mt-6 pt-4 border-t border-gray-50">
-                          <Link
-                            to="/#categories"
-                            onClick={() => setMegaMenuOpen(false)}
-                            className="bg-[#001a41] text-white px-6 py-2 rounded text-[14px] font-bold hover:bg-[#001a41]/90 transition-all shadow-md active:scale-95"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                      {categories.map((category) => (
+                        <div key={category.id}>
+                          <button
+                            onClick={() => handleCategoryClick(category.id)}
+                            className="flex items-center gap-1 group text-left w-full transition-all py-1 px-2 rounded hover:bg-primary/5"
                           >
-                            All Softwares Categories
-                          </Link>
+                            <h3 className="text-sm md:text-base font-normal text-foreground group-hover:text-primary group-hover:underline transition-colors">
+                              {category.name}
+                            </h3>
+                            <ChevronRight className="w-3 h-3 ml-auto text-gray-300 group-hover:text-[#1d4ed8] transition-colors" />
+                          </button>
                         </div>
+                      ))}
+                      
+                      {/* All Categories Button */}
+                      <div className="col-span-full flex justify-center mt-6 pt-4 border-t border-gray-50">
+                        <Link
+                          to="/#categories"
+                          onClick={() => setMegaMenuOpen(false)}
+                          className="bg-[#001a41] text-white px-6 py-2 rounded text-[14px] font-bold hover:bg-[#001a41]/90 transition-all shadow-md active:scale-95"
+                        >
+                          All Softwares Categories
+                        </Link>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-48 text-muted-foreground text-[14px]">
-                        Service Hub content will be available soon.
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -214,6 +184,17 @@ export default function Header() {
             <a href="#offers" className="text-xl font-medium text-muted-foreground hover:text-foreground transition-colors">
               Offers
             </a>
+
+            {isLoggedIn && (
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 text-xl font-medium text-red-500 hover:text-red-600 transition-colors ml-4"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden lg:inline">Logout</span>
+              </button>
+            )}
           </nav>
 
           {/* Mobile Button */}
@@ -246,7 +227,7 @@ export default function Header() {
                       handleCategoryClick(cat.id);
                       setMobileOpen(false);
                     }}
-                    className="text-sm font-semibold text-primary block w-full text-left py-2 px-3 rounded-md hover:bg-primary/5 transition-colors"
+                    className="text-sm font-normal text-foreground hover:text-primary hover:underline block w-full text-left py-2 px-3 rounded-md hover:bg-primary/5 transition-colors"
                   >
                     {cat.name}
                   </button>
@@ -258,6 +239,19 @@ export default function Header() {
           <a href="#offers" className="block text-sm font-medium py-2" onClick={() => setMobileOpen(false)}>
             Offers
           </a>
+
+          {/* {isLoggedIn && (
+            <button
+              onClick={() => {
+                logout();
+                setMobileOpen(false);
+              }}
+              className="flex items-center gap-2 text-sm font-medium py-2 text-red-500 w-full text-left"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          )} */}
         </div>
       )}
     </header>

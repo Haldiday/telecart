@@ -14,20 +14,26 @@ import SubcategoryDetail from "./pages/SubcategoryDetail";
 import FeaturedCardsPage from "./pages/FeaturedCardsPage";
 import AllSubcategoriesPage from "./pages/AllSubcategoriesPage";
 import ContactUs from "./pages/ContactUs";
+import { AuthLayout } from "./components/layout/AuthLayout";
 
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter(
   [
-    { path: "/", element: <Index /> },
-    { path: "/contact", element: <ContactUs /> },
-    { path: "/category/:id", element: <CategoryDetail /> },
-    { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
-    { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
-    { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
-    { path: "/admin/login", element: <AdminLogin /> },
-    { path: "/admin", element: <AdminDashboard /> },
-    { path: "*", element: <NotFound /> },
+    {
+      element: <AuthLayout />,
+      children: [
+        { path: "/", element: <Index /> },
+        { path: "/contact", element: <ContactUs /> },
+        { path: "/category/:id", element: <CategoryDetail /> },
+        { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
+        { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
+        { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
+        { path: "/admin/login", element: <AdminLogin /> },
+        { path: "/admin", element: <AdminDashboard /> },
+        { path: "*", element: <NotFound /> },
+      ]
+    }
   ],
   {
     future: {

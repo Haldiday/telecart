@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 type SearchResult =
   | { id: string; type: 'category'; name: string }
   | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null };
 
 export default function HeroSection() {
-  const navigate = useNavigate();
+  const { checkAuthAndNavigate } = useMSG91Auth();
   const [mainText, setMainText] = useState('');
   const [words, setWords] = useState<string[]>([]);
   const [currentWord, setCurrentWord] = useState(0);
@@ -128,15 +128,14 @@ export default function HeroSection() {
 
   function handleResultClick(result: SearchResult) {
     if (result.type === 'category') {
-      navigate(`/category/${result.id}`);
+      checkAuthAndNavigate(`/category/${result.id}`);
       return;
     }
 
-    // For subcategories, check if custom_link exists
     if (result.custom_link) {
-      window.location.href = result.custom_link;
+      checkAuthAndNavigate(result.custom_link);
     } else {
-      navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+      checkAuthAndNavigate(`/category/${result.categoryId}/subcategory/${result.id}`);
     }
   }
 

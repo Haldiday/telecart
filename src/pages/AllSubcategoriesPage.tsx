@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Category {
   id: string;
@@ -21,23 +21,18 @@ interface Subcategory {
   sort_order: number;
 }
 
-// Helper function to handle subcategory navigation
-const navigateToSubcategory = (subcategory: Subcategory, categoryId: string | undefined, navigate: ReturnType<typeof useNavigate>) => {
-  if (subcategory.custom_link) {
-    // If custom_link exists, redirect to it
-    window.location.href = subcategory.custom_link;
-  } else {
-    // Otherwise, navigate to the detail page
-    navigate(`/category/${categoryId}/subcategory/${subcategory.id}`);
-  }
-};
-
 export default function AllSubcategoriesPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const navigate = useNavigate();
+  const { checkAuthAndNavigate } = useMSG91Auth();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to handle subcategory navigation
+  const handleSubcategoryClick = (subcategory: Subcategory) => {
+    const targetPath = subcategory.custom_link || `/category/${categoryId}/subcategory/${subcategory.id}`;
+    checkAuthAndNavigate(targetPath);
+  };
 
   useEffect(() => {
     if (!categoryId) return;
@@ -134,16 +129,14 @@ export default function AllSubcategoriesPage() {
               {subcategories.map((sub) => (
                 <div
                   key={sub.id}
-                  className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
+                  onClick={() => handleSubcategoryClick(sub)}
+                  className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md"
                 >
-                  <button
-                    onClick={() => navigateToSubcategory(sub, categoryId, navigate)}
-                    className="group min-w-0 flex-1 text-left"
-                  >
+                  <div className="group min-w-0 flex-1 text-left">
                     <span className="block max-w-full text-sm md:text-base font-normal text-foreground transition-all group-hover:text-primary group-hover:underline">
                       {sub.name}
                     </span>
-                  </button>
+                  </div>
                 </div>
               ))}
             </div>

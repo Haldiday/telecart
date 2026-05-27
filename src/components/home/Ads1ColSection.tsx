@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Ad {
   id: string;
@@ -35,6 +36,7 @@ export default function Ads1ColSection({
   const [ads, setAds] = useState<Ad[]>([]);
   const [heading, setHeading] = useState('Featured Ad');
   const [showHeading, setShowHeading] = useState(true);
+  const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
 
   useEffect(() => {
     let mounted = true;
@@ -116,11 +118,22 @@ export default function Ads1ColSection({
           {ads.map((ad) => (
             <div 
               key={ad.id}
-              className={`rounded-[12px] overflow-hidden bg-muted shadow-sm ${ad.show_border ? 'border' : ''}`} 
+              className={`rounded-[12px] overflow-hidden bg-muted shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`} 
               style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+              onClick={() => {
+                if (ad.link) {
+                  /*
+                  if (isLoggedIn) {
+                    window.location.href = ad.link;
+                  } else {
+                    checkAuthAndNavigate(ad.link);
+                  }
+                  */
+                  window.location.href = ad.link;
+                }
+              }}
             >
-              <a
-                href={ad.link || '#'}
+              <div
                 className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
               >
                 {/* ✅ Banner size */}
@@ -133,7 +146,7 @@ export default function Ads1ColSection({
                     />
                   )}
                 </div>
-              </a>
+              </div>
             </div>
           ))}
         </div>
