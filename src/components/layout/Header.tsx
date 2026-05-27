@@ -166,15 +166,7 @@ export default function Header() {
                       ))}
                       
                       {/* All Categories Button */}
-                      <div className="col-span-full flex justify-center mt-6 pt-4 border-t border-gray-50">
-                        <Link
-                          to="/#categories"
-                          onClick={() => setMegaMenuOpen(false)}
-                          className="bg-[#001a41] text-white px-6 py-2 rounded text-[14px] font-bold hover:bg-[#001a41]/90 transition-all shadow-md active:scale-95"
-                        >
-                          All Softwares Categories
-                        </Link>
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
