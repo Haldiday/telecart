@@ -173,19 +173,19 @@ export default function OffersSection({
                   <a href={offer.link || '#'} className="flex flex-col w-full group">
                     {offer.image_url && (
                       <div 
-                        className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
-                        style={{ 
-                          maxWidth: isHomePage ? '266px' : undefined, 
-                          height: isHomePage ? '319px' : '300px',
-                          borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
-                        }}
-                      >
-                        <img
-                          src={offer.image_url}
-                          alt={offer.heading || 'Offer'}
-                          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        />
-                      </div>
+                          className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
+                          style={{ 
+                            maxWidth: isHomePage ? '265px' : undefined, 
+                            height: isHomePage ? '318px' : '300px',
+                            borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
+                          }}
+                        >
+                          <img
+                            src={offer.image_url}
+                            alt={offer.heading || 'Offer'}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
                     )}
                     {(offer.heading || offer.description) && (
                       <div className="pt-3 px-1">
@@ -233,15 +233,15 @@ export default function OffersSection({
                         <div 
                           className={`overflow-hidden bg-white rounded-xl w-full ${offer.show_border ? 'border' : ''}`}
                           style={{ 
-                            maxWidth: isHomePage ? '266px' : undefined, 
-                            height: isHomePage ? '319px' : '300px',
+                            maxWidth: isHomePage ? '265px' : undefined, 
+                            height: isHomePage ? '318px' : '300px',
                             borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                           }}
                         >
                           <img
                             src={offer.image_url}
                             alt={offer.heading || 'Offer'}
-                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>
                       )}
@@ -285,15 +285,15 @@ export default function OffersSection({
                           <div 
                             className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
                             style={{ 
-                              maxWidth: isHomePage ? '266px' : undefined, 
-                              height: isHomePage ? '319px' : '300px',
+                              maxWidth: isHomePage ? '265px' : undefined, 
+                              height: isHomePage ? '318px' : '300px',
                               borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                             }}
                           >
                             <img
                               src={offer.image_url}
                               alt={offer.heading || 'Offer'}
-                              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           </div>
                         )}
