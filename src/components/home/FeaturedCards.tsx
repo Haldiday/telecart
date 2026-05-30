@@ -77,6 +77,7 @@ export default function FeaturedCards({
     index,
     animate,
     goNext,
+    goPrev,
     handleTransitionEnd,
     slideWidth,
     duplicatedCount,
@@ -167,20 +168,20 @@ export default function FeaturedCards({
           </h2>
         )}
         <div className="relative group/fixed">
-          {showFixedControls && !isMobile && (
+          {(showFixedControls || needsCarousel) && (
             <>
               <button
-                onClick={handleFixedPrev}
-                className="absolute -left-8 md:-left-12 top-[120px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={fixedPageIndex === 0}
+                onClick={fixedMode ? handleFixedPrev : goPrev}
+                className="absolute left-0 md:-left-12 top-[120px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                disabled={fixedMode ? fixedPageIndex === 0 : false}
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
               </button>
               <button
-                onClick={handleFixedNext}
-                className="absolute -right-8 md:-right-12 top-[120px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={fixedPageIndex === totalFixedPages - 1}
+                onClick={fixedMode ? handleFixedNext : goNext}
+                className="absolute right-0 md:-right-12 top-[120px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
                 aria-label="Next slide"
               >
                 <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
