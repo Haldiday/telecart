@@ -40,6 +40,7 @@ export default function OffersSection({
   const [heading, setHeading] = useState('Offers & Discounts');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
+  const isHomePage = window.location.pathname === '/';
   const visibleCount = isMobile ? 1 : 4;
   const fixedMode = offers.some((offer) => offer.is_fixed);
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
@@ -66,6 +67,11 @@ export default function OffersSection({
     handleTransitionEnd,
     slideWidth,
     duplicatedCount,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    dragOffset,
+    containerRef,
   } = useInfiniteStepCarousel(offers.length, visibleCount, needsCarousel);
 
   const handleFixedPrev = () => {
@@ -166,8 +172,12 @@ export default function OffersSection({
                   <a href={offer.link || '#'} className="flex flex-col w-full group">
                     {offer.image_url && (
                       <div 
-                        className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
-                        style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                        className={`overflow-hidden bg-white rounded-xl mx-auto ${offer.show_border ? 'border' : ''}`}
+                        style={{ 
+                          width: isHomePage ? '266px' : undefined, 
+                          height: isHomePage ? '319px' : '300px',
+                          borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
+                        }}
                       >
                         <img
                           src={offer.image_url}
@@ -196,12 +206,18 @@ export default function OffersSection({
             </div>
           ) : needsCarousel ? (
             <div className="relative">
-            <div className="overflow-hidden rounded-lg">
+            <div 
+              className="overflow-hidden rounded-lg"
+              ref={containerRef}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               <div
                 className="flex gap-6"
                 onTransitionEnd={handleTransitionEnd}
                 style={{
-                  transform: `translateX(-${index * slideWidth}%)`,
+                  transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
                   transition: animate ? 'transform 650ms ease' : 'none',
                 }}
               >
@@ -214,8 +230,12 @@ export default function OffersSection({
                     <a href={offer.link || '#'} className="flex flex-col group">
                       {offer.image_url && (
                         <div 
-                          className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
-                          style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                          className={`overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
+                          style={{ 
+                            width: isHomePage ? '266px' : undefined, 
+                            height: isHomePage ? '319px' : '300px',
+                            borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
+                          }}
                         >
                           <img
                             src={offer.image_url}
@@ -262,8 +282,12 @@ export default function OffersSection({
                       <a href={offer.link || '#'} className="flex flex-col w-full group">
                         {offer.image_url && (
                           <div 
-                            className={`h-[300px] overflow-hidden bg-white rounded-xl ${offer.show_border ? 'border' : ''}`}
-                            style={offer.show_border && offer.border_color ? { borderColor: offer.border_color } : {}}
+                            className={`overflow-hidden bg-white rounded-xl mx-auto ${offer.show_border ? 'border' : ''}`}
+                            style={{ 
+                              width: isHomePage ? '266px' : undefined, 
+                              height: isHomePage ? '319px' : '300px',
+                              borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
+                            }}
                           >
                             <img
                               src={offer.image_url}

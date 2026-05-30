@@ -87,6 +87,11 @@ export default function Ads3ColSection({
     handleTransitionEnd,
     slideWidth,
     duplicatedCount,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    dragOffset,
+    containerRef,
   } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
 
   useEffect(() => {
@@ -199,12 +204,18 @@ export default function Ads3ColSection({
             </div>
           ) : needsCarousel ? (
             <div className="relative">
-              <div className="overflow-hidden">
+              <div 
+                className="overflow-hidden"
+                ref={containerRef}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
                 <div
                   className="flex"
                   onTransitionEnd={handleTransitionEnd}
                   style={{
-                    transform: `translateX(-${index * slideWidth}%)`,
+                    transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
                     transition: animate ? 'transform 650ms ease' : 'none',
                   }}
                 >

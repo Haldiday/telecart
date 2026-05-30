@@ -80,6 +80,11 @@ export default function FeaturedCards({
     handleTransitionEnd,
     slideWidth,
     duplicatedCount,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    dragOffset,
+    containerRef,
   } = useInfiniteStepCarousel(cards.length, visibleCount, needsCarousel);
 
   useEffect(() => {
@@ -278,12 +283,18 @@ export default function FeaturedCards({
             </div>
           ) : needsCarousel ? (
             <div className="relative">
-              <div className="overflow-hidden py-6">
+              <div 
+                className="overflow-hidden py-6"
+                ref={containerRef}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
                 <div
                   className="flex"
                   onTransitionEnd={handleTransitionEnd}
                   style={{
-                    transform: `translateX(-${index * slideWidth}%)`,
+                    transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
                     transition: animate ? 'transform 650ms ease' : 'none',
                   }}
                 >
