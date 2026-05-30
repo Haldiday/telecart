@@ -6,7 +6,7 @@ export const AuthLayout = () => {
   return (
     <MSG91AuthProvider>
       <Outlet />
-      <MSG91LoginModal />
+      {/* <MSG91LoginModal /> */}
     </MSG91AuthProvider>
   );
 };

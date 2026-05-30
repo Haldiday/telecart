@@ -47,11 +47,15 @@ const mapOtpErrorCodeToMessage = (code?: string, fallback?: string) => {
     case "MSG91_TIMEOUT":
       return "OTP service timed out. Please try again.";
     case "MSG91_AUTH_FAILED":
+      return "OTP service authentication failed. Please check MSG91 Auth Key.";
     case "MSG91_TEMPLATE_ERROR":
+      return "OTP template error. Please check your MSG91 templates.";
     case "MOBILE_TEMPLATE_MISSING":
+      return "Mobile OTP is not configured in Supabase secrets.";
     case "EMAIL_TEMPLATE_MISSING":
+      return "Email OTP is not configured in Supabase secrets.";
     case "MSG91_NOT_CONFIGURED":
-      return "OTP service is temporarily unavailable. Please try again later.";
+      return "OTP service is not configured. Please set MSG91_AUTH_KEY.";
     case "OTP_SEND_FAILED":
       return "Unable to send OTP right now. Please try again.";
     case "OTP_VERIFY_FAILED":
@@ -257,9 +261,9 @@ export const MSG91LoginModal: React.FC = () => {
                 disabled={isLoading}
               />
               <Input
-                placeholder="Phone Number (e.g. 919876543210)"
+                placeholder="Phone Number (10 digits)"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
                 disabled={isLoading}
               />
               <Input
@@ -269,7 +273,7 @@ export const MSG91LoginModal: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
               />
-              <Button onClick={() => handleSendOTP('both')} disabled={isLoading}>
+              <Button onClick={() => handleSendOTP('mobile')} disabled={isLoading}>
                 {isLoading ? 'Sending...' : 'Verify'}
               </Button>
             </div>

@@ -66,6 +66,8 @@ export const MSG91AuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const checkAuthAndNavigate = (targetPath: string) => {
+    // Commented out login requirement
+    /*
     if (isLoggedIn) {
       if (isExternalUrl(targetPath)) {
         window.location.href = targetPath;
@@ -75,6 +77,14 @@ export const MSG91AuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } else {
       setPendingPath(targetPath);
       setShowLoginModal(true);
+    }
+    */
+    
+    // Direct navigation
+    if (isExternalUrl(targetPath)) {
+      window.location.href = targetPath;
+    } else {
+      navigate(targetPath);
     }
   };
 

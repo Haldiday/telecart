@@ -173,10 +173,9 @@ export default function Header() {
               )}
             </div>
 
-            <a href="#offers" className="text-xl font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Offers
-            </a>
+          
 
+            {/* Commented out logout button
             {isLoggedIn && (
               <button
                 onClick={logout}
@@ -187,6 +186,7 @@ export default function Header() {
                 <span className="hidden lg:inline">Logout</span>
               </button>
             )}
+            */}
           </nav>
 
           {/* Mobile Button */}

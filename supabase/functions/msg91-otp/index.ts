@@ -1,3 +1,8 @@
+// @ts-nocheck
+/* eslint-disable */
+
+declare const Deno: any;
+
 const MSG91_BASE_URL = "https://control.msg91.com/api/v5";
 const MSG91_TIMEOUT_MS = 12000;
 
@@ -68,39 +73,35 @@ const maskEmail = (value: string) => {
 
 const normalizePhone = (input: string) => {
   const raw = input ?? "";
-  const digitsOnly = raw.replace(/[^\d]/g, "");
+  // Keep only digits
+  let digitsOnly = raw.replace(/\D/g, "");
+  
+  // Remove leading zeros or double 91
+  if (digitsOnly.startsWith("0")) {
+    digitsOnly = digitsOnly.replace(/^0+/, "");
+  }
+  
+  // If it's 12 digits and starts with 91, it's likely already correct
+  // If it's 10 digits, add 91
   let normalized = digitsOnly;
-  let flow = "kept";
-
-  if (normalized.startsWith("00")) {
-    normalized = normalized.replace(/^00+/, "");
-    flow = "removed_international_prefix";
+  if (digitsOnly.length === 10) {
+    normalized = `91${digitsOnly}`;
+  } else if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) {
+    normalized = digitsOnly;
+  } else if (digitsOnly.length > 10 && !digitsOnly.startsWith("91")) {
+    // If it's a long number without 91, it might have another country code
+    // For now, we assume Indian numbers are primary. 
+    // If it's 11 digits starting with 9, it's likely a 10-digit number with a stray digit
+    if (digitsOnly.length === 11 && digitsOnly.startsWith("9")) {
+       normalized = `91${digitsOnly.slice(1)}`;
+    }
   }
 
-  if (normalized.length === 11 && normalized.startsWith("0")) {
-    normalized = normalized.slice(1);
-    flow = "removed_leading_zero";
-  }
-
-  if (normalized.length === 10) {
-    normalized = `91${normalized}`;
-    flow = "added_country_code_91";
-  }
-
-  let duplicateCountryCodeTrimmed = false;
-  while (normalized.startsWith("9191") && normalized.length > 12) {
-    normalized = normalized.slice(2);
-    duplicateCountryCodeTrimmed = true;
-    flow = "trimmed_duplicate_country_code";
-  }
-
-  const isValid = /^\d{10,15}$/.test(normalized);
+  const isValid = normalized.length >= 10 && normalized.length <= 13;
 
   return {
     normalized,
     isValid,
-    flow,
-    duplicateCountryCodeTrimmed,
     rawLength: raw.length,
     digitLength: digitsOnly.length,
   };
@@ -211,14 +212,24 @@ const msg91Request = async (
   channel: "mobile" | "email",
   path: string,
   params: Record<string, string>,
+  authKey: string,
 ) => {
-  const url = `${MSG91_BASE_URL}${path}?${new URLSearchParams(params).toString()}`;
+  const isSend = action === "send";
+  const url = isSend 
+    ? `${MSG91_BASE_URL}${path}`
+    : `${MSG91_BASE_URL}${path}?${new URLSearchParams(params).toString()}`;
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), MSG91_TIMEOUT_MS);
 
   try {
     const response = await fetch(url, {
-      method: "GET",
+      method: isSend ? "POST" : "GET",
+      headers: {
+        "authkey": authKey,
+        "Content-Type": "application/json",
+      },
+      body: isSend ? JSON.stringify(params) : undefined,
       signal: controller.signal,
     });
 
@@ -262,7 +273,7 @@ const msg91Request = async (
   }
 };
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
 
   if (req.method === "OPTIONS") {
@@ -319,8 +330,6 @@ Deno.serve(async (req) => {
 
       log("info", requestId, "phone_sanitized", {
         action,
-        flow: phoneResult.flow,
-        duplicateCountryCodeTrimmed: phoneResult.duplicateCountryCodeTrimmed,
         rawLength: phoneResult.rawLength,
         digitLength: phoneResult.digitLength,
         normalizedMasked: maskPhone(phoneResult.normalized),
@@ -362,8 +371,7 @@ Deno.serve(async (req) => {
           msg91Request(requestId, "send", "mobile", "/otp", {
             template_id: mobileTemplateId!,
             mobile: normalizedPhone,
-            authkey: authKey,
-          }),
+          }, authKey),
         );
       }
 
@@ -372,8 +380,7 @@ Deno.serve(async (req) => {
           msg91Request(requestId, "send", "email", "/otp", {
             template_id: emailTemplateId!,
             email: normalizedEmail,
-            authkey: authKey,
-          }),
+          }, authKey),
         );
       }
 
@@ -410,8 +417,7 @@ Deno.serve(async (req) => {
         msg91Request(requestId, "verify", "mobile", "/otp/verify", {
           otp: mobileOtp,
           mobile: normalizedPhone,
-          authkey: authKey,
-        }),
+        }, authKey),
       );
     }
 
@@ -420,8 +426,7 @@ Deno.serve(async (req) => {
         msg91Request(requestId, "verify", "email", "/otp/verify", {
           otp: emailOtp,
           email: normalizedEmail,
-          authkey: authKey,
-        }),
+        }, authKey),
       );
     }
 
