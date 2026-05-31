@@ -105,7 +105,7 @@ export default function Ads1ColSection({
   if (ads.length === 0) return null;
 
   return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
@@ -137,7 +137,7 @@ export default function Ads1ColSection({
                 className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
               >
                 {/* ✅ Banner size */}
-                <div className="h-[110px] md:h-[130px] lg:h-[400px] w-full bg-[#f5f5f5] flex items-center justify-center">
+                <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full bg-[#f5f5f5] flex items-center justify-center">
                   {ad.image_url && (
                     <img
                       src={ad.image_url}

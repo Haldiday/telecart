@@ -42,20 +42,27 @@ export default function Ads3ColSection({
   const [heading, setHeading] = useState('3 Column Ads');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const fixedMode = ads.some((ad) => ad.is_fixed);
   const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed) : ads;
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
   
-  // Dynamic layout based on number of ads
-  let visibleCount: number;
-  if (adsToDisplay.length < 3) {
-    // Use 2-column layout for 1-2 ads
-    visibleCount = isMobile ? 1 : 2;
-  } else {
-    // Use 3-column layout for 3+ ads
-    visibleCount = isMobile ? 1 : 3;
-  }
+  // Dynamic layout based on number of ads and screen size
+  const visibleCount = useMemo(() => {
+    if (windowWidth < 768) return 1; // Mobile
+    if (windowWidth < 1024) return 2; // Tablet
+    
+    // Desktop: 3 columns if 3+ ads, otherwise match ad count
+    return adsToDisplay.length < 3 ? Math.max(1, adsToDisplay.length) : 3;
+  }, [windowWidth, adsToDisplay.length]);
   
   const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
 
@@ -145,7 +152,7 @@ export default function Ads3ColSection({
   if (ads.length === 0) return null;
 
   return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
@@ -158,7 +165,7 @@ export default function Ads3ColSection({
             <>
               <button
                 onClick={fixedMode ? handleFixedPrev : goPrev}
-                className={`absolute left-0 md:-left-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+                className={`absolute left-0 md:-left-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
                 disabled={fixedMode ? fixedPageIndex === 0 : false}
                 aria-label="Previous slide"
               >
@@ -166,7 +173,7 @@ export default function Ads3ColSection({
               </button>
               <button
                 onClick={fixedMode ? handleFixedNext : goNext}
-                className={`absolute right-0 md:-right-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+                className={`absolute right-0 md:-right-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
                 disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
                 aria-label="Next slide"
               >
@@ -175,35 +182,7 @@ export default function Ads3ColSection({
             </>
           )}
 
-          {fixedMode && isMobile ? (
-            <div className="flex flex-col gap-5">
-              {adsToDisplay.map((ad) => (
-                <div key={ad.id} className="w-full">
-                  <div
-                    onClick={() => {
-                      if (ad.link) {
-                        window.location.href = ad.link;
-                      }
-                    }}
-                    className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
-                  >
-                    <div
-                      className={`overflow-hidden bg-muted h-[160px] md:h-auto md:aspect-[16/9]`}
-                    >
-                      {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
-                    </div>
-                    {(ad.heading || ad.description) && (
-                      <div className="p-3">
-                        {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                        {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : needsCarousel ? (
+          {needsCarousel ? (
             <div className="relative">
               <div 
                 className="overflow-hidden"
@@ -213,7 +192,7 @@ export default function Ads3ColSection({
                 onTouchEnd={onTouchEnd}
               >
                 <div
-                  className="flex"
+                  className="flex flex-row flex-nowrap"
                   onTransitionEnd={handleTransitionEnd}
                   style={{
                     transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
@@ -246,7 +225,7 @@ export default function Ads3ColSection({
                           className={`overflow-hidden bg-muted ${
                             ads.length < 3
                               ? 'h-[160px] md:h-[300px]'
-                              : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                              : 'h-[160px] sm:h-auto sm:aspect-[16/9]'
                           }`}
                         >
                           {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}
@@ -266,7 +245,7 @@ export default function Ads3ColSection({
           ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
             <div className="overflow-hidden">
               <div 
-                className="flex transition-transform duration-500 ease-in-out"
+                className="flex flex-row flex-nowrap transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
               >
                 {fixedPages.map((page, pageIdx) => (
@@ -292,7 +271,7 @@ export default function Ads3ColSection({
                           <div
                             className={`overflow-hidden bg-muted ${
                               visibleCount === 2
-                                ? 'h-[160px] md:h-[300px]'
+                                ? 'h-[160px] sm:h-auto sm:aspect-[16/9]'
                                 : 'h-[160px] md:h-auto md:aspect-[16/9]'
                             }`}
                           >
@@ -336,7 +315,7 @@ export default function Ads3ColSection({
                       className={`overflow-hidden bg-muted ${
                         adsToDisplay.length < 3
                           ? 'h-[160px] md:h-[300px]'
-                          : 'h-[160px] md:h-auto md:aspect-[16/9]'
+                          : 'h-[160px] sm:h-auto sm:aspect-[16/9]'
                       }`}
                     >
                       {ad.image_url && <img src={ad.image_url} alt={ad.heading || 'Ad'} className={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`} />}

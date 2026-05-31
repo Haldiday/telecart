@@ -11,6 +11,7 @@ interface WatchDemoFormProps {
   subcategoryId?: string;
   demoLink?: string | null;
   demoFormHeading?: string | null;
+  demoFormHeadingColor?: string | null;
   demoButtonLabel?: string | null;
   buttonBgColor?: string | null;
   buttonTextColor?: string | null;
@@ -20,6 +21,7 @@ export default function WatchDemoForm({
   subcategoryId, 
   demoLink, 
   demoFormHeading, 
+  demoFormHeadingColor,
   demoButtonLabel,
   buttonBgColor,
   buttonTextColor
@@ -120,7 +122,12 @@ export default function WatchDemoForm({
   return (
     <div className="w-full lg:w-[400px] rounded-none p-[33px_40px_40px] bg-[#f4f2f0] shadow-sm">
       <div className="mb-3">
-        <h3 className="text-lg font-semibold text-foreground text-center">{demoFormHeading || 'See The Software In Action\nWatch Free Demo!'}</h3>
+        <h3 
+          className="whitespace-pre-line text-xl font-bold text-center md:text-2xl"
+          style={{ color: demoFormHeadingColor || '#000000' }}
+        >
+          {demoFormHeading || 'See The Software In Action\nWatch Free Demo!'}
+        </h3>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">

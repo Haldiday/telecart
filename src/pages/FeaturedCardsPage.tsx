@@ -12,6 +12,9 @@ interface FeaturedCard {
   logo_url: string | null;
   link: string | null;
   sort_order: number;
+  show_border: boolean;
+  border_color: string | null;
+  background_color: string | null;
 }
 
 interface PageSection {
@@ -103,7 +106,11 @@ export default function FeaturedCardsPage() {
               {cards.map((card) => (
                 <div
                   key={card.id}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-md"
+                  className={`group relative overflow-hidden rounded-xl p-6 transition-all hover:shadow-md ${card.show_border ? 'border' : 'border border-transparent'}`}
+                  style={{
+                    backgroundColor: card.background_color || 'var(--card)',
+                    borderColor: (card.show_border && card.border_color) ? card.border_color : undefined
+                  }}
                 >
                   <div className="flex flex-col h-full">
                     {card.logo_url && (

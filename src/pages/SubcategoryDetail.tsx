@@ -22,6 +22,7 @@ import {
   Info,
   Play,
   Maximize2,
+  Plus,
   X,
   Package,
   FileText,
@@ -151,6 +152,14 @@ interface BrandItem {
   description?: string | null;
   buttons?: CategoryButton[];
   sort_order: number;
+  primary_cta_label?: string | null;
+  primary_cta_link?: string | null;
+  primary_cta_visible?: boolean;
+  more_actions_label?: string | null;
+  more_actions_visible?: boolean;
+  join_network_label?: string | null;
+  join_network_link?: string | null;
+  join_network_visible?: boolean;
 }
 
 interface CategoryOverviewPoint {
@@ -297,9 +306,11 @@ export default function SubcategoryDetail() {
   const [expandedAboutSection, setExpandedAboutSection] = useState(false);
   const [subcategorySections, setSubcategorySections] = useState<SubcategoryPageSection[]>([]);
   const [demoFormHeading, setDemoFormHeading] = useState('See The Software In Action\nWatch Free Demo!');
+  const [demoFormHeadingColor, setDemoFormHeadingColor] = useState('#000000');
   const [demoButtonLabel, setDemoButtonLabel] = useState('Get Free Advice');
 
   const [brands, setBrands] = useState<BrandItem[]>([]);
+  const [openMoreActionsBrandId, setOpenMoreActionsBrandId] = useState<string | null>(null);
 
   const hasVideoResource = Boolean(videoUrl.trim());
   const hasVideoResource2 = videoUrl2.some(url => url?.trim());
@@ -448,6 +459,14 @@ export default function SubcategoryDetail() {
               description: brand.description || null,
               buttons: brand.buttons || [],
               sort_order: brand.sort_order ?? 0,
+              primary_cta_label: brand.primary_cta_label,
+              primary_cta_link: brand.primary_cta_link,
+              primary_cta_visible: brand.primary_cta_visible,
+              more_actions_label: brand.more_actions_label,
+              more_actions_visible: brand.more_actions_visible,
+              join_network_label: brand.join_network_label,
+              join_network_link: brand.join_network_link,
+              join_network_visible: brand.join_network_visible,
             }));
             setBrands(nextBrands);
           });
@@ -504,6 +523,7 @@ export default function SubcategoryDetail() {
         setAboutButtonTextColor((subcategoryData as any).about_button_text_color || '#ffffff');
         setOverviewPointsHeading((subcategoryData as any).key_features_tab_label || (subcategoryData as any).overview_points_heading || defaultOverviewPointsHeading);
         setDemoFormHeading((subcategoryData as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
+        setDemoFormHeadingColor((subcategoryData as any).demo_form_heading_color || '#000000');
         setDemoButtonLabel((subcategoryData as any).demo_button_label || 'Get Free Advice');
         setShowOverviewPointsSection(true);
         const normalizedDetailHeading = isGenericDetailHeading((subcategoryData as any).detail_heading || '', subcategoryData.name)
@@ -537,6 +557,14 @@ export default function SubcategoryDetail() {
           description: brand.description || null,
           buttons: brand.buttons || [],
           sort_order: brand.sort_order ?? 0,
+          primary_cta_label: brand.primary_cta_label,
+          primary_cta_link: brand.primary_cta_link,
+          primary_cta_visible: brand.primary_cta_visible,
+          more_actions_label: brand.more_actions_label,
+          more_actions_visible: brand.more_actions_visible,
+          join_network_label: brand.join_network_label,
+          join_network_link: brand.join_network_link,
+          join_network_visible: brand.join_network_visible,
         })));
       } else {
         const storageKey = `subcategory-brands-${subcategoryId}`;
@@ -733,8 +761,70 @@ export default function SubcategoryDetail() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0 w-full">
-                    {/* Name for desktop - shows in right column */}
-                    <h3 className={`hidden md:block ${SECTION_HEADING_CLASS}`}>{brand.name}</h3>
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                      {/* Name for desktop - shows in right column */}
+                      <h3 className={`hidden md:block ${SECTION_HEADING_CLASS} !mb-0`}>{brand.name}</h3>
+
+                      {/* Main Action Buttons (Desktop Top Right) */}
+                      <div className="hidden md:flex flex-wrap items-center gap-3">
+                        {/* Button 1: Primary CTA */}
+                        {brand.primary_cta_visible && brand.primary_cta_label && (() => {
+                          const href = normalizeExternalUrl(brand.primary_cta_link || '');
+                          return href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-[#2563EB] text-white text-sm md:text-[15px] font-semibold transition-all hover:bg-blue-700 shadow-sm"
+                            >
+                              <span>{brand.primary_cta_label}</span>
+                              <ArrowUpRight className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-[#2563EB]/50 text-white/70 text-sm md:text-[15px] font-semibold cursor-not-allowed shadow-sm">
+                              <span>{brand.primary_cta_label}</span>
+                              <ArrowUpRight className="h-4 w-4" />
+                            </div>
+                          );
+                        })()}
+
+                        {/* Button 2: More Actions (Toggle for existing buttons) */}
+                        {brand.more_actions_visible && (
+                          <button
+                            onClick={() => setOpenMoreActionsBrandId(openMoreActionsBrandId === brand.id ? null : brand.id)}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white border border-border text-foreground text-sm md:text-[15px] font-semibold transition-all hover:bg-muted/50 shadow-sm"
+                          >
+                            <span>{brand.more_actions_label || 'More Actions'}</span>
+                            {openMoreActionsBrandId === brand.id ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Button 3: Join Network */}
+                        {brand.join_network_visible && brand.join_network_label && (() => {
+                          const href = normalizeExternalUrl(brand.join_network_link || '');
+                          return href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white border border-border text-foreground text-sm md:text-[15px] font-medium transition-all hover:bg-muted/50 shadow-sm"
+                            >
+                              <Plus className="h-4 w-4 text-muted-foreground" />
+                              <span>{brand.join_network_label}</span>
+                            </a>
+                          ) : (
+                            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white/50 border border-border/50 text-foreground/50 text-sm md:text-[15px] font-medium cursor-not-allowed shadow-sm">
+                              <Plus className="h-4 w-4 text-muted-foreground/30" />
+                              <span>{brand.join_network_label}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                     
                     {brand.description && brand.description.trim() && (
                       <p className="text-[18px] leading-relaxed text-muted-foreground mb-5">
@@ -742,43 +832,106 @@ export default function SubcategoryDetail() {
                       </p>
                     )}
 
-                    {/* Buttons */}
-                    {brand.buttons && brand.buttons.filter(btn => btn.is_visible !== false).length > 0 && (
-                      <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3">
-                        {brand.buttons
-                          .filter(btn => btn.is_visible !== false)
-                          .map((button, index) => {
-                          let buttonStyle = '';
-                          if (index === 0) {
-                            buttonStyle = 'bg-[#1A1A1A] text-white hover:bg-black';
-                          } else if (index === 1) {
-                            buttonStyle = 'bg-[#2563EB] text-white hover:bg-blue-700';
-                          } else if (index === 2) {
-                            buttonStyle = 'bg-[#14B8A6] text-white hover:bg-[#0D9488]';
-                          } else if (index === 3) {
-                            buttonStyle = 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]';
-                          } else {
-                            buttonStyle = 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50';
-                          }
-
-                          return (
+                    {/* Brand CTA Section */}
+                    <div className="flex flex-col gap-4">
+                      {/* Main Action Buttons (Mobile / Fallback) */}
+                      <div className="flex md:hidden flex-wrap items-center gap-3">
+                        {/* Button 1: Primary CTA */}
+                        {brand.primary_cta_visible && brand.primary_cta_label && (() => {
+                          const href = normalizeExternalUrl(brand.primary_cta_link || '');
+                          return href ? (
                             <a
-                              key={button.id || index}
-                              href={normalizeExternalUrl(button.link || '') || '#'}
-                              target={button.link ? '_blank' : undefined}
-                              rel={button.link ? 'noopener noreferrer' : undefined}
-                              className={`
-                                inline-flex items-center justify-center gap-1.5 md:gap-2 px-2.5 py-2 md:px-6 md:py-3 rounded-md text-[13px] md:text-base font-medium transition-all duration-200 shadow-sm w-full md:w-auto
-                                ${buttonStyle}
-                              `}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-[#2563EB] text-white text-sm md:text-[15px] font-semibold transition-all hover:bg-blue-700 shadow-sm"
                             >
-                              <span className="truncate">{button.label}</span>
-                              <ArrowUpRight className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                              <span>{brand.primary_cta_label}</span>
+                              <ArrowUpRight className="h-4 w-4" />
                             </a>
+                          ) : (
+                            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-[#2563EB]/50 text-white/70 text-sm md:text-[15px] font-semibold cursor-not-allowed shadow-sm">
+                              <span>{brand.primary_cta_label}</span>
+                              <ArrowUpRight className="h-4 w-4" />
+                            </div>
                           );
-                        })}
+                        })()}
+
+                        {/* Button 2: More Actions (Toggle for existing buttons) */}
+                        {brand.more_actions_visible && (
+                          <button
+                            onClick={() => setOpenMoreActionsBrandId(openMoreActionsBrandId === brand.id ? null : brand.id)}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white border border-border text-foreground text-sm md:text-[15px] font-semibold transition-all hover:bg-muted/50 shadow-sm"
+                          >
+                            <span>{brand.more_actions_label || 'More Actions'}</span>
+                            {openMoreActionsBrandId === brand.id ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Button 3: Join Network */}
+                        {brand.join_network_visible && brand.join_network_label && (() => {
+                          const href = normalizeExternalUrl(brand.join_network_link || '');
+                          return href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white border border-border text-foreground text-sm md:text-[15px] font-medium transition-all hover:bg-muted/50 shadow-sm"
+                            >
+                              <Plus className="h-4 w-4 text-muted-foreground" />
+                              <span>{brand.join_network_label}</span>
+                            </a>
+                          ) : (
+                            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-2.5 rounded-lg bg-white/50 border border-border/50 text-foreground/50 text-sm md:text-[15px] font-medium cursor-not-allowed shadow-sm">
+                              <Plus className="h-4 w-4 text-muted-foreground/30" />
+                              <span>{brand.join_network_label}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
-                    )}
+
+                      {/* Expanded Existing CTA Buttons */}
+                      {openMoreActionsBrandId === brand.id && brand.buttons && brand.buttons.filter(btn => btn.is_visible !== false).length > 0 && (
+                        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                          {brand.buttons
+                            .filter(btn => btn.is_visible !== false)
+                            .map((button, index) => {
+                              let buttonStyle = '';
+                              if (index === 0) {
+                                buttonStyle = 'bg-[#1A1A1A] text-white hover:bg-black';
+                              } else if (index === 1) {
+                                buttonStyle = 'bg-[#2563EB] text-white hover:bg-blue-700';
+                              } else if (index === 2) {
+                                buttonStyle = 'bg-[#14B8A6] text-white hover:bg-[#0D9488]';
+                              } else if (index === 3) {
+                                buttonStyle = 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]';
+                              } else {
+                                buttonStyle = 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50';
+                              }
+
+                              return (
+                                <a
+                                  key={button.id || index}
+                                  href={normalizeExternalUrl(button.link || '') || '#'}
+                                  target={button.link ? '_blank' : undefined}
+                                  rel={button.link ? 'noopener noreferrer' : undefined}
+                                  className={`
+                                    inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 rounded-lg text-[13px] md:text-[14px] font-semibold transition-all duration-200 shadow-sm w-full md:w-auto
+                                    ${buttonStyle}
+                                  `}
+                                >
+                                  <span className="truncate">{button.label}</span>
+                                  <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
+                                </a>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1061,10 +1214,14 @@ export default function SubcategoryDetail() {
                   .map((section) => (
                   <div
                     key={section.id}
-                    className="w-full rounded-none border border-border pt-3 pb-4 px-6 md:pl-8 shadow-sm text-left"
+                    className={`w-full rounded-none border border-border px-6 md:px-8 shadow-sm text-left ${
+                      section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
+                    }`}
                     style={{ backgroundColor: section.background_color || '#ffffff' }}
                   >
-                    <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
+                    {section.heading && (
+                      <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
+                    )}
                     <div
                       className={RICH_HTML_CONTENT_CLASS}
                       dangerouslySetInnerHTML={{ __html: section.content || '' }}
@@ -1076,8 +1233,15 @@ export default function SubcategoryDetail() {
                 {keyFeaturesSections
                   .filter(section => section.is_visible)
                   .map((section) => (
-                  <div key={section.id} className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
-                    <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                  <div 
+                    key={section.id} 
+                    className={`w-full rounded-none border border-border bg-card px-6 md:px-8 shadow-sm ${
+                      section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
+                    }`}
+                  >
+                    {section.heading && (
+                      <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                    )}
                     {renderHeaderPoints(section.id)}
                   </div>
                 ))}
@@ -1282,8 +1446,13 @@ export default function SubcategoryDetail() {
               {keyFeaturesSections
                 .filter(section => section.is_visible)
                 .map((section) => (
-                <div key={section.id}>
-                  <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                <div 
+                  key={section.id}
+                  className={section.heading ? '' : 'py-6 md:py-8'}
+                >
+                  {section.heading && (
+                    <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                  )}
                   {renderHeaderPoints(section.id)}
                 </div>
               ))}
@@ -1437,6 +1606,7 @@ export default function SubcategoryDetail() {
                   subcategoryId={subcategoryId} 
                   demoLink={subcategory?.schedule_link} 
                   demoFormHeading={demoFormHeading} 
+                  demoFormHeadingColor={demoFormHeadingColor}
                   demoButtonLabel={demoButtonLabel}
                   buttonBgColor={aboutButtonBgColor}
                   buttonTextColor={aboutButtonTextColor}

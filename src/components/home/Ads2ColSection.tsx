@@ -43,7 +43,8 @@ export default function Ads2ColSection({
   const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const visibleCount = isMobile ? 1 : 2;
   const fixedMode = ads.some((ad) => ad.is_fixed);
-  const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed) : ads;
+  // When Fixed Mode is ON, show only the first 2 ads selected/ordered by admin.
+  const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed).slice(0, 2) : ads;
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
   const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
 
@@ -66,7 +67,8 @@ export default function Ads2ColSection({
   };
 
   const needsCarousel = !fixedMode && ads.length > visibleCount;
-  const showFixedControls = fixedMode && adsToDisplay.length > visibleCount;
+  // Disable slider/controls in fixed mode as per requirements
+  const showFixedControls = false;
 
   const {
     index,
@@ -140,7 +142,7 @@ export default function Ads2ColSection({
   if (ads.length === 0) return null;
 
   return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
@@ -230,7 +232,7 @@ export default function Ads2ColSection({
                             window.location.href = ad.link;
                           }
                         }}
-                        className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        className={`block h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
                         style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                       >
                         {ad.image_url && (
@@ -266,7 +268,7 @@ export default function Ads2ColSection({
                               }
                             }
                           }}
-                          className={`block w-full h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                          className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
                           style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                         >
                           {ad.image_url && (
@@ -288,7 +290,7 @@ export default function Ads2ColSection({
               </div>
             </div>
           ) : (
-            <div className="flex gap-5">
+            <div className={`flex gap-5 ${adsToDisplay.length === 1 ? 'w-full' : ''}`}>
               {adsToDisplay.map((ad) => (
                 <div key={ad.id} className="flex-1">
                   <div
@@ -304,7 +306,7 @@ export default function Ads2ColSection({
                         window.location.href = ad.link;
                       }
                     }}
-                    className={`block h-[160px] md:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                    className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
                     style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                   >
                     {ad.image_url && (

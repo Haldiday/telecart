@@ -24,8 +24,8 @@ import {
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
-interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
-interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; }
+interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; }
+interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; is_visible?: boolean; }
 interface Subcategory {
   id: string;
   category_id: string;
@@ -63,6 +63,13 @@ interface Subcategory {
   key_features_tab_label?: string | null;
   hero_background_color?: string | null;
   tab_order?: string[] | null;
+  about_bg_color?: string | null;
+  about_heading_color?: string | null;
+  about_subheading_color?: string | null;
+  about_description_color?: string | null;
+  about_button_bg_color?: string | null;
+  about_button_text_color?: string | null;
+  demo_form_heading_color?: string | null;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
@@ -75,6 +82,14 @@ interface SubcategoryBrand {
   description?: string | null;
   buttons?: CategoryButton[];
   is_visible: boolean; 
+  primary_cta_label?: string | null;
+  primary_cta_link?: string | null;
+  primary_cta_visible?: boolean;
+  more_actions_label?: string | null;
+  more_actions_visible?: boolean;
+  join_network_label?: string | null;
+  join_network_link?: string | null;
+  join_network_visible?: boolean;
 }
 interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; section_id?: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
@@ -125,6 +140,7 @@ interface FeaturedCardItem {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color?: string | null;
 }
 
 interface OfferItem {
@@ -161,6 +177,7 @@ interface LogoStepItem {
   title: string;
   description: string | null;
   logo_url: string | null;
+  link: string | null;
   sort_order: number;
   section_id: string;
 }
@@ -613,7 +630,15 @@ export default function AdminDashboard() {
             link: brand.link,
             description: brand.description,
             buttons: brand.buttons || [],
-            is_visible: brand.is_visible
+            is_visible: brand.is_visible,
+            primary_cta_label: brand.primary_cta_label,
+            primary_cta_link: brand.primary_cta_link,
+            primary_cta_visible: brand.primary_cta_visible,
+            more_actions_label: brand.more_actions_label,
+            more_actions_visible: brand.more_actions_visible,
+            join_network_label: brand.join_network_label,
+            join_network_link: brand.join_network_link,
+            join_network_visible: brand.join_network_visible
           });
         });
         setEditSubBrandsState(brandsBySubcategory);
@@ -828,7 +853,15 @@ export default function AdminDashboard() {
           link: brand.link,
           description: brand.description,
           buttons: brand.buttons || [],
-          is_visible: brand.is_visible
+          is_visible: brand.is_visible,
+          primary_cta_label: brand.primary_cta_label,
+          primary_cta_link: brand.primary_cta_link,
+          primary_cta_visible: brand.primary_cta_visible,
+          more_actions_label: brand.more_actions_label,
+          more_actions_visible: brand.more_actions_visible,
+          join_network_label: brand.join_network_label,
+          join_network_link: brand.join_network_link,
+          join_network_visible: brand.join_network_visible
         });
       });
       setEditSubBrandsState(brandsBySubcategory);
@@ -1315,14 +1348,32 @@ export default function AdminDashboard() {
     }
     try {
       if (editCard.id) {
-        const updateData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false, border_color: editCard.border_color ?? null };
+        const updateData: any = { 
+          title: editCard.title.trim(), 
+          description: editCard.description.trim(), 
+          logo_url: editCard.logo_url, 
+          link: editCard.link || null, 
+          show_border: editCard.show_border ?? false, 
+          border_color: editCard.border_color ?? null,
+          background_color: editCard.background_color ?? null 
+        };
         if (cardsFixedModeEnabled !== undefined) {
           updateData.is_fixed = cardsFixedModeEnabled;
         }
         const { error } = await supabase.from('featured_cards').update(updateData).eq('id', editCard.id);
         if (error) throw error;
       } else {
-        const insertData: any = { title: editCard.title.trim(), description: editCard.description.trim(), logo_url: editCard.logo_url, link: editCard.link || null, show_border: editCard.show_border ?? false, border_color: editCard.border_color ?? null, sort_order: cards.length, section_id: selectedCardsSectionId };
+        const insertData: any = { 
+          title: editCard.title.trim(), 
+          description: editCard.description.trim(), 
+          logo_url: editCard.logo_url, 
+          link: editCard.link || null, 
+          show_border: editCard.show_border ?? false, 
+          border_color: editCard.border_color ?? null, 
+          background_color: editCard.background_color ?? null,
+          sort_order: cards.length, 
+          section_id: selectedCardsSectionId 
+        };
         if (cardsFixedModeEnabled !== undefined) {
           insertData.is_fixed = cardsFixedModeEnabled;
         }
@@ -1577,6 +1628,7 @@ export default function AdminDashboard() {
             link: productEditCard.link || null,
             show_border: productEditCard.show_border ?? false,
             border_color: productEditCard.border_color ?? null,
+            background_color: productEditCard.background_color ?? null,
             is_fixed: cardsFixedModeEnabled,
           })
           .eq('id', productEditCard.id);
@@ -1588,6 +1640,7 @@ export default function AdminDashboard() {
           link: productEditCard.link || null,
           show_border: productEditCard.show_border ?? false,
           border_color: productEditCard.border_color ?? null,
+          background_color: productEditCard.background_color ?? null,
           sort_order: selectedCards.length,
           section_id: productSelectedCardsSectionId,
           is_fixed: cardsFixedModeEnabled,
@@ -1800,6 +1853,7 @@ export default function AdminDashboard() {
             title: productEditLogoStep.title.trim(),
             description: productEditLogoStep.description || null,
             logo_url: productEditLogoStep.logo_url || null,
+            link: productEditLogoStep.link || null,
           })
           .eq('id', productEditLogoStep.id);
         if (error) throw error;
@@ -1808,6 +1862,7 @@ export default function AdminDashboard() {
           title: productEditLogoStep.title.trim(),
           description: productEditLogoStep.description || null,
           logo_url: productEditLogoStep.logo_url || null,
+          link: productEditLogoStep.link || null,
           sort_order: selectedLogoSteps.length,
           section_id: productSelectedLogoStepsSectionId,
         });
@@ -1924,7 +1979,7 @@ export default function AdminDashboard() {
 
   async function deleteCategory(id: string) {
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
+      const { error } = await supabase.from('categories' as any).delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -1934,9 +1989,24 @@ export default function AdminDashboard() {
     }
   }
 
+  async function toggleCategoryVisibility(id: string, isVisible: boolean) {
+    try {
+      const { error } = await supabase
+        .from('categories' as any)
+        .update({ is_visible: isVisible })
+        .eq('id', id);
+      if (error) throw error;
+      loadAll();
+      toast.success(isVisible ? 'Category is now visible.' : 'Category is now hidden.');
+    } catch (error) {
+      console.error('Error toggling category visibility:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to update category visibility.');
+    }
+  }
+
   async function updateCategorySortOrder(categoryId: string, newOrder: number) {
     try {
-      const { error } = await supabase.from('categories').update({ sort_order: newOrder }).eq('id', categoryId);
+      const { error } = await supabase.from('categories' as any).update({ sort_order: newOrder }).eq('id', categoryId);
       if (error) throw error;
       return true;
     } catch (err) {
@@ -1982,13 +2052,14 @@ export default function AdminDashboard() {
       if (categoryId) {
         // Update existing category
         const { error: catError } = await supabase
-          .from('categories')
+          .from('categories' as any)
           .update({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
             show_downloads_tab: editCategory.show_downloads_tab ?? true,
             show_brands_tab: editCategory.show_brands_tab ?? true,
+            is_visible: editCategory.is_visible ?? true,
             section_id: selectedCategoriesSectionId
           })
           .eq('id', categoryId);
@@ -1996,20 +2067,21 @@ export default function AdminDashboard() {
       } else {
         // Create new category
         const { data: newCat, error: catError } = await supabase
-          .from('categories')
+          .from('categories' as any)
           .insert({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
             show_downloads_tab: editCategory.show_downloads_tab ?? true,
             show_brands_tab: editCategory.show_brands_tab ?? true,
+            is_visible: editCategory.is_visible ?? true,
             section_id: selectedCategoriesSectionId,
             sort_order: selectedCategories.length
           })
           .select()
           .single();
         if (catError) throw catError;
-        categoryId = newCat.id;
+        categoryId = (newCat as any).id;
       }
 
       // Save subcategories
@@ -2049,28 +2121,18 @@ export default function AdminDashboard() {
           form_link: sub.form_link || null,
           show_form_in_separate_tab: sub.show_form_in_separate_tab ?? false,
           tab_order: editTabOrderState[sub.id] || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'],
+          about_bg_color: sub.about_bg_color || null,
+          about_heading_color: sub.about_heading_color || null,
+          about_subheading_color: sub.about_subheading_color || null,
+          about_description_color: sub.about_description_color || null,
+          about_button_bg_color: sub.about_button_bg_color || null,
+          about_button_text_color: sub.about_button_text_color || null,
+          demo_form_heading_color: sub.demo_form_heading_color || null,
           sort_order: index,
         }));
         
-        try {
-          const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
-          if (subError) throw subError;
-        } catch (err) {
-          console.warn('Failed to upsert subcategories with new columns, retrying without them...', err);
-          // Remove columns that might not exist in the database yet
-          const safeSubsToUpsert = subsToUpsert.map(({ 
-            about_heading, about_subheading, about_content, 
-            demo_form_heading, demo_button_label,
-            show_about_section, show_header_points_section, show_pricing_plans,
-            resources_tab_label, downloads_tab_label, brands_tab_label,
-            pricing_plans_tab_label, key_features_tab_label,
-            hero_background_color, form_link, show_form_in_separate_tab,
-            ...rest 
-          }) => rest);
-          const { error: secondSubError } = await supabase.from('subcategories').upsert(safeSubsToUpsert as any);
-          if (secondSubError) throw secondSubError;
-          toast.info('Some new fields (like subheading) could not be saved because the database columns are missing.');
-        }
+        const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
+        if (subError) throw subError;
 
         // Delete any subcategories in the database that are no longer in editSubs
         const subIds = editSubs.map(s => s.id);
@@ -2185,6 +2247,14 @@ export default function AdminDashboard() {
                 buttons: brand.buttons || [],
                 is_visible: brand.is_visible,
                 sort_order: index,
+                primary_cta_label: brand.primary_cta_label,
+                primary_cta_link: brand.primary_cta_link,
+                primary_cta_visible: brand.primary_cta_visible,
+                more_actions_label: brand.more_actions_label,
+                more_actions_visible: brand.more_actions_visible,
+                join_network_label: brand.join_network_label,
+                join_network_link: brand.join_network_link,
+                join_network_visible: brand.join_network_visible,
               });
             }
           });
@@ -2204,6 +2274,14 @@ export default function AdminDashboard() {
                   buttons: brand.buttons || [],
                   is_visible: brand.is_visible,
                   sort_order: index,
+                  primary_cta_label: brand.primary_cta_label,
+                  primary_cta_link: brand.primary_cta_link,
+                  primary_cta_visible: brand.primary_cta_visible,
+                  more_actions_label: brand.more_actions_label,
+                  more_actions_visible: brand.more_actions_visible,
+                  join_network_label: brand.join_network_label,
+                  join_network_link: brand.join_network_link,
+                  join_network_visible: brand.join_network_visible,
                 });
               }
             });
@@ -2276,8 +2354,14 @@ export default function AdminDashboard() {
               const { error } = await supabase.from('subcategory_brands' as any).insert(subBrandsToInsert);
               if (error) throw error;
             } catch (err) {
-              console.warn('Failed to insert subcategory brands, retrying without is_visible column...', err);
-              const safeBrands = subBrandsToInsert.map(({ is_visible, ...rest }) => rest);
+              console.warn('Failed to insert subcategory brands, retrying without new columns...', err);
+              const safeBrands = subBrandsToInsert.map(({ 
+                is_visible, 
+                primary_cta_label, primary_cta_link, primary_cta_visible,
+                more_actions_label, more_actions_visible,
+                join_network_label, join_network_link, join_network_visible,
+                ...rest 
+              }) => rest);
               const { error: secondError } = await supabase.from('subcategory_brands' as any).insert(safeBrands);
               if (secondError) throw secondError;
             }
@@ -2585,9 +2669,12 @@ export default function AdminDashboard() {
     try {
       const success1 = await updateHeading(editingHeadingSectionId, editingHeadingText, editingHeadingBackgroundColor);
       const success2 = await toggleShowHeading(editingHeadingSectionId, editingHeadingVisible);
+      
+      // Also sync the section name (tab label) with the heading text
+      const success3 = await updateSectionName(editingHeadingSectionId, editingHeadingText || 'Featured Cards');
 
-      if (success1 && success2) {
-        toast.success('Heading updated!');
+      if (success1 && success2 && success3) {
+        toast.success('Heading and tab label updated!');
         setEditingHeadingSectionId(null);
         // Refetch sections
         const { data: updatedSections } = await supabase
@@ -2873,7 +2960,7 @@ export default function AdminDashboard() {
                       <span className="md:hidden">Delete</span>
                     </button>
                     <button
-                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, border_color: null })}
+                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, border_color: null, background_color: null })}
                       className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
@@ -2959,6 +3046,24 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Card Background Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editCard.background_color || '#fcf9f5'}
+                          onChange={(e) => setEditCard({ ...editCard, background_color: e.target.value })}
+                          className="h-10 w-20 rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={editCard.background_color || ''}
+                          onChange={(e) => setEditCard({ ...editCard, background_color: e.target.value || null })}
+                          placeholder="#fcf9f5"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
                     <button onClick={saveCard} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -3054,8 +3159,17 @@ export default function AdminDashboard() {
                               {subcategories.filter(s => s.category_id === cat.id).length} subcategories, {categoryDownloads.filter((download) => download.category_id === cat.id).length} downloads
                             </p>
                           </div>
-                          <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditDownloads(categoryDownloads.filter((download) => download.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                          <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                              <Switch
+                                checked={cat.is_visible ?? true}
+                                onCheckedChange={(checked) => toggleCategoryVisibility(cat.id, Boolean(checked))}
+                              />
+                              <span className="text-[10px] font-medium text-muted-foreground uppercase">{(cat.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                            </div>
+                            <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditDownloads(categoryDownloads.filter((download) => download.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                          </div>
                         </SortableCategoryItem>
                         {editCategory?.id === cat.id && (
                           <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
@@ -3679,7 +3793,7 @@ export default function AdminDashboard() {
                                               onChange={(e) => updateAboutSection(editingSub.id, section.id, { background_color: e.target.value })}
                                               className="w-10 h-10 rounded cursor-pointer border border-input"
                                             />
-                                            <label className="text-sm text-muted-foreground ml-4">Heading Color:</label>
+                                            <label className="text-sm text-muted-foreground ml-4">Logo BG Color:</label>
                                             <input
                                               type="color"
                                               value={section.heading_color || '#000000'}
@@ -4213,8 +4327,123 @@ export default function AdminDashboard() {
                                       }}
                                       className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                     />
+
+                                    {/* New CTA Buttons Configuration */}
+                                    <div className="mt-4 space-y-4 border-t pt-4">
+                                      <h4 className="text-sm font-semibold text-foreground">CTA Buttons Configuration</h4>
+                                      
+                                      {/* Primary CTA */}
+                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 1 (Primary CTA)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.primary_cta_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], primary_cta_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.primary_cta_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            placeholder="Button Label"
+                                            value={brand.primary_cta_label || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], primary_cta_label: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Button Link"
+                                            value={brand.primary_cta_link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], primary_cta_link: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* More Actions / Contact */}
+                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 2 (More Actions)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.more_actions_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], more_actions_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.more_actions_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <input
+                                          placeholder="Button Label (e.g. Contact)"
+                                          value={brand.more_actions_label || ''}
+                                          onChange={(e) => {
+                                            const newBrands = [...editSubBrands];
+                                            newBrands[index] = { ...newBrands[index], more_actions_label: e.target.value };
+                                            setEditSubBrands(newBrands);
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground italic">Note: This button will trigger the existing CTA buttons below.</p>
+                                      </div>
+
+                                      {/* Join Network */}
+                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 3 (Join Network)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.join_network_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], join_network_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.join_network_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            placeholder="Button Label"
+                                            value={brand.join_network_label || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], join_network_label: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Join Link (WhatsApp/Telegram/etc)"
+                                            value={brand.join_network_link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], join_network_link: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
                                     <div className="mt-4 space-y-2 border-t pt-3">
-                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Buttons</label>
+                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Existing CTA Buttons (triggered by Button 2)</label>
                                       {(brand.buttons || []).map((btn, btnIndex) => (
                                         <div key={btnIndex} className="flex gap-2 items-center">
                                           <input
@@ -4289,7 +4518,23 @@ export default function AdminDashboard() {
                                 {editSubBrands.length < 10 && (
                                   <button
                                     type="button"
-                                    onClick={() => setEditSubBrands([...editSubBrands, { id: crypto.randomUUID(), name: '', logo_url: null, link: null, description: '', buttons: [], is_visible: true }])}
+                                    onClick={() => setEditSubBrands([...editSubBrands, { 
+                                      id: crypto.randomUUID(), 
+                                      name: '', 
+                                      logo_url: null, 
+                                      link: null, 
+                                      description: '', 
+                                      buttons: [], 
+                                      is_visible: true,
+                                      primary_cta_label: 'Submit RFP',
+                                      primary_cta_link: '',
+                                      primary_cta_visible: false,
+                                      more_actions_label: 'Contact',
+                                      more_actions_visible: false,
+                                      join_network_label: '+ Join their Network',
+                                      join_network_link: '',
+                                      join_network_visible: false
+                                    }])}
                                     className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                                   >
                                     <Plus className="w-4 h-4" /> Add Brand
@@ -4573,65 +4818,213 @@ export default function AdminDashboard() {
                             folder="logos"
                           />
 
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Section Heading</label>
-                            <input
-                              value={editingSub.about_heading || ''}
-                              onChange={(e) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
-                              }}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Need Help Deciding?"
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Section Heading</label>
+                              <input
+                                value={editingSub.about_heading || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
+                                }}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="Need Help Deciding?"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Logo BG Color</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSub.about_heading_color || '#ffffff'}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading_color: e.target.value } : s));
+                                  }}
+                                  className="w-10 h-10 rounded border border-input cursor-pointer"
+                                />
+                                <input
+                                  value={editingSub.about_heading_color || ''}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading_color: e.target.value } : s));
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                  placeholder="#ffffff"
+                                />
+                              </div>
+                            </div>
                           </div>
 
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Section Subheading</label>
-                            <input
-                              value={editingSub.about_subheading || ''}
-                              onChange={(e) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading: e.target.value } : s));
-                              }}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Talk to Solution Experts for Free."
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Section Subheading</label>
+                              <input
+                                value={editingSub.about_subheading || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading: e.target.value } : s));
+                                }}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="Talk to Solution Experts for Free."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Subheading Color</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSub.about_subheading_color || '#9af24d'}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading_color: e.target.value } : s));
+                                  }}
+                                  className="w-10 h-10 rounded border border-input cursor-pointer"
+                                />
+                                <input
+                                  value={editingSub.about_subheading_color || ''}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading_color: e.target.value } : s));
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                  placeholder="#9af24d"
+                                />
+                                </div>
+                              </div>
                           </div>
 
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Section Description</label>
-                            <textarea
-                              value={editingSub.about_content || ''}
-                              onChange={(e) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
-                              }}
-                              className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="We'll help you find the right tools..."
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Section Description</label>
+                              <textarea
+                                value={editingSub.about_content || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
+                                }}
+                                className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                placeholder="We'll help you find the right tools..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Description Color</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSub.about_description_color || '#ffffff'}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_description_color: e.target.value } : s));
+                                  }}
+                                  className="w-10 h-10 rounded border border-input cursor-pointer"
+                                />
+                                <input
+                                  value={editingSub.about_description_color || ''}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_description_color: e.target.value } : s));
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                  placeholder="#ffffff"
+                                />
+                              </div>
+                            </div>
                           </div>
 
                           <div className="space-y-3 border-t pt-4">
                             <h4 className="text-sm font-semibold">Demo Form Settings</h4>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
-                              <textarea
-                                value={editingSub.demo_form_heading || ''}
-                                onChange={(e) => {
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
-                                }}
-                                className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="See The Software In Action&#10;Watch Free Demo!"
-                              />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
+                                <textarea
+                                  value={editingSub.demo_form_heading || ''}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
+                                  }}
+                                  className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="See The Software In Action&#10;Watch Free Demo!"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Demo Heading Color</label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={editingSub.demo_form_heading_color || '#000000'}
+                                    onChange={(e) => {
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading_color: e.target.value } : s));
+                                    }}
+                                    className="w-10 h-10 rounded border border-input cursor-pointer"
+                                  />
+                                  <input
+                                    value={editingSub.demo_form_heading_color || ''}
+                                    onChange={(e) => {
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading_color: e.target.value } : s));
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                    placeholder="#000000"
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
-                              <input
-                                value={editingSub.demo_button_label || ''}
-                                onChange={(e) => {
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="Get Free Advice"
-                              />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
+                                <input
+                                  value={editingSub.demo_button_label || ''}
+                                  onChange={(e) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
+                                  }}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Get Free Advice"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Button Colors</label>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={editingSub.about_button_bg_color || '#16a34a'}
+                                      onChange={(e) => {
+                                        setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_bg_color: e.target.value } : s));
+                                      }}
+                                      className="w-8 h-8 rounded border border-input cursor-pointer"
+                                      title="Button Background"
+                                    />
+                                    <input
+                                      type="color"
+                                      value={editingSub.about_button_text_color || '#ffffff'}
+                                      onChange={(e) => {
+                                        setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_text_color: e.target.value } : s));
+                                      }}
+                                      className="w-8 h-8 rounded border border-input cursor-pointer"
+                                      title="Button Text Color"
+                                    />
+                                    <span className="text-xs text-muted-foreground">Bg & Text</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3 border-t pt-4">
+                            <h4 className="text-sm font-semibold">Section Colors</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Background Color</label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={editingSub.about_bg_color || '#013737'}
+                                    onChange={(e) => {
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_bg_color: e.target.value } : s));
+                                    }}
+                                    className="w-10 h-10 rounded border border-input cursor-pointer"
+                                  />
+                                  <input
+                                    value={editingSub.about_bg_color || ''}
+                                    onChange={(e) => {
+                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_bg_color: e.target.value } : s));
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                    placeholder="#013737"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -4717,7 +5110,7 @@ export default function AdminDashboard() {
                                   productOpenAddSectionModal('cards');
                                   return;
                                 }
-                                setProductEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false });
+                                setProductEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, background_color: null });
                               }}
                               className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
                             >
@@ -5225,6 +5618,24 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Card Background Color</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={productEditCard.background_color || '#fcf9f5'}
+                                onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value })}
+                                className="h-10 w-20 rounded cursor-pointer border-0"
+                              />
+                              <input
+                                type="text"
+                                value={productEditCard.background_color || ''}
+                                onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value || null })}
+                                placeholder="#fcf9f5"
+                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
                           <button type="button" onClick={() => productSaveCard(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -5371,6 +5782,7 @@ export default function AdminDashboard() {
                           <ImageCropper label="Logo" value={productEditLogoStep.logo_url || null} onChange={(url) => setProductEditLogoStep({ ...productEditLogoStep, logo_url: url })} folder="logos" previewAspectRatio={1} previewLabel="Preview" />
                           <input value={productEditLogoStep.title || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditLogoStep.description || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
+                          <input value={productEditLogoStep.link || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <button type="button" onClick={() => productSaveLogoStep(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>

@@ -40,8 +40,21 @@ export default function OffersSection({
   const [heading, setHeading] = useState('Offers & Discounts');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const visibleCount = useMemo(() => {
+    if (windowWidth < 768) return 1;
+    if (windowWidth < 1024) return 2;
+    return 4;
+  }, [windowWidth]);
+
   const isHomePage = window.location.pathname === '/';
-  const visibleCount = isMobile ? 1 : 4;
   const fixedMode = offers.some((offer) => offer.is_fixed);
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
 
@@ -49,13 +62,12 @@ export default function OffersSection({
 
   // Group offers into pages for fixed mode sliding
   const fixedPages = useMemo(() => {
-    if (!fixedMode) return [];
     const pages = [];
     for (let i = 0; i < offers.length; i += visibleCount) {
       pages.push(offers.slice(i, i + visibleCount));
     }
     return pages;
-  }, [fixedMode, offers, visibleCount]);
+  }, [offers, visibleCount]);
 
   const needsCarousel = !fixedMode && offers.length > visibleCount;
   const showFixedControls = fixedMode && offers.length > visibleCount;
@@ -133,23 +145,23 @@ export default function OffersSection({
   if (offers.length === 0) return null;
 
   return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        <div className="flex items-center justify-between mb-4">
-          {showHeading && (
+        {showHeading && (
+          <div className="flex items-center justify-between mb-4">
             <h2 className={headingClassName || "section-heading !mb-0"}>
               {heading}
             </h2>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="relative group/fixed">
           {(showFixedControls || needsCarousel) && (
             <>
               <button
                 onClick={fixedMode ? handleFixedPrev : goPrev}
-                className="absolute left-0 md:-left-12 top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                className="absolute left-0 md:-left-12 top-[150px] -translate-y-1/2 z-20 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
                 disabled={fixedMode ? fixedPageIndex === 0 : false}
                 aria-label="Previous slide"
               >
@@ -157,7 +169,7 @@ export default function OffersSection({
               </button>
               <button
                 onClick={fixedMode ? handleFixedNext : goNext}
-                className="absolute right-0 md:-right-12 top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                className="absolute right-0 md:-right-12 top-[150px] -translate-y-1/2 z-20 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
                 disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
                 aria-label="Next slide"
               >
@@ -166,56 +178,17 @@ export default function OffersSection({
             </>
           )}
 
-          {fixedMode && isMobile ? (
-            <div className="flex flex-col gap-6">
-              {offers.map((offer) => (
-                <div key={offer.id} className="flex h-full">
-                  <a href={offer.link || '#'} className="flex flex-col w-full group">
-                    {offer.image_url && (
-                      <div 
-                          className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
-                          style={{ 
-                            maxWidth: isHomePage ? '265px' : undefined, 
-                            height: isHomePage ? '318px' : '300px',
-                            borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
-                          }}
-                        >
-                          <img
-                            src={offer.image_url}
-                            alt={offer.heading || 'Offer'}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        </div>
-                    )}
-                    {(offer.heading || offer.description) && (
-                      <div className="pt-3 px-1">
-                        {offer.heading && (
-                          <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
-                            {offer.heading}
-                          </h3>
-                        )}
-                        {offer.description && (
-                          <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                            {offer.description}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </a>
-                </div>
-              ))}
-            </div>
-          ) : needsCarousel ? (
-            <div className="relative">
+          {needsCarousel ? (
+            <div className="relative md:max-lg:px-16">
             <div 
-              className="overflow-hidden rounded-lg"
+              className="overflow-hidden rounded-lg -mx-[9px]"
               ref={containerRef}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
               <div
-                className="flex gap-6"
+                className="flex"
                 onTransitionEnd={handleTransitionEnd}
                 style={{
                   transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
@@ -225,16 +198,19 @@ export default function OffersSection({
                 {displayOffers.map((offer, displayIndex) => (
                   <div
                     key={`${offer.id}-${displayIndex}`}
-                    className="flex-none"
-                    style={{ width: `calc(${slideWidth}% - 1.5rem)` }}
+                    className="flex-none px-[9px]"
+                    style={{ width: `${slideWidth}%` }}
                   >
-                    <a href={offer.link || '#'} className="flex flex-col group">
+                    <a 
+                      href={offer.link || '#'} 
+                      className="flex flex-col group mx-auto"
+                      style={{ maxWidth: isHomePage ? '280px' : undefined }}
+                    >
                       {offer.image_url && (
                         <div 
                           className={`overflow-hidden bg-white rounded-xl w-full ${offer.show_border ? 'border' : ''}`}
                           style={{ 
-                            maxWidth: isHomePage ? '265px' : undefined, 
-                            height: isHomePage ? '318px' : '300px',
+                            height: isHomePage ? '335px' : '300px',
                             borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                           }}
                         >
@@ -277,16 +253,19 @@ export default function OffersSection({
               style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
             >
               {fixedPages.map((page, pageIdx) => (
-                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 md:grid-cols-4">
+                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:gap-[0px]">
                   {page.map((offer) => (
                     <div key={offer.id} className="flex h-full">
-                      <a href={offer.link || '#'} className="flex flex-col w-full group">
+                      <a 
+                        href={offer.link || '#'} 
+                        className="flex flex-col w-full group mx-auto"
+                        style={{ maxWidth: isHomePage ? '280px' : undefined }}
+                      >
                         {offer.image_url && (
                           <div 
                             className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
                             style={{ 
-                              maxWidth: isHomePage ? '265px' : undefined, 
-                              height: isHomePage ? '318px' : '300px',
+                              height: isHomePage ? '335px' : '300px',
                               borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                             }}
                           >

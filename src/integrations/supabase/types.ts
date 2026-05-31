@@ -295,6 +295,7 @@ export type Database = {
           sort_order: number
           title: string
           updated_at: string
+          background_color: string | null
         }
         Insert: {
           created_at?: string
@@ -307,6 +308,7 @@ export type Database = {
           sort_order?: number
           title: string
           updated_at?: string
+          background_color?: string | null
         }
         Update: {
           created_at?: string
@@ -319,6 +321,7 @@ export type Database = {
           sort_order?: number
           title?: string
           updated_at?: string
+          background_color?: string | null
         }
         Relationships: []
       }

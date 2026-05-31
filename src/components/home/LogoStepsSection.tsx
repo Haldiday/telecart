@@ -7,8 +7,15 @@ interface LogoStep {
   title: string;
   description: string | null;
   logo_url: string | null;
+  link: string | null;
   sort_order: number;
 }
+
+const normalizeExternalUrl = (url: string) => {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+  return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+};
 
 interface LogoStepsSectionProps {
   sectionId: string;
@@ -81,7 +88,7 @@ export default function LogoStepsSection({
   if (steps.length === 0) return null;
 
   return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor}>
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-6 md:py-8'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
@@ -90,24 +97,32 @@ export default function LogoStepsSection({
           </h2>
         )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className="flex items-start gap-4 rounded-xl border border-border bg-background p-4 md:p-5"
-            >
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-[#fcf9f5] text-lg font-semibold text-primary md:h-16 md:w-16">
+          {steps.map((step, index) => {
+            const externalUrl = step.link ? normalizeExternalUrl(step.link) : null;
+            const Component = externalUrl ? 'a' : 'div';
+            
+            return (
+              <Component
+                key={step.id}
+                href={externalUrl || undefined}
+                target={externalUrl ? '_blank' : undefined}
+                rel={externalUrl ? 'noopener noreferrer' : undefined}
+                className={`flex items-start gap-4 rounded-xl border border-border bg-background p-4 md:p-5 ${externalUrl ? 'cursor-pointer transition-all hover:border-primary/50 hover:shadow-md group' : ''}`}
+              >
                 {step.logo_url && (
-                  <img src={step.logo_url} alt={step.title} className="h-10 w-10 object-contain md:h-12 md:w-12" />
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center md:h-14 md:w-14">
+                    <img src={step.logo_url} alt={step.title} className="h-full w-full object-contain" />
+                  </div>
                 )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="mb-1 text-base font-semibold text-foreground md:text-lg">{step.title}</h3>
-                {step.description?.trim() && (
-                  <p className="text-sm leading-relaxed text-muted-foreground md:text-base">{step.description}</p>
-                )}
-              </div>
-            </div>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <h3 className={`mb-1 text-base font-semibold text-foreground md:text-lg ${externalUrl ? 'group-hover:text-primary transition-colors' : ''}`}>{step.title}</h3>
+                  {step.description?.trim() && (
+                    <p className="text-sm leading-relaxed text-muted-foreground md:text-base">{step.description}</p>
+                  )}
+                </div>
+              </Component>
+            );
+          })}
         </div>
       </div>
     </div>

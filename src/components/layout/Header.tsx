@@ -61,10 +61,12 @@ export default function Header() {
         .select('*')
         .order('name');
 
-      const merged = cats.map((category) => ({
-        ...category,
-        subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
-      }));
+      const merged = cats
+        .filter((cat: any) => cat.is_visible !== false)
+        .map((category) => ({
+          ...category,
+          subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
+        }));
 
       setCategories(merged);
     };

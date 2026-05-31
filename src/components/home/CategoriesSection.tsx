@@ -51,10 +51,12 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
       const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
       if (!cats) return;
       const { data: subs } = await supabase.from('subcategories').select('*').order('sort_order');
-      const merged = cats.map((category) => ({
-        ...category,
-        subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
-      }));
+      const merged = cats
+        .filter((cat: any) => cat.is_visible !== false)
+        .map((category) => ({
+          ...category,
+          subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
+        }));
       if (mounted) setCategories(merged);
     }
 
@@ -100,7 +102,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
-          <h2 className="section-heading">
+          <h2 className="section-heading mt-1 md:mt-4 mb-4 md:mb-6">
             {heading}
           </h2>
         )}
