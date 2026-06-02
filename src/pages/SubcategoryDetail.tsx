@@ -314,14 +314,14 @@ export default function SubcategoryDetail() {
 
   const hasVideoResource = Boolean(videoUrl.trim());
   const hasVideoResource2 = videoUrl2.some(url => url?.trim());
-  const showDownloadsTab = subcategory?.show_downloads !== false;
+  const showDownloadsTab = subcategory?.show_downloads === true;
   const showProductsTab = category?.show_products_tab !== false;
   const showBrandsTab = subcategory?.show_brands !== false && brands.length > 0;
   const showBrandsInOverview = subcategory?.show_brands !== false && brands.length > 0;
   const showPricingPlansTab = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
   const showPricingPlansInOverview = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
-  const showResourcesTab = subcategory?.show_resources !== false;
+  const showResourcesTab = subcategory?.show_resources === true;
   const showHeaderPointsSection = subcategory?.show_header_points_section !== false;
   const showHeaderPointsTab = showHeaderPointsSection && overviewPoints.length > 0;
   const showAboutSection = subcategory?.show_about_section ?? true;
@@ -827,7 +827,10 @@ export default function SubcategoryDetail() {
                     </div>
                     
                     {brand.description && brand.description.trim() && (
-                      <p className="text-[18px] leading-relaxed text-muted-foreground mb-5">
+                      <p 
+                        className="text-[16px] leading-relaxed text-muted-foreground mb-5"
+                        style={{ fontFamily: 'Arial, sans-serif' }}
+                      >
                         {brand.description}
                       </p>
                     )}
@@ -1378,6 +1381,7 @@ export default function SubcategoryDetail() {
                           sectionTable="subcategory_page_sections"
                           offersTable="subcategory_offers"
                           compact
+                          isSubcategory={true}
                           backgroundColor={section.background_color}
                           headingClassName={SECTION_HEADING_CLASS}
                         />

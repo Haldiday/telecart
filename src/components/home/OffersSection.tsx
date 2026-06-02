@@ -25,6 +25,7 @@ interface OffersSectionProps {
   compact?: boolean;
   backgroundColor?: string | null;
   headingClassName?: string;
+  isSubcategory?: boolean;
 }
 
 export default function OffersSection({
@@ -34,6 +35,7 @@ export default function OffersSection({
   compact = false,
   backgroundColor,
   headingClassName,
+  isSubcategory = false,
 }: OffersSectionProps) {
   const db = supabase as any;
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -203,14 +205,14 @@ export default function OffersSection({
                   >
                     <a 
                       href={offer.link || '#'} 
-                      className="flex flex-col group mx-auto"
-                      style={{ maxWidth: isHomePage ? '280px' : undefined }}
+                      className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
+                      style={{ maxWidth: (isHomePage || isSubcategory) ? '280px' : undefined }}
                     >
                       {offer.image_url && (
                         <div 
-                          className={`overflow-hidden bg-white rounded-xl w-full ${offer.show_border ? 'border' : ''}`}
+                          className={`overflow-hidden bg-white rounded-xl w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
                           style={{ 
-                            height: isHomePage ? '335px' : '300px',
+                            height: (isHomePage || isSubcategory) ? '335px' : '300px',
                             borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                           }}
                         >
@@ -222,7 +224,7 @@ export default function OffersSection({
                         </div>
                       )}
                       {(offer.heading || offer.description) && (
-                        <div className="pt-3 px-1">
+                        <div className="pt-3 px-1 flex-grow flex flex-col justify-start">
                           {offer.heading && (
                             <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                               {offer.heading}
@@ -258,14 +260,14 @@ export default function OffersSection({
                     <div key={offer.id} className="flex h-full">
                       <a 
                         href={offer.link || '#'} 
-                        className="flex flex-col w-full group mx-auto"
-                        style={{ maxWidth: isHomePage ? '280px' : undefined }}
+                        className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
+                        style={{ maxWidth: (isHomePage || isSubcategory) ? '280px' : undefined }}
                       >
                         {offer.image_url && (
                           <div 
-                            className={`overflow-hidden bg-white rounded-xl mx-auto w-full ${offer.show_border ? 'border' : ''}`}
+                            className={`overflow-hidden bg-white rounded-xl mx-auto w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
                             style={{ 
-                              height: isHomePage ? '335px' : '300px',
+                              height: (isHomePage || isSubcategory) ? '335px' : '300px',
                               borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
                             }}
                           >
@@ -277,7 +279,7 @@ export default function OffersSection({
                           </div>
                         )}
                         {(offer.heading || offer.description) && (
-                          <div className="pt-3 px-1">
+                          <div className="pt-3 px-1 flex-grow flex flex-col justify-start">
                             {offer.heading && (
                               <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                                 {offer.heading}

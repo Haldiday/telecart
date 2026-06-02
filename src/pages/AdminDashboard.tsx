@@ -2107,9 +2107,9 @@ export default function AdminDashboard() {
           overview_points_heading: editKeyFeaturesTabLabelState[sub.id] || sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
-          show_downloads: editShowDownloadsState[sub.id] ?? true,
+          show_downloads: editShowDownloadsState[sub.id] ?? false,
           show_brands: editShowBrandsState[sub.id] ?? true,
-          show_resources: editShowResourcesState[sub.id] ?? true,
+          show_resources: editShowResourcesState[sub.id] ?? false,
           show_about_section: editShowAboutSectionState[sub.id] ?? true,
           show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
           show_pricing_plans: editShowPricingPlansState[sub.id] ?? true,
@@ -3223,7 +3223,7 @@ export default function AdminDashboard() {
                                   <label className="text-sm font-medium">Subcategories</label>
                                   <button
                                     type="button"
-                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length, show_downloads: false, show_resources: false })}
                                     className="text-sm text-primary font-semibold"
                                   >
                                     + Add
@@ -3249,10 +3249,10 @@ export default function AdminDashboard() {
                                               setEditingSubcategoryId(sub.id);
                                               setEditButtons(editButtonsState[sub.id] || []);
                                               setEditSubDownloads(editSubDownloadsState[sub.id] || []);
-                                              setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? true }));
+                                              setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? false }));
                                               setEditSubBrands(editSubBrandsState[sub.id] || []);
                                               setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                              setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
+                                              setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? false }));
                                               setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
                                               setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
                                               setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
@@ -3405,7 +3405,7 @@ export default function AdminDashboard() {
                         <label className="text-sm font-medium">Subcategories</label>
                         <button
                           type="button"
-                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length, show_downloads: false, show_resources: false })}
                           className="text-sm text-primary font-semibold"
                         >
                           + Add
@@ -3576,9 +3576,9 @@ export default function AdminDashboard() {
                             image_url: editSubcategory.image_url?.trim() || null,
                             video_url_2: (editSubcategory.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
                             detail_description: editSubcategory.detail_description?.trim() || null,
-                            show_downloads: editShowDownloadsState[editSubcategory.id || 'new'] ?? true,
+                            show_downloads: editShowDownloadsState[editSubcategory.id || 'new'] ?? false,
                             show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
-                            show_resources: editShowResourcesState[editSubcategory.id || 'new'] ?? true,
+                            show_resources: editShowResourcesState[editSubcategory.id || 'new'] ?? false,
                             show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
                             show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
                             show_pricing_plans: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true,
@@ -3594,9 +3594,9 @@ export default function AdminDashboard() {
                             return [...current, nextSub];
                           });
                           const subcategoryId = nextSub.id;
-                          setEditShowDownloadsState((prev) => ({ ...prev, [subcategoryId]: editShowDownloadsState[editSubcategory.id || 'new'] ?? true }));
+                          setEditShowDownloadsState((prev) => ({ ...prev, [subcategoryId]: editShowDownloadsState[editSubcategory.id || 'new'] ?? false }));
                           setEditShowBrandsState((prev) => ({ ...prev, [subcategoryId]: editShowBrandsState[editSubcategory.id || 'new'] ?? true }));
-                          setEditShowResourcesState((prev) => ({ ...prev, [subcategoryId]: editShowResourcesState[editSubcategory.id || 'new'] ?? true }));
+                          setEditShowResourcesState((prev) => ({ ...prev, [subcategoryId]: editShowResourcesState[editSubcategory.id || 'new'] ?? false }));
                           setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowPricingPlansState((prev) => ({ ...prev, [subcategoryId]: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true }));
@@ -3647,9 +3647,9 @@ export default function AdminDashboard() {
                                 setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
                                 setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                                 setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
-                                setEditShowDownloadsState(prev => ({ ...prev, [editingSub.id]: editShowDownloadsState[editingSub.id] ?? true }));
+                                setEditShowDownloadsState(prev => ({ ...prev, [editingSub.id]: editShowDownloadsState[editingSub.id] ?? false }));
                                 setEditShowBrandsState(prev => ({ ...prev, [editingSub.id]: editShowBrandsState[editingSub.id] ?? true }));
-                                setEditShowResourcesState(prev => ({ ...prev, [editingSub.id]: editShowResourcesState[editingSub.id] ?? true }));
+                                setEditShowResourcesState(prev => ({ ...prev, [editingSub.id]: editShowResourcesState[editingSub.id] ?? false }));
                                 setEditShowAboutSectionState(prev => ({ ...prev, [editingSub.id]: editShowAboutSectionState[editingSub.id] ?? true }));
                                 setEditShowHeaderPointsSectionState(prev => ({ ...prev, [editingSub.id]: editShowHeaderPointsSectionState[editingSub.id] ?? true }));
                                 setEditShowPricingPlansState(prev => ({ ...prev, [editingSub.id]: editShowPricingPlansState[editingSub.id] ?? true }));
@@ -4067,7 +4067,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-between">
                             <label className="block text-sm font-medium">Enable Resources Section</label>
                             <Switch
-                              checked={editShowResourcesState[editingSub.id] ?? true}
+                              checked={editShowResourcesState[editingSub.id] ?? false}
                               onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
                             />
                           </div>
@@ -4144,11 +4144,11 @@ export default function AdminDashboard() {
                           <div className="flex items-center justify-between">
                             <label className="block text-sm font-medium">Downloads</label>
                             <Switch
-                              checked={editShowDownloadsState[editingSub.id] ?? true}
+                              checked={editShowDownloadsState[editingSub.id] ?? false}
                               onCheckedChange={(value) => setEditShowDownloadsState({ ...editShowDownloadsState, [editingSub.id]: value })}
                             />
                           </div>
-                          {editShowDownloadsState[editingSub.id] !== false && (
+                          {editShowDownloadsState[editingSub.id] === true && (
                             <>
                               <div>
                                 <label className="block text-sm font-medium mb-1.5">Tab Label</label>
@@ -4973,28 +4973,30 @@ export default function AdminDashboard() {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-1.5">Button Colors</label>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-6">
+                                  <div>
+                                    <label className="block text-sm font-medium tracking-wider mb-1.5">Button BG Color</label>
                                     <input
                                       type="color"
                                       value={editingSub.about_button_bg_color || '#16a34a'}
                                       onChange={(e) => {
                                         setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_bg_color: e.target.value } : s));
                                       }}
-                                      className="w-8 h-8 rounded border border-input cursor-pointer"
+                                      className="w-10 h-10 rounded-lg border border-input cursor-pointer p-1 bg-background"
                                       title="Button Background"
                                     />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium tracking-wider mb-1.5">Button Text Color</label>
                                     <input
                                       type="color"
                                       value={editingSub.about_button_text_color || '#ffffff'}
                                       onChange={(e) => {
                                         setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_text_color: e.target.value } : s));
                                       }}
-                                      className="w-8 h-8 rounded border border-input cursor-pointer"
+                                      className="w-10 h-10 rounded-lg border border-input cursor-pointer p-1 bg-background"
                                       title="Button Text Color"
                                     />
-                                    <span className="text-xs text-muted-foreground">Bg & Text</span>
                                   </div>
                                 </div>
                               </div>
