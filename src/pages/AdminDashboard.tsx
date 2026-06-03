@@ -2913,7 +2913,7 @@ export default function AdminDashboard() {
           {tab === 'header' && (
             <div className="max-w-2xl space-y-8">
               <div>
-                <h2 className="text-xl font-bold mb-1">Header Options</h2>
+                <h2 className="text-xl font-bold mb-1">Header</h2>
                 <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
               </div>
 
