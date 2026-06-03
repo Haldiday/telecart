@@ -339,7 +339,7 @@ function Modal({
 const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { key: 'hero', label: 'Hero Section', icon: <Type className="w-5 h-5" /> },
-  { key: 'header', label: 'Header Options', icon: <Layers className="w-5 h-5" /> },
+  { key: 'header', label: 'Header', icon: <Layers className="w-5 h-5" /> },
   { key: 'sections', label: 'Page Layout', icon: <Layers className="w-5 h-5" /> },
   { key: 'cards', label: 'Feature Cards', icon: <CreditCard className="w-5 h-5" /> },
   { key: 'categories', label: 'Categories', icon: <Tag className="w-5 h-5" /> },
@@ -2913,7 +2913,7 @@ export default function AdminDashboard() {
           {tab === 'header' && (
             <div className="max-w-2xl space-y-8">
               <div>
-                <h2 className="text-xl font-bold mb-1">Header</h2>
+                <h2 className="text-xl font-bold mb-1">Header Options</h2>
                 <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
               </div>
 
