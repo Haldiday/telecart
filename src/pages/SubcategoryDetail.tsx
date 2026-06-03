@@ -10,6 +10,7 @@ import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
 import LogoStepsSection from '@/components/home/LogoStepsSection';
 import WatchDemoForm from '@/components/home/WatchDemoForm';
+import { SafeEmbedRenderer } from '@/components/common/SafeEmbedRenderer';
 import { toast } from 'sonner';
 import {
   Download,
@@ -52,6 +53,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
+  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -237,6 +239,14 @@ const getYouTubeVideoId = (url: string): string | null => {
 };
 
 const getYouTubeEmbedUrl = (videoId: string): string => `https://www.youtube.com/embed/${videoId}?`;
+
+const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
+  if (!content) return 'link';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
+  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
+  return 'link';
+};
 
 const normalizeExternalUrl = (url: string) => {
   const trimmedUrl = url.trim();
@@ -1100,8 +1110,19 @@ export default function SubcategoryDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1">
-        {/* Hero Section with colored background and video */}
+        <main className="flex-1">
+         {subcategory?.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) !== 'link' && (
+           <div className="container mx-auto px-4 py-8 md:px-8 lg:px-10">
+             <SafeEmbedRenderer 
+               content={subcategory.custom_link} 
+               type={(subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) as any} 
+             />
+           </div>
+         )}
+ 
+         {(!subcategory?.custom_link || (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link') && (
+           <>
+            {/* Hero Section with colored background and video */}
         <div 
           className="relative w-full max-w-none overflow-hidden border-b border-border"
           style={subcategory?.hero_background_color ? { backgroundColor: subcategory.hero_background_color } : undefined}
@@ -1565,9 +1586,11 @@ export default function SubcategoryDetail() {
           )}
         </div>
         </div>
+        </>
+        )}
       </main>
 
-      {showAboutSection && (
+      {showAboutSection && (!subcategory?.custom_link || (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link') && (
         <section className="pb-6 md:pb-8">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
             <div 

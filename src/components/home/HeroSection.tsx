@@ -4,7 +4,15 @@ import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 type SearchResult =
   | { id: string; type: 'category'; name: string }
-  | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null };
+  | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null; custom_link_type?: 'link' | 'iframe' | 'embed_code' | null };
+
+const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
+  if (!content) return 'link';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
+  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
+  return 'link';
+};
 
 export default function HeroSection() {
   const { checkAuthAndNavigate } = useMSG91Auth();
@@ -89,7 +97,7 @@ export default function HeroSection() {
           .order('sort_order'),
         (supabase as any)
           .from('subcategories')
-          .select('id, category_id, name, custom_link')
+          .select('id, category_id, name, custom_link, custom_link_type')
           .ilike('name', `%${searchTerm}%`)
           .order('sort_order'),
       ]);
@@ -132,8 +140,9 @@ export default function HeroSection() {
       return;
     }
 
-    if (result.custom_link) {
-      checkAuthAndNavigate(result.custom_link);
+    const isExternalLink = result.custom_link && (result.custom_link_type || detectLinkType(result.custom_link)) === 'link';
+    if (isExternalLink) {
+      checkAuthAndNavigate(result.custom_link as string);
     } else {
       checkAuthAndNavigate(`/category/${result.categoryId}/subcategory/${result.id}`);
     }

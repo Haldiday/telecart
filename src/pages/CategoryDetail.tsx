@@ -22,6 +22,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
+  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
 }
 
 interface SubFeature {
@@ -30,6 +31,14 @@ interface SubFeature {
   description: string | null;
   feature_id: string;
 }
+
+const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
+  if (!content) return 'link';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
+  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
+  return 'link';
+};
 
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -44,8 +53,9 @@ export default function CategoryDetail() {
 
   // Helper function to handle subcategory navigation
   const handleSubcategoryClick = (subcategory: Subcategory) => {
-    const targetPath = subcategory.custom_link || `/category/${id}/subcategory/${subcategory.id}`;
-    checkAuthAndNavigate(targetPath);
+    const isExternalLink = subcategory.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link';
+    const targetPath = isExternalLink ? subcategory.custom_link : `/category/${id}/subcategory/${subcategory.id}`;
+    checkAuthAndNavigate(targetPath as string);
   };
 
   const tabs = [

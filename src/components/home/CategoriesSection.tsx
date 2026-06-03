@@ -9,6 +9,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
+  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
   sort_order: number;
 }
 
@@ -25,6 +26,14 @@ interface CategoriesSectionProps {
   sectionId: string;
 }
 
+const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
+  if (!content) return 'link';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
+  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
+  return 'link';
+};
+
 export default function CategoriesSection({ sectionId }: CategoriesSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -36,8 +45,9 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
   // Helper function to handle subcategory navigation
   const handleSubcategoryClick = (subcategory: Subcategory, categoryId: string) => {
-    const targetPath = subcategory.custom_link || `/category/${categoryId}/subcategory/${subcategory.id}`;
-    checkAuthAndNavigate(targetPath);
+    const isExternalLink = subcategory.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link';
+    const targetPath = isExternalLink ? subcategory.custom_link : `/category/${categoryId}/subcategory/${subcategory.id}`;
+    checkAuthAndNavigate(targetPath as string);
   };
 
   const handleCategoryClick = (categoryId: string) => {

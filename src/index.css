@@ -1,8 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@100..900&family=Roboto:wght@400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 @layer components {
+    .header-nav-link {
+        font-family: 'Roboto', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 24px;
+        color: rgb(23, 49, 59);
+        @apply transition-colors hover:opacity-80;
+    }
+    .submit-header-button {
+        font-family: 'Roboto', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 24px;
+        color: rgb(23, 49, 59);
+        border: 2px solid #17313B;
+        background-color: transparent;
+        @apply px-6 py-2 rounded-lg transition-all hover:bg-[#17313B] hover:text-white;
+    }
+    .top-header-link {
+        font-family: 'Roboto', sans-serif;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 21px;
+        color: rgb(255, 255, 255);
+        @apply transition-colors hover:opacity-80;
+    }
+    .mega-menu-link {
+        font-family: 'Roboto', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 24px;
+        color: rgb(23, 49, 59);
+        position: relative;
+        @apply transition-all py-2 px-6 text-left w-full flex items-center justify-between;
+    }
+    .mega-menu-link:hover {
+        background-color: #f1f5f9;
+        color: #17313B;
+    }
+    .mega-menu-link::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background-color: #17313B;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .mega-menu-link:hover::before {
+        opacity: 1;
+    }
     .section-heading {
         @apply font-inter font-[575] text-[24px] leading-[1.2] text-[#2d2f29] mb-3 mt-0;
     }

@@ -32,6 +32,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
+  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -99,6 +100,23 @@ interface Offer { id: string; image_url: string | null; heading: string; descrip
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
+interface HeaderSettings {
+  id?: string;
+  leave_review_text: string;
+  leave_review_link: string;
+  leave_review_visible: boolean;
+  for_providers_text: string;
+  for_providers_link: string;
+  for_providers_visible: boolean;
+  sign_in_text: string;
+  sign_in_visible: boolean;
+  join_text: string;
+  join_link: string;
+  join_visible: boolean;
+  submit_button_text: string;
+  submit_button_link: string;
+  submit_button_visible: boolean;
+}
 
 // Product Tab Sections types and constants
 const PRODUCT_SECTION_TABLE = 'subcategory_page_sections';
@@ -182,7 +200,7 @@ interface LogoStepItem {
   section_id: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'contact';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'contact';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -321,6 +339,7 @@ function Modal({
 const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { key: 'hero', label: 'Hero Section', icon: <Type className="w-5 h-5" /> },
+  { key: 'header', label: 'Header Options', icon: <Layers className="w-5 h-5" /> },
   { key: 'sections', label: 'Page Layout', icon: <Layers className="w-5 h-5" /> },
   { key: 'cards', label: 'Feature Cards', icon: <CreditCard className="w-5 h-5" /> },
   { key: 'categories', label: 'Categories', icon: <Tag className="w-5 h-5" /> },
@@ -331,6 +350,39 @@ const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'leads', label: 'Demo Leads', icon: <Star className="w-5 h-5" /> },
   { key: 'contact', label: 'Contact Page', icon: <Home className="w-5 h-5" /> },
 ];
+
+const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
+  if (!content) return 'link';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
+  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
+  return 'link';
+};
+
+const TRUSTED_DOMAINS = [
+  'forms.zohopublic.in',
+  'zohopublic.in',
+  'docs.google.com/forms',
+  'forms.gle',
+  'tally.so',
+  'typeform.com'
+];
+
+const validateEmbedCode = (content: string): { isValid: boolean; message?: string } => {
+  if (!content) return { isValid: true };
+  const type = detectLinkType(content);
+  if (type === 'link') return { isValid: true };
+
+  // Check for trusted domains
+  const hasTrustedDomain = TRUSTED_DOMAINS.some(domain => content.includes(domain));
+  if (!hasTrustedDomain) {
+    return { 
+      isValid: false, 
+      message: 'Unsupported provider. Please use trusted forms like Zoho, Google Forms, Tally, or Typeform.' 
+    };
+  }
+  return { isValid: true };
+};
 
 export default function AdminDashboard() {
   const { user, isAdmin, loading } = useAuth();
@@ -374,7 +426,24 @@ export default function AdminDashboard() {
     description_2: '',
     image_url: '',
   });
+  const [headerSettings, setHeaderSettings] = useState<HeaderSettings>({
+    leave_review_text: 'Leave a Review',
+    leave_review_link: '#',
+    leave_review_visible: true,
+    for_providers_text: 'For Providers',
+    for_providers_link: '#',
+    for_providers_visible: true,
+    sign_in_text: 'Sign In',
+    sign_in_visible: true,
+    join_text: 'Join',
+    join_link: '#',
+    join_visible: true,
+    submit_button_text: 'Submit',
+    submit_button_link: '#',
+    submit_button_visible: true,
+  });
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [isSavingHeader, setIsSavingHeader] = useState(false);
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -516,47 +585,51 @@ export default function AdminDashboard() {
   useEffect(() => {
     let mounted = true;
     
-    const loadAllSafe = async () => {
-      const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections] = await Promise.all([
-        supabase.from('page_sections').select('*').order('sort_order'),
-        supabase.from('hero_settings').select('*').limit(1).single(),
-        supabase.from('featured_cards').select('*').order('sort_order'),
-        supabase.from('categories').select('*').order('sort_order'),
-        supabase.from('subcategories').select('*').order('sort_order'),
-        supabase.from('category_downloads').select('*'),
-        supabase.from('offers').select('*').order('sort_order'),
-        supabase.from('ads_2col').select('*').order('sort_order'),
-        supabase.from('ads_3col').select('*').order('sort_order'),
-        supabase.from('category_buttons').select('*').order('sort_order'),
-        supabase.from('subcategory_downloads' as any).select('*'),
-        supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
-        supabase.from('leads' as any).select('*').order('created_at', { ascending: false }),
-        supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
-        supabase.from('contact_settings' as any).select('*').limit(1).single(),
-        supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
-      ]);
-      let subBrands;
-      try {
-        const result = await supabase.from('subcategory_brands' as any).select('*');
-        subBrands = result;
-      } catch {
-        subBrands = { data: [] };
-      }
-      let subOverviewPoints;
-      try {
-        const result = await supabase.from('subcategory_overview_points' as any).select('*');
-        subOverviewPoints = result;
-      } catch {
-        subOverviewPoints = { data: [] };
-      }
-      
-      if (!mounted) return;
+      const loadAllSafe = async () => {
+        try {
+          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections] = await Promise.all([
+            supabase.from('page_sections').select('*').order('sort_order'),
+            supabase.from('hero_settings').select('*').limit(1).single(),
+            supabase.from('header_settings' as any).select('*').limit(1).single(),
+            supabase.from('featured_cards').select('*').order('sort_order'),
+            supabase.from('categories').select('*').order('sort_order'),
+            supabase.from('subcategories').select('*').order('sort_order'),
+            supabase.from('category_downloads').select('*'),
+            supabase.from('offers').select('*').order('sort_order'),
+            supabase.from('ads_2col').select('*').order('sort_order'),
+            supabase.from('ads_3col').select('*').order('sort_order'),
+            supabase.from('category_buttons').select('*').order('sort_order'),
+            supabase.from('subcategory_downloads' as any).select('*'),
+            supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
+            supabase.from('leads' as any).select('*').order('created_at', { ascending: false }),
+            supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
+            supabase.from('contact_settings' as any).select('*').limit(1).single(),
+            supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
+          ]);
 
-      if (s.data) setSections(s.data);
-      if (contact.data) setContactSettings(contact.data as any);
-      if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
-      if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
-      if (cat.data) setCategories(cat.data);
+          let subBrands;
+          try {
+            const result = await supabase.from('subcategory_brands' as any).select('*');
+            subBrands = result;
+          } catch {
+            subBrands = { data: [] };
+          }
+          let subOverviewPoints;
+          try {
+            const result = await supabase.from('subcategory_overview_points' as any).select('*');
+            subOverviewPoints = result;
+          } catch {
+            subOverviewPoints = { data: [] };
+          }
+          
+          if (!mounted) return;
+
+          if (s.data) setSections(s.data);
+          if (contact.data) setContactSettings(contact.data as any);
+          if (header.data) setHeaderSettings(header.data as any);
+          if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
+          if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
+          if (cat.data) setCategories(cat.data);
       if (sub.data) {
         setSubcategories(sub.data as unknown as Subcategory[]);
         const map: Record<string, string> = {};
@@ -737,7 +810,10 @@ export default function AdminDashboard() {
         setEditKeyFeaturesSections(groupedKFSections);
       }
       if (leadsData.data) setLeads(leadsData.data as unknown as Lead[]);
-    };
+        } catch (error) {
+          console.error('Error in loadAllSafe:', error);
+        }
+      };
 
     loadAllSafe();
 
@@ -760,6 +836,7 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_key_features_sections' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, loadAllSafe)
       .subscribe();
 
     return () => {
@@ -2093,6 +2170,7 @@ export default function AdminDashboard() {
           name: sub.name,
           link: sub.link || null,
           custom_link: sub.custom_link || null,
+          custom_link_type: sub.custom_link_type || 'link',
           video_url: sub.video_url,
           video_url_2: (sub.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
           schedule_link: sub.schedule_link,
@@ -2434,6 +2512,26 @@ export default function AdminDashboard() {
       toast.error('Failed to save contact settings');
     } finally {
       setIsSavingContact(false);
+    }
+  }
+
+  async function handleSaveHeader() {
+    setIsSavingHeader(true);
+    try {
+      const { error } = await supabase
+        .from('header_settings' as any)
+        .upsert({
+          ...headerSettings,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+      toast.success('Header settings saved successfully');
+    } catch (error) {
+      console.error('Error saving header settings:', error);
+      toast.error('Failed to save header settings');
+    } finally {
+      setIsSavingHeader(false);
     }
   }
 
@@ -2807,6 +2905,176 @@ export default function AdminDashboard() {
               </div>
               <button onClick={saveHero} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2">
                 <Save className="w-4 h-4" /> Save Hero
+              </button>
+            </div>
+          )}
+
+          {/* HEADER OPTIONS */}
+          {tab === 'header' && (
+            <div className="max-w-2xl space-y-8">
+              <div>
+                <h2 className="text-xl font-bold mb-1">Header Options</h2>
+                <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
+              </div>
+
+              <div className="grid gap-6">
+                {/* Leave a Review */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">Leave a Review</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={headerSettings.leave_review_visible}
+                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, leave_review_visible: checked })}
+                      />
+                      <span className="text-sm font-medium">{headerSettings.leave_review_visible ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Text</label>
+                      <input
+                        value={headerSettings.leave_review_text}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, leave_review_text: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={headerSettings.leave_review_link}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, leave_review_link: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* For Providers */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">For Providers</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={headerSettings.for_providers_visible}
+                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, for_providers_visible: checked })}
+                      />
+                      <span className="text-sm font-medium">{headerSettings.for_providers_visible ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Text</label>
+                      <input
+                        value={headerSettings.for_providers_text}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, for_providers_text: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={headerSettings.for_providers_link}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, for_providers_link: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sign In */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">Sign In</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={headerSettings.sign_in_visible}
+                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, sign_in_visible: checked })}
+                      />
+                      <span className="text-sm font-medium">{headerSettings.sign_in_visible ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Text</label>
+                    <input
+                      value={headerSettings.sign_in_text}
+                      onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_text: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                    />
+                  </div>
+                </div>
+
+                {/* Join */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">Join</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={headerSettings.join_visible}
+                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, join_visible: checked })}
+                      />
+                      <span className="text-sm font-medium">{headerSettings.join_visible ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Text</label>
+                      <input
+                        value={headerSettings.join_text}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, join_text: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link (WhatsApp or any URL)</label>
+                      <input
+                        value={headerSettings.join_link}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, join_link: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">Submit Button (Main Header)</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={headerSettings.submit_button_visible}
+                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, submit_button_visible: checked })}
+                      />
+                      <span className="text-sm font-medium">{headerSettings.submit_button_visible ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                      <input
+                        value={headerSettings.submit_button_text}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, submit_button_text: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                      <input
+                        value={headerSettings.submit_button_link}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, submit_button_link: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveHeader}
+                disabled={isSavingHeader}
+                className="w-full md:w-auto px-8 py-3 rounded-lg bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isSavingHeader ? 'Saving...' : <><Save className="w-5 h-5" /> Save Header Options</>}
               </button>
             </div>
           )}
@@ -3695,15 +3963,19 @@ export default function AdminDashboard() {
 
                     <div className="space-y-3 border-t pt-4">
                       <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
-                      <input
-                        type="text"
+                      <textarea
                         value={editingSub.custom_link || ''}
                         onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: e.target.value || undefined } : s));
+                          const val = e.target.value;
+                          const type = detectLinkType(val);
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: val || undefined, custom_link_type: type } : s));
                         }}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="https://example.com"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                        placeholder="Paste normal URL or trusted embed code like Zoho Form iframe/script"
                       />
+                      {editingSub.custom_link && !validateEmbedCode(editingSub.custom_link).isValid && (
+                        <p className="text-xs text-destructive">{validateEmbedCode(editingSub.custom_link).message}</p>
+                      )}
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
