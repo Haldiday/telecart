@@ -142,7 +142,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         {/* Close Button */}
         <div className="mb-6 flex justify-end">

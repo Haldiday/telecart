@@ -33,7 +33,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border/50">
         <h1 className="text-2xl font-bold text-center mb-6">Admin Login</h1>
         <form onSubmit={handleLogin} className="space-y-4">

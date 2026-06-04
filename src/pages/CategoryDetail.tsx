@@ -120,10 +120,10 @@ export default function CategoryDetail() {
     setCategory((current) => (current ? { ...current, ...payload } : current));
   };
 
-  if (!category) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  if (!category) return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">

@@ -39,15 +39,11 @@ export default function ContactUs() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+    return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-col">
       <Header />
       <main className="flex-1 bg-white">
         <div className="container mx-auto px-4 md:px-8 lg:px-10 py-16 md:py-24 max-w-[1200px]">

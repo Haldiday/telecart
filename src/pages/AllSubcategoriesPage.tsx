@@ -85,20 +85,20 @@ export default function AllSubcategoriesPage() {
 
   if (loading)
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[100dvh] items-center justify-center">
         <div className="text-lg text-muted-foreground">Loading...</div>
       </div>
     );
 
   if (!category)
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[100dvh] items-center justify-center">
         <div className="text-lg text-muted-foreground">Category not found</div>
       </div>
     );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">

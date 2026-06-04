@@ -1104,11 +1104,11 @@ export default function SubcategoryDetail() {
   );
 
   if (!category || !subcategory) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <Header />
         <main className="flex-1">
          {subcategory?.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) !== 'link' && (
@@ -1577,9 +1577,15 @@ export default function SubcategoryDetail() {
           {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-              <div className="w-full overflow-hidden rounded-none border border-border bg-card">
-                <div className="h-[60vh] w-full bg-muted md:min-h-[650px]">
-                  <iframe src={formLink.trim()} title="Form" scrolling="auto" className="h-full w-full" style={{ border: 'none' }} />
+              <div className="w-full rounded-none border border-border bg-card">
+                <div className="w-full bg-muted">
+                  <iframe 
+                    src={formLink.trim()} 
+                    title="Form" 
+                    scrolling="no" 
+                    className="w-full min-h-[1000px] md:min-h-[1500px]" 
+                    style={{ border: 'none' }} 
+                  />
                 </div>
               </div>
             </div>

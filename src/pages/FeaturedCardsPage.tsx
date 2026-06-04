@@ -73,20 +73,16 @@ export default function FeaturedCardsPage() {
     };
   }, [sectionId]);
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-lg text-muted-foreground">Loading...</div>
-    </div>
-  );
+  if (loading) {
+    return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
+  }
 
-  if (!section) return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-lg text-muted-foreground">Section not found</div>
-    </div>
-  );
+  if (!section) {
+    return <div className="flex min-h-[100dvh] items-center justify-center">Section not found</div>;
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">
