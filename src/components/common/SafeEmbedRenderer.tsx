@@ -68,9 +68,10 @@ export const SafeEmbedRenderer: React.FC<SafeEmbedRendererProps> = ({ content, t
     <div className={`relative w-full rounded-xl border border-border bg-card shadow-sm ${className}`}>
       <iframe
         src={embedUrl}
-        className="w-full min-h-[1000px] md:min-h-[1500px] border-none"
+        className="w-full h-[8000px] md:h-[6000px] border-none"
         scrolling="no"
         title="Embedded Content"
+        style={{ overflow: 'hidden' }}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         loading="lazy"

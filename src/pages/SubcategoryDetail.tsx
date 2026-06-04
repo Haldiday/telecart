@@ -1583,8 +1583,8 @@ export default function SubcategoryDetail() {
                     src={formLink.trim()} 
                     title="Form" 
                     scrolling="no" 
-                    className="w-full min-h-[1000px] md:min-h-[1500px]" 
-                    style={{ border: 'none' }} 
+                    className="w-full h-[8000px] md:h-[6000px]" 
+                    style={{ border: 'none', overflow: 'hidden' }} 
                   />
                 </div>
               </div>

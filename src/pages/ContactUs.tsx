@@ -27,7 +27,7 @@ export default function ContactUs() {
           .single();
 
         if (error) throw error;
-        setSettings(data);
+        setSettings(data as any as ContactSettings);
       } catch (error) {
         console.error('Error loading contact settings:', error);
       } finally {

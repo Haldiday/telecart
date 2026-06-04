@@ -62,6 +62,16 @@
     .section-subtext {
         @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
     }
+    
+    /* Hide scrollbars for iframes to ensure only main browser scrollbar shows */
+    iframe {
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    iframe::-webkit-scrollbar {
+        display: none !important;
+    }
 }
 
 @layer base {
