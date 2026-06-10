@@ -59,7 +59,7 @@ const FontSize = Extension.create({
   name: 'fontSize',
   addOptions() {
     return {
-      types: ['textStyle'],
+      types: ['textStyle', 'listItem'],
     };
   },
   addGlobalAttributes() {
@@ -88,14 +88,52 @@ const FontSize = Extension.create({
       setFontSize:
         (fontSize) =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize }).run();
+          return chain().setMark('textStyle', { fontSize }).updateAttributes('listItem', { fontSize }).run();
         },
       unsetFontSize:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
+          return chain().setMark('textStyle', { fontSize: null }).updateAttributes('listItem', { fontSize: null }).removeEmptyTextStyle().run();
         },
     };
+  },
+});
+
+// Custom Color and Font Family inheritance for List Items
+const ListItemInheritance = Extension.create({
+  name: 'listItemInheritance',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['listItem'],
+        attributes: {
+          color: {
+            default: null,
+            parseHTML: element => element.style.color,
+            renderHTML: attributes => {
+              if (!attributes.color) return {};
+              return { style: `color: ${attributes.color}` };
+            },
+          },
+          fontFamily: {
+            default: null,
+            parseHTML: element => element.style.fontFamily?.replace(/['"]+/g, ''),
+            renderHTML: attributes => {
+              if (!attributes.fontFamily) return {};
+              return { style: `font-family: ${attributes.fontFamily}` };
+            },
+          },
+          fontWeight: {
+            default: null,
+            parseHTML: element => element.style.fontWeight,
+            renderHTML: attributes => {
+              if (!attributes.fontWeight) return {};
+              return { style: `font-weight: ${attributes.fontWeight}` };
+            },
+          },
+        },
+      },
+    ];
   },
 });
 
@@ -104,7 +142,7 @@ const FontFamily = Extension.create({
   name: 'fontFamily',
   addOptions() {
     return {
-      types: ['textStyle'],
+      types: ['textStyle', 'listItem'],
     };
   },
   addGlobalAttributes() {
@@ -133,12 +171,12 @@ const FontFamily = Extension.create({
       setFontFamily:
         (fontFamily) =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontFamily }).run();
+          return chain().setMark('textStyle', { fontFamily }).updateAttributes('listItem', { fontFamily }).run();
         },
       unsetFontFamily:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontFamily: null }).removeEmptyTextStyle().run();
+          return chain().setMark('textStyle', { fontFamily: null }).updateAttributes('listItem', { fontFamily: null }).removeEmptyTextStyle().run();
         },
     };
   },
@@ -253,7 +291,13 @@ function MenuBar({ editor }: { editor: Editor }) {
       <button
         type="button"
         onMouseDown={preventToolbarBlur}
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onClick={() => {
+          editor.chain().focus().toggleBold().run();
+          if (editor.isActive('listItem')) {
+            const isBold = editor.isActive('bold');
+            editor.chain().focus().updateAttributes('listItem', { fontWeight: isBold ? 'bold' : 'normal' }).run();
+          }
+        }}
         className={btnClass(toolbar.isBold)}
         title="Bold"
       >
@@ -417,7 +461,10 @@ function MenuBar({ editor }: { editor: Editor }) {
       <input
         type="color"
         onMouseDown={preventToolbarBlur}
-        onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+        onChange={(e) => {
+          const color = e.target.value;
+          editor.chain().focus().setColor(color).updateAttributes('listItem', { color }).run();
+        }}
         className="w-8 h-8 rounded cursor-pointer border border-input"
         title="Text Color"
       />
@@ -469,6 +516,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ value, onChange, placeholde
         Underline,
         FontSize,
         FontFamily,
+        ListItemInheritance,
       ],
       content: value || '',
       editorProps: {

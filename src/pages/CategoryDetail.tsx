@@ -32,14 +32,6 @@ interface SubFeature {
   feature_id: string;
 }
 
-interface Feature {
-  id: string;
-  title: string;
-  description: string | null;
-  category_id: string;
-  sub_features: SubFeature[];
-}
-
 const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
   if (!content) return 'link';
   const trimmed = content.trim();

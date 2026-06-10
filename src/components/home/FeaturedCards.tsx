@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
+import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Card {
   id: string;
@@ -219,7 +220,7 @@ export default function FeaturedCards({
                           if (isLoggedIn) {
                             window.open(card.link, '_blank', 'noopener,noreferrer');
                           } else {
-                            checkAuthAndNavigate(card.link);
+                            checkAuthAndNavigate(getSmartNavigationUrl(card.link));
                           }
                         }
                       };
@@ -280,7 +281,7 @@ export default function FeaturedCards({
                         if (isLoggedIn) {
                           window.open(card.link, '_blank', 'noopener,noreferrer');
                         } else {
-                          checkAuthAndNavigate(card.link);
+                          checkAuthAndNavigate(getSmartNavigationUrl(card.link));
                         }
                       }
                     };

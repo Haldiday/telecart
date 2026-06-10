@@ -4,6 +4,13 @@ import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
+interface Brand {
+  id: string;
+  name: string;
+  link: string | null;
+  sort_order: number;
+}
+
 interface Subcategory {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ interface Subcategory {
   custom_link?: string | null;
   custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
   sort_order: number;
+  brands: Brand[];
 }
 
 interface Category {
@@ -38,6 +46,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
+  const [subcategoryExpanded, setSubcategoryExpanded] = useState<Record<string, boolean>>({});
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
@@ -61,11 +70,18 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
       const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
       if (!cats) return;
       const { data: subs } = await supabase.from('subcategories').select('*').order('sort_order');
+      const { data: brands } = await supabase.from('subcategory_brands' as any).select('*').order('sort_order');
+      
       const merged = cats
         .filter((cat: any) => cat.is_visible !== false)
         .map((category) => ({
           ...category,
-          subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
+          subcategories: (subs || [])
+            .filter((sub) => sub.category_id === category.id)
+            .map(sub => ({
+              ...sub,
+              brands: (brands || []).filter((b: any) => b.subcategory_id === sub.id)
+            })),
         }));
       if (mounted) setCategories(merged);
     }
@@ -90,6 +106,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
       .channel(`categories_live_${sectionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => load())
       .subscribe();
 
     const sectionsChannel = supabase
@@ -138,8 +155,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         [category.id]: !prev[category.id],
                       }))
                     }
-                    className="flex w-full items-center justify-between px-4 py-3 transition-colors"
-                    style={{ backgroundColor: isExpanded ? category.bg_color : 'transparent' }}
+                    className="flex w-full items-center justify-between px-4 py-3 transition-colors bg-white hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-4 text-left">
                       {category.icon_url && (
@@ -162,23 +178,70 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
                   {/* Expanded Subcategories */}
                   {isExpanded && (
-                    <div className="space-y-2 bg-white px-4 py-4">
-                      {category.subcategories.map((sub) => (
+                    <div className="bg-white border-l border-border/30 ml-4">
+                      {category.subcategories.map((sub) => {
+                        const isSubExpanded = subcategoryExpanded[sub.id];
+                        const displayBrands = sub.brands.slice(0, 3);
+                        const hasBrands = sub.brands.length > 0;
+
+                        return (
+                          <div key={sub.id} className="border-b border-border/30 last:border-0">
+                            <button
+                              onClick={() => {
+                                if (hasBrands) {
+                                  setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                                } else {
+                                  handleSubcategoryClick(sub, category.id);
+                                }
+                              }}
+                              className="flex w-full items-center justify-between px-4 py-3 text-left"
+                            >
+                              <span className="text-[14px] font-medium text-black">
+                                {sub.name}
+                              </span>
+                              {hasBrands && (
+                                isSubExpanded ? (
+                                  <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                                ) : (
+                                  <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                                )
+                              )}
+                            </button>
+
+                            {hasBrands && isSubExpanded && (
+                              <div className="px-4 pb-4 pt-1 space-y-3">
+                                <div className="space-y-2 border-l-2 border-border/50 pl-4 ml-1">
+                                  {displayBrands.map((brand) => (
+                                    <button
+                                      key={brand.id}
+                                      onClick={() => handleSubcategoryClick(sub, category.id)}
+                                      className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                                    >
+                                      {brand.name}
+                                    </button>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => handleSubcategoryClick(sub, category.id)}
+                                  className="text-sm font-semibold text-[#2563EB] flex items-center gap-1 pl-5 hover:underline"
+                                >
+                                  See all &rarr;
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="p-4">
                         <button
-                          key={sub.id}
-                          onClick={() => handleSubcategoryClick(sub, category.id)}
-                          className="block w-full text-left text-sm font-normal text-black hover:text-blue-600 hover:underline transition-colors"
+                          type="button"
+                          onClick={() => handleCategoryClick(category.id)}
+                          className="w-full rounded-lg bg-primary/10 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary/20 transition-all"
                         >
-                          {sub.name}
+                          Explore all
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => handleCategoryClick(category.id)}
-                        className="mt-4 w-full rounded-lg bg-primary/10 py-2 text-center text-sm font-medium text-primary hover:bg-primary/20"
-                      >
-                        Explore all
-                      </button>
+                      </div>
                     </div>
                   )}
                 </div>

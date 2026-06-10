@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
+import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Ad {
   id: string;
@@ -179,7 +180,7 @@ export default function Ads2ColSection({
                   <div
                     onClick={() => {
                       if (ad.link) {
-                        window.location.href = ad.link;
+                        window.location.href = getSmartNavigationUrl(ad.link);
                       }
                     }}
                     className={`block w-full h-[160px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -229,7 +230,7 @@ export default function Ads2ColSection({
                               checkAuthAndNavigate(ad.link);
                             }
                             */
-                            window.location.href = ad.link;
+                            window.location.href = getSmartNavigationUrl(ad.link);
                           }
                         }}
                         className={`block h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -262,9 +263,9 @@ export default function Ads2ColSection({
                           onClick={() => {
                             if (ad.link) {
                               if (isLoggedIn) {
-                                window.location.href = ad.link;
+                                window.location.href = getSmartNavigationUrl(ad.link);
                               } else {
-                                checkAuthAndNavigate(ad.link);
+                                checkAuthAndNavigate(getSmartNavigationUrl(ad.link));
                               }
                             }
                           }}
@@ -303,7 +304,7 @@ export default function Ads2ColSection({
                           checkAuthAndNavigate(ad.link);
                         }
                         */
-                        window.location.href = ad.link;
+                        window.location.href = getSmartNavigationUrl(ad.link);
                       }
                     }}
                     className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}

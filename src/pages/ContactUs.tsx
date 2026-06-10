@@ -21,13 +21,13 @@ export default function ContactUs() {
     const loadSettings = async () => {
       try {
         const { data, error } = await supabase
-          .from('contact_settings' as any)
+          .from('contact_settings')
           .select('*')
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
-        setSettings(data as any as ContactSettings);
+        setSettings(data);
       } catch (error) {
         console.error('Error loading contact settings:', error);
       } finally {
@@ -36,6 +36,20 @@ export default function ContactUs() {
     };
 
     loadSettings();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('contact_settings_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contact_settings' },
+        () => loadSettings()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {

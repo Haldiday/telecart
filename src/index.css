@@ -62,15 +62,90 @@
     .section-subtext {
         @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
     }
-    
-    /* Hide scrollbars for iframes to ensure only main browser scrollbar shows */
-    iframe {
-        overflow: hidden !important;
-        scrollbar-width: none !important;
-        -ms-overflow-style: none !important;
+
+    /* TipTap Editor Styles */
+    .tiptap-editor-content, .ProseMirror {
+        @apply overflow-x-hidden break-words;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        outline: none !important;
     }
-    iframe::-webkit-scrollbar {
-        display: none !important;
+    .tiptap-editor-content p, .ProseMirror p {
+        margin-bottom: 1.25rem !important;
+    }
+    .tiptap-editor-content p:empty::before, .ProseMirror p:empty::before {
+        content: "\00a0";
+        display: inline-block;
+        min-height: 1em;
+    }
+    .tiptap-editor-content ul, 
+    .tiptap-editor-content ol,
+    .ProseMirror ul,
+    .ProseMirror ol {
+        padding-left: 1.5em !important;
+        margin: 1rem 0 !important;
+        list-style-position: inside !important;
+    }
+    .tiptap-editor-content ul, .ProseMirror ul {
+        list-style-type: disc !important;
+    }
+    .tiptap-editor-content ol, .ProseMirror ol {
+        list-style-type: decimal !important;
+    }
+    .tiptap-editor-content li, .ProseMirror li {
+        margin: 0.25em 0 !important;
+        padding-left: 0 !important;
+    }
+    .tiptap-editor-content li p, .ProseMirror li p {
+        display: inline !important;
+        margin: 0 !important;
+    }
+    .tiptap-editor-content li::marker, .ProseMirror li::marker {
+        color: inherit !important;
+        font-weight: inherit !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
+    }
+    
+    /* Legal Content Styles */
+    .legal-content {
+        @apply overflow-x-hidden break-words;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    .legal-content p {
+        margin-bottom: 1.25rem !important;
+    }
+    .legal-content p:empty::before {
+        content: "\00a0";
+        display: inline-block;
+        min-height: 1em;
+    }
+    .legal-content ul,
+    .legal-content ol {
+        padding-left: 1.5em !important;
+        margin: 1.5rem 0 !important;
+        list-style-position: inside !important;
+    }
+    .legal-content ul {
+        list-style-type: disc !important;
+    }
+    .legal-content ol {
+        list-style-type: decimal !important;
+    }
+    .legal-content li {
+        margin: 0.5rem 0 !important;
+        padding-left: 0 !important;
+    }
+    .legal-content li p {
+        display: inline !important;
+        margin: 0 !important;
+    }
+    .legal-content li::marker {
+        color: inherit !important;
+        font-weight: inherit !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
     }
 }
 

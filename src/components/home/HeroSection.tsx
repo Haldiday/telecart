@@ -140,12 +140,7 @@ export default function HeroSection() {
       return;
     }
 
-    const isExternalLink = result.custom_link && (result.custom_link_type || detectLinkType(result.custom_link)) === 'link';
-    if (isExternalLink) {
-      checkAuthAndNavigate(result.custom_link as string);
-    } else {
-      checkAuthAndNavigate(`/category/${result.categoryId}/subcategory/${result.id}`);
-    }
+    checkAuthAndNavigate(`/category/${result.categoryId}/subcategory/${result.id}`);
   }
 
   function handleSearchButton() {

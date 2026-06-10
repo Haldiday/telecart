@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface UserData {
   name: string;
@@ -28,8 +29,6 @@ export const MSG91AuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const isExternalUrl = (targetPath: string) => /^https?:\/\//i.test(targetPath);
-
   useEffect(() => {
     // Check if user is already logged in from localStorage
     const savedSession = localStorage.getItem('msg91_session');
@@ -49,11 +48,7 @@ export const MSG91AuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // Redirect to pending path if it exists
     if (pendingPath) {
-      if (isExternalUrl(pendingPath)) {
-        window.location.href = pendingPath;
-      } else {
-        navigate(pendingPath);
-      }
+      navigate(getSmartNavigationUrl(pendingPath));
       setPendingPath(null);
     }
   };
@@ -81,11 +76,7 @@ export const MSG91AuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     */
     
     // Direct navigation
-    if (isExternalUrl(targetPath)) {
-      window.location.href = targetPath;
-    } else {
-      navigate(targetPath);
-    }
+    navigate(getSmartNavigationUrl(targetPath));
   };
 
   return (

@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
 import ImageCropper from '@/components/admin/ImageCropper';
 import FileUpload from '@/components/admin/FileUpload';
-import RichTextEditor from '@/components/admin/RichTextEditor';
 import TipTapEditor from '@/components/admin/TipTapEditor';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -100,6 +99,7 @@ interface Offer { id: string; image_url: string | null; heading: string; descrip
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
 interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
+interface LegalPage { id: string; slug: string; title: string; content: string | null; }
 interface HeaderSettings {
   id?: string;
   leave_review_text: string;
@@ -116,6 +116,32 @@ interface HeaderSettings {
   submit_button_text: string;
   submit_button_link: string;
   submit_button_visible: boolean;
+}
+
+interface FooterSettings {
+  id?: string;
+  description: string;
+  description_visible?: boolean;
+  twitter_label: string;
+  twitter_link: string;
+  twitter_visible?: boolean;
+  linkedin_label: string;
+  linkedin_link: string;
+  linkedin_visible?: boolean;
+  facebook_label: string;
+  facebook_link: string;
+  facebook_visible?: boolean;
+  instagram_label: string;
+  instagram_link: string;
+  instagram_visible?: boolean;
+  youtube_label: string;
+  youtube_link: string;
+  youtube_visible?: boolean;
+  social_media_visible?: boolean;
+  about_us_visible?: boolean;
+  contact_visible?: boolean;
+  privacy_policy_visible?: boolean;
+  terms_of_service_visible?: boolean;
 }
 
 // Product Tab Sections types and constants
@@ -200,7 +226,7 @@ interface LogoStepItem {
   section_id: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'contact';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_privacy' | 'footer_terms' | 'footer_about';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -336,7 +362,14 @@ function Modal({
   );
 }
 
-const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+interface SidebarItem {
+  key: Tab;
+  label: string;
+  icon: React.ReactNode;
+  children?: { key: Tab; label: string }[];
+}
+
+const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { key: 'hero', label: 'Hero Section', icon: <Type className="w-5 h-5" /> },
   { key: 'header', label: 'Header Options', icon: <Layers className="w-5 h-5" /> },
@@ -348,7 +381,19 @@ const SIDEBAR_ITEMS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'ads_2col', label: '2-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_3col', label: '3-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'leads', label: 'Demo Leads', icon: <Star className="w-5 h-5" /> },
-  { key: 'contact', label: 'Contact Page', icon: <Home className="w-5 h-5" /> },
+  { 
+    key: 'footer', 
+    label: 'Footer Options', 
+    icon: <Home className="w-5 h-5" />,
+    children: [
+      { key: 'footer_about', label: 'About Us' },
+      { key: 'footer_contact', label: 'Contact Page' },
+      { key: 'footer_general', label: 'General Settings' },
+      { key: 'footer_privacy', label: 'Privacy Policy' },
+      { key: 'footer', label: 'Social Media Links' },
+      { key: 'footer_terms', label: 'Terms of Service' },
+    ]
+  },
 ];
 
 const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
@@ -389,6 +434,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [expandedSidebarItem, setExpandedSidebarItem] = useState<string | null>(null);
 
   // Use the new section instances hook
   const {
@@ -419,6 +465,7 @@ export default function AdminDashboard() {
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
 
   const [contactSettings, setContactSettings] = useState({
+    id: undefined as string | undefined,
     heading: '',
     email_label: '',
     email: '',
@@ -442,8 +489,24 @@ export default function AdminDashboard() {
     submit_button_link: '#',
     submit_button_visible: true,
   });
+  const [footerSettings, setFooterSettings] = useState<FooterSettings>({
+    description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+    twitter_label: 'Twitter',
+    twitter_link: '#',
+    linkedin_label: 'LinkedIn',
+    linkedin_link: '#',
+    facebook_label: 'Facebook',
+    facebook_link: '#',
+    instagram_label: 'Instagram',
+    instagram_link: '#',
+    youtube_label: 'YouTube',
+    youtube_link: '#',
+  });
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [isSavingFooter, setIsSavingFooter] = useState(false);
   const [isSavingHeader, setIsSavingHeader] = useState(false);
+  const [legalPages, setLegalPages] = useState<LegalPage[]>([]);
+  const [isSavingLegal, setIsSavingLegal] = useState(false);
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -587,10 +650,10 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections] = await Promise.all([
+          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
-            supabase.from('hero_settings').select('*').limit(1).single(),
-            supabase.from('header_settings' as any).select('*').limit(1).single(),
+            supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('featured_cards').select('*').order('sort_order'),
             supabase.from('categories').select('*').order('sort_order'),
             supabase.from('subcategories').select('*').order('sort_order'),
@@ -599,12 +662,14 @@ export default function AdminDashboard() {
             supabase.from('ads_2col').select('*').order('sort_order'),
             supabase.from('ads_3col').select('*').order('sort_order'),
             supabase.from('category_buttons').select('*').order('sort_order'),
-            supabase.from('subcategory_downloads' as any).select('*'),
-            supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
-            supabase.from('leads' as any).select('*').order('created_at', { ascending: false }),
-            supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
-            supabase.from('contact_settings' as any).select('*').limit(1).single(),
-            supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
+            supabase.from('subcategory_downloads' as any).select('*').then(res => res, err => ({ data: null, error: err })),
+            supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+            supabase.from('leads' as any).select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
+            supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
+            supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+            supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
+            supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
           ]);
 
           let subBrands;
@@ -626,7 +691,33 @@ export default function AdminDashboard() {
 
           if (s.data) setSections(s.data);
           if (contact.data) setContactSettings(contact.data as any);
-          if (header.data) setHeaderSettings(header.data as any);
+          if (header.data) setHeaderSettings(header.data);
+          if (footer.data) setFooterSettings({
+            description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+            description_visible: true,
+            social_media_visible: true,
+            about_us_visible: true,
+            contact_visible: true,
+            privacy_policy_visible: true,
+            terms_of_service_visible: true,
+            twitter_label: 'Twitter',
+            twitter_link: '#',
+            twitter_visible: true,
+            linkedin_label: 'LinkedIn',
+            linkedin_link: '#',
+            linkedin_visible: true,
+            facebook_label: 'Facebook',
+            facebook_link: '#',
+            facebook_visible: true,
+            instagram_label: 'Instagram',
+            instagram_link: '#',
+            instagram_visible: false,
+            youtube_label: 'YouTube',
+            youtube_link: '#',
+            youtube_visible: false,
+            ...footer.data
+          });
+          if (legal.data) setLegalPages(legal.data as LegalPage[]);
           if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
           if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
           if (cat.data) setCategories(cat.data);
@@ -837,6 +928,7 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'footer_settings' as any }, loadAllSafe)
       .subscribe();
 
     return () => {
@@ -846,9 +938,10 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
-    const [s, h, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, kfSections] = await Promise.all([
+    const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
-      supabase.from('hero_settings').select('*').limit(1).single(),
+      supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+      supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('featured_cards').select('*').order('sort_order'),
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('subcategories').select('*').order('sort_order'),
@@ -857,10 +950,13 @@ export default function AdminDashboard() {
       supabase.from('ads_2col').select('*').order('sort_order'),
       supabase.from('ads_3col').select('*').order('sort_order'),
       supabase.from('category_buttons').select('*').order('sort_order'),
-      supabase.from('subcategory_downloads' as any).select('*'),
-      supabase.from('subcategory_about_sections' as any).select('*').order('sort_order'),
-      supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }),
-      supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order'),
+      supabase.from('subcategory_downloads' as any).select('*').then(res => res, err => ({ data: null, error: err })),
+      supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+      supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
+      supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+      supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+      supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
+      supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
     ]);
     let subBrands;
     try {
@@ -877,6 +973,34 @@ export default function AdminDashboard() {
       subOverviewPoints = { data: [] };
     }
     if (s.data) setSections(s.data);
+    if (contact.data) setContactSettings(contact.data as any);
+    if (header.data) setHeaderSettings(header.data as any);
+    if (footer.data) setFooterSettings({
+      description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+      description_visible: true,
+      social_media_visible: true,
+      about_us_visible: true,
+      contact_visible: true,
+      privacy_policy_visible: true,
+      terms_of_service_visible: true,
+      twitter_label: 'Twitter',
+      twitter_link: '#',
+      twitter_visible: true,
+      linkedin_label: 'LinkedIn',
+      linkedin_link: '#',
+      linkedin_visible: true,
+      facebook_label: 'Facebook',
+      facebook_link: '#',
+      facebook_visible: true,
+      instagram_label: 'Instagram',
+      instagram_link: '#',
+      instagram_visible: false,
+      youtube_label: 'YouTube',
+      youtube_link: '#',
+      youtube_visible: false,
+      ...footer.data
+    });
+    if (legal.data) setLegalPages(legal.data as LegalPage[]);
     if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     if (cat.data) setCategories(cat.data);
@@ -2498,40 +2622,207 @@ export default function AdminDashboard() {
   async function saveContactSettings() {
     setIsSavingContact(true);
     try {
+      const dataToSave = {
+        heading: contactSettings.heading,
+        email_label: contactSettings.email_label,
+        email: contactSettings.email,
+        description_1: contactSettings.description_1,
+        description_2: contactSettings.description_2,
+        image_url: contactSettings.image_url,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (contactSettings.id) {
+        // Update existing record
+        result = await supabase
+          .from('contact_settings')
+          .update(dataToSave)
+          .eq('id', contactSettings.id);
+      } else {
+        // Get first contact settings record ID or create new one
+        const { data: existingData } = await supabase
+          .from('contact_settings')
+          .select('id')
+          .limit(1);
+        
+        if (existingData && existingData.length > 0) {
+          result = await supabase
+            .from('contact_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          result = await supabase
+            .from('contact_settings')
+            .insert([dataToSave]);
+        }
+      }
+
+      const { error } = result;
+      if (error) throw error;
+      
+      toast.success('Contact page settings saved successfully');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving contact settings:', error);
+      toast.error(`Failed to save contact settings: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSavingContact(false);
+    }
+  }
+
+  async function saveLegalPage(slug: string, content: string) {
+    setIsSavingLegal(true);
+    try {
+      // Find existing page to get ID if available
+      const existingPage = legalPages.find(p => p.slug === slug);
+      
+      let title = '';
+      if (slug === 'privacy-policy') title = 'Privacy Policy';
+      else if (slug === 'terms-of-service') title = 'Terms of Service';
+      else if (slug === 'about-us') title = 'About Us';
+
       const { error } = await supabase
-        .from('contact_settings' as any)
+        .from('legal_pages')
         .upsert({
-          ...contactSettings,
+          id: existingPage?.id,
+          slug,
+          content,
+          title,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'slug'
         });
 
       if (error) throw error;
-      toast.success('Contact page settings saved successfully');
-    } catch (error) {
-      console.error('Error saving contact settings:', error);
-      toast.error('Failed to save contact settings');
+      toast.success(`${title} saved successfully`);
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving legal page:', error);
+      toast.error(`Failed to save legal page: ${error.message || 'Unknown error'}`);
     } finally {
-      setIsSavingContact(false);
+      setIsSavingLegal(false);
     }
   }
 
   async function handleSaveHeader() {
     setIsSavingHeader(true);
     try {
-      const { error } = await supabase
-        .from('header_settings' as any)
-        .upsert({
-          ...headerSettings,
-          updated_at: new Date().toISOString(),
-        });
+      const dataToSave = {
+        leave_review_text: headerSettings.leave_review_text,
+        leave_review_link: headerSettings.leave_review_link,
+        leave_review_visible: headerSettings.leave_review_visible,
+        for_providers_text: headerSettings.for_providers_text,
+        for_providers_link: headerSettings.for_providers_link,
+        for_providers_visible: headerSettings.for_providers_visible,
+        sign_in_text: headerSettings.sign_in_text,
+        sign_in_visible: headerSettings.sign_in_visible,
+        join_text: headerSettings.join_text,
+        join_link: headerSettings.join_link,
+        join_visible: headerSettings.join_visible,
+        submit_button_text: headerSettings.submit_button_text,
+        submit_button_link: headerSettings.submit_button_link,
+        submit_button_visible: headerSettings.submit_button_visible,
+        updated_at: new Date().toISOString(),
+      };
 
+      let result;
+      if (headerSettings.id) {
+        result = await supabase
+          .from('header_settings')
+          .update(dataToSave)
+          .eq('id', headerSettings.id);
+      } else {
+        const { data: existingData } = await supabase
+          .from('header_settings')
+          .select('id')
+          .limit(1);
+        
+        if (existingData && existingData.length > 0) {
+          result = await supabase
+            .from('header_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          result = await supabase
+            .from('header_settings')
+            .insert([dataToSave]);
+        }
+      }
+
+      const { error } = result;
       if (error) throw error;
+      
       toast.success('Header settings saved successfully');
-    } catch (error) {
+      loadAll();
+    } catch (error: any) {
       console.error('Error saving header settings:', error);
-      toast.error('Failed to save header settings');
+      toast.error(`Failed to save header settings: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSavingHeader(false);
+    }
+  }
+
+  async function handleSaveFooter() {
+    setIsSavingFooter(true);
+    try {
+      // Prepare data with only existing database columns
+      const dataToSave: any = {
+        description: footerSettings.description,
+        twitter_label: footerSettings.twitter_label,
+        twitter_link: footerSettings.twitter_link,
+        twitter_visible: footerSettings.twitter_visible ?? true,
+        linkedin_label: footerSettings.linkedin_label,
+        linkedin_link: footerSettings.linkedin_link,
+        linkedin_visible: footerSettings.linkedin_visible ?? true,
+        facebook_label: footerSettings.facebook_label,
+        facebook_link: footerSettings.facebook_link,
+        facebook_visible: footerSettings.facebook_visible ?? true,
+        instagram_label: footerSettings.instagram_label,
+        instagram_link: footerSettings.instagram_link,
+        instagram_visible: footerSettings.instagram_visible ?? false,
+        youtube_label: footerSettings.youtube_label,
+        youtube_link: footerSettings.youtube_link,
+        youtube_visible: footerSettings.youtube_visible ?? false,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (footerSettings.id) {
+        // Update existing record
+        result = await supabase
+          .from('footer_settings')
+          .update(dataToSave)
+          .eq('id', footerSettings.id);
+      } else {
+        // Get first footer settings record ID or create new one
+        const { data: existingData } = await supabase
+          .from('footer_settings')
+          .select('id')
+          .limit(1);
+        
+        if (existingData && existingData.length > 0) {
+          result = await supabase
+            .from('footer_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          result = await supabase
+            .from('footer_settings')
+            .insert([dataToSave]);
+        }
+      }
+
+      const { error } = result;
+      if (error) throw error;
+      
+      toast.success('Footer settings saved successfully');
+      loadAll(); // Reload data to confirm save
+    } catch (error: any) {
+      console.error('Error saving footer settings:', error);
+      toast.error(`Failed to save footer settings: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSavingFooter(false);
     }
   }
 
@@ -2819,18 +3110,53 @@ export default function AdminDashboard() {
         </div>
         <nav className="flex-1 p-2 md:p-3 space-y-0.5 md:space-y-1 overflow-y-auto">
           {SIDEBAR_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => { setTab(item.key); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${
-                tab === item.key
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`}
-            >
-              <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
-              <span className="truncate">{item.label}</span>
-            </button>
+            <div key={item.key}>
+              <button
+                onClick={() => {
+                  if (item.children) {
+                    setExpandedSidebarItem(expandedSidebarItem === item.key ? null : item.key);
+                  } else {
+                    setTab(item.key);
+                    setSidebarOpen(false);
+                    setExpandedSidebarItem(null); // Close sub-menus when clicking a main item
+                  }
+                }}
+                className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${
+                  tab === item.key || (item.children && item.children.some(child => child.key === tab))
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                  <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.children && (
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedSidebarItem === item.key ? 'rotate-180' : ''}`} />
+                )}
+              </button>
+              
+              {item.children && expandedSidebarItem === item.key && (
+                <div className="mt-1 ml-4 space-y-0.5 md:space-y-1 border-l border-sidebar-border/50 pl-2">
+                  {item.children.map((child) => (
+                    <button
+                      key={child.key}
+                      onClick={() => {
+                        setTab(child.key);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
+                        tab === child.key
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                      }`}
+                    >
+                      <span className="truncate">{child.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
         <div className="p-2 md:p-3 border-t border-sidebar-border space-y-0.5 md:space-y-1">
@@ -6755,21 +7081,239 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* CONTACT PAGE SETTINGS */}
-          {tab === 'contact' && (
+          {/* FOOTER GENERAL SETTINGS */}
+          {tab === 'footer_general' && (
             <div className="max-w-4xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Contact Page Settings</h2>
+                <h2 className="text-xl font-bold">Footer General Settings</h2>
+                <button
+                  onClick={handleSaveFooter}
+                  disabled={isSavingFooter}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingFooter ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+              
+              <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div>
+                  <h3 className="font-semibold text-base mb-4">Footer Description</h3>
+                  
+                  <textarea
+                    value={footerSettings.description}
+                    onChange={(e) => setFooterSettings({ ...footerSettings, description: e.target.value })}
+                    placeholder="Enter footer description..."
+                    className="min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER SETTINGS */}
+          {tab === 'footer' && (
+            <div className="max-w-4xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Footer Social Media Links</h2>
+                <button
+                  onClick={handleSaveFooter}
+                  disabled={isSavingFooter}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingFooter ? 'Saving...' : 'Save Social Links'}
+                </button>
+              </div>
+              
+              <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                {/* Twitter */}
+                <div className="space-y-4 border-b pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">Twitter / X</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.twitter_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, twitter_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.twitter_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Label</label>
+                      <input
+                        value={footerSettings.twitter_label}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, twitter_label: e.target.value })}
+                        placeholder="e.g., Twitter"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={footerSettings.twitter_link}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, twitter_link: e.target.value })}
+                        placeholder="https://twitter.com/..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* LinkedIn */}
+                <div className="space-y-4 border-b pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">LinkedIn</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.linkedin_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, linkedin_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.linkedin_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Label</label>
+                      <input
+                        value={footerSettings.linkedin_label}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, linkedin_label: e.target.value })}
+                        placeholder="e.g., LinkedIn"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={footerSettings.linkedin_link}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, linkedin_link: e.target.value })}
+                        placeholder="https://linkedin.com/in/..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Facebook */}
+                <div className="space-y-4 border-b pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">Facebook</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.facebook_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, facebook_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.facebook_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Label</label>
+                      <input
+                        value={footerSettings.facebook_label}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, facebook_label: e.target.value })}
+                        placeholder="e.g., Facebook"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={footerSettings.facebook_link}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, facebook_link: e.target.value })}
+                        placeholder="https://facebook.com/..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Instagram */}
+                <div className="space-y-4 border-b pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">Instagram</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.instagram_visible ?? false}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, instagram_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.instagram_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Label</label>
+                      <input
+                        value={footerSettings.instagram_label}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, instagram_label: e.target.value })}
+                        placeholder="e.g., Instagram"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={footerSettings.instagram_link}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, instagram_link: e.target.value })}
+                        placeholder="https://instagram.com/..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* YouTube */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">YouTube</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.youtube_visible ?? false}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, youtube_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.youtube_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Label</label>
+                      <input
+                        value={footerSettings.youtube_label}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, youtube_label: e.target.value })}
+                        placeholder="e.g., YouTube"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link</label>
+                      <input
+                        value={footerSettings.youtube_link}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, youtube_link: e.target.value })}
+                        placeholder="https://youtube.com/..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'footer_contact' && (
+            <div className="max-w-4xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Contact Page Details</h2>
                 <button
                   onClick={saveContactSettings}
                   disabled={isSavingContact}
                   className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
-                  {isSavingContact ? 'Saving...' : 'Save Settings'}
+                  {isSavingContact ? 'Saving...' : 'Save Contact'}
                 </button>
               </div>
-
+              
               <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -6834,6 +7378,57 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {(tab === 'footer_privacy' || tab === 'footer_terms' || tab === 'footer_about') && (
+            <div className="max-w-4xl space-y-6">
+              {(() => {
+                let slug = '';
+                let title = '';
+                if (tab === 'footer_privacy') { 
+                  slug = 'privacy-policy'; 
+                  title = 'Privacy Policy'; 
+                } else if (tab === 'footer_terms') { 
+                  slug = 'terms-of-service'; 
+                  title = 'Terms of Service'; 
+                } else if (tab === 'footer_about') { 
+                  slug = 'about-us'; 
+                  title = 'About Us'; 
+                }
+
+                const page = legalPages.find(p => p.slug === slug);
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-bold">{title}</h2>
+                      <button
+                        onClick={() => saveLegalPage(slug, page?.content || '')}
+                        disabled={isSavingLegal}
+                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        {isSavingLegal ? 'Saving...' : `Save ${title}`}
+                      </button>
+                    </div>
+                    
+                    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                      <div className="prose prose-sm max-w-none mb-4">
+                        <p className="text-muted-foreground">Use the editor below to format your {title}. You can add headings, lists, and more.</p>
+                      </div>
+                      <TipTapEditor
+                        value={page?.content || ''}
+                        onChange={(newContent) => {
+                          setLegalPages(prev => prev.map(p => p.slug === slug ? { ...p, content: newContent } : p));
+                        }}
+                        className="min-h-[300px]"
+                        placeholder={`Enter ${title} content here...`}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

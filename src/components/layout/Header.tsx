@@ -167,9 +167,8 @@ export default function Header() {
   };
 
   const handleSubcategoryClick = (categoryId: string, sub: Subcategory) => {
-    const isExternalLink = sub.custom_link && (sub.custom_link_type || detectLinkType(sub.custom_link)) === 'link';
-    const targetPath = isExternalLink ? sub.custom_link : `/category/${categoryId}/subcategory/${sub.id}`;
-    checkAuthAndNavigate(targetPath as string);
+    const targetPath = `/category/${categoryId}/subcategory/${sub.id}`;
+    checkAuthAndNavigate(targetPath);
     
     setMegaMenuOpen(false);
     setMobileOpen(false);
@@ -265,9 +264,7 @@ export default function Header() {
             >
               {/* Heading */}
               <div className="flex border-b border-gray-100 bg-white px-6">
-                <div className="px-6 py-3 text-[16px] font-bold text-[#1d4ed8] relative border-t-2 border-[#1d4ed8]">
-                  Categories
-                </div>
+                
               </div>
 
               {/* Content */}

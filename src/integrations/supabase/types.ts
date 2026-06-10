@@ -533,6 +533,213 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_settings: {
+        Row: {
+          id: string
+          heading: string
+          email_label: string
+          email: string
+          description_1: string
+          description_2: string
+          image_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          heading?: string
+          email_label?: string
+          email?: string
+          description_1?: string
+          description_2?: string
+          image_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          heading?: string
+          email_label?: string
+          email?: string
+          description_1?: string
+          description_2?: string
+          image_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      header_settings: {
+        Row: {
+          id: string
+          leave_review_text: string
+          leave_review_link: string
+          leave_review_visible: boolean
+          for_providers_text: string
+          for_providers_link: string
+          for_providers_visible: boolean
+          sign_in_text: string
+          sign_in_visible: boolean
+          join_text: string
+          join_link: string
+          join_visible: boolean
+          submit_button_text: string
+          submit_button_link: string
+          submit_button_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          leave_review_text?: string
+          leave_review_link?: string
+          leave_review_visible?: boolean
+          for_providers_text?: string
+          for_providers_link?: string
+          for_providers_visible?: boolean
+          sign_in_text?: string
+          sign_in_visible?: boolean
+          join_text?: string
+          join_link?: string
+          join_visible?: boolean
+          submit_button_text?: string
+          submit_button_link?: string
+          submit_button_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          leave_review_text?: string
+          leave_review_link?: string
+          leave_review_visible?: boolean
+          for_providers_text?: string
+          for_providers_link?: string
+          for_providers_visible?: boolean
+          sign_in_text?: string
+          sign_in_visible?: boolean
+          join_text?: string
+          join_link?: string
+          join_visible?: boolean
+          submit_button_text?: string
+          submit_button_link?: string
+          submit_button_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      footer_settings: {
+        Row: {
+          id: string
+          description: string
+          description_visible: boolean
+          social_media_visible: boolean
+          about_us_visible: boolean
+          contact_visible: boolean
+          privacy_policy_visible: boolean
+          terms_of_service_visible: boolean
+          twitter_label: string
+          twitter_link: string
+          twitter_visible: boolean
+          linkedin_label: string
+          linkedin_link: string
+          linkedin_visible: boolean
+          facebook_label: string
+          facebook_link: string
+          facebook_visible: boolean
+          instagram_label: string
+          instagram_link: string
+          instagram_visible: boolean
+          youtube_label: string
+          youtube_link: string
+          youtube_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          description?: string
+          description_visible?: boolean
+          social_media_visible?: boolean
+          about_us_visible?: boolean
+          contact_visible?: boolean
+          privacy_policy_visible?: boolean
+          terms_of_service_visible?: boolean
+          twitter_label?: string
+          twitter_link?: string
+          twitter_visible?: boolean
+          linkedin_label?: string
+          linkedin_link?: string
+          linkedin_visible?: boolean
+          facebook_label?: string
+          facebook_link?: string
+          facebook_visible?: boolean
+          instagram_label?: string
+          instagram_link?: string
+          instagram_visible?: boolean
+          youtube_label?: string
+          youtube_link?: string
+          youtube_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          description?: string
+          description_visible?: boolean
+          social_media_visible?: boolean
+          about_us_visible?: boolean
+          contact_visible?: boolean
+          privacy_policy_visible?: boolean
+          terms_of_service_visible?: boolean
+          twitter_label?: string
+          twitter_link?: string
+          twitter_visible?: boolean
+          linkedin_label?: string
+          linkedin_link?: string
+          linkedin_visible?: boolean
+          facebook_label?: string
+          facebook_link?: string
+          facebook_visible?: boolean
+          instagram_label?: string
+          instagram_link?: string
+          instagram_visible?: boolean
+          youtube_label?: string
+          youtube_link?: string
+          youtube_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      legal_pages: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          content: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          title: string
+          content?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          title?: string
+          content?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

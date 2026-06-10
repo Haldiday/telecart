@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
+import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Ad {
   description: string | null;
@@ -215,7 +216,7 @@ export default function Ads3ColSection({
                               checkAuthAndNavigate(ad.link);
                             }
                             */
-                            window.location.href = ad.link;
+                            window.location.href = getSmartNavigationUrl(ad.link);
                           }
                         }}
                         className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -262,7 +263,7 @@ export default function Ads3ColSection({
                                 checkAuthAndNavigate(ad.link);
                               }
                               */
-                              window.location.href = ad.link;
+                              window.location.href = getSmartNavigationUrl(ad.link);
                             }
                           }}
                           className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -302,9 +303,9 @@ export default function Ads3ColSection({
                     onClick={() => {
                       if (ad.link) {
                         if (isLoggedIn) {
-                          window.location.href = ad.link;
+                          window.location.href = getSmartNavigationUrl(ad.link);
                         } else {
-                          checkAuthAndNavigate(ad.link);
+                          checkAuthAndNavigate(getSmartNavigationUrl(ad.link));
                         }
                       }
                     }}

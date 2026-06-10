@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
+import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Ad {
   id: string;
@@ -129,7 +130,7 @@ export default function Ads1ColSection({
                     checkAuthAndNavigate(ad.link);
                   }
                   */
-                  window.location.href = ad.link;
+                  window.location.href = getSmartNavigationUrl(ad.link);
                 }
               }}
             >

@@ -40,10 +40,10 @@ function RichTextEditor({ value, onChange, placeholder = '', className = '' }: R
 
   // Sync innerHTML with value prop - only update when not focused and not currently updating
   useEffect(() => {
-    if (!isMountedRef.current || isFocusedRef.current || isUpdatingRef.current) return;
+    if (isFocusedRef.current || isUpdatingRef.current) return;
 
     const updateInnerHTML = () => {
-      if (editorRef.current && isMountedRef.current && !isFocusedRef.current && !isUpdatingRef.current) {
+      if (editorRef.current && !isFocusedRef.current && !isUpdatingRef.current) {
         isUpdatingRef.current = true;
         editorRef.current.innerHTML = value || '';
         // Reset flag after a short delay
@@ -54,11 +54,14 @@ function RichTextEditor({ value, onChange, placeholder = '', className = '' }: R
     };
 
     requestAnimationFrame(updateInnerHTML);
+  }, [value]);
 
+  useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
-  }, [value]);
+  }, []);
 
   const updateContent = () => {
     if (editorRef.current && isMountedRef.current) {

@@ -202,9 +202,12 @@ interface SubcategoryAboutSection {
 }
 
 const RICH_HTML_CONTENT_CLASS =
-  'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] prose prose-sm max-w-none ' +
-  '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-3 [&_p]:whitespace-pre-wrap [&_p]:mb-3 ' +
-  '[&_>_*:last-child]:mb-0!important [&_*:last-child]:mb-0!important [&_>_*:first-child]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 [&_li]:mb-1 [&_p:empty]:hidden ' +
+  'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] prose prose-sm max-w-none overflow-x-hidden break-words ' +
+  '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-3 [&_p]:whitespace-pre-wrap [&_p]:mb-[1.25rem] ' +
+  '[&_>_*:last-child]:mb-0!important [&_*:last-child]:mb-0!important [&_>_*:first-child]:mt-0 ' +
+  '[&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:list-inside ' +
+  '[&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:list-inside ' +
+  '[&_li]:mb-1 [&_li_p]:inline [&_li_p]:m-0 ' +
   '[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-muted/60 ' +
   '[&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:my-4 [&_blockquote]:italic ' +
   '[&_blockquote_p]:my-0 [&_blockquote_p]:whitespace-normal ' +
@@ -915,13 +918,13 @@ export default function SubcategoryDetail() {
                             .map((button, index) => {
                               let buttonStyle = '';
                               if (index === 0) {
-                                buttonStyle = 'bg-[#1A1A1A] text-white hover:bg-black';
+                                buttonStyle = 'bg-[#E62415] text-white border border-[#E62415] hover:bg-white hover:text-[#E62415]';
                               } else if (index === 1) {
-                                buttonStyle = 'bg-[#2563EB] text-white hover:bg-blue-700';
+                                buttonStyle = 'bg-white text-[#111111] border border-[#E5E7EB] hover:border-[#111111] hover:bg-gray-50';
                               } else if (index === 2) {
-                                buttonStyle = 'bg-[#14B8A6] text-white hover:bg-[#0D9488]';
+                                buttonStyle = 'bg-[#17313B] text-white border border-[#17313B] hover:bg-white hover:text-[#17313B]';
                               } else if (index === 3) {
-                                buttonStyle = 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]';
+                                buttonStyle = 'bg-white text-[#111111] border border-[#E5E7EB] hover:border-[#111111] hover:bg-gray-50';
                               } else {
                                 buttonStyle = 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50';
                               }
@@ -1111,7 +1114,7 @@ export default function SubcategoryDetail() {
     <div className="flex flex-col bg-background">
       <Header />
         <main className="flex-1">
-         {subcategory?.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) !== 'link' && (
+         {subcategory?.custom_link && (
            <div className="container mx-auto px-4 py-8 md:px-8 lg:px-10">
              <SafeEmbedRenderer 
                content={subcategory.custom_link} 
@@ -1120,7 +1123,7 @@ export default function SubcategoryDetail() {
            </div>
          )}
  
-         {(!subcategory?.custom_link || (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link') && (
+         {!subcategory?.custom_link && (
            <>
             {/* Hero Section with colored background and video */}
         <div 
@@ -1173,13 +1176,13 @@ export default function SubcategoryDetail() {
                     {heroButtons.map((button, index) => {
                       let buttonStyle = "";
                       if (index === 0) {
-                        buttonStyle = "bg-[#1A1A1A] text-white hover:bg-black";
+                        buttonStyle = "bg-[#E62415] text-white border border-[#E62415] hover:bg-white hover:text-[#E62415]";
                       } else if (index === 1) {
-                        buttonStyle = "bg-[#2563EB] text-white hover:bg-blue-700";
+                        buttonStyle = "bg-white text-[#111111] border border-[#E5E7EB] hover:border-[#111111] hover:bg-gray-50";
                       } else if (index === 2) {
-                        buttonStyle = "bg-[#14B8A6] text-white hover:bg-[#0D9488]";
+                        buttonStyle = "bg-[#17313B] text-white border border-[#17313B] hover:bg-white hover:text-[#17313B]";
                       } else if (index === 3) {
-                        buttonStyle = "bg-[#7C3AED] text-white hover:bg-[#6D28D9]";
+                        buttonStyle = "bg-white text-[#111111] border border-[#E5E7EB] hover:border-[#111111] hover:bg-gray-50";
                       } else {
                         buttonStyle = "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50";
                       }
@@ -1577,17 +1580,11 @@ export default function SubcategoryDetail() {
           {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-              <div className="w-full rounded-none border border-border bg-card">
-                <div className="w-full bg-muted">
-                  <iframe 
-                    src={formLink.trim()} 
-                    title="Form" 
-                    scrolling="no" 
-                    className="w-full h-[8000px] md:h-[6000px]" 
-                    style={{ border: 'none', overflow: 'hidden' }} 
-                  />
-                </div>
-              </div>
+              <SafeEmbedRenderer 
+                content={formLink.trim()} 
+                type={detectLinkType(formLink)} 
+                className="rounded-none border-border"
+              />
             </div>
           )}
         </div>
@@ -1596,7 +1593,7 @@ export default function SubcategoryDetail() {
         )}
       </main>
 
-      {showAboutSection && (!subcategory?.custom_link || (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link') && (
+      {showAboutSection && !subcategory?.custom_link && (
         <section className="pb-6 md:pb-8">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
             <div 

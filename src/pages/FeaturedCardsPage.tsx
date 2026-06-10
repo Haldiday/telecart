@@ -54,8 +54,8 @@ export default function FeaturedCardsPage() {
 
       if (!mounted) return;
 
-      if (cardsData) setCards(cardsData as any as FeaturedCard[]);
-      if (sectionData) setSection(sectionData as any as PageSection);
+      if (cardsData) setCards(cardsData);
+      if (sectionData) setSection(sectionData);
       setLoading(false);
     };
 

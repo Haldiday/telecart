@@ -14,6 +14,10 @@ import SubcategoryDetail from "./pages/SubcategoryDetail";
 import FeaturedCardsPage from "./pages/FeaturedCardsPage";
 import AllSubcategoriesPage from "./pages/AllSubcategoriesPage";
 import ContactUs from "./pages/ContactUs";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import EmbedViewer from "./pages/EmbedViewer";
 import { AuthLayout } from "./components/layout/AuthLayout";
 
 const queryClient = new QueryClient();
@@ -25,12 +29,16 @@ const router = createBrowserRouter(
       children: [
         { path: "/", element: <Index /> },
         { path: "/contact", element: <ContactUs /> },
+        { path: "/about-us", element: <AboutUs /> },
+        { path: "/privacy-policy", element: <PrivacyPolicy /> },
+        { path: "/terms-of-service", element: <TermsOfService /> },
         { path: "/category/:id", element: <CategoryDetail /> },
         { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
         { path: "/admin/login", element: <AdminLogin /> },
         { path: "/admin", element: <AdminDashboard /> },
+        { path: "/embed", element: <EmbedViewer /> },
         { path: "*", element: <NotFound /> },
       ]
     }
