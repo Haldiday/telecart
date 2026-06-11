@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Menu, X, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
+import { Menu, X, ChevronDown, ChevronRight, LogOut, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
@@ -199,9 +199,10 @@ export default function Header() {
           )}
           {headerSettings.sign_in_visible && (
             <button 
-              className="top-header-link"
+              className="top-header-link flex items-center gap-1"
               onClick={() => {/* Sign in logic later */}}
             >
+              <User className="w-4 h-4" />
               {headerSettings.sign_in_text}
             </button>
           )}
@@ -369,12 +370,13 @@ export default function Header() {
                   )}
                   {headerSettings.sign_in_visible && (
                     <button 
-                      className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all"
+                      className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                       onClick={() => {
                         /* Sign in logic */
                         setMobileOpen(false);
                       }}
                     >
+                      <User className="w-5 h-5" />
                       {headerSettings.sign_in_text}
                     </button>
                   )}
