@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 import { ArrowLeft, List } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -22,7 +21,15 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  custom_link_type?: 'link' | 'iframe' | null;
+}
+
+interface Feature {
+  id: string;
+  title: string;
+  description: string | null;
+  category_id: string;
+  sub_features: SubFeature[];
 }
 
 interface SubFeature {
@@ -32,31 +39,15 @@ interface SubFeature {
   feature_id: string;
 }
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
-};
-
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
-  const { checkAuthAndNavigate } = useMSG91Auth();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [detailDescription, setDetailDescription] = useState('');
   const [subcategoriesTabLabel, setSubcategoriesTabLabel] = useState('Subcategories');
   const [activeTab, setActiveTab] = useState(1);
-
-  // Helper function to handle subcategory navigation
-  const handleSubcategoryClick = (subcategory: Subcategory) => {
-    const isExternalLink = subcategory.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link';
-    const targetPath = isExternalLink ? subcategory.custom_link : `/category/${id}/subcategory/${subcategory.id}`;
-    checkAuthAndNavigate(targetPath as string);
-  };
 
   const tabs = [
     { key: 'subcategories', label: subcategoriesTabLabel, icon: <List className="h-4 w-4" /> },
@@ -123,7 +114,7 @@ export default function CategoryDetail() {
   if (!category) return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background min-h-screen">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">
@@ -191,14 +182,27 @@ export default function CategoryDetail() {
                   key={sub.id}
                   className="rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
                 >
-                  <button
-                    onClick={() => handleSubcategoryClick(sub)}
-                    className="group w-full text-left"
-                  >
-                    <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
-                      {sub.name}
-                    </span>
-                  </button>
+                  {sub.custom_link ? (
+                    <a
+                      href={sub.custom_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group w-full text-left"
+                    >
+                      <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
+                        {sub.name}
+                      </span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={`/category/${id}/subcategory/${sub.id}`}
+                      className="group w-full text-left"
+                    >
+                      <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
+                        {sub.name}
+                      </span>
+                    </Link>
+                  )}
                 </div>
               ))}
               {subcategories.length === 0 && <p className="text-muted-foreground">No subcategories available.</p>}

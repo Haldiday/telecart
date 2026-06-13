@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Category {
   id: string;
@@ -18,31 +17,15 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  custom_link_type?: 'link' | 'iframe' | null;
   sort_order: number;
 }
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
-};
-
 export default function AllSubcategoriesPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const { checkAuthAndNavigate } = useMSG91Auth();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Helper function to handle subcategory navigation
-  const handleSubcategoryClick = (subcategory: Subcategory) => {
-    const isExternalLink = subcategory.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link';
-    const targetPath = isExternalLink ? subcategory.custom_link : `/category/${categoryId}/subcategory/${subcategory.id}`;
-    checkAuthAndNavigate(targetPath as string);
-  };
 
   useEffect(() => {
     if (!categoryId) return;
@@ -98,7 +81,7 @@ export default function AllSubcategoriesPage() {
     );
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background min-h-screen">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">
@@ -137,17 +120,33 @@ export default function AllSubcategoriesPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
               {subcategories.map((sub) => (
-                <div
-                  key={sub.id}
-                  onClick={() => handleSubcategoryClick(sub)}
-                  className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md"
-                >
-                  <div className="group min-w-0 flex-1 text-left">
-                    <span className="block max-w-full text-sm md:text-base font-normal text-foreground transition-all group-hover:text-primary group-hover:underline">
-                      {sub.name}
-                    </span>
-                  </div>
-                </div>
+                sub.custom_link ? (
+                  <a
+                    key={sub.id}
+                    href={sub.custom_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-xl border border-border/50 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md"
+                  >
+                    <div className="group min-w-0 flex-1 text-left">
+                      <span className="block max-w-full text-sm md:text-base font-normal text-foreground transition-all group-hover:text-primary group-hover:underline">
+                        {sub.name}
+                      </span>
+                    </div>
+                  </a>
+                ) : (
+                  <Link
+                    key={sub.id}
+                    to={`/category/${categoryId}/subcategory/${sub.id}`}
+                    className="flex items-center justify-between rounded-xl border border-border/50 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md"
+                  >
+                    <div className="group min-w-0 flex-1 text-left">
+                      <span className="block max-w-full text-sm md:text-base font-normal text-foreground transition-all group-hover:text-primary group-hover:underline">
+                        {sub.name}
+                      </span>
+                    </div>
+                  </Link>
+                )
               ))}
             </div>
           )}

@@ -639,6 +639,7 @@ export type Database = {
           contact_visible: boolean
           privacy_policy_visible: boolean
           terms_of_service_visible: boolean
+          refund_policy_visible: boolean
           twitter_label: string
           twitter_link: string
           twitter_visible: boolean
@@ -666,6 +667,7 @@ export type Database = {
           contact_visible?: boolean
           privacy_policy_visible?: boolean
           terms_of_service_visible?: boolean
+          refund_policy_visible?: boolean
           twitter_label?: string
           twitter_link?: string
           twitter_visible?: boolean
@@ -693,6 +695,7 @@ export type Database = {
           contact_visible?: boolean
           privacy_policy_visible?: boolean
           terms_of_service_visible?: boolean
+          refund_policy_visible?: boolean
           twitter_label?: string
           twitter_link?: string
           twitter_visible?: boolean
@@ -735,6 +738,36 @@ export type Database = {
           slug?: string
           title?: string
           content?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      faqs: {
+        Row: {
+          id: string
+          question: string
+          answer: string
+          sort_order: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          question: string
+          answer: string
+          sort_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          question?: string
+          answer?: string
+          sort_order?: number
+          is_visible?: boolean
           created_at?: string
           updated_at?: string
         }

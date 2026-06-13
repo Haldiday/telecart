@@ -3,9 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
-import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Ad {
   description: string | null;
@@ -51,7 +50,6 @@ export default function Ads3ColSection({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const fixedMode = ads.some((ad) => ad.is_fixed);
   const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed) : ads;
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
@@ -102,6 +100,15 @@ export default function Ads3ColSection({
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
+
+  const {
+    containerRef: fixedContainerRef,
+    onTouchStart: onFixedTouchStart,
+    onTouchMove: onFixedTouchMove,
+    onTouchEnd: onFixedTouchEnd,
+    getTransformStyle,
+    getTransitionStyle,
+  } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   useEffect(() => {
     let mounted = true;
@@ -209,14 +216,7 @@ export default function Ads3ColSection({
                       <div
                         onClick={() => {
                           if (ad.link) {
-                            /*
-                            if (isLoggedIn) {
-                              window.location.href = ad.link;
-                            } else {
-                              checkAuthAndNavigate(ad.link);
-                            }
-                            */
-                            window.location.href = getSmartNavigationUrl(ad.link);
+                            window.location.href = ad.link;
                           }
                         }}
                         className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -244,10 +244,10 @@ export default function Ads3ColSection({
               </div>
             </div>
           ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
-                className="flex flex-row flex-nowrap transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
+                className="flex flex-row flex-nowrap"
+                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
               >
                 {fixedPages.map((page, pageIdx) => (
                   <div key={pageIdx} className={`w-full flex-none grid grid-cols-1 gap-3 ${visibleCount === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
@@ -256,14 +256,7 @@ export default function Ads3ColSection({
                         <div
                           onClick={() => {
                             if (ad.link) {
-                              /*
-                              if (isLoggedIn) {
-                                window.location.href = ad.link;
-                              } else {
-                                checkAuthAndNavigate(ad.link);
-                              }
-                              */
-                              window.location.href = getSmartNavigationUrl(ad.link);
+                              window.location.href = ad.link;
                             }
                           }}
                           className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -302,11 +295,7 @@ export default function Ads3ColSection({
                   <div
                     onClick={() => {
                       if (ad.link) {
-                        if (isLoggedIn) {
-                          window.location.href = getSmartNavigationUrl(ad.link);
-                        } else {
-                          checkAuthAndNavigate(getSmartNavigationUrl(ad.link));
-                        }
+                        window.location.href = ad.link;
                       }
                     }}
                     className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}

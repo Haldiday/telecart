@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
-import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Card {
   id: string;
@@ -45,7 +43,6 @@ export default function FeaturedCards({
   const [cards, setCards] = useState<Card[]>([]);
   const [heading, setHeading] = useState('Featured Companies');
   const [showHeading, setShowHeading] = useState(true);
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isTablet, setIsTablet] = useState(false);
 
@@ -58,7 +55,6 @@ export default function FeaturedCards({
     return () => window.removeEventListener('resize', checkTablet);
   }, []);
 
-  const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const visibleCount = isMobile ? 1 : isTablet ? 2 : 3;
   const cardsToDisplay = useMemo(() => {
     const fixedCards = cards.filter(card => card.is_fixed);
@@ -103,6 +99,15 @@ export default function FeaturedCards({
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(cardsToDisplay.length, visibleCount, needsCarousel);
+
+  const {
+    containerRef: fixedContainerRef,
+    onTouchStart: onFixedTouchStart,
+    onTouchMove: onFixedTouchMove,
+    onTouchEnd: onFixedTouchEnd,
+    getTransformStyle,
+    getTransitionStyle,
+  } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   useEffect(() => {
     let mounted = true;
@@ -207,53 +212,46 @@ export default function FeaturedCards({
           )}
 
           {(fixedMode && cardsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
+                className="flex"
+                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
               >
                 {fixedPages.map((page, pageIdx) => (
                   <div key={pageIdx} className="w-full flex-none grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {page.map((card) => {
-                      const handleCardClick = () => {
-                        if (card.link) {
-                          if (isLoggedIn) {
-                            window.open(card.link, '_blank', 'noopener,noreferrer');
-                          } else {
-                            checkAuthAndNavigate(getSmartNavigationUrl(card.link));
-                          }
-                        }
-                      };
-                      return (
-                        <div key={card.id}>
-                          <div
-                            onClick={handleCardClick}
-                            className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                            style={{ 
-                              backgroundColor: card.background_color || '#fcf9f5',
-                              borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                            }}
-                          >
-                            {card.logo_url && (
-                              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                                <img
-                                  src={card.logo_url}
-                                  alt={card.title}
-                                  className="h-full w-full object-contain"
-                                />
-                              </div>
-                            )}
-                            <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                              {card.title}
-                              {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                            </h3>
-                            <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
-                              {card.description}
-                            </p>
-                          </div>
+                    {page.map((card) => (
+                      <div key={card.id}>
+                        <div
+                          onClick={() => {
+                            if (card.link) {
+                              window.open(card.link, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                          style={{ 
+                            backgroundColor: card.background_color || '#fcf9f5',
+                            borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                          }}
+                        >
+                          {card.logo_url && (
+                            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
+                              <img
+                                src={card.logo_url}
+                                alt={card.title}
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                          )}
+                          <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
+                            {card.title}
+                            {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
+                          </h3>
+                          <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                            {card.description}
+                          </p>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                     {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
                     {Array.from({ length: visibleCount - page.length }).map((_, i) => (
                       <div key={`empty-${i}`} className="hidden md:flex lg:flex h-full" />
@@ -275,98 +273,81 @@ export default function FeaturedCards({
                     transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
                     transition: animate ? 'transform 650ms ease' : 'none',
                   }}>
-                  {displayCards.map((card, displayIndex) => {
-                    const handleCardClick = () => {
-                      if (card.link) {
-                        if (isLoggedIn) {
-                          window.open(card.link, '_blank', 'noopener,noreferrer');
-                        } else {
-                          checkAuthAndNavigate(getSmartNavigationUrl(card.link));
-                        }
-                      }
-                    };
-                    return (
+                  {displayCards.map((card, displayIndex) => (
+                    <div
+                      key={`${card.id}-${displayIndex}`}
+                      className="flex-none px-2.5"
+                      style={{ width: `${slideWidth}%` }}
+                    >
                       <div
-                        key={`${card.id}-${displayIndex}`}
-                        className="flex-none px-2.5"
-                        style={{ width: `${slideWidth}%` }}
+                        onClick={() => {
+                          if (card.link) {
+                            window.open(card.link, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                        style={{ 
+                          backgroundColor: card.background_color || '#fcf9f5',
+                          borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                        }}
                       >
-                        <div
-                          onClick={handleCardClick}
-                          className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                          style={{ 
-                            backgroundColor: card.background_color || '#fcf9f5',
-                            borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                          }}
-                        >
-                          {card.logo_url && (
-                            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                              <img
-                                src={card.logo_url}
-                                alt={card.title}
-                                className="h-full w-full object-contain"
-                              />
-                            </div>
-                          )}
-                          <h3 className="mb-2 text-xl md:text-2xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                            {card.title}
-                            {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                          </h3>
-                          <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
-                            {card.description}
-                          </p>
-                        </div>
+                        {card.logo_url && (
+                          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
+                            <img
+                              src={card.logo_url}
+                              alt={card.title}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                        )}
+                        <h3 className="mb-2 text-xl md:text-2xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
+                          {card.title}
+                          {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
+                        </h3>
+                        <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                          {card.description}
+                        </p>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           ) : (
             <div className={`flex ${cardsToDisplay.length < 3 ? 'justify-center' : ''}`}>
-              {cardsToDisplay.map((card, index) => {
-                const handleCardClick = () => {
-                  if (card.link) {
-                    /*
-                    if (isLoggedIn) {
-                      window.open(card.link, '_blank', 'noopener,noreferrer');
-                    } else {
-                      checkAuthAndNavigate(card.link);
-                    }
-                    */
-                    window.open(card.link, '_blank', 'noopener,noreferrer');
-                  }
-                };
-                return (
-                  <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
-                    <div
-                      onClick={handleCardClick}
-                      className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                      style={{ 
-                        backgroundColor: card.background_color || '#fcf9f5',
-                        borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                      }}
-                    >
-                      {card.logo_url && (
-                        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                          <img
-                            src={card.logo_url}
-                            alt={card.title}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      )}
-                      <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                        {card.title}
-                        {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                      </h3>
-                      <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
-                        {card.description}
-                      </p>
-                    </div>
+              {cardsToDisplay.map((card) => (
+                <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
+                  <div
+                    onClick={() => {
+                      if (card.link) {
+                        window.open(card.link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                    style={{ 
+                      backgroundColor: card.background_color || '#fcf9f5',
+                      borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                    }}
+                  >
+                    {card.logo_url && (
+                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
+                        <img
+                          src={card.logo_url}
+                          alt={card.title}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    )}
+                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
+                      {card.title}
+                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
+                    </h3>
+                    <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                      {card.description}
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>

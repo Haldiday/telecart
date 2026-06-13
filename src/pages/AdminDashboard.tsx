@@ -31,7 +31,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  custom_link_type?: 'link' | 'iframe' | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -142,6 +142,7 @@ interface FooterSettings {
   contact_visible?: boolean;
   privacy_policy_visible?: boolean;
   terms_of_service_visible?: boolean;
+  refund_policy_visible?: boolean;
 }
 
 // Product Tab Sections types and constants
@@ -216,6 +217,16 @@ interface Ad3Item extends Ad2Item {
   description: string | null;
 }
 
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  sort_order: number;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface LogoStepItem {
   id: string;
   title: string;
@@ -226,7 +237,7 @@ interface LogoStepItem {
   section_id: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_privacy' | 'footer_terms' | 'footer_about';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -309,10 +320,12 @@ function SortableAdminItem({
   id,
   children,
   disabled = false,
+  className = '',
 }: {
   id: string;
   children: React.ReactNode;
   disabled?: boolean;
+  className?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
 
@@ -320,7 +333,7 @@ function SortableAdminItem({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 justify-start"
+      className={`flex items-center gap-3 rounded-xl border border-border bg-card p-4 justify-start ${className}`}
     >
       <button
         type="button"
@@ -347,7 +360,7 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-3" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-5 shadow-2xl"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-card p-5 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -392,42 +405,13 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
       { key: 'footer_privacy', label: 'Privacy Policy' },
       { key: 'footer', label: 'Social Media Links' },
       { key: 'footer_terms', label: 'Terms of Service' },
+      { key: 'footer_refund', label: 'Refund Policy' },
+      { key: 'faqs', label: 'FAQs' },
     ]
   },
 ];
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
-};
 
-const TRUSTED_DOMAINS = [
-  'forms.zohopublic.in',
-  'zohopublic.in',
-  'docs.google.com/forms',
-  'forms.gle',
-  'tally.so',
-  'typeform.com'
-];
-
-const validateEmbedCode = (content: string): { isValid: boolean; message?: string } => {
-  if (!content) return { isValid: true };
-  const type = detectLinkType(content);
-  if (type === 'link') return { isValid: true };
-
-  // Check for trusted domains
-  const hasTrustedDomain = TRUSTED_DOMAINS.some(domain => content.includes(domain));
-  if (!hasTrustedDomain) {
-    return { 
-      isValid: false, 
-      message: 'Unsupported provider. Please use trusted forms like Zoho, Google Forms, Tally, or Typeform.' 
-    };
-  }
-  return { isValid: true };
-};
 
 export default function AdminDashboard() {
   const { user, isAdmin, loading } = useAuth();
@@ -459,6 +443,7 @@ export default function AdminDashboard() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [ads2, setAds2] = useState<Ad2[]>([]);
   const [ads3, setAds3] = useState<Ad3[]>([]);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
@@ -490,7 +475,7 @@ export default function AdminDashboard() {
     submit_button_visible: true,
   });
   const [footerSettings, setFooterSettings] = useState<FooterSettings>({
-    description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+    description: '',
     twitter_label: 'Twitter',
     twitter_link: '#',
     linkedin_label: 'LinkedIn',
@@ -510,6 +495,8 @@ export default function AdminDashboard() {
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
+  const [editFaq, setEditFaq] = useState<Partial<FAQ> | null>(null);
+  const [showAddFaqModal, setShowAddFaqModal] = useState(false);
   const [editSubs, setEditSubs] = useState<Subcategory[]>([]);
   const [editSubcategory, setEditSubcategory] = useState<Partial<Subcategory> | null>(null);
   const [editDownloads, setEditDownloads] = useState<Partial<CategoryDownload>[]>([]);
@@ -650,7 +637,7 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer] = await Promise.all([
+          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer, faqsData] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
             supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -670,6 +657,7 @@ export default function AdminDashboard() {
             supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
             supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
             supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
           ]);
 
           let subBrands;
@@ -693,13 +681,14 @@ export default function AdminDashboard() {
           if (contact.data) setContactSettings(contact.data as any);
           if (header.data) setHeaderSettings(header.data);
           if (footer.data) setFooterSettings({
-            description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+            description: footer.data.description ?? '',
             description_visible: true,
             social_media_visible: true,
             about_us_visible: true,
             contact_visible: true,
             privacy_policy_visible: true,
             terms_of_service_visible: true,
+            refund_policy_visible: true,
             twitter_label: 'Twitter',
             twitter_link: '#',
             twitter_visible: true,
@@ -718,6 +707,7 @@ export default function AdminDashboard() {
             ...footer.data
           });
           if (legal.data) setLegalPages(legal.data as LegalPage[]);
+          if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
           if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
           if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
           if (cat.data) setCategories(cat.data);
@@ -938,7 +928,7 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
-    const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer] = await Promise.all([
+    const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer, faqsData] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -957,6 +947,7 @@ export default function AdminDashboard() {
       supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
       supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
       supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+      supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
     ]);
     let subBrands;
     try {
@@ -976,13 +967,14 @@ export default function AdminDashboard() {
     if (contact.data) setContactSettings(contact.data as any);
     if (header.data) setHeaderSettings(header.data as any);
     if (footer.data) setFooterSettings({
-      description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
+      description: footer.data.description ?? '',
       description_visible: true,
       social_media_visible: true,
       about_us_visible: true,
       contact_visible: true,
       privacy_policy_visible: true,
       terms_of_service_visible: true,
+      refund_policy_visible: true,
       twitter_label: 'Twitter',
       twitter_link: '#',
       twitter_visible: true,
@@ -1001,6 +993,7 @@ export default function AdminDashboard() {
       ...footer.data
     });
     if (legal.data) setLegalPages(legal.data as LegalPage[]);
+    if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
     if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     if (cat.data) setCategories(cat.data);
@@ -1634,6 +1627,67 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error updating ad order:', err instanceof Error ? err.message : JSON.stringify(err));
       toast.error('Failed to save ad order.');
+      return false;
+    }
+  }
+
+  async function saveFaq() {
+    if (!editFaq) return;
+    if (!editFaq.question?.trim() || !editFaq.answer?.trim()) {
+      toast.error('Question and answer are required.');
+      return;
+    }
+    try {
+      if (editFaq.id) {
+        const { error } = await supabase
+          .from('faqs')
+          .update({
+            question: editFaq.question.trim(),
+            answer: editFaq.answer.trim(),
+            is_visible: editFaq.is_visible ?? true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editFaq.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('faqs').insert({
+          question: editFaq.question.trim(),
+          answer: editFaq.answer.trim(),
+          sort_order: faqs.length,
+          is_visible: true,
+        });
+        if (error) throw error;
+      }
+      toast.success('FAQ saved!');
+      setEditFaq(null);
+      setShowAddFaqModal(false);
+      await loadAll();
+    } catch (err) {
+      console.error('Error saving FAQ:', err instanceof Error ? err.message : JSON.stringify(err));
+      toast.error('Failed to save FAQ.');
+    }
+  }
+
+  async function deleteFaq(id: string) {
+    try {
+      const { error } = await supabase.from('faqs').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('FAQ deleted!');
+      await loadAll();
+    } catch (err) {
+      console.error('Error deleting FAQ:', err instanceof Error ? err.message : JSON.stringify(err));
+      toast.error('Failed to delete FAQ.');
+    }
+  }
+
+  async function updateFaqSortOrder(faqId: string, newOrder: number) {
+    try {
+      const { error } = await supabase.from('faqs').update({ sort_order: newOrder }).eq('id', faqId);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('Error updating FAQ order:', err instanceof Error ? err.message : JSON.stringify(err));
+      toast.error('Failed to save FAQ order.');
       return false;
     }
   }
@@ -2680,6 +2734,7 @@ export default function AdminDashboard() {
       let title = '';
       if (slug === 'privacy-policy') title = 'Privacy Policy';
       else if (slug === 'terms-of-service') title = 'Terms of Service';
+      else if (slug === 'refund-policy') title = 'Refund Policy';
       else if (slug === 'about-us') title = 'About Us';
 
       const { error } = await supabase
@@ -4293,15 +4348,10 @@ export default function AdminDashboard() {
                         value={editingSub.custom_link || ''}
                         onChange={(e) => {
                           const val = e.target.value;
-                          const type = detectLinkType(val);
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: val || undefined, custom_link_type: type } : s));
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: val || undefined } : s));
                         }}
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
-                        placeholder="Paste normal URL or trusted embed code like Zoho Form iframe/script"
                       />
-                      {editingSub.custom_link && !validateEmbedCode(editingSub.custom_link).isValid && (
-                        <p className="text-xs text-destructive">{validateEmbedCode(editingSub.custom_link).message}</p>
-                      )}
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
@@ -7081,6 +7131,111 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* FAQS */}
+          {tab === 'faqs' && (
+            <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">FAQs</h2>
+                <button
+                  onClick={() => {
+                    setEditFaq({ question: '', answer: '' });
+                    setShowAddFaqModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add FAQ
+                </button>
+              </div>
+
+              {faqs.length === 0 ? (
+                <div className="text-center py-12 bg-card rounded-xl border border-border">
+                  <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
+                </div>
+              ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
+                  const { active, over } = event;
+                  if (!over) return;
+                  const oldIndex = faqs.findIndex((faq) => faq.id === active.id);
+                  const newIndex = faqs.findIndex((faq) => faq.id === over.id);
+                  if (oldIndex === -1 || newIndex === -1) return;
+
+                  const newOrder = arrayMove(faqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
+                  setFaqs(newOrder);
+
+                  for (const faq of newOrder) {
+                    await updateFaqSortOrder(faq.id, faq.sort_order);
+                  }
+
+                  toast.success('FAQ order saved!');
+                }}>
+                  <SortableContext items={faqs.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
+                    <div className="rounded-xl border border-border bg-card overflow-hidden">
+                      {faqs.map((faq, index) => (
+                        <div key={faq.id}>
+                          <SortableAdminItem
+                            id={faq.id}
+                            className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
+                          >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <h3 className="font-semibold text-sm md:text-base truncate">{faq.question}</h3>
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={faq.is_visible}
+                                  onCheckedChange={async (checked) => {
+                                    await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
+                                    setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
+                                    toast.success('FAQ visibility updated!');
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{faq.answer}</p>
+                          </div>
+                            <button onClick={() => setEditFaq(faq)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                          </SortableAdminItem>
+                          {index < faqs.length - 1 && <div className="border-t border-border" />}
+                        </div>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+
+              {/* Add/Edit FAQ Modal */}
+              {(showAddFaqModal || editFaq) && (
+                <Modal title={editFaq?.id ? 'Edit FAQ' : 'Add FAQ'} onClose={() => { setEditFaq(null); setShowAddFaqModal(false); }}>
+                  <div className="mx-auto w-full max-w-sm space-y-4 px-1">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Question</label>
+                      <input
+                        type="text"
+                        value={editFaq?.question || ''}
+                        onChange={(e) => setEditFaq({ ...editFaq!, question: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                        placeholder="Enter question..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Answer</label>
+                      <textarea
+                        value={editFaq?.answer || ''}
+                        onChange={(e) => setEditFaq({ ...editFaq!, answer: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                        rows={6}
+                        placeholder="Enter answer..."
+                      />
+                    </div>
+                    <button onClick={saveFaq} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold w-full">
+                      Save
+                    </button>
+                  </div>
+                </Modal>
+              )}
+            </div>
+          )}
+
           {/* FOOTER GENERAL SETTINGS */}
           {tab === 'footer_general' && (
             <div className="max-w-4xl">
@@ -7381,7 +7536,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {(tab === 'footer_privacy' || tab === 'footer_terms' || tab === 'footer_about') && (
+          {(tab === 'footer_privacy' || tab === 'footer_terms' || tab === 'footer_about' || tab === 'footer_refund') && (
             <div className="max-w-4xl space-y-6">
               {(() => {
                 let slug = '';
@@ -7392,6 +7547,9 @@ export default function AdminDashboard() {
                 } else if (tab === 'footer_terms') { 
                   slug = 'terms-of-service'; 
                   title = 'Terms of Service'; 
+                } else if (tab === 'footer_refund') { 
+                  slug = 'refund-policy'; 
+                  title = 'Refund Policy'; 
                 } else if (tab === 'footer_about') { 
                   slug = 'about-us'; 
                   title = 'About Us'; 

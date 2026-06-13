@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { Button } from '@/components/ui/button';
 
@@ -88,6 +89,15 @@ export default function OffersSection({
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(offers.length, visibleCount, needsCarousel);
+
+  const {
+    containerRef: fixedContainerRef,
+    onTouchStart: onFixedTouchStart,
+    onTouchMove: onFixedTouchMove,
+    onTouchEnd: onFixedTouchEnd,
+    getTransformStyle,
+    getTransitionStyle,
+  } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   const handleFixedPrev = () => {
     setFixedPageIndex((prev) => (prev > 0 ? prev - 1 : totalFixedPages - 1));
@@ -249,19 +259,19 @@ export default function OffersSection({
             </div>
           </div>
         ) : (
-          <div className="overflow-hidden">
-            <div 
-              className="flex transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
-            >
-              {fixedPages.map((page, pageIdx) => (
+            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+              <div 
+                className="flex"
+                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
+              >
+                {fixedPages.map((page, pageIdx) => (
                 <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:gap-[0px]">
                   {page.map((offer) => (
                     <div key={offer.id} className="flex h-full">
                       <a 
                         href={offer.link || '#'} 
                         className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
-                        style={{ maxWidth: (isHomePage || isSubcategory) ? '280px' : undefined }}
+                        style={{ maxWidth: (isHomePage || isSubcategory) ? '285px' : undefined }}
                       >
                         {offer.image_url && (
                           <div 

@@ -3,9 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
+import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
-import { getSmartNavigationUrl } from '@/lib/smart-embed';
 
 interface Ad {
   id: string;
@@ -41,7 +40,6 @@ export default function Ads2ColSection({
   const [heading, setHeading] = useState('2 Column Ads');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
-  const { isLoggedIn, checkAuthAndNavigate } = useMSG91Auth();
   const visibleCount = isMobile ? 1 : 2;
   const fixedMode = ads.some((ad) => ad.is_fixed);
   // When Fixed Mode is ON, show only the first 2 ads selected/ordered by admin.
@@ -86,11 +84,20 @@ export default function Ads2ColSection({
     containerRef,
   } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
 
+  const {
+    containerRef: fixedContainerRef,
+    onTouchStart: onFixedTouchStart,
+    onTouchMove: onFixedTouchMove,
+    onTouchEnd: onFixedTouchEnd,
+    getTransformStyle,
+    getTransitionStyle,
+  } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
+
   useEffect(() => {
     let mounted = true;
     
     const loadAds = () => {
-      db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
+      db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }) => {
         if (data && mounted) {
           setAds((data as any[]).map((ad) => ({
             ...ad,
@@ -180,7 +187,7 @@ export default function Ads2ColSection({
                   <div
                     onClick={() => {
                       if (ad.link) {
-                        window.location.href = getSmartNavigationUrl(ad.link);
+                        window.location.href = ad.link;
                       }
                     }}
                     className={`block w-full h-[160px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -223,14 +230,7 @@ export default function Ads2ColSection({
                       <div
                         onClick={() => {
                           if (ad.link) {
-                            /*
-                            if (isLoggedIn) {
-                              window.location.href = ad.link;
-                            } else {
-                              checkAuthAndNavigate(ad.link);
-                            }
-                            */
-                            window.location.href = getSmartNavigationUrl(ad.link);
+                            window.location.href = ad.link;
                           }
                         }}
                         className={`block h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -250,10 +250,10 @@ export default function Ads2ColSection({
               </div>
             </div>
           ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${fixedPageIndex * 100}%)` }}
+                className="flex"
+                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
               >
                 {fixedPages.map((page, pageIdx) => (
                   <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -262,11 +262,7 @@ export default function Ads2ColSection({
                         <div
                           onClick={() => {
                             if (ad.link) {
-                              if (isLoggedIn) {
-                                window.location.href = getSmartNavigationUrl(ad.link);
-                              } else {
-                                checkAuthAndNavigate(getSmartNavigationUrl(ad.link));
-                              }
+                              window.location.href = ad.link;
                             }
                           }}
                           className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -297,14 +293,7 @@ export default function Ads2ColSection({
                   <div
                     onClick={() => {
                       if (ad.link) {
-                        /*
-                        if (isLoggedIn) {
-                          window.location.href = ad.link;
-                        } else {
-                          checkAuthAndNavigate(ad.link);
-                        }
-                        */
-                        window.location.href = getSmartNavigationUrl(ad.link);
+                        window.location.href = ad.link;
                       }
                     }}
                     className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}

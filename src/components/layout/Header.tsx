@@ -1,24 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronDown, ChevronRight, LogOut, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
-interface Subcategory {
+interface PageSection {
   id: string;
+  section_type: string;
   name: string;
-  link: string | null;
-  custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
-  category_id: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon_url: string | null;
-  bg_color: string;
-  subcategories: Subcategory[];
+  sort_order: number;
+  is_visible: boolean;
 }
 
 interface HeaderSettings {
@@ -38,37 +28,83 @@ interface HeaderSettings {
   submit_button_visible: boolean;
 }
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
+const HEADER_SETTINGS_CACHE_KEY = 'header-settings-cache';
+
+const getDefaultHeaderSettings = (): HeaderSettings => ({
+  leave_review_text: 'Leave a Review',
+  leave_review_link: '#',
+  leave_review_visible: false,
+  for_providers_text: 'For Providers',
+  for_providers_link: '#',
+  for_providers_visible: false,
+  sign_in_text: 'Sign In',
+  sign_in_visible: true,
+  join_text: 'Join',
+  join_link: '#',
+  join_visible: true,
+  submit_button_text: 'Submit',
+  submit_button_link: '#',
+  submit_button_visible: true,
+});
+
+const getCachedHeaderSettings = (): HeaderSettings => {
+  if (typeof window === 'undefined') return getDefaultHeaderSettings();
+
+  try {
+    const cached = window.localStorage.getItem(HEADER_SETTINGS_CACHE_KEY);
+    return cached ? JSON.parse(cached) as HeaderSettings : getDefaultHeaderSettings();
+  } catch {
+    return getDefaultHeaderSettings();
+  }
 };
 
 export default function Header() {
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [headerSettings, setHeaderSettings] = useState<HeaderSettings>({
-    leave_review_text: 'Leave a Review',
-    leave_review_link: '#',
-    leave_review_visible: true,
-    for_providers_text: 'For Providers',
-    for_providers_link: '#',
-    for_providers_visible: true,
-    sign_in_text: 'Sign In',
-    sign_in_visible: true,
-    join_text: 'Join',
-    join_link: '#',
-    join_visible: true,
-    submit_button_text: 'Submit',
-    submit_button_link: '#',
-    submit_button_visible: true,
-  });
+  const [sections, setSections] = useState<PageSection[]>([]);
+  const [headerSettings, setHeaderSettings] = useState<HeaderSettings>(() => getCachedHeaderSettings());
   const menuRef = useRef<HTMLDivElement>(null);
-  const { isLoggedIn, logout, checkAuthAndNavigate } = useMSG91Auth();
+
+  const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
+    if (!sectionElement) return;
+
+    const headingElement = sectionElement.querySelector('h2') as HTMLElement | null;
+    const targetElement = headingElement || sectionElement;
+    const headerOffset = 88;
+    const top = targetElement.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    setMegaMenuOpen(false);
+    setMobileOpen(false);
+
+    const sectionElement = document.getElementById(`section-${sectionId}`);
+
+    if (location.pathname === '/' && sectionElement) {
+      scrollToSectionElement(sectionElement);
+      return;
+    }
+
+    window.location.assign(`/#section-${sectionId}`);
+  };
+
+  useEffect(() => {
+    if (!location.hash.startsWith('#section-')) return;
+
+    const sectionId = location.hash.replace('#section-', '');
+    const sectionElement = document.getElementById(`section-${sectionId}`);
+
+    if (!sectionElement) return;
+
+    const scrollToTarget = () => scrollToSectionElement(sectionElement);
+
+    const timeoutId = window.setTimeout(scrollToTarget, 120);
+    return () => window.clearTimeout(timeoutId);
+  }, [location.pathname, location.hash]);
 
   useEffect(() => {
     const loadHeaderSettings = async () => {
@@ -85,65 +121,45 @@ export default function Header() {
         }
         
         if (data) {
-          setHeaderSettings(data);
+          const headerData = data as any;
+          const nextSettings: HeaderSettings = {
+            ...getDefaultHeaderSettings(),
+            ...headerData,
+            leave_review_visible: Boolean(headerData.leave_review_visible ?? false),
+            for_providers_visible: Boolean(headerData.for_providers_visible ?? false),
+          } as HeaderSettings;
+
+          setHeaderSettings(nextSettings);
+          window.localStorage.setItem(HEADER_SETTINGS_CACHE_KEY, JSON.stringify(nextSettings));
         }
       } catch (err) {
         console.error('Failed to load header settings:', err);
       }
     };
 
-    const loadCategories = async () => {
-      // 1. Fetch visible sections of type 'categories'
-      const { data: sections } = await supabase
+    const loadSections = async () => {
+      // Fetch all visible categories type page sections
+      const { data: sectionsData } = await supabase
         .from('page_sections')
-        .select('id')
+        .select('id, section_type, name, sort_order, is_visible')
         .eq('section_type', 'categories')
-        .eq('is_visible', true);
+        .order('sort_order');
 
-      if (!sections || sections.length === 0) {
-        setCategories([]);
+      if (!sectionsData) {
+        setSections([]);
         return;
       }
 
-      const sectionIds = sections.map(s => s.id);
-
-      // 2. Fetch categories for these sections
-      const { data: cats } = await supabase
-        .from('categories')
-        .select('*')
-        .in('section_id', sectionIds)
-        .order('name');
-
-      if (!cats) {
-        setCategories([]);
-        return;
-      }
-
-      // 3. Fetch subcategories
-      const { data: subs } = await supabase
-        .from('subcategories')
-        .select('*')
-        .order('name');
-
-      const merged = cats
-        .filter((cat: any) => cat.is_visible !== false)
-        .map((category) => ({
-          ...category,
-          subcategories: (subs || []).filter((sub) => sub.category_id === category.id),
-        }));
-
-      setCategories(merged);
+      setSections(sectionsData.filter(section => section.is_visible !== false));
     };
 
     loadHeaderSettings();
-    loadCategories();
+    loadSections();
 
     // Subscribe to real-time changes
     const channel = supabase
-      .channel('header_categories_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, () => loadCategories())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => loadCategories())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => loadCategories())
+      .channel('header_sections_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections' }, () => loadSections())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, () => loadHeaderSettings())
       .subscribe();
 
@@ -161,18 +177,7 @@ export default function Header() {
     };
   }, []);
 
-  const handleCategoryClick = (categoryId: string) => {
-    checkAuthAndNavigate(`/category/${categoryId}`);
-    setMegaMenuOpen(false);
-  };
 
-  const handleSubcategoryClick = (categoryId: string, sub: Subcategory) => {
-    const targetPath = `/category/${categoryId}/subcategory/${sub.id}`;
-    checkAuthAndNavigate(targetPath);
-    
-    setMegaMenuOpen(false);
-    setMobileOpen(false);
-  };
 
 
 
@@ -260,30 +265,28 @@ export default function Header() {
           {/* Mega Menu */}
           {megaMenuOpen && (
             <div 
-              className="absolute top-full left-0 right-0 w-full bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden"
+              className="absolute top-full right-4 md:right-8 lg:right-10 w-full max-w-[1200px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Heading */}
-              <div className="flex border-b border-gray-100 bg-white px-6">
-                
-              </div>
-
               {/* Content */}
-              <div className="px-6 py-6 bg-white overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1 pr-2">
-                  {categories.map((category) => (
-                    <div key={category.id} className="border-r border-gray-100 last:border-0 px-2">
-                      <button
-                        onClick={() => handleCategoryClick(category.id)}
-                        className="mega-menu-link group"
-                      >
-                        <span>{category.name}</span>
-                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
-                      </button>
-                    </div>
-                  ))}
+              <div className="px-8 py-6 bg-white overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar">
+                  <div className="grid grid-cols-4 gap-6">
+                    {sections.map((section) => (
+                      <div key={section.id} className="border-r border-gray-100 last:border-0 pr-6">
+                        <a
+                          href={`/#section-${section.id}`}
+                          onClick={() => {
+                            setMegaMenuOpen(false);
+                            setMobileOpen(false);
+                          }}
+                          className="mega-menu-link group block w-full text-left py-2 hover:text-primary transition-colors cursor-pointer relative z-10"
+                        >
+                          <span className="text-base font-medium">{section.name}</span>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
             </div>
           )}
 
@@ -318,16 +321,13 @@ export default function Header() {
               
               {mobileCategoriesOpen && (
                 <div className="pl-4 space-y-1 border-l-2 border-border ml-6 mt-1">
-                  {categories.map(cat => (
-                    <div key={cat.id}>
+                  {sections.map(section => (
+                    <div key={section.id}>
                       <button
-                        onClick={() => {
-                          handleCategoryClick(cat.id);
-                          setMobileOpen(false);
-                        }}
+                        onClick={() => scrollToSection(section.id)}
                         className="text-base font-medium text-muted-foreground hover:text-primary hover:bg-muted block w-full text-left py-2.5 px-4 rounded-lg transition-all"
                       >
-                        {cat.name}
+                        {section.name}
                       </button>
                     </div>
                   ))}

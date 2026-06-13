@@ -1,21 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 type SearchResult =
   | { id: string; type: 'category'; name: string }
   | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null; custom_link_type?: 'link' | 'iframe' | 'embed_code' | null };
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
-};
-
 export default function HeroSection() {
-  const { checkAuthAndNavigate } = useMSG91Auth();
+  const navigate = useNavigate();
   const [mainText, setMainText] = useState('');
   const [words, setWords] = useState<string[]>([]);
   const [currentWord, setCurrentWord] = useState(0);
@@ -136,11 +128,11 @@ export default function HeroSection() {
 
   function handleResultClick(result: SearchResult) {
     if (result.type === 'category') {
-      checkAuthAndNavigate(`/category/${result.id}`);
+      navigate(`/category/${result.id}`);
       return;
     }
 
-    checkAuthAndNavigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+    navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
   }
 
   function handleSearchButton() {
@@ -150,11 +142,7 @@ export default function HeroSection() {
   }
 
   const suggestedSearches = [
-    'Best payment service',
-    'Jewelry store in Los Angeles',
-    'Sunglasses store in New York',
-    'Bank near me',
-    'Affiliate marketing service',
+    
   ];
 
   const getItemsCount = () => {
@@ -285,10 +273,9 @@ export default function HeroSection() {
               <div className="border-t border-[#e5e0d8]" />
 
               <div className="px-5 py-4">
-                <p className="mb-3 text-sm font-semibold text-[#1c1c1c]">
+             {/*    <p className="mb-3 text-sm font-semibold text-[#1c1c1c]">
                   {query.trim() ? 'Search results' : 'Suggested searches'}
-                </p>
-
+                </p> */}
                 <div className="space-y-2">
                   {query.trim() ? (
                     isSearching ? (

@@ -17,7 +17,8 @@ import ContactUs from "./pages/ContactUs";
 import AboutUs from "./pages/AboutUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
-import EmbedViewer from "./pages/EmbedViewer";
+import RefundPolicy from "./pages/RefundPolicy";
+import FAQs from "./pages/FAQs";
 import { AuthLayout } from "./components/layout/AuthLayout";
 
 const queryClient = new QueryClient();
@@ -32,13 +33,14 @@ const router = createBrowserRouter(
         { path: "/about-us", element: <AboutUs /> },
         { path: "/privacy-policy", element: <PrivacyPolicy /> },
         { path: "/terms-of-service", element: <TermsOfService /> },
+        { path: "/refund-policy", element: <RefundPolicy /> },
+        { path: "/faqs", element: <FAQs /> },
         { path: "/category/:id", element: <CategoryDetail /> },
         { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
         { path: "/admin/login", element: <AdminLogin /> },
         { path: "/admin", element: <AdminDashboard /> },
-        { path: "/embed", element: <EmbedViewer /> },
         { path: "*", element: <NotFound /> },
       ]
     }

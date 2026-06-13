@@ -10,18 +10,20 @@ interface FeaturedCard {
   title: string;
   description: string;
   logo_url: string | null;
-  link: string | null;
+  link?: string | null;
   sort_order: number;
   show_border: boolean;
-  border_color: string | null;
-  background_color: string | null;
+  border_color?: string | null;
+  background_color?: string | null;
+  [key: string]: any;
 }
 
 interface PageSection {
   id: string;
   heading: string;
   show_heading: boolean;
-  background_color: string | null;
+  background_color?: string | null;
+  [key: string]: any;
 }
 
 export default function FeaturedCardsPage() {
@@ -82,7 +84,7 @@ export default function FeaturedCardsPage() {
   }
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background min-h-screen">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-card">

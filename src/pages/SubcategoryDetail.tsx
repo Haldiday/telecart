@@ -10,7 +10,7 @@ import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
 import LogoStepsSection from '@/components/home/LogoStepsSection';
 import WatchDemoForm from '@/components/home/WatchDemoForm';
-import { SafeEmbedRenderer } from '@/components/common/SafeEmbedRenderer';
+
 import { toast } from 'sonner';
 import {
   Download,
@@ -53,7 +53,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  custom_link_type?: 'link' | 'iframe' | null;
   video_url?: string | null;
   video_url_2?: string[] | null;
   schedule_link?: string | null;
@@ -1111,20 +1111,9 @@ export default function SubcategoryDetail() {
   }
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background min-h-screen">
       <Header />
         <main className="flex-1">
-         {subcategory?.custom_link && (
-           <div className="container mx-auto px-4 py-8 md:px-8 lg:px-10">
-             <SafeEmbedRenderer 
-               content={subcategory.custom_link} 
-               type={(subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) as any} 
-             />
-           </div>
-         )}
- 
-         {!subcategory?.custom_link && (
-           <>
             {/* Hero Section with colored background and video */}
         <div 
           className="relative w-full max-w-none overflow-hidden border-b border-border"
@@ -1580,17 +1569,19 @@ export default function SubcategoryDetail() {
           {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-              <SafeEmbedRenderer 
-                content={formLink.trim()} 
-                type={detectLinkType(formLink)} 
-                className="rounded-none border-border"
-              />
+              <a 
+                href={formLink.trim()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                Open form in new tab
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
             </div>
           )}
         </div>
         </div>
-        </>
-        )}
       </main>
 
       {showAboutSection && !subcategory?.custom_link && (

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useMSG91Auth } from '@/contexts/MSG91AuthContext';
 
 interface Brand {
   id: string;
@@ -16,7 +16,7 @@ interface Subcategory {
   name: string;
   link: string | null;
   custom_link?: string | null;
-  custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  custom_link_type?: 'link' | 'iframe' | null;
   sort_order: number;
   brands: Brand[];
 }
@@ -34,14 +34,6 @@ interface CategoriesSectionProps {
   sectionId: string;
 }
 
-const detectLinkType = (content: string): 'link' | 'iframe' | 'embed_code' => {
-  if (!content) return 'link';
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<iframe') || (trimmed.includes('<iframe') && trimmed.includes('</iframe>'))) return 'iframe';
-  if (trimmed.startsWith('<div') || trimmed.includes('<script')) return 'embed_code';
-  return 'link';
-};
-
 export default function CategoriesSection({ sectionId }: CategoriesSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -50,18 +42,6 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
-  const { checkAuthAndNavigate } = useMSG91Auth();
-
-  // Helper function to handle subcategory navigation
-  const handleSubcategoryClick = (subcategory: Subcategory, categoryId: string) => {
-    const isExternalLink = subcategory.custom_link && (subcategory.custom_link_type || detectLinkType(subcategory.custom_link)) === 'link';
-    const targetPath = isExternalLink ? subcategory.custom_link : `/category/${categoryId}/subcategory/${subcategory.id}`;
-    checkAuthAndNavigate(targetPath as string);
-  };
-
-  const handleCategoryClick = (categoryId: string) => {
-    checkAuthAndNavigate(`/category/${categoryId}`);
-  };
 
   useEffect(() => {
     let mounted = true;
@@ -83,7 +63,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
               brands: (brands || []).filter((b: any) => b.subcategory_id === sub.id)
             })),
         }));
-      if (mounted) setCategories(merged);
+      if (mounted) setCategories(merged as unknown as Category[]);
     }
 
     async function loadSection() {
@@ -124,7 +104,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   if (categories.length === 0) return null;
 
   return (
-    <section id="categories" className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]">
+    <section id={`section-${sectionId}`} className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]">
   
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
@@ -181,52 +161,82 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                     <div className="bg-white border-l border-border/30 ml-4">
                       {category.subcategories.map((sub) => {
                         const isSubExpanded = subcategoryExpanded[sub.id];
-                        const displayBrands = sub.brands.slice(0, 3);
+                        const displayBrands = sub.brands;
                         const hasBrands = sub.brands.length > 0;
+
+                        const handleSubcategoryClick = () => {
+                          if (hasBrands) {
+                            setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                          } else {
+                            // Just navigate directly
+                          }
+                        };
 
                         return (
                           <div key={sub.id} className="border-b border-border/30 last:border-0">
-                            <button
-                              onClick={() => {
-                                if (hasBrands) {
-                                  setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
-                                } else {
-                                  handleSubcategoryClick(sub, category.id);
-                                }
-                              }}
-                              className="flex w-full items-center justify-between px-4 py-3 text-left"
-                            >
-                              <span className="text-[14px] font-medium text-black">
-                                {sub.name}
-                              </span>
-                              {hasBrands && (
-                                isSubExpanded ? (
+                            {hasBrands ? (
+                              <button
+                                onClick={handleSubcategoryClick}
+                                className="flex w-full items-center justify-between px-4 py-3 text-left"
+                              >
+                                <span className="text-[14px] font-medium text-black">
+                                  {sub.name}
+                                </span>
+                                {isSubExpanded ? (
                                   <Minus className="h-3.5 w-3.5 text-muted-foreground" />
                                 ) : (
                                   <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                                )
-                              )}
-                            </button>
+                                )}
+                              </button>
+                            ) : (
+                              sub.custom_link ? (
+                                <a
+                                  href={sub.custom_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                                >
+                                  <span className="text-[14px] font-medium text-black">
+                                    {sub.name}
+                                  </span>
+                                </a>
+                              ) : (
+                                <Link
+                                  to={`/category/${category.id}/subcategory/${sub.id}`}
+                                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                                >
+                                  <span className="text-[14px] font-medium text-black">
+                                    {sub.name}
+                                  </span>
+                                </Link>
+                              )
+                            )}
 
                             {hasBrands && isSubExpanded && (
                               <div className="px-4 pb-4 pt-1 space-y-3">
                                 <div className="space-y-2 border-l-2 border-border/50 pl-4 ml-1">
                                   {displayBrands.map((brand) => (
-                                    <button
-                                      key={brand.id}
-                                      onClick={() => handleSubcategoryClick(sub, category.id)}
-                                      className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
-                                    >
-                                      {brand.name}
-                                    </button>
+                                    brand.link ? (
+                                      <a
+                                        key={brand.id}
+                                        href={brand.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                                      >
+                                        {brand.name}
+                                      </a>
+                                    ) : (
+                                      <Link
+                                        key={brand.id}
+                                        to={`/category/${category.id}/subcategory/${sub.id}`}
+                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                                      >
+                                        {brand.name}
+                                      </Link>
+                                    )
                                   ))}
                                 </div>
-                                <button
-                                  onClick={() => handleSubcategoryClick(sub, category.id)}
-                                  className="text-sm font-semibold text-[#2563EB] flex items-center gap-1 pl-5 hover:underline"
-                                >
-                                  See all &rarr;
-                                </button>
                               </div>
                             )}
                           </div>
@@ -234,13 +244,12 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       })}
                       
                       <div className="p-4">
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryClick(category.id)}
+                        <Link
+                          to={`/category/${category.id}`}
                           className="w-full rounded-lg bg-primary/10 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary/20 transition-all"
                         >
                           Explore all
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -260,11 +269,11 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
               return (
                 <div
                   key={category.id}
+                  id={`category-${category.id}`}
                   className="overflow-hidden rounded-xl border border-border/50 bg-card"
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleCategoryClick(category.id)}
+                  <Link
+                    to={`/category/${category.id}`}
                     className="block w-full border-b py-4 px-2 text-center transition-opacity hover:opacity-90"
                     style={{ backgroundColor: category.bg_color }}
                   >
@@ -278,27 +287,92 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                     <h3 className="text-lg font-medium">
                       {category.name}
                     </h3>
-                  </button>
+                  </Link>
 
                   <div className="py-4 pl-8 text-left">
-                    {visibleSubs.map((sub) => (
-                      <button
-                        key={sub.id}
-                        onClick={() => handleSubcategoryClick(sub, category.id)}
-                        className="block w-full text-left border-b border-border/30 py-2 last:border-b-0 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
-                      >
-                        {sub.name}
-                      </button>
-                    ))}
+                    {visibleSubs.map((sub) => {
+                      const isSubExpanded = subcategoryExpanded[sub.id];
+                      const displayBrands = sub.brands;
+                      const hasBrands = sub.brands.length > 0;
+
+                      const handleSubcategoryClick = () => {
+                        if (hasBrands) {
+                          setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                        }
+                      };
+
+                      return (
+                        <div key={sub.id} className="border-b border-border/30 last:border-0">
+                          {hasBrands ? (
+                            <button
+                              onClick={handleSubcategoryClick}
+                              className="flex w-full items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground hover:text-primary transition-colors"
+                            >
+                              <span>{sub.name}</span>
+                              {isSubExpanded ? (
+                                <Minus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+                              ) : (
+                                <Plus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+                              )}
+                            </button>
+                          ) : (
+                            sub.custom_link ? (
+                              <a
+                                href={sub.custom_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full text-left py-2 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
+                              >
+                                {sub.name}
+                              </a>
+                            ) : (
+                              <Link
+                                to={`/category/${category.id}/subcategory/${sub.id}`}
+                                className="block w-full text-left py-2 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
+                              >
+                                {sub.name}
+                              </Link>
+                            )
+                          )}
+
+                          {hasBrands && isSubExpanded && (
+                            <div className="pb-3 pt-1 space-y-2">
+                              <div className="space-y-2 border-l-2 border-border/50 pl-4 ml-1">
+                                {displayBrands.map((brand) => (
+                                  brand.link ? (
+                                    <a
+                                      key={brand.id}
+                                      href={brand.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors py-1"
+                                    >
+                                      {brand.name}
+                                    </a>
+                                  ) : (
+                                    <Link
+                                      key={brand.id}
+                                      to={`/category/${category.id}/subcategory/${sub.id}`}
+                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors py-1"
+                                    >
+                                      {brand.name}
+                                    </Link>
+                                  )
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
 
                     {category.subcategories.length > 5 && !showAll && (
-                      <button
-                        type="button"
-                        onClick={() => checkAuthAndNavigate(`/category/${category.id}/subcategories`)}
+                      <Link
+                        to={`/category/${category.id}/subcategories`}
                         className="mt-3 text-sm md:text-base font-semibold text-primary hover:underline text-left"
                       >
-                        See all {'->'}
-                      </button>
+                        See all →
+                      </Link>
                     )}
 
                     {category.subcategories.length > 5 && showAll && (

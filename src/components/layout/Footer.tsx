@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FooterSettings {
@@ -19,24 +19,71 @@ interface FooterSettings {
   youtube_label: string;
   youtube_link: string;
   youtube_visible?: boolean;
+  refund_policy_visible?: boolean;
 }
 
-export default function Footer() {
-  const [settings, setSettings] = useState<FooterSettings>({
-    description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
-    twitter_label: 'Twitter',
-    twitter_link: '#',
-    linkedin_label: 'LinkedIn',
-    linkedin_link: '#',
-    facebook_label: 'Facebook',
-    facebook_link: '#',
-    instagram_label: 'Instagram',
-    instagram_link: '#',
-    youtube_label: 'YouTube',
-    youtube_link: '#',
-  });
+const FOOTER_SETTINGS_CACHE_KEY = 'footer-settings-cache';
 
-  useEffect(() => {
+const getCachedFooterSettings = (): FooterSettings => {
+  if (typeof window === 'undefined') {
+    return {
+      description: '',
+      twitter_label: 'Twitter',
+      twitter_link: '#',
+      linkedin_label: 'LinkedIn',
+      linkedin_link: '#',
+      facebook_label: 'Facebook',
+      facebook_link: '#',
+      instagram_label: 'Instagram',
+      instagram_link: '#',
+      youtube_label: 'YouTube',
+      youtube_link: '#',
+      refund_policy_visible: true,
+    };
+  }
+
+  try {
+    const cached = window.localStorage.getItem(FOOTER_SETTINGS_CACHE_KEY);
+    if (!cached) {
+      return {
+        description: '',
+        twitter_label: 'Twitter',
+        twitter_link: '#',
+        linkedin_label: 'LinkedIn',
+        linkedin_link: '#',
+        facebook_label: 'Facebook',
+        facebook_link: '#',
+        instagram_label: 'Instagram',
+        instagram_link: '#',
+        youtube_label: 'YouTube',
+        youtube_link: '#',
+        refund_policy_visible: true,
+      };
+    }
+
+    return JSON.parse(cached) as FooterSettings;
+  } catch {
+    return {
+      description: '',
+      twitter_label: 'Twitter',
+      twitter_link: '#',
+      linkedin_label: 'LinkedIn',
+      linkedin_link: '#',
+      facebook_label: 'Facebook',
+      facebook_link: '#',
+      instagram_label: 'Instagram',
+      instagram_link: '#',
+      youtube_label: 'YouTube',
+      youtube_link: '#',
+      refund_policy_visible: true,
+    };
+  }
+};
+
+export default function Footer() {
+  const [settings, setSettings] = useState<FooterSettings>(() => getCachedFooterSettings());
+
+  useLayoutEffect(() => {
     const loadFooterSettings = async () => {
       try {
         const { data, error } = await supabase
@@ -51,20 +98,28 @@ export default function Footer() {
         }
 
         if (data) {
-          setSettings({
-            description: 'BizReq empowers teams to transform raw data into clear, compelling visuals — making insights easier to share, understand, and act on.',
-            twitter_label: 'Twitter',
-            twitter_link: '#',
-            linkedin_label: 'LinkedIn',
-            linkedin_link: '#',
-            facebook_label: 'Facebook',
-            facebook_link: '#',
-            instagram_label: 'Instagram',
-            instagram_link: '#',
-            youtube_label: 'YouTube',
-            youtube_link: '#',
-            ...data
-          });
+          const nextSettings: FooterSettings = {
+            description: data.description ?? '',
+            twitter_label: data.twitter_label ?? 'Twitter',
+            twitter_link: data.twitter_link ?? '#',
+            linkedin_label: data.linkedin_label ?? 'LinkedIn',
+            linkedin_link: data.linkedin_link ?? '#',
+            facebook_label: data.facebook_label ?? 'Facebook',
+            facebook_link: data.facebook_link ?? '#',
+            instagram_label: data.instagram_label ?? 'Instagram',
+            instagram_link: data.instagram_link ?? '#',
+            youtube_label: data.youtube_label ?? 'YouTube',
+            youtube_link: data.youtube_link ?? '#',
+            refund_policy_visible: data.refund_policy_visible ?? true,
+            twitter_visible: data.twitter_visible ?? true,
+            linkedin_visible: data.linkedin_visible ?? true,
+            facebook_visible: data.facebook_visible ?? true,
+            instagram_visible: data.instagram_visible ?? false,
+            youtube_visible: data.youtube_visible ?? false,
+          };
+
+          setSettings(prev => ({ ...prev, ...nextSettings }));
+          window.localStorage.setItem(FOOTER_SETTINGS_CACHE_KEY, JSON.stringify(nextSettings));
         }
       } catch (err) {
         console.error('Failed to load footer settings:', err);
@@ -131,6 +186,9 @@ export default function Footer() {
               <li><Link to="/about-us" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
               <li><Link to="/privacy-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms-of-service" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+              {(settings.refund_policy_visible ?? true) && (
+                <li><Link to="/refund-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Refund Policy</Link></li>
+              )}
             </ul>
           </div>
 

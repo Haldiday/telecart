@@ -63,7 +63,7 @@ export default function Index() {
   }, []);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1">
         {sections.filter(s => s.is_visible).map((section) => {
