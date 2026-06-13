@@ -26,7 +26,7 @@ export default function Ads1ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_2col',
-  mobileContainImage = false,
+  mobileContainImage = true,
   compact = false,
   backgroundColor,
   headingClassName,
@@ -62,12 +62,12 @@ export default function Ads1ColSection({
     const loadSection = async () => {
       const { data } = await db
         .from(sectionTable)
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
 
       if (data && mounted) {
-        setHeading(data.heading || 'Featured Ad');
+        setHeading(data.heading || data.name || 'Featured Ad');
         setShowHeading(data.show_heading !== false);
       }
     };

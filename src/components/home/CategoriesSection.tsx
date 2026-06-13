@@ -69,12 +69,12 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
     async function loadSection() {
       const { data } = await supabase
         .from('page_sections')
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
-        setHeading(data.heading || 'Explore companies by category');
+        setHeading(data.heading || data.name || 'Explore companies by category');
         setShowHeading(data.show_heading !== false);
       }
     }

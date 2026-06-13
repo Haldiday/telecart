@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, ChevronRight, LogOut, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,6 +60,7 @@ const getCachedHeaderSettings = (): HeaderSettings => {
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
@@ -70,6 +71,7 @@ export default function Header() {
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
 
+    console.log('[Header] Scrolling to section:', sectionElement.id);
     const headingElement = sectionElement.querySelector('h2') as HTMLElement | null;
     const targetElement = headingElement || sectionElement;
     const headerOffset = 88;
@@ -79,31 +81,62 @@ export default function Header() {
   };
 
   const scrollToSection = (sectionId: string) => {
+    console.log('[Header] scrollToSection called with sectionId:', sectionId);
     setMegaMenuOpen(false);
     setMobileOpen(false);
+    setMobileCategoriesOpen(false);
 
-    const sectionElement = document.getElementById(`section-${sectionId}`);
+    const targetId = `section-${sectionId}`;
+    console.log('[Header] Looking for element with id:', targetId);
+    const sectionElement = document.getElementById(targetId);
 
-    if (location.pathname === '/' && sectionElement) {
-      scrollToSectionElement(sectionElement);
+    if (location.pathname === '/') {
+      if (sectionElement) {
+        console.log('[Header] Element found on Home page, scrolling immediately');
+        scrollToSectionElement(sectionElement);
+      } else {
+        console.log('[Header] Element not found yet, navigating with hash:', targetId);
+        navigate(`/#${targetId}`);
+      }
       return;
     }
 
-    window.location.assign(`/#section-${sectionId}`);
+    console.log('[Header] Not on Home page, navigating to /#', targetId);
+    navigate(`/#${targetId}`);
+  };
+
+  const waitForElementAndScroll = (targetId: string, maxAttempts = 20, interval = 100) => {
+    console.log('[Header] waitForElementAndScroll called for:', targetId);
+    let attempts = 0;
+
+    const checkElement = () => {
+      attempts++;
+      const element = document.getElementById(targetId);
+      
+      if (element) {
+        console.log('[Header] Element found after', attempts, 'attempts:', targetId);
+        scrollToSectionElement(element);
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        console.log('[Header] Element not found, retrying (attempt', attempts, '/', maxAttempts, ')');
+        setTimeout(checkElement, interval);
+      } else {
+        console.warn('[Header] Element not found after max attempts:', targetId);
+      }
+    };
+
+    checkElement();
   };
 
   useEffect(() => {
     if (!location.hash.startsWith('#section-')) return;
 
     const sectionId = location.hash.replace('#section-', '');
-    const sectionElement = document.getElementById(`section-${sectionId}`);
-
-    if (!sectionElement) return;
-
-    const scrollToTarget = () => scrollToSectionElement(sectionElement);
-
-    const timeoutId = window.setTimeout(scrollToTarget, 120);
-    return () => window.clearTimeout(timeoutId);
+    const targetId = `section-${sectionId}`;
+    console.log('[Header] Hash detected, targetId:', targetId);
+    waitForElementAndScroll(targetId);
   }, [location.pathname, location.hash]);
 
   useEffect(() => {
@@ -165,7 +198,14 @@ export default function Header() {
 
     // Close menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
+      // Ignore right-clicks (contextmenu)
+      if (event.button === 2) return;
+
+      console.log('[Header] Clicked:', event.target);
+      console.log('[Header] Inside menu:', menuRef.current?.contains(event.target as Node));
+
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        console.log('[Header] Clicked outside, closing mega menu');
         setMegaMenuOpen(false);
       }
     };
@@ -242,7 +282,7 @@ export default function Header() {
               Home
             </Link>
 
-            <div className="relative" ref={menuRef}>
+            <div className="static" ref={menuRef}>
               <button
                 onClick={() => setMegaMenuOpen(!megaMenuOpen)}
                 className="header-nav-link flex items-center gap-1"
@@ -250,6 +290,32 @@ export default function Header() {
               Categories
                 <ChevronDown className={`w-4 h-4 transition-transform ${megaMenuOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Mega Menu */}
+              {megaMenuOpen && (
+                <div 
+                  className="absolute top-full right-4 md:right-8 lg:right-10 w-full max-w-[1200px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden"
+                >
+                  {/* Content */}
+                  <div className="px-8 py-6 bg-white overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar">
+                      <div className="grid grid-cols-4 gap-6">
+                        {sections.map((section) => (
+                          <div key={section.id} className="border-r border-gray-100 last:border-0 pr-6">
+                            <button
+                              onClick={(e) => {
+                                console.log('[Header] Category button clicked:', section.name);
+                                scrollToSection(section.id);
+                              }}
+                              className="mega-menu-link group block w-full text-left py-2 hover:text-primary transition-colors cursor-pointer relative z-10"
+                            >
+                              <span className="text-base font-medium">{section.name}</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                </div>
+              )}
             </div>
 
             {headerSettings.submit_button_visible && (
@@ -261,34 +327,6 @@ export default function Header() {
               </a>
             )}
           </nav>
-
-          {/* Mega Menu */}
-          {megaMenuOpen && (
-            <div 
-              className="absolute top-full right-4 md:right-8 lg:right-10 w-full max-w-[1200px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-50 overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Content */}
-              <div className="px-8 py-6 bg-white overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar">
-                  <div className="grid grid-cols-4 gap-6">
-                    {sections.map((section) => (
-                      <div key={section.id} className="border-r border-gray-100 last:border-0 pr-6">
-                        <a
-                          href={`/#section-${section.id}`}
-                          onClick={() => {
-                            setMegaMenuOpen(false);
-                            setMobileOpen(false);
-                          }}
-                          className="mega-menu-link group block w-full text-left py-2 hover:text-primary transition-colors cursor-pointer relative z-10"
-                        >
-                          <span className="text-base font-medium">{section.name}</span>
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-            </div>
-          )}
 
           {/* Mobile Button */}
           <button

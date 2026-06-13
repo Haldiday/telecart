@@ -135,12 +135,12 @@ export default function FeaturedCards({
     const loadSection = async () => {
       const { data } = await db
         .from(sectionTable)
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
-        setHeading(data.heading || 'Featured Companies');
+        setHeading(data.heading || data.name || 'Featured Companies');
         setShowHeading(data.show_heading !== false);
       }
     };
@@ -212,7 +212,7 @@ export default function FeaturedCards({
           )}
 
           {(fixedMode && cardsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
                 className="flex"
                 style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
@@ -263,7 +263,8 @@ export default function FeaturedCards({
           ) : needsCarousel ? (
             <div className="relative">
               <div 
-                className="overflow-hidden py-6"
+                className="overflow-hidden overflow-x-hidden touch-pan-y py-6"
+                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
                 ref={containerRef}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}

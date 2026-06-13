@@ -119,12 +119,12 @@ export default function OffersSection({
     const loadSection = async () => {
       const { data } = await db
         .from(sectionTable)
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
-        setHeading(data.heading || 'Offers & Discounts');
+        setHeading(data.heading || data.name || 'Offers & Discounts');
         setShowHeading(data.show_heading !== false);
       }
     };
@@ -159,9 +159,9 @@ export default function OffersSection({
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-20 lg:px-12'}>
         {showHeading && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-8">
             <h2 className={headingClassName || "section-heading !mb-0"}>
               {heading}
             </h2>
@@ -191,9 +191,10 @@ export default function OffersSection({
           )}
 
           {needsCarousel ? (
-            <div className="relative md:max-lg:px-16">
+            <div className="relative md:px-20">
             <div 
-              className="overflow-hidden rounded-lg -mx-[9px]"
+              className="overflow-hidden overflow-x-hidden rounded-lg -mx-[9px] md:-mx-20 touch-pan-y"
+              style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               ref={containerRef}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -259,13 +260,20 @@ export default function OffersSection({
             </div>
           </div>
         ) : (
-            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+            <div 
+              className="overflow-hidden overflow-x-hidden touch-pan-y" 
+              style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+              ref={fixedContainerRef} 
+              onTouchStart={onFixedTouchStart} 
+              onTouchMove={onFixedTouchMove} 
+              onTouchEnd={onFixedTouchEnd}
+            >
               <div 
                 className="flex"
                 style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
               >
                 {fixedPages.map((page, pageIdx) => (
-                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:gap-[0px]">
+                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:px-12">
                   {page.map((offer) => (
                     <div key={offer.id} className="flex h-full">
                       <a 

@@ -32,7 +32,7 @@ export default function Ads3ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_3col',
-  mobileContainImage = false,
+  mobileContainImage = true,
   compact = false,
   backgroundColor,
   headingClassName,
@@ -122,12 +122,12 @@ export default function Ads3ColSection({
     const loadSection = async () => {
       const { data } = await db
         .from(sectionTable)
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
-        setHeading(data.heading || '3 Column Ads');
+        setHeading(data.heading || data.name || '3 Column Ads');
         setShowHeading(data.show_heading !== false);
       }
     };
@@ -164,7 +164,7 @@ export default function Ads3ColSection({
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
-          <h2 className={headingClassName || "section-heading"}>
+          <h2 className={headingClassName || "section-heading mb-8"}>
             {heading}
           </h2>
         )}
@@ -193,7 +193,8 @@ export default function Ads3ColSection({
           {needsCarousel ? (
             <div className="relative">
               <div 
-                className="overflow-hidden"
+                className="overflow-hidden overflow-x-hidden touch-pan-y"
+                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
                 ref={containerRef}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
@@ -244,7 +245,7 @@ export default function Ads3ColSection({
               </div>
             </div>
           ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
                 className="flex flex-row flex-nowrap"
                 style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}

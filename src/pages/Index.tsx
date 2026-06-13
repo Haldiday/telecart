@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -31,6 +32,44 @@ const SECTION_MAP: Record<string, React.FC<any>> = {
 
 export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
+  const location = useLocation();
+
+  const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
+    if (!sectionElement) return;
+
+    console.log('[Index] Scrolling to section:', sectionElement.id);
+    const headingElement = sectionElement.querySelector('h2') as HTMLElement | null;
+    const targetElement = headingElement || sectionElement;
+    const headerOffset = 88;
+    const top = targetElement.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  const waitForElementAndScroll = (targetId: string, maxAttempts = 20, interval = 100) => {
+    console.log('[Index] waitForElementAndScroll called for:', targetId);
+    let attempts = 0;
+
+    const checkElement = () => {
+      attempts++;
+      const element = document.getElementById(targetId);
+      
+      if (element) {
+        console.log('[Index] Element found after', attempts, 'attempts:', targetId);
+        scrollToSectionElement(element);
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        console.log('[Index] Element not found, retrying (attempt', attempts, '/', maxAttempts, ')');
+        setTimeout(checkElement, interval);
+      } else {
+        console.warn('[Index] Element not found after max attempts:', targetId);
+      }
+    };
+
+    checkElement();
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -61,6 +100,16 @@ export default function Index() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    // When sections are loaded or hash changes, try to scroll
+    if (location.hash.startsWith('#section-')) {
+      const sectionId = location.hash.replace('#section-', '');
+      const targetId = `section-${sectionId}`;
+      console.log('[Index] Hash detected or sections loaded, targetId:', targetId);
+      waitForElementAndScroll(targetId);
+    }
+  }, [location.hash, sections.length]);
 
   return (
     <div className="flex flex-col min-h-screen">

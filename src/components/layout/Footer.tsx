@@ -152,73 +152,86 @@ export default function Footer() {
   ].filter(link => link.visible);
 
   return (
-    <footer className="text-primary-foreground pt-16 pb-8" style={{ backgroundColor: '#000000' }}>
-      <div className="container mx-auto px-4 md:px-8 lg:px-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {/* Logo */}
-          <div className="flex flex-col items-start gap-6">
-            <div className="flex items-center gap-3 pt-0.5"> {/* Slight padding to align text baseline with headings */}
-              <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center shadow-lg shrink-0">
-                <span className="text-white font-black text-lg">B</span>
+    <>
+      <footer className="text-primary-foreground pt-16 pb-8" style={{ backgroundColor: '#000000' }}>
+        <div className="container mx-auto px-4 md:px-8 lg:px-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            {/* Logo */}
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex items-center gap-3 pt-0.5"> {/* Slight padding to align text baseline with headings */}
+                <div className="w-10 h-10 rounded-xl bg-[#0066FF] flex items-center justify-center shadow-lg shrink-0">
+                  <span className="text-white font-black text-lg">B</span>
+                </div>
+                <span className="text-2xl font-black tracking-tight text-white leading-none">BizReq</span>
               </div>
-              <span className="text-2xl font-black tracking-tight text-white leading-none">BizReq</span>
+              <div className="flex flex-col gap-2">
+                {settings.description && (
+                  <p className="text-sm text-gray-400 leading-relaxed max-w-[280px]">
+                    {settings.description}
+                  </p>
+                )}
+                <p className="text-sm text-gray-500 font-medium">
+                  © {new Date().getFullYear()} BizReq. All rights reserved.
+                </p>
+              </div>
             </div>
-            {settings.description && (
-              <p className="text-sm text-gray-400 leading-relaxed max-w-[280px]">
-                {settings.description}
-              </p>
-            )}
-          </div>
 
-          {/* Help & Support */}
-          <div>
-            <h4 className="font-bold mb-6 text-base text-white">Help & Support</h4>
-            <ul className="space-y-4">
-              <li><Link to="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
-              <li><Link to="/faqs" className="text-sm text-gray-400 hover:text-white transition-colors">FAQs</Link></li>
-            </ul>
-          </div>
+            {/* Help & Support */}
+            <div>
+              <h4 className="font-bold mb-6 text-base text-white">Help & Support</h4>
+              <ul className="space-y-4">
+                <li><Link to="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link to="/faqs" className="text-sm text-gray-400 hover:text-white transition-colors">FAQs</Link></li>
+              </ul>
+            </div>
 
-          {/* Company */}
-          <div>
-            <h4 className="font-bold mb-6 text-base text-white">Company</h4>
-            <ul className="space-y-4">
-              <li><Link to="/about-us" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/privacy-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms-of-service" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
-              {(settings.refund_policy_visible ?? true) && (
-                <li><Link to="/refund-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Refund Policy</Link></li>
-              )}
-            </ul>
-          </div>
+            {/* Company */}
+            <div>
+              <h4 className="font-bold mb-6 text-base text-white">Company</h4>
+              <ul className="space-y-4">
+                <li><Link to="/about-us" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link to="/privacy-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms-of-service" className="text-sm text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+                {(settings.refund_policy_visible ?? true) && (
+                  <li><Link to="/refund-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Refund Policy</Link></li>
+                )}
+              </ul>
+            </div>
 
-          {/* Social Media */}
-          <div>
-            <h4 className="font-bold mb-6 text-base text-white">Social Media</h4>
-            <ul className="space-y-4">
-              {socialLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-gray-400 hover:text-white transition-colors block"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {/* Social Media */}
+            <div>
+              <h4 className="font-bold mb-6 text-base text-white">Social Media</h4>
+              <ul className="space-y-4">
+                {socialLinks.map((link, index) => (
+                  <li key={index}>
+                    <a
+                      href={link.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-gray-400 hover:text-white transition-colors block"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-
-        {/* Bottom Line & Copyright */}
-        <div className="border-t border-gray-800/50 w-full mt-8 pt-8 flex justify-center">
-          <p className="text-sm text-gray-500 font-medium">
-            © {new Date().getFullYear()} BizReq. All rights reserved.
-          </p>
+      </footer>
+      
+      {/* Bottom Branding Section */}
+      <div className="bg-white py-6 md:py-8">
+        <div className="container mx-auto px-4 md:px-8 lg:px-12 flex justify-center items-center">
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3">
+            <span className="text-2xl md:text-3xl font-black">
+              <span className="text-black">Biz</span>
+              <span className="text-[#1d4ed8]">Req</span>
+            </span>
+            <span className="text-black/90 text-sm md:text-lg">by Diverse Domain LLP</span>
+          </div>
         </div>
       </div>
-    </footer>
+    </>
   );
 }

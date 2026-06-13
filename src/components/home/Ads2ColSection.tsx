@@ -30,7 +30,7 @@ export default function Ads2ColSection({
   sectionId,
   sectionTable = 'page_sections',
   adsTable = 'ads_2col',
-  mobileContainImage = false,
+  mobileContainImage = true,
   compact = false,
   backgroundColor,
   headingClassName,
@@ -112,12 +112,12 @@ export default function Ads2ColSection({
     const loadSection = async () => {
       const { data } = await db
         .from(sectionTable)
-        .select('heading, show_heading')
+        .select('heading, name, show_heading')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
-        setHeading(data.heading || '2 Column Ads');
+        setHeading(data.heading || data.name || '2 Column Ads');
         setShowHeading(data.show_heading !== false);
       }
     };
@@ -207,7 +207,8 @@ export default function Ads2ColSection({
           ) : needsCarousel ? (
             <div className="relative">
               <div 
-                className="overflow-hidden"
+                className="overflow-hidden overflow-x-hidden touch-pan-y"
+                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
                 ref={containerRef}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
@@ -250,7 +251,7 @@ export default function Ads2ColSection({
               </div>
             </div>
           ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden" ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
               <div 
                 className="flex"
                 style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
@@ -303,7 +304,7 @@ export default function Ads2ColSection({
                       <img
                         src={ad.image_url}
                         alt="Ad"
-                        className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
+                        className={`h-full w-full transition-transform duration-300 hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
                       />
                     )}
                   </div>
