@@ -10,6 +10,7 @@ interface Ad {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color: string | null;
 }
 
 interface Ads1ColSectionProps {
@@ -53,6 +54,7 @@ export default function Ads1ColSection({
                 is_fixed: ad.is_fixed ?? false,
                 show_border: ad.show_border ?? false,
                 border_color: ad.border_color ?? null,
+                background_color: ad.background_color ?? null,
               }))
             );
           }
@@ -116,8 +118,11 @@ export default function Ads1ColSection({
           {ads.map((ad) => (
             <div 
               key={ad.id}
-              className={`rounded-[12px] overflow-hidden bg-muted shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`} 
-              style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+              className={`rounded-[12px] overflow-hidden shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`} 
+              style={{
+                ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                backgroundColor: ad.background_color || undefined,
+              }}
               onClick={() => {
                 if (ad.link) {
                   window.location.href = ad.link;
@@ -128,12 +133,12 @@ export default function Ads1ColSection({
                 className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
               >
                 {/* ✅ Banner size */}
-                <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full bg-[#f5f5f5] flex items-center justify-center">
+                <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
                   {ad.image_url && (
                     <img
                       src={ad.image_url}
                       alt="Ad"
-                      className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
+                      className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-contain' : 'object-contain'}`}
                     />
                   )}
                 </div>

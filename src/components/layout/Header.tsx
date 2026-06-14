@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, ChevronRight, LogOut, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PageSection {
   id: string;
@@ -67,6 +68,9 @@ export default function Header() {
   const [sections, setSections] = useState<PageSection[]>([]);
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>(() => getCachedHeaderSettings());
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const isMobile = useIsMobile();
 
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
@@ -74,7 +78,17 @@ export default function Header() {
     console.log('[Header] Scrolling to section:', sectionElement.id);
     const headingElement = sectionElement.querySelector('h2') as HTMLElement | null;
     const targetElement = headingElement || sectionElement;
-    const headerOffset = 88;
+    
+    let headerOffset: number;
+    if (isMobile) {
+      // Mobile-specific offset using actual header height
+      const headerElement = headerRef.current;
+      headerOffset = headerElement ? headerElement.getBoundingClientRect().height : 88;
+    } else {
+      // Desktop/tablet offset unchanged
+      headerOffset = 88;
+    }
+    
     const top = targetElement.getBoundingClientRect().top + window.scrollY - headerOffset;
 
     window.scrollTo({ top, behavior: 'smooth' });
@@ -93,7 +107,14 @@ export default function Header() {
     if (location.pathname === '/') {
       if (sectionElement) {
         console.log('[Header] Element found on Home page, scrolling immediately');
-        scrollToSectionElement(sectionElement);
+        if (isMobile) {
+          // On mobile: wait for menu to close first
+          setTimeout(() => {
+            scrollToSectionElement(sectionElement);
+          }, 200);
+        } else {
+          scrollToSectionElement(sectionElement);
+        }
       } else {
         console.log('[Header] Element not found yet, navigating with hash:', targetId);
         navigate(`/#${targetId}`);
@@ -115,7 +136,13 @@ export default function Header() {
       
       if (element) {
         console.log('[Header] Element found after', attempts, 'attempts:', targetId);
-        scrollToSectionElement(element);
+        if (isMobile) {
+          setTimeout(() => {
+            scrollToSectionElement(element);
+          }, 200);
+        } else {
+          scrollToSectionElement(element);
+        }
         return;
       }
 
@@ -202,11 +229,18 @@ export default function Header() {
       if (event.button === 2) return;
 
       console.log('[Header] Clicked:', event.target);
-      console.log('[Header] Inside menu:', menuRef.current?.contains(event.target as Node));
+      console.log('[Header] Inside mega menu:', menuRef.current?.contains(event.target as Node));
+      console.log('[Header] Inside mobile menu:', mobileMenuRef.current?.contains(event.target as Node));
 
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         console.log('[Header] Clicked outside, closing mega menu');
         setMegaMenuOpen(false);
+      }
+
+      if (mobileOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        console.log('[Header] Clicked outside, closing mobile menu');
+        setMobileOpen(false);
+        setMobileCategoriesOpen(false);
       }
     };
 
@@ -222,7 +256,7 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
       {/* Top Header Bar */}
       <div className="bg-[#17313B] text-white py-2 px-4 md:px-8 lg:px-10 hidden md:block">
         <div className="container mx-auto flex justify-end items-center gap-4 md:gap-8">
@@ -336,108 +370,105 @@ export default function Header() {
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
-      </div>
 
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-card px-4 py-6 space-y-6 max-h-[90vh] overflow-y-auto">
-          <div className="space-y-4">
-            {/* 1. Home */}
-            <Link to="/" className="block text-lg font-semibold px-4 py-2 hover:bg-muted rounded-lg" onClick={() => setMobileOpen(false)}>
-              Home
-            </Link>
+        {/* Mobile Menu */}
+        {mobileOpen && (
+          <div ref={mobileMenuRef} className="md:hidden border-t border-border bg-card px-4 py-6 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="space-y-4">
+              {/* 1. Home */}
+              <Link to="/" className="block text-lg font-semibold px-4 py-2 hover:bg-muted rounded-lg" onClick={() => setMobileOpen(false)}>
+                Home
+              </Link>
 
-            {/* 2. Categories (Collapsible) */}
-            <div className="space-y-2">
-              <button 
-                onClick={() => setMobileCategoriesOpen(!mobileCategoriesOpen)}
-                className="w-full flex items-center justify-between px-4 py-2 hover:bg-muted rounded-lg transition-colors"
-              >
-                <span className="text-lg font-semibold">Categories</span>
-                <ChevronDown className={`w-5 h-5 transition-transform ${mobileCategoriesOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {mobileCategoriesOpen && (
-                <div className="pl-4 space-y-1 border-l-2 border-border ml-6 mt-1">
-                  {sections.map(section => (
-                    <div key={section.id}>
-                      <button
-                        onClick={() => scrollToSection(section.id)}
-                        className="text-base font-medium text-muted-foreground hover:text-primary hover:bg-muted block w-full text-left py-2.5 px-4 rounded-lg transition-all"
+              {/* 2. Categories (Collapsible) */}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setMobileCategoriesOpen(!mobileCategoriesOpen)}
+                  className="w-full flex items-center justify-between px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                >
+                  <span className="text-lg font-semibold">Categories</span>
+                  <ChevronDown className={`w-5 h-5 transition-transform ${mobileCategoriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {mobileCategoriesOpen && (
+                  <div className="pl-4 space-y-1 border-l-2 border-border ml-6 mt-1">
+                    {sections.map(section => (
+                      <div key={section.id}>
+                        <button
+                          onClick={() => scrollToSection(section.id)}
+                          className="text-base font-medium text-muted-foreground hover:text-primary hover:bg-muted block w-full text-left py-2.5 px-4 rounded-lg transition-all"
+                        >
+                          {section.name}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Leave a Review & For Providers */}
+              {headerSettings && (
+                <div className="flex flex-col gap-4 pt-2">
+                  {headerSettings.leave_review_visible && (
+                    <a 
+                      href={headerSettings.leave_review_link} 
+                      className="text-lg font-semibold text-[#0b212e] px-4 py-2 hover:bg-muted rounded-lg" 
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {headerSettings.leave_review_text}
+                    </a>
+                  )}
+                  {headerSettings.for_providers_visible && (
+                    <a 
+                      href={headerSettings.for_providers_link} 
+                      className="text-lg font-semibold text-[#0b212e] px-4 py-2 hover:bg-muted rounded-lg" 
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {headerSettings.for_providers_text}
+                    </a>
+                  )}
+                  
+                  {/* 4. Join & Sign In Buttons */}
+                  <div className="flex flex-col gap-4 mt-6 px-2">
+                    {headerSettings.join_visible && (
+                      <a 
+                        href={headerSettings.join_link} 
+                        className="w-full bg-[#e31b1b] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
+                        onClick={() => setMobileOpen(false)}
                       >
-                        {section.name}
+                        {headerSettings.join_text}
+                      </a>
+                    )}
+                    {headerSettings.sign_in_visible && (
+                      <button 
+                        className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        onClick={() => {
+                          /* Sign in logic */
+                          setMobileOpen(false);
+                        }}
+                      >
+                        <User className="w-5 h-5" />
+                        {headerSettings.sign_in_text}
                       </button>
-                    </div>
-                  ))}
+                    )}
+
+                    {/* 5. Submit Button (Mobile) - Moved below Sign In */}
+                    {headerSettings.submit_button_visible && (
+                      <a 
+                        href={headerSettings.submit_button_link}
+                        className="block w-full text-center py-3 rounded-lg font-bold text-lg border-2 border-[#17313B] text-[#17313B] active:scale-[0.98] transition-all"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {headerSettings.submit_button_text}
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* 3. Leave a Review & For Providers */}
-            {headerSettings && (
-              <div className="flex flex-col gap-4 pt-2">
-                {headerSettings.leave_review_visible && (
-                  <a 
-                    href={headerSettings.leave_review_link} 
-                    className="text-lg font-semibold text-[#0b212e] px-4 py-2 hover:bg-muted rounded-lg" 
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {headerSettings.leave_review_text}
-                  </a>
-                )}
-                {headerSettings.for_providers_visible && (
-                  <a 
-                    href={headerSettings.for_providers_link} 
-                    className="text-lg font-semibold text-[#0b212e] px-4 py-2 hover:bg-muted rounded-lg" 
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {headerSettings.for_providers_text}
-                  </a>
-                )}
-                
-                {/* 4. Join & Sign In Buttons */}
-                <div className="flex flex-col gap-4 mt-6 px-2">
-                  {headerSettings.join_visible && (
-                    <a 
-                      href={headerSettings.join_link} 
-                      className="w-full bg-[#e31b1b] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {headerSettings.join_text}
-                    </a>
-                  )}
-                  {headerSettings.sign_in_visible && (
-                    <button 
-                      className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                      onClick={() => {
-                        /* Sign in logic */
-                        setMobileOpen(false);
-                      }}
-                    >
-                      <User className="w-5 h-5" />
-                      {headerSettings.sign_in_text}
-                    </button>
-                  )}
-
-                  {/* 5. Submit Button (Mobile) - Moved below Sign In */}
-                  {headerSettings.submit_button_visible && (
-                    <a 
-                      href={headerSettings.submit_button_link}
-                      className="block w-full text-center py-3 rounded-lg font-bold text-lg border-2 border-[#17313B] text-[#17313B] active:scale-[0.98] transition-all"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {headerSettings.submit_button_text}
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Offers (if needed at bottom) */}
-            
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 }

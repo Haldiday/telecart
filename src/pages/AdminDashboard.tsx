@@ -6,7 +6,7 @@ import { useSectionInstances } from '@/hooks/useSectionInstances';
 import { useScopedSectionInstances, type ScopedPageSection } from '@/hooks/useScopedSectionInstances';
 import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
-import ImageCropper from '@/components/admin/ImageCropper';
+
 import FileUpload from '@/components/admin/FileUpload';
 import TipTapEditor from '@/components/admin/TipTapEditor';
 import { Switch } from '@/components/ui/switch';
@@ -95,9 +95,9 @@ interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; sectio
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
 interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; button_bg_color?: string | null; card_bg_color?: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
-interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
-interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
-interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; }
+interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; }
+interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; }
+interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; }
 interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
 interface LegalPage { id: string; slug: string; title: string; content: string | null; }
 interface HeaderSettings {
@@ -199,6 +199,7 @@ interface OfferItem {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color: string | null;
 }
 
 interface Ad2Item {
@@ -210,11 +211,13 @@ interface Ad2Item {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color: string | null;
 }
 
 interface Ad3Item extends Ad2Item {
   heading: string | null;
   description: string | null;
+  background_color: string | null;
 }
 
 interface FAQ {
@@ -736,9 +739,9 @@ export default function AdminDashboard() {
         setEditResourcesTabLabelState(resourcesLabels);
       }
       if (downloads.data) setCategoryDownloads(downloads.data);
-      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
-      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
-      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null })));
+      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null })));
+      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null })));
       if (btns.data) {
         setButtons(btns.data);
         const buttonsBySubcategory: Record<string, CategoryButton[]> = {};
@@ -1716,9 +1719,9 @@ export default function AdminDashboard() {
     ]);
 
     setProductCards(((cardsData || []) as FeaturedCardItem[]).map((card) => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
-    setProductOffers(((offersData || []) as OfferItem[]).map((offer) => ({ ...offer, link: offer.link ?? null, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
-    setProductAds2(((ads2Data || []) as Ad2Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
-    setProductAds3(((ads3Data || []) as Ad3Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+    setProductOffers(((offersData || []) as OfferItem[]).map((offer) => ({ ...offer, link: offer.link ?? null, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null })));
+    setProductAds2(((ads2Data || []) as Ad2Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null })));
+    setProductAds3(((ads3Data || []) as Ad3Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null })));
     setProductLogoSteps(((logoStepsData || []) as LogoStepItem[]).map((step) => ({ ...step, description: step.description ?? null, logo_url: step.logo_url ?? null })));
   }, [productSections]);
 
@@ -1936,6 +1939,7 @@ export default function AdminDashboard() {
             link: productEditOffer.link || null,
             show_border: productEditOffer.show_border ?? false,
             border_color: productEditOffer.border_color ?? null,
+            background_color: productEditOffer.background_color ?? null,
             is_fixed: offersFixedModeEnabled,
           })
           .eq('id', productEditOffer.id);
@@ -1947,6 +1951,7 @@ export default function AdminDashboard() {
           link: productEditOffer.link || null,
           show_border: productEditOffer.show_border ?? false,
           border_color: productEditOffer.border_color ?? null,
+          background_color: productEditOffer.background_color ?? null,
           sort_order: selectedOffers.length,
           section_id: productSelectedOffersSectionId,
           is_fixed: offersFixedModeEnabled,
@@ -1980,6 +1985,7 @@ export default function AdminDashboard() {
             link: productEditAd1.link || null,
             show_border: productEditAd1.show_border ?? false,
             border_color: productEditAd1.border_color ?? null,
+            background_color: productEditAd1.background_color ?? null,
             is_fixed: ads1FixedModeEnabled,
           })
           .eq('id', productEditAd1.id);
@@ -1989,6 +1995,7 @@ export default function AdminDashboard() {
           link: productEditAd1?.link || null,
           show_border: productEditAd1?.show_border ?? false,
           border_color: productEditAd1?.border_color ?? null,
+          background_color: productEditAd1?.background_color ?? null,
           sort_order: selectedAds1.length,
           section_id: productSelectedAds1SectionId,
           is_fixed: ads1FixedModeEnabled,
@@ -2022,6 +2029,7 @@ export default function AdminDashboard() {
             link: productEditAd2.link || null,
             show_border: productEditAd2.show_border ?? false,
             border_color: productEditAd2.border_color ?? null,
+            background_color: productEditAd2.background_color ?? null,
             is_fixed: ads2FixedModeEnabled,
           })
           .eq('id', productEditAd2.id);
@@ -2031,6 +2039,7 @@ export default function AdminDashboard() {
           link: productEditAd2?.link || null,
           show_border: productEditAd2?.show_border ?? false,
           border_color: productEditAd2?.border_color ?? null,
+          background_color: productEditAd2?.background_color ?? null,
           sort_order: selectedAds2.length,
           section_id: productSelectedAds2SectionId,
           is_fixed: ads2FixedModeEnabled,
@@ -2066,6 +2075,7 @@ export default function AdminDashboard() {
             link: productEditAd3.link || null,
             show_border: productEditAd3.show_border ?? false,
             border_color: productEditAd3.border_color ?? null,
+            background_color: productEditAd3.background_color ?? null,
             is_fixed: ads3FixedModeEnabled,
           })
           .eq('id', productEditAd3.id);
@@ -2077,6 +2087,7 @@ export default function AdminDashboard() {
           link: productEditAd3?.link || null,
           show_border: productEditAd3?.show_border ?? false,
           border_color: productEditAd3?.border_color ?? null,
+          background_color: productEditAd3?.background_color ?? null,
           sort_order: selectedAds3.length,
           section_id: productSelectedAds3SectionId,
           is_fixed: ads3FixedModeEnabled,
@@ -2896,7 +2907,7 @@ export default function AdminDashboard() {
       const selectedOffersCount = selectedOffers.length;
 
       if (editOffer.id) {
-        const updateData: any = { heading: editOffer.heading?.trim() || '', description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false, border_color: editOffer.border_color ?? null };
+        const updateData: any = { heading: editOffer.heading?.trim() || '', description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false, border_color: editOffer.border_color ?? null, background_color: editOffer.background_color ?? null };
         if (offersFixedModeEnabled !== undefined) {
           updateData.is_fixed = offersFixedModeEnabled;
         }
@@ -2910,6 +2921,7 @@ export default function AdminDashboard() {
           link: editOffer.link,
           show_border: editOffer.show_border ?? false,
           border_color: editOffer.border_color ?? null,
+          background_color: editOffer.background_color ?? null,
           sort_order: selectedOffersCount,
           section_id: selectedOffersSectionId,
         };
@@ -2942,14 +2954,14 @@ export default function AdminDashboard() {
     if (!editAd2) return;
     try {
       if (editAd2.id) {
-        const updateData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null };
+        const updateData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, background_color: editAd2.background_color ?? null };
         if (ads2FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads2FixedModeEnabled;
         }
         const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd2.id);
         if (error) throw error;
       } else {
-        const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, sort_order: ads2.length, section_id: selectedAds2SectionId };
+        const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, background_color: editAd2.background_color ?? null, sort_order: ads2.length, section_id: selectedAds2SectionId };
         if (ads2FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads2FixedModeEnabled;
         }
@@ -2967,14 +2979,14 @@ export default function AdminDashboard() {
     if (!editAd1) return;
     try {
       if (editAd1.id) {
-        const updateData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null };
+        const updateData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, background_color: editAd1.background_color ?? null };
         if (ads1FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads1FixedModeEnabled;
         }
         const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd1.id);
         if (error) throw error;
       } else {
-        const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
+        const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, background_color: editAd1.background_color ?? null, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
         if (ads1FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads1FixedModeEnabled;
         }
@@ -3011,6 +3023,7 @@ export default function AdminDashboard() {
           link: editAd3.link,
           show_border: editAd3.show_border ?? false,
           border_color: editAd3.border_color ?? null,
+          background_color: editAd3.background_color ?? null,
         };
         if (ads3FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads3FixedModeEnabled;
@@ -3025,6 +3038,7 @@ export default function AdminDashboard() {
           link: editAd3.link,
           show_border: editAd3.show_border ?? false,
           border_color: editAd3.border_color ?? null,
+          background_color: editAd3.background_color ?? null,
           sort_order: ads3.length,
           section_id: selectedAds3SectionId,
         };
@@ -6240,7 +6254,7 @@ export default function AdminDashboard() {
                     {productEditCard && (
                       <Modal title={productEditCard.id ? 'Edit Card' : 'Add Card'} onClose={() => setProductEditCard(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Logo" value={productEditCard.logo_url || null} onChange={(url) => setProductEditCard({ ...productEditCard, logo_url: url })} folder="cards" previewAspectRatio={1} previewLabel="Preview" />
+                          <ImageUpload label="Logo" value={productEditCard.logo_url || null} onChange={(url) => setProductEditCard({ ...productEditCard, logo_url: url })} folder="cards" />
                           <input value={productEditCard.title || ''} onChange={(e) => setProductEditCard({ ...productEditCard, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditCard.description || ''} onChange={(e) => setProductEditCard({ ...productEditCard, description: e.target.value })} placeholder="Description" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditCard.link || ''} onChange={(e) => setProductEditCard({ ...productEditCard, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -6293,7 +6307,7 @@ export default function AdminDashboard() {
                     {productEditOffer && (
                       <Modal title={productEditOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setProductEditOffer(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" previewAspectRatio={16/9} previewLabel="Preview" />
+                          <ImageUpload label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" />
                           <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditOffer.description || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -6321,6 +6335,24 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={productEditOffer.background_color || '#f3f4f6'}
+                                onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value })}
+                                className="h-10 w-20 rounded cursor-pointer border-0"
+                              />
+                              <input
+                                type="text"
+                                value={productEditOffer.background_color || ''}
+                                onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value || null })}
+                                placeholder="#f3f4f6"
+                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
                           <button type="button" onClick={() => productSaveOffer(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -6328,7 +6360,7 @@ export default function AdminDashboard() {
                     {productEditAd1 && (
                       <Modal title={productEditAd1.id ? 'Edit Ad 1' : 'Add Ad 1'} onClose={() => setProductEditAd1(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Preview" />
+                          <ImageUpload label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" />
                           <input value={productEditAd1.link || ''} onChange={(e) => setProductEditAd1({ ...productEditAd1, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditAd1.show_border ?? false} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_border: Boolean(checked) })} />
@@ -6354,6 +6386,24 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={productEditAd1.background_color || '#f3f4f6'}
+                                onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value })}
+                                className="h-10 w-20 rounded cursor-pointer border-0"
+                              />
+                              <input
+                                type="text"
+                                value={productEditAd1.background_color || ''}
+                                onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value || null })}
+                                placeholder="#f3f4f6"
+                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
                           <button type="button" onClick={() => productSaveAd1(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -6361,7 +6411,7 @@ export default function AdminDashboard() {
                     {productEditAd2 && (
                       <Modal title={productEditAd2.id ? 'Edit Ad 2' : 'Add Ad 2'} onClose={() => setProductEditAd2(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Preview" />
+                          <ImageUpload label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" />
                           <input value={productEditAd2.link || ''} onChange={(e) => setProductEditAd2({ ...productEditAd2, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditAd2.show_border ?? false} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_border: Boolean(checked) })} />
@@ -6387,6 +6437,24 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={productEditAd2.background_color || '#f3f4f6'}
+                                onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value })}
+                                className="h-10 w-20 rounded cursor-pointer border-0"
+                              />
+                              <input
+                                type="text"
+                                value={productEditAd2.background_color || ''}
+                                onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value || null })}
+                                placeholder="#f3f4f6"
+                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
                           <button type="button" onClick={() => productSaveAd2(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -6394,7 +6462,7 @@ export default function AdminDashboard() {
                     {productEditAd3 && (
                       <Modal title={productEditAd3.id ? 'Edit Ad 3' : 'Add Ad 3'} onClose={() => setProductEditAd3(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" previewAspectRatio={16/9} previewLabel="Preview" />
+                          <ImageUpload label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" />
                           <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditAd3.description || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -6422,6 +6490,24 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           )}
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={productEditAd3.background_color || '#f3f4f6'}
+                                onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value })}
+                                className="h-10 w-20 rounded cursor-pointer border-0"
+                              />
+                              <input
+                                type="text"
+                                value={productEditAd3.background_color || ''}
+                                onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value || null })}
+                                placeholder="#f3f4f6"
+                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
                           <button type="button" onClick={() => productSaveAd3(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                         </div>
                       </Modal>
@@ -6429,7 +6515,7 @@ export default function AdminDashboard() {
                     {productEditLogoStep && (
                       <Modal title={productEditLogoStep.id ? 'Edit Logo Step' : 'Add Logo Step'} onClose={() => setProductEditLogoStep(null)}>
                         <div className="space-y-3">
-                          <ImageCropper label="Logo" value={productEditLogoStep.logo_url || null} onChange={(url) => setProductEditLogoStep({ ...productEditLogoStep, logo_url: url })} folder="logos" previewAspectRatio={1} previewLabel="Preview" />
+                          <ImageUpload label="Logo" value={productEditLogoStep.logo_url || null} onChange={(url) => setProductEditLogoStep({ ...productEditLogoStep, logo_url: url })} folder="logos" />
                           <input value={productEditLogoStep.title || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditLogoStep.description || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditLogoStep.link || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -6530,10 +6616,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button
-                      onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_border: false, border_color: null })}
-                      className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
-                    >
+                    <button onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_border: false, border_color: null, background_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Offer</span>
                       <span className="md:hidden">Add</span>
@@ -6578,7 +6661,7 @@ export default function AdminDashboard() {
               {editOffer && (
                 <Modal title={editOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setEditOffer(null)}>
                   <div className="space-y-4">
-                    <ImageCropper label="Offer Image" value={editOffer.image_url || null} onChange={(url) => setEditOffer({ ...editOffer, image_url: url })} folder="offers" previewAspectRatio={16/9} previewLabel="Homepage Preview" />
+                    <ImageUpload label="Offer Image" value={editOffer.image_url || null} onChange={(url) => setEditOffer({ ...editOffer, image_url: url })} folder="offers" />
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Heading</label>
                       <input value={editOffer.heading || ''} onChange={(e) => setEditOffer({ ...editOffer, heading: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
@@ -6615,6 +6698,24 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editOffer.background_color || '#f3f4f6'}
+                          onChange={(e) => setEditOffer({ ...editOffer, background_color: e.target.value })}
+                          className="h-10 w-20 rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={editOffer.background_color || ''}
+                          onChange={(e) => setEditOffer({ ...editOffer, background_color: e.target.value || null })}
+                          placeholder="#f3f4f6"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
                     <button onClick={saveOffer} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -6734,7 +6835,7 @@ export default function AdminDashboard() {
               {editAd2 && (
                 <Modal title={editAd2.id ? 'Edit 2-Col Ad' : 'Add 2-Col Ad'} onClose={() => setEditAd2(null)}>
                   <div className="space-y-4">
-                    <ImageCropper label="Ad Image" value={editAd2.image_url || null} onChange={(url) => setEditAd2({ ...editAd2, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Desktop Preview (2:1)" />
+                    <ImageUpload label="Ad Image" value={editAd2.image_url || null} onChange={(url) => setEditAd2({ ...editAd2, image_url: url })} folder="ads" />
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Link (optional)</label>
                       <input value={editAd2.link || ''} onChange={(e) => setEditAd2({ ...editAd2, link: e.target.value || null })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
@@ -6763,6 +6864,24 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editAd2.background_color || '#f3f4f6'}
+                          onChange={(e) => setEditAd2({ ...editAd2, background_color: e.target.value })}
+                          className="h-10 w-20 rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={editAd2.background_color || ''}
+                          onChange={(e) => setEditAd2({ ...editAd2, background_color: e.target.value || null })}
+                          placeholder="#f3f4f6"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
                     <button onClick={saveAd2} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -6838,7 +6957,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd1({ image_url: null, link: null, show_border: false, border_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd1({ image_url: null, link: null, show_border: false, border_color: null, background_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -6880,7 +6999,7 @@ export default function AdminDashboard() {
               {editAd1 && (
                 <Modal title={editAd1.id ? 'Edit 1-Col Ad' : 'Add 1-Col Ad'} onClose={() => setEditAd1(null)}>
                   <div className="space-y-4">
-                    <ImageCropper label="Ad Image" value={editAd1.image_url || null} onChange={(url) => setEditAd1({ ...editAd1, image_url: url })} folder="ads" previewAspectRatio={2/1} previewLabel="Desktop Preview (2:1)" />
+                    <ImageUpload label="Ad Image" value={editAd1.image_url || null} onChange={(url) => setEditAd1({ ...editAd1, image_url: url })} folder="ads" />
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Link (optional)</label>
                       <input value={editAd1.link || ''} onChange={(e) => setEditAd1({ ...editAd1, link: e.target.value || null })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
@@ -6909,6 +7028,24 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editAd1.background_color || '#f3f4f6'}
+                          onChange={(e) => setEditAd1({ ...editAd1, background_color: e.target.value })}
+                          className="h-10 w-20 rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={editAd1.background_color || ''}
+                          onChange={(e) => setEditAd1({ ...editAd1, background_color: e.target.value || null })}
+                          placeholder="#f3f4f6"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
                     <button onClick={saveAd1} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
@@ -6984,7 +7121,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_border: false, border_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_border: false, border_color: null, background_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -7029,7 +7166,7 @@ export default function AdminDashboard() {
               {editAd3 && (
                 <Modal title={editAd3.id ? 'Edit 3-Col Ad' : 'Add 3-Col Ad'} onClose={() => setEditAd3(null)}>
                   <div className="space-y-4">
-                    <ImageCropper label="Ad Image" value={editAd3.image_url || null} onChange={(url) => setEditAd3({ ...editAd3, image_url: url })} folder="ads" previewAspectRatio={16/9} previewLabel="Desktop Preview (16:9)" />
+                    <ImageUpload label="Ad Image" value={editAd3.image_url || null} onChange={(url) => setEditAd3({ ...editAd3, image_url: url })} folder="ads" />
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Heading (optional)</label>
                       <input value={editAd3.heading || ''} onChange={(e) => setEditAd3({ ...editAd3, heading: e.target.value || null })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
@@ -7066,6 +7203,24 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={editAd3.background_color || '#f3f4f6'}
+                          onChange={(e) => setEditAd3({ ...editAd3, background_color: e.target.value })}
+                          className="h-10 w-20 rounded cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={editAd3.background_color || ''}
+                          onChange={(e) => setEditAd3({ ...editAd3, background_color: e.target.value || null })}
+                          placeholder="#f3f4f6"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
                     <button onClick={saveAd3} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>

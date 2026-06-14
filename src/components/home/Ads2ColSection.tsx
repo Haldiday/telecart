@@ -14,6 +14,7 @@ interface Ad {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color: string | null;
 }
 
 interface Ads2ColSectionProps {
@@ -104,6 +105,7 @@ export default function Ads2ColSection({
             is_fixed: ad.is_fixed ?? false,
             show_border: ad.show_border ?? false,
             border_color: ad.border_color ?? null,
+            background_color: ad.background_color ?? null,
           })));
         }
       });
@@ -190,15 +192,20 @@ export default function Ads2ColSection({
                         window.location.href = ad.link;
                       }
                     }}
-                    className={`block w-full h-[160px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                    className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                    style={{
+                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                      backgroundColor: ad.background_color || undefined,
+                    }}
                   >
                     {ad.image_url && (
-                      <img
-                        src={ad.image_url}
-                        alt="Ad"
-                        className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
-                      />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img
+                          src={ad.image_url}
+                          alt="Ad"
+                          className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -234,15 +241,20 @@ export default function Ads2ColSection({
                             window.location.href = ad.link;
                           }
                         }}
-                        className={`block h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                        style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                        className={`block h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        style={{
+                          ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                          backgroundColor: ad.background_color || undefined,
+                        }}
                       >
                         {ad.image_url && (
-                          <img
-                            src={ad.image_url}
-                            alt="Ad"
-                            className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
-                          />
+                          <div className="w-full h-full flex items-center justify-center">
+                            <img
+                              src={ad.image_url}
+                              alt="Ad"
+                              className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
+                            />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -266,16 +278,18 @@ export default function Ads2ColSection({
                               window.location.href = ad.link;
                             }
                           }}
-                          className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                          className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
                           style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                         >
                           {ad.image_url && (
+                          <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={ad.image_url}
                               alt="Ad"
-                              className={`h-full w-full transition-transform duration-300 hover:scale-105 object-cover`}
+                              className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
                             />
-                          )}
+                          </div>
+                        )}
                         </div>
                       </div>
                     ))}
@@ -288,24 +302,29 @@ export default function Ads2ColSection({
               </div>
             </div>
           ) : (
-            <div className={`flex gap-5 ${adsToDisplay.length === 1 ? 'w-full' : ''}`}>
+            <div className="flex gap-5">
               {adsToDisplay.map((ad) => (
-                <div key={ad.id} className="flex-1">
+                <div key={ad.id} className="w-1/2">
                   <div
                     onClick={() => {
                       if (ad.link) {
                         window.location.href = ad.link;
                       }
                     }}
-                    className={`block w-full h-[160px] md:h-[220px] lg:h-[300px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                    className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                    style={{
+                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                      backgroundColor: ad.background_color || undefined,
+                    }}
                   >
                     {ad.image_url && (
-                      <img
-                        src={ad.image_url}
-                        alt="Ad"
-                        className={`h-full w-full transition-transform duration-300 hover:scale-105 ${mobileContainImage ? 'object-contain md:object-cover' : 'object-cover'}`}
-                      />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img
+                          src={ad.image_url}
+                          alt="Ad"
+                          className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

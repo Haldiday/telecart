@@ -17,6 +17,7 @@ interface Offer {
   is_fixed: boolean;
   show_border: boolean;
   border_color: string | null;
+  background_color: string | null;
 }
 
 interface OffersSectionProps {
@@ -112,7 +113,7 @@ export default function OffersSection({
     
     const loadOffers = () => {
       db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Offer[] | null }) => {
-        if (data && mounted) setOffers(data);
+        if (data && mounted) setOffers((data as any[]).map((offer) => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null })));
       });
     };
 
@@ -159,7 +160,7 @@ export default function OffersSection({
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-20 lg:px-12'}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-9 md:px-20 lg:px-10'}>
         {showHeading && (
           <div className="flex items-center justify-between mb-8">
             <h2 className={headingClassName || "section-heading !mb-0"}>
@@ -193,7 +194,7 @@ export default function OffersSection({
           {needsCarousel ? (
             <div className="relative md:px-20">
             <div 
-              className="overflow-hidden overflow-x-hidden rounded-lg -mx-[9px] md:-mx-20 touch-pan-y"
+              className="overflow-hidden overflow-x-hidden rounded-lg -mx-[9px] md:-mx-10 touch-pan-y"
               style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               ref={containerRef}
               onTouchStart={onTouchStart}
@@ -217,20 +218,21 @@ export default function OffersSection({
                     <a 
                       href={offer.link || '#'} 
                       className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
-                      style={{ maxWidth: (isHomePage || isSubcategory) ? '280px' : undefined }}
+                      style={{ maxWidth: (isHomePage || isSubcategory) ? '330px' : undefined }}
                     >
                       {offer.image_url && (
-                        <div 
-                          className={`overflow-hidden bg-white rounded-xl w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
-                          style={{ 
-                            height: (isHomePage || isSubcategory) ? '335px' : '300px',
-                            borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
-                          }}
-                        >
+                          <div
+                            className={`overflow-hidden rounded-xl w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
+                            style={{
+                              height: (isHomePage || isSubcategory) ? '335px' : '300px',
+                              borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined,
+                              backgroundColor: offer.background_color || undefined
+                            }}
+                          >
                           <img
                             src={offer.image_url}
                             alt={offer.heading || 'Offer'}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>
                       )}
@@ -273,26 +275,27 @@ export default function OffersSection({
                 style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
               >
                 {fixedPages.map((page, pageIdx) => (
-                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:px-12">
+                <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 md:px-12">
                   {page.map((offer) => (
                     <div key={offer.id} className="flex h-full">
                       <a 
                         href={offer.link || '#'} 
                         className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
-                        style={{ maxWidth: (isHomePage || isSubcategory) ? '285px' : undefined }}
+                        style={{ maxWidth: (isHomePage || isSubcategory) ? '380px' : undefined }}
                       >
                         {offer.image_url && (
-                          <div 
-                            className={`overflow-hidden bg-white rounded-xl mx-auto w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
-                            style={{ 
+                          <div
+                            className={`overflow-hidden rounded-xl mx-auto w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
+                            style={{
                               height: (isHomePage || isSubcategory) ? '335px' : '300px',
-                              borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined 
+                              borderColor: offer.show_border && offer.border_color ? offer.border_color : undefined,
+                              backgroundColor: offer.background_color || undefined
                             }}
                           >
                             <img
                               src={offer.image_url}
                               alt={offer.heading || 'Offer'}
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                             />
                           </div>
                         )}
