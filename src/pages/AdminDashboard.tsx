@@ -4392,6 +4392,315 @@ export default function AdminDashboard() {
                     <div className="border-t">
                       <button
                         type="button"
+                        onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
+                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                      >
+                        <label className="text-lg font-bold cursor-pointer">Brands</label>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {activeAccordion === 'brands' && (
+                        <div className="space-y-4 pb-6 px-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium">Enable Brands Section</label>
+                            <Switch
+                              checked={editShowBrandsState[editingSub.id] ?? true}
+                              onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
+                            />
+                          </div>
+                          {editShowBrandsState[editingSub.id] !== false && (
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                <input
+                                  value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
+                                  onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Brands"
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                {editSubBrands.map((brand, index) => (
+                                  <div key={brand.id || index} className="rounded-xl border border-border p-3">
+                                    <div className="mb-3 flex items-center justify-between">
+                                      <span className="text-sm font-medium">Brand {index + 1}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands.splice(index, 1);
+                                          setEditSubBrands(newBrands);
+                                        }}
+                                        className="p-1 text-destructive"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    {/* <div className="mb-3">
+                                      <ImageUpload
+                                        label="Logo"
+                                        value={brand.logo_url}
+                                        onChange={(url) => {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands[index] = { ...newBrands[index], logo_url: url };
+                                          setEditSubBrands(newBrands);
+                                        }}
+                                        folder="brands"
+                                      />
+                                    </div> */}
+                                    <input
+                                      placeholder="Brand name"
+                                      value={brand.name || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], name: e.target.value };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    {/* <textarea
+                                      placeholder="Description"
+                                      value={brand.description || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], description: e.target.value };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                                    /> */}
+                                    <input
+                                      placeholder="Primary link (optional)"
+                                      value={brand.link || ''}
+                                      onChange={(e) => {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[index] = { ...newBrands[index], link: e.target.value || null };
+                                        setEditSubBrands(newBrands);
+                                      }}
+                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    />
+
+                                    {/* New CTA Buttons Configuration */}
+                                    {/* <div className="mt-4 space-y-4 border-t pt-4">
+                                      <h4 className="text-sm font-semibold text-foreground">CTA Buttons Configuration</h4>
+                                      
+                                      {/* Primary CTA */}
+                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 1 (Primary CTA)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.primary_cta_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], primary_cta_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.primary_cta_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            placeholder="Button Label"
+                                            value={brand.primary_cta_label || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], primary_cta_label: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Button Link"
+                                            value={brand.primary_cta_link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], primary_cta_link: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                        </div>
+                                      </div> */}
+
+                                      {/* More Actions / Contact */}
+                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 2 (More Actions)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.more_actions_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], more_actions_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.more_actions_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <input
+                                          placeholder="Button Label (e.g. Contact)"
+                                          value={brand.more_actions_label || ''}
+                                          onChange={(e) => {
+                                            const newBrands = [...editSubBrands];
+                                            newBrands[index] = { ...newBrands[index], more_actions_label: e.target.value };
+                                            setEditSubBrands(newBrands);
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground italic">Note: This button will trigger the existing CTA buttons below.</p>
+                                      </div> */}
+
+                                      {/* Join Network */}
+                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 3 (Join Network)</span>
+                                          <div className="flex items-center gap-2">
+                                            <Switch
+                                              checked={brand.join_network_visible ?? false}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                newBrands[index] = { ...newBrands[index], join_network_visible: checked };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.join_network_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            placeholder="Button Label"
+                                            value={brand.join_network_label || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], join_network_label: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Join Link (WhatsApp/Telegram/etc)"
+                                            value={brand.join_network_link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[index] = { ...newBrands[index], join_network_link: e.target.value };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                                          />
+                                        </div>
+                                      </div> */}
+                                    {/* </div> */}
+
+                                    {/* <div className="mt-4 space-y-2 border-t pt-3">
+                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Existing CTA Buttons (triggered by Button 2)</label>
+                                      {(brand.buttons || []).map((btn, btnIndex) => (
+                                        <div key={btnIndex} className="flex gap-2 items-center">
+                                          <input
+                                            placeholder="Label"
+                                            value={btn.label}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons[btnIndex] = { ...newButtons[btnIndex], label: e.target.value };
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+                                          />
+                                          <input
+                                            placeholder="Link"
+                                            value={btn.link || ''}
+                                            onChange={(e) => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons[btnIndex] = { ...newButtons[btnIndex], link: e.target.value };
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="flex-[2] rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+                                          />
+                                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                                            <Switch
+                                              checked={btn.is_visible ?? true}
+                                              onCheckedChange={(checked) => {
+                                                const newBrands = [...editSubBrands];
+                                                const newButtons = [...(newBrands[index].buttons || [])];
+                                                newButtons[btnIndex] = { ...newButtons[btnIndex], is_visible: Boolean(checked) };
+                                                newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                                setEditSubBrands(newBrands);
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(btn.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newBrands = [...editSubBrands];
+                                              const newButtons = [...(newBrands[index].buttons || [])];
+                                              newButtons.splice(btnIndex, 1);
+                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                              setEditSubBrands(newBrands);
+                                            }}
+                                            className="p-1.5 text-destructive"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                      {(brand.buttons || []).length < 4 && (
+                                         <button
+                                           type="button"
+                                           onClick={() => {
+                                             const newBrands = [...editSubBrands];
+                                             const newButtons = [...(newBrands[index].buttons || []), { label: '', link: '', is_visible: true }];
+                                             newBrands[index] = { ...newBrands[index], buttons: newButtons };
+                                             setEditSubBrands(newBrands);
+                                           }}
+                                           className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                                         >
+                                           <Plus className="w-3.5 h-3.5" /> Add Button
+                                         </button>
+                                       )}
+                                    </div> */}
+                                  </div>
+                                ))}
+                                {editSubBrands.length < 10 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSubBrands([...editSubBrands, { 
+                                      id: crypto.randomUUID(), 
+                                      name: '', 
+                                      logo_url: null, 
+                                      link: null, 
+                                      description: '', 
+                                      buttons: [], 
+                                      is_visible: true,
+                                      primary_cta_label: 'Submit RFP',
+                                      primary_cta_link: '',
+                                      primary_cta_visible: false,
+                                      more_actions_label: 'Contact',
+                                      more_actions_visible: false,
+                                      join_network_label: '+ Join their Network',
+                                      join_network_link: '',
+                                      join_network_visible: false
+                                    }])}
+                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                  >
+                                    <Plus className="w-4 h-4" /> Add Brand
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t">
+                      <button
+                        type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'about-sections' ? null : 'about-sections')}
                         className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
                       >
@@ -4895,315 +5204,6 @@ export default function AdminDashboard() {
                                 </button>
                               )}
                             </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border-t">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Brands</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {activeAccordion === 'brands' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Enable Brands Section</label>
-                            <Switch
-                              checked={editShowBrandsState[editingSub.id] ?? true}
-                              onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
-                            />
-                          </div>
-                          {editShowBrandsState[editingSub.id] !== false && (
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                                <input
-                                  value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
-                                  onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Brands"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                {editSubBrands.map((brand, index) => (
-                                  <div key={brand.id || index} className="rounded-xl border border-border p-3">
-                                    <div className="mb-3 flex items-center justify-between">
-                                      <span className="text-sm font-medium">Brand {index + 1}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newBrands = [...editSubBrands];
-                                          newBrands.splice(index, 1);
-                                          setEditSubBrands(newBrands);
-                                        }}
-                                        className="p-1 text-destructive"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                    <div className="mb-3">
-                                      <ImageUpload
-                                        label="Logo"
-                                        value={brand.logo_url}
-                                        onChange={(url) => {
-                                          const newBrands = [...editSubBrands];
-                                          newBrands[index] = { ...newBrands[index], logo_url: url };
-                                          setEditSubBrands(newBrands);
-                                        }}
-                                        folder="brands"
-                                      />
-                                    </div>
-                                    <input
-                                      placeholder="Brand name"
-                                      value={brand.name || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], name: e.target.value };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <textarea
-                                      placeholder="Description"
-                                      value={brand.description || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], description: e.target.value };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
-                                    />
-                                    <input
-                                      placeholder="Primary link (optional)"
-                                      value={brand.link || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], link: e.target.value || null };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-
-                                    {/* New CTA Buttons Configuration */}
-                                    <div className="mt-4 space-y-4 border-t pt-4">
-                                      <h4 className="text-sm font-semibold text-foreground">CTA Buttons Configuration</h4>
-                                      
-                                      {/* Primary CTA */}
-                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 1 (Primary CTA)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.primary_cta_visible ?? false}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], primary_cta_visible: checked };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.primary_cta_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                                          </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            placeholder="Button Label"
-                                            value={brand.primary_cta_label || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], primary_cta_label: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Button Link"
-                                            value={brand.primary_cta_link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], primary_cta_link: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                        </div>
-                                      </div>
-
-                                      {/* More Actions / Contact */}
-                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 2 (More Actions)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.more_actions_visible ?? false}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], more_actions_visible: checked };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.more_actions_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                                          </div>
-                                        </div>
-                                        <input
-                                          placeholder="Button Label (e.g. Contact)"
-                                          value={brand.more_actions_label || ''}
-                                          onChange={(e) => {
-                                            const newBrands = [...editSubBrands];
-                                            newBrands[index] = { ...newBrands[index], more_actions_label: e.target.value };
-                                            setEditSubBrands(newBrands);
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                        />
-                                        <p className="text-[10px] text-muted-foreground italic">Note: This button will trigger the existing CTA buttons below.</p>
-                                      </div>
-
-                                      {/* Join Network */}
-                                      <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 3 (Join Network)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.join_network_visible ?? false}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], join_network_visible: checked };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.join_network_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                                          </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            placeholder="Button Label"
-                                            value={brand.join_network_label || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], join_network_label: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Join Link (WhatsApp/Telegram/etc)"
-                                            value={brand.join_network_link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], join_network_link: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="mt-4 space-y-2 border-t pt-3">
-                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Existing CTA Buttons (triggered by Button 2)</label>
-                                      {(brand.buttons || []).map((btn, btnIndex) => (
-                                        <div key={btnIndex} className="flex gap-2 items-center">
-                                          <input
-                                            placeholder="Label"
-                                            value={btn.label}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons[btnIndex] = { ...newButtons[btnIndex], label: e.target.value };
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Link"
-                                            value={btn.link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons[btnIndex] = { ...newButtons[btnIndex], link: e.target.value };
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="flex-[2] rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
-                                          />
-                                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
-                                            <Switch
-                                              checked={btn.is_visible ?? true}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                const newButtons = [...(newBrands[index].buttons || [])];
-                                                newButtons[btnIndex] = { ...newButtons[btnIndex], is_visible: Boolean(checked) };
-                                                newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(btn.is_visible ?? true) ? 'ON' : 'OFF'}</span>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons.splice(btnIndex, 1);
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="p-1.5 text-destructive"
-                                          >
-                                            <X className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ))}
-                                      {(brand.buttons || []).length < 4 && (
-                                         <button
-                                           type="button"
-                                           onClick={() => {
-                                             const newBrands = [...editSubBrands];
-                                             const newButtons = [...(newBrands[index].buttons || []), { label: '', link: '', is_visible: true }];
-                                             newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                             setEditSubBrands(newBrands);
-                                           }}
-                                           className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
-                                         >
-                                           <Plus className="w-3.5 h-3.5" /> Add Button
-                                         </button>
-                                       )}
-                                    </div>
-                                  </div>
-                                ))}
-                                {editSubBrands.length < 10 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditSubBrands([...editSubBrands, { 
-                                      id: crypto.randomUUID(), 
-                                      name: '', 
-                                      logo_url: null, 
-                                      link: null, 
-                                      description: '', 
-                                      buttons: [], 
-                                      is_visible: true,
-                                      primary_cta_label: 'Submit RFP',
-                                      primary_cta_link: '',
-                                      primary_cta_visible: false,
-                                      more_actions_label: 'Contact',
-                                      more_actions_visible: false,
-                                      join_network_label: '+ Join their Network',
-                                      join_network_link: '',
-                                      join_network_visible: false
-                                    }])}
-                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                  >
-                                    <Plus className="w-4 h-4" /> Add Brand
-                                  </button>
-                                )}
-                              </div>
-                            </div>
                           )}
                         </div>
                       )}

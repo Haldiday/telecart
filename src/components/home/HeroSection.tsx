@@ -2,9 +2,29 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Brand {
+  id: string;
+  name: string;
+  link: string | null;
+}
+
 type SearchResult =
   | { id: string; type: 'category'; name: string }
-  | { id: string; type: 'subcategory'; name: string; categoryId: string; custom_link?: string | null; custom_link_type?: 'link' | 'iframe' | 'embed_code' | null };
+  | { 
+      id: string; 
+      type: 'subcategory'; 
+      name: string; 
+      categoryId: string; 
+      custom_link?: string | null; 
+      custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+    }
+  | {
+      id: string;
+      type: 'brand';
+      name: string;
+      subcategoryName: string;
+      link: string | null;
+    };
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -89,7 +109,7 @@ export default function HeroSection() {
           .order('sort_order'),
         (supabase as any)
           .from('subcategories')
-          .select('id, category_id, name, custom_link, custom_link_type')
+          .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
           .ilike('name', `%${searchTerm}%`)
           .order('sort_order'),
       ]);
@@ -106,15 +126,35 @@ export default function HeroSection() {
         name: category.name,
       }));
 
-      const subcategoryResults: SearchResult[] = (subcategories || []).map((subcategory) => ({
-        id: subcategory.id,
-        type: 'subcategory' as const,
-        name: subcategory.name,
-        categoryId: subcategory.category_id,
-        custom_link: subcategory.custom_link,
-      }));
+      const processedResults: SearchResult[] = [];
+      
+      (subcategories || []).forEach((subcategory) => {
+        const brands = subcategory.subcategory_brands || [];
+        if (brands.length === 0) {
+          // No brands - add subcategory with custom link
+          processedResults.push({
+            id: subcategory.id,
+            type: 'subcategory' as const,
+            name: subcategory.name,
+            categoryId: subcategory.category_id,
+            custom_link: subcategory.custom_link,
+            custom_link_type: subcategory.custom_link_type,
+          });
+        } else {
+          // Has brands - add brands instead of subcategory
+          brands.forEach((brand: any) => {
+            processedResults.push({
+              id: brand.id,
+              type: 'brand' as const,
+              name: brand.name,
+              subcategoryName: subcategory.name,
+              link: brand.link,
+            });
+          });
+        }
+      });
 
-      setSearchResults([...categoryResults, ...subcategoryResults].slice(0, 10));
+      setSearchResults([...categoryResults, ...processedResults].slice(0, 10));
       }
 
       setIsSearching(false);
@@ -132,7 +172,31 @@ export default function HeroSection() {
       return;
     }
 
-    navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+    if (result.type === 'subcategory') {
+      if (result.custom_link) {
+        try {
+          const url = new URL(result.custom_link);
+          window.open(url.toString(), '_blank');
+        } catch {
+          navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+        }
+      } else {
+        navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+      }
+      return;
+    }
+
+    if (result.type === 'brand') {
+      if (result.link) {
+        try {
+          const url = new URL(result.link);
+          window.open(url.toString(), '_blank');
+        } catch {
+          // Invalid URL, do nothing
+        }
+      }
+      return;
+    }
   }
 
   function handleSearchButton() {
@@ -314,10 +378,16 @@ export default function HeroSection() {
                           </svg>
 
                           <span className="flex-1">
-                            {result.name}
-                            <span className="ml-2 text-xs text-[#8a8f9a]">
-                              {result.type === 'category' ? 'Category' : 'Subcategory'}
-                            </span>
+                            {result.type === 'brand' ? (
+                              <>
+                                {result.name}
+                                <span className="ml-2 text-xs text-[#8a8f9a]">
+                                  ({result.subcategoryName})
+                                </span>
+                              </>
+                            ) : (
+                              <>{result.name}</>
+                            )}
                           </span>
                         </button>
                       ))
