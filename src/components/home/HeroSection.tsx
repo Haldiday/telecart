@@ -28,11 +28,11 @@ type SearchResult =
 
 export default function HeroSection() {
   const navigate = useNavigate();
-  const [mainText, setMainText] = useState('');
+  const [mainTextPart1, setMainTextPart1] = useState('');
+  const [mainTextPart2, setMainTextPart2] = useState('');
   const [words, setWords] = useState<string[]>([]);
-  const [currentWord, setCurrentWord] = useState(0);
-  const [displayed, setDisplayed] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -50,8 +50,20 @@ export default function HeroSection() {
       .single()
       .then(({ data }) => {
         if (data && mounted) {
-          setMainText(data.main_text);
-          setWords(data.animated_words);
+          const heroData = data as any;
+          const mainText = heroData.main_text || '';
+          let part1 = '';
+          let part2 = '';
+          if (mainText.includes('|||')) {
+            const split = mainText.split('|||');
+            part1 = split[0] || '';
+            part2 = split[1] || '';
+          } else {
+            part1 = mainText;
+          }
+          setMainTextPart1(part1);
+          setMainTextPart2(part2);
+          setWords(heroData.animated_words);
         }
       });
     
@@ -61,27 +73,21 @@ export default function HeroSection() {
   }, []);
 
   useEffect(() => {
-    if (words.length === 0) return;
+    if (words.length <= 1) return;
 
-    const word = words[currentWord];
+    // Stay visible for 2.5 seconds
+    const stayTimeout = setTimeout(() => {
+      setIsTransitioning(true);
+      // After transitioning, switch to next word
+      const transitionTimeout = setTimeout(() => {
+        setCurrentWordIndex((prev) => (prev + 1) % words.length);
+        setIsTransitioning(false);
+      }, 500);
+      return () => clearTimeout(transitionTimeout);
+    }, 2500);
 
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        setDisplayed(word.substring(0, displayed.length + 1));
-        if (displayed.length + 1 === word.length) {
-          setTimeout(() => setIsDeleting(true), 2000);
-        }
-      } else {
-        setDisplayed(word.substring(0, displayed.length - 1));
-        if (displayed.length === 0) {
-          setIsDeleting(false);
-          setCurrentWord((prev) => (prev + 1) % words.length);
-        }
-      }
-    }, isDeleting ? 50 : 100);
-
-    return () => clearTimeout(timeout);
-  }, [displayed, isDeleting, currentWord, words]);
+    return () => clearTimeout(stayTimeout);
+  }, [currentWordIndex, words]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -240,36 +246,71 @@ export default function HeroSection() {
     <section
       id="hero"
       className="relative py-20 md:py-28 overflow-hidden"
-      style={{ backgroundColor: '#fcfbf3' }}
+      style={{ backgroundColor: '#ffffffff' }}
     >
       <div className="container mx-auto px-4 md:px-8 lg:px-12 text-center">
 
         {/* HEADING */}
         <h1
-  className="mb-4 text-[#1c1c1c] text-[30px] sm:text-[34px] md:text-[44px] leading-[1.3]"
-  style={{
-    fontFamily: 'Trustpilot Display, Inter, sans-serif',
-    fontWeight: 800,
-  
-  }}
->
-  {mainText}
-</h1>
+          className="mb-4 text-[#1c1c1c] text-[30px] sm:text-[34px] md:text-[44px] leading-[1.3]"
+          style={{
+            fontFamily: 'Trustpilot Display, Inter, sans-serif',
+            fontWeight: 800,
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word',
+            hyphens: 'auto',
+          }}
+        >
+          {mainTextPart1}
+          {mainTextPart1 && mainTextPart2 && ' '}
+          <span style={{ color: '#1d4ed8' }}>{mainTextPart2}</span>
+        </h1>
 
 
         {/* ANIMATED TEXT */}
         <div
-          className="h-12 flex items-center justify-center"
+          className="min-h-[50px] flex items-center justify-center relative"
           style={{
             fontFamily: 'Trustpilot Display, Arial, sans-serif',
             fontSize: '24px',
             fontWeight: 60,
+            lineHeight: '1.4',
           }}
         >
-          <span className="text-[#121511]">
-            {displayed}
-            <span className="inline-block w-[4px] h-[1em] bg-[#121511] ml-1 animate-pulse" />
-          </span>
+          {words.length > 1 ? (
+            <>
+              {/* Current Word - Slides Out Down */}
+              <div 
+                key={`current-${currentWordIndex}`}
+                className="absolute text-[#121511] transition-all duration-500 ease-in-out text-center"
+                style={{
+                  transform: isTransitioning ? 'translateY(150%)' : 'translateY(0)',
+                  opacity: isTransitioning ? 0 : 1,
+                  width: '100%',
+                  wordWrap: 'break-word',
+                }}
+              >
+                {words[currentWordIndex]}
+              </div>
+              {/* Next Word - Slides In From Top */}
+              <div 
+                key={`next-${currentWordIndex}`}
+                className="absolute text-[#121511] transition-all duration-500 ease-in-out text-center"
+                style={{
+                  transform: isTransitioning ? 'translateY(0)' : 'translateY(-150%)',
+                  opacity: isTransitioning ? 1 : 0,
+                  width: '100%',
+                  wordWrap: 'break-word',
+                }}
+              >
+                {words[(currentWordIndex + 1) % words.length]}
+              </div>
+            </>
+          ) : (
+            <div className="text-[#121511] text-center w-full" style={{ wordWrap: 'break-word' }}>
+              {words[0]}
+            </div>
+          )}
         </div>
 
         {/* SEARCH */}

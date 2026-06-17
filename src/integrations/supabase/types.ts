@@ -23,6 +23,7 @@ export type Database = {
           link: string | null
           section_id: string
           show_border: boolean
+          show_image: boolean
           sort_order: number
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           link?: string | null
           section_id: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           link?: string | null
           section_id?: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
         }
         Relationships: []
@@ -58,6 +61,7 @@ export type Database = {
           link: string | null
           section_id: string
           show_border: boolean
+          show_image: boolean
           sort_order: number
         }
         Insert: {
@@ -70,6 +74,7 @@ export type Database = {
           link?: string | null
           section_id: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
         }
         Update: {
@@ -82,6 +87,7 @@ export type Database = {
           link?: string | null
           section_id?: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
         }
         Relationships: []
@@ -398,6 +404,7 @@ export type Database = {
           link: string | null
           section_id: string
           show_border: boolean
+          show_image: boolean
           sort_order: number
           updated_at: string
         }
@@ -411,6 +418,7 @@ export type Database = {
           link?: string | null
           section_id: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
           updated_at?: string
         }
@@ -424,6 +432,7 @@ export type Database = {
           link?: string | null
           section_id?: string
           show_border?: boolean
+          show_image?: boolean
           sort_order?: number
           updated_at?: string
         }

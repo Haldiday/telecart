@@ -437,8 +437,9 @@ export default function AdminDashboard() {
   } = useSectionInstances();
 
   const [sections, setSections] = useState<PageSection[]>([]);
-  const [heroText, setHeroText] = useState('');
-  const [heroWords, setHeroWords] = useState('');
+  const [heroTextPart1, setHeroTextPart1] = useState('');
+  const [heroTextPart2, setHeroTextPart2] = useState('');
+  const [heroWords, setHeroWords] = useState<string[]>([]);
   const [cards, setCards] = useState<FeaturedCard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -711,7 +712,25 @@ export default function AdminDashboard() {
           });
           if (legal.data) setLegalPages(legal.data as LegalPage[]);
           if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
-          if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
+          if (h.data) { 
+      const heroData = h.data as any;
+      // Try to split main_text using ||| delimiter
+      const mainText = heroData.main_text || '';
+      let part1 = '';
+      let part2 = '';
+      if (mainText.includes('|||')) {
+        const split = mainText.split('|||');
+        part1 = split[0] || '';
+        part2 = split[1] || '';
+      } else {
+        // Backward compatibility: if no delimiter, use whole text as part1
+        part1 = mainText;
+      }
+      setHeroTextPart1(part1); 
+      setHeroTextPart2(part2); 
+      console.log('Loading hero words:', heroData.animated_words);
+      setHeroWords(heroData.animated_words || []); 
+    }
           if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
           if (cat.data) setCategories(cat.data);
       if (sub.data) {
@@ -997,7 +1016,25 @@ export default function AdminDashboard() {
     });
     if (legal.data) setLegalPages(legal.data as LegalPage[]);
     if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
-    if (h.data) { setHeroText(h.data.main_text); setHeroWords(h.data.animated_words.join(', ')); }
+    if (h.data) { 
+      const heroData = h.data as any;
+      // Try to split main_text using ||| delimiter
+      const mainText = heroData.main_text || '';
+      let part1 = '';
+      let part2 = '';
+      if (mainText.includes('|||')) {
+        const split = mainText.split('|||');
+        part1 = split[0] || '';
+        part2 = split[1] || '';
+      } else {
+        // Backward compatibility: if no delimiter, use whole text as part1
+        part1 = mainText;
+      }
+      setHeroTextPart1(part1); 
+      setHeroTextPart2(part2); 
+      console.log('Loading hero words:', heroData.animated_words);
+      setHeroWords(heroData.animated_words || []); 
+    }
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     if (cat.data) setCategories(cat.data);
     if (sub.data) setSubcategories(sub.data as unknown as Subcategory[]);
@@ -1529,12 +1566,26 @@ export default function AdminDashboard() {
   }
 
   async function saveHero() {
-    const words = heroWords.split(',').map(w => w.trim()).filter(Boolean);
+    const words = heroWords.filter(Boolean);
+    console.log('Saving hero with words:', words);
     const { data } = await supabase.from('hero_settings').select('id').limit(1).single();
+    // Store parts using ||| as delimiter, or original main_text for backward compatibility
+    const mainTextValue = heroTextPart1 || heroTextPart2 
+      ? `${heroTextPart1}|||${heroTextPart2}` 
+      : '';
     if (data) {
-      await supabase.from('hero_settings').update({ main_text: heroText, animated_words: words }).eq('id', data.id);
+      const { error } = await supabase.from('hero_settings').update({ 
+        main_text: mainTextValue,
+        animated_words: words 
+      }).eq('id', data.id);
+      if (error) {
+        console.error('Error saving hero:', error);
+        toast.error('Failed to save hero');
+        return;
+      }
     }
     toast.success('Hero saved!');
+    await loadAll();
   }
 
   async function saveCard() {
@@ -3291,12 +3342,50 @@ export default function AdminDashboard() {
             <div className="max-w-lg space-y-4">
               <h2 className="text-xl font-bold mb-4">Edit Hero Section</h2>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Main Text</label>
-                <input value={heroText} onChange={(e) => setHeroText(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                <label className="block text-sm font-medium mb-1.5">Text Part 1</label>
+                <input value={heroTextPart1} onChange={(e) => setHeroTextPart1(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Animated Words (comma-separated)</label>
-                <input value={heroWords} onChange={(e) => setHeroWords(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                <label className="block text-sm font-medium mb-1.5">Text Part 2</label>
+                <input value={heroTextPart2} onChange={(e) => setHeroTextPart2(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium">Animated Words</label>
+                  <button
+                    type="button"
+                    onClick={() => setHeroWords([...heroWords, ''])}
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <Plus className="w-4 h-4" /> Add Word
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {heroWords.map((word, index) => (
+                    <div key={`hero-word-${index}`} className="flex items-center gap-2 w-full p-3 bg-card rounded-lg border border-border">
+                      <input
+                        value={word}
+                        onChange={(e) => {
+                          const newWords = [...heroWords];
+                          newWords[index] = e.target.value;
+                          setHeroWords(newWords);
+                        }}
+                        className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                        placeholder="Enter animated word"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newWords = heroWords.filter((_, idx) => idx !== index);
+                          setHeroWords(newWords);
+                        }}
+                        className="p-2 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
               <button onClick={saveHero} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2">
                 <Save className="w-4 h-4" /> Save Hero

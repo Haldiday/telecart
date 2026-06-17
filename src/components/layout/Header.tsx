@@ -306,7 +306,7 @@ export default function Header() {
             
 
             {/* TEXT */}
-            <span className="text-2xl md:text-3xl font-bold text-[black]">Biz<span className="text-[#1d4ed8]">Req</span></span>
+            <span className="text-2xl md:text-3xl font-bold text-[Black]">Biz<span className="text-[#1d4ed8]">Req</span></span>
 
           </Link>
 
