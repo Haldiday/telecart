@@ -136,17 +136,7 @@ export default function HeroSection() {
       
       (subcategories || []).forEach((subcategory) => {
         const brands = subcategory.subcategory_brands || [];
-        if (brands.length === 0) {
-          // No brands - add subcategory with custom link
-          processedResults.push({
-            id: subcategory.id,
-            type: 'subcategory' as const,
-            name: subcategory.name,
-            categoryId: subcategory.category_id,
-            custom_link: subcategory.custom_link,
-            custom_link_type: subcategory.custom_link_type,
-          });
-        } else {
+        if (brands.length > 0) {
           // Has brands - add brands instead of subcategory
           brands.forEach((brand: any) => {
             processedResults.push({
@@ -157,7 +147,18 @@ export default function HeroSection() {
               link: brand.link,
             });
           });
+        } else if (subcategory.custom_link) {
+          // No brands but has custom link - add subcategory
+          processedResults.push({
+            id: subcategory.id,
+            type: 'subcategory' as const,
+            name: subcategory.name,
+            categoryId: subcategory.category_id,
+            custom_link: subcategory.custom_link,
+            custom_link_type: subcategory.custom_link_type,
+          });
         }
+        // Else: no brands and no custom link - don't add anything
       });
 
       setSearchResults([...categoryResults, ...processedResults].slice(0, 10));
@@ -184,10 +185,11 @@ export default function HeroSection() {
           const url = new URL(result.custom_link);
           window.open(url.toString(), '_blank');
         } catch {
-          navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+          // Do nothing if URL is invalid and no brands
         }
       } else {
-        navigate(`/category/${result.categoryId}/subcategory/${result.id}`);
+        // No custom link, check if we have brands
+        // For search, we already handled brands earlier, so if we're here it's a subcategory with no brands - do nothing
       }
       return;
     }
@@ -246,8 +248,16 @@ export default function HeroSection() {
     <section
       id="hero"
       className="relative py-20 md:py-28 overflow-hidden"
-      style={{ backgroundColor: '#ffffffff' }}
     >
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover opacity-50 -z-10"
+      >
+        <source src="/videos/header-video.mp4" type="video/mp4" />
+      </video>
       <div className="container mx-auto px-4 md:px-8 lg:px-12 text-center">
 
         {/* HEADING */}

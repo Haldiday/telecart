@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,6 +42,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -167,54 +168,35 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         const handleSubcategoryClick = () => {
                           if (hasBrands) {
                             setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
-                          } else {
-                            // Just navigate directly
+                          } else if (sub.custom_link) {
+                            window.open(sub.custom_link, '_blank');
                           }
+                          // Else do nothing
                         };
+
+                        const hasBrandsOrLink = sub.custom_link || hasBrands;
 
                         return (
                           <div key={sub.id} className="border-b border-border/30 last:border-0">
-                            {hasBrands ? (
-                              <button
-                                onClick={handleSubcategoryClick}
-                                className="flex w-full items-center justify-between px-4 py-3 text-left"
-                              >
-                                <span className="text-[14px] font-medium text-black">
-                                  {sub.name}
-                                </span>
-                                {isSubExpanded ? (
+                            <div
+                              onClick={() => hasBrandsOrLink && handleSubcategoryClick()}
+                              className={`flex items-center justify-between px-4 py-3 text-left ${hasBrandsOrLink ? 'cursor-pointer' : 'opacity-100'}`}
+                            >
+                              <span className={`text-[14px] font-medium ${hasBrandsOrLink ? 'text-black hover:text-primary' : 'text-black'}`}>
+                                {sub.name}
+                              </span>
+                              {hasBrands && (
+                                isSubExpanded ? (
                                   <Minus className="h-3.5 w-3.5 text-muted-foreground" />
                                 ) : (
                                   <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                                )}
-                              </button>
-                            ) : (
-                              sub.custom_link ? (
-                                <a
-                                  href={sub.custom_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex w-full items-center justify-between px-4 py-3 text-left"
-                                >
-                                  <span className="text-[14px] font-medium text-black">
-                                    {sub.name}
-                                  </span>
-                                </a>
-                              ) : (
-                                <Link
-                                  to={`/category/${category.id}/subcategory/${sub.id}`}
-                                  className="flex w-full items-center justify-between px-4 py-3 text-left"
-                                >
-                                  <span className="text-[14px] font-medium text-black">
-                                    {sub.name}
-                                  </span>
-                                </Link>
-                              )
-                            )}
+                                )
+                              )}
+                            </div>
 
                             {hasBrands && isSubExpanded && (
                               <div className="px-4 pb-4 pt-1 space-y-3">
-                                <div className="space-y-2 border-l-2 border-border/50 pl-4 ml-1">
+                                <div className="space-y-2 border-l-2 border-blue-500 pl-4 ml-1">
                                   {displayBrands.map((brand) => (
                                     brand.link ? (
                                       <a
@@ -222,18 +204,17 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                         href={brand.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
                                       >
                                         {brand.name}
                                       </a>
                                     ) : (
-                                      <Link
+                                      <div
                                         key={brand.id}
-                                        to={`/category/${category.id}/subcategory/${sub.id}`}
-                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors"
+                                        className="block w-full text-left text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
                                       >
                                         {brand.name}
-                                      </Link>
+                                      </div>
                                     )
                                   ))}
                                 </div>
@@ -298,46 +279,33 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                       const handleSubcategoryClick = () => {
                         if (hasBrands) {
                           setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                        } else if (sub.custom_link) {
+                          window.open(sub.custom_link, '_blank');
                         }
+                        // Else do nothing
                       };
+
+                      const hasBrandsOrLink = sub.custom_link || hasBrands;
 
                       return (
                         <div key={sub.id} className="border-b border-border/30 last:border-0">
-                          {hasBrands ? (
-                            <button
-                              onClick={handleSubcategoryClick}
-                              className="flex w-full items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground hover:text-primary transition-colors"
-                            >
-                              <span>{sub.name}</span>
-                              {isSubExpanded ? (
+                          <div
+                            onClick={() => hasBrandsOrLink && handleSubcategoryClick()}
+                            className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasBrandsOrLink ? 'hover:text-primary cursor-pointer' : 'opacity-100'}`}
+                          >
+                            <span className={hasBrandsOrLink ? '' : 'text-foreground'}>{sub.name}</span>
+                            {hasBrands && (
+                              isSubExpanded ? (
                                 <Minus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
                               ) : (
                                 <Plus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
-                              )}
-                            </button>
-                          ) : (
-                            sub.custom_link ? (
-                              <a
-                                href={sub.custom_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full text-left py-2 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
-                              >
-                                {sub.name}
-                              </a>
-                            ) : (
-                              <Link
-                                to={`/category/${category.id}/subcategory/${sub.id}`}
-                                className="block w-full text-left py-2 text-sm md:text-base font-normal text-foreground hover:text-primary hover:underline transition-colors"
-                              >
-                                {sub.name}
-                              </Link>
-                            )
-                          )}
+                              )
+                            )}
+                          </div>
 
                           {hasBrands && isSubExpanded && (
                             <div className="pb-3 pt-1 space-y-2">
-                              <div className="space-y-2 border-l-2 border-border/50 pl-4 ml-1">
+                              <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
                                 {displayBrands.map((brand) => (
                                   brand.link ? (
                                     <a
@@ -345,18 +313,17 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                       href={brand.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors py-1"
+                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
                                     >
                                       {brand.name}
                                     </a>
                                   ) : (
-                                    <Link
+                                    <div
                                       key={brand.id}
-                                      to={`/category/${category.id}/subcategory/${sub.id}`}
-                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors py-1"
+                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
                                     >
                                       {brand.name}
-                                    </Link>
+                                    </div>
                                   )
                                 ))}
                               </div>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, List } from 'lucide-react';
+import { ArrowLeft, List, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -24,30 +24,23 @@ interface Subcategory {
   custom_link_type?: 'link' | 'iframe' | null;
 }
 
-interface Feature {
+interface BrandItem {
   id: string;
-  title: string;
-  description: string | null;
-  category_id: string;
-  sub_features: SubFeature[];
-}
-
-interface SubFeature {
-  id: string;
-  title: string;
-  description: string | null;
-  feature_id: string;
+  subcategory_id: string;
+  name: string;
+  link?: string | null;
 }
 
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [features, setFeatures] = useState<Feature[]>([]);
-  const [detailDescription, setDetailDescription] = useState('');
+  const [brandsBySubcategory, setBrandsBySubcategory] = useState<Record<string, BrandItem[]>>({});
   const [subcategoriesTabLabel, setSubcategoriesTabLabel] = useState('Subcategories');
   const [activeTab, setActiveTab] = useState(1);
+  const [expandedSubcategoryId, setExpandedSubcategoryId] = useState<string | null>(null);
 
   const tabs = [
     { key: 'subcategories', label: subcategoriesTabLabel, icon: <List className="h-4 w-4" /> },
@@ -58,17 +51,15 @@ export default function CategoryDetail() {
 
     let mounted = true;
     
-    const loadCategoryData = async () => {
+    const loadData = async () => {
       const [
         { data: categoryData },
         { data: subcategoryData },
-        { data: featureData },
-        { data: subFeatureData },
+        { data: brandsData },
       ] = await Promise.all([
         supabase.from('categories').select('*').eq('id', id).single(),
         supabase.from('subcategories').select('*').eq('category_id', id).order('sort_order'),
-        supabase.from('category_features').select('*').eq('category_id', id).order('sort_order'),
-        supabase.from('category_sub_features').select('*').order('sort_order'),
+        supabase.from('subcategory_brands').select('*'),
       ]);
 
       if (!mounted) return;
@@ -76,27 +67,29 @@ export default function CategoryDetail() {
       if (categoryData) {
         setCategory(categoryData);
         setSubcategoriesTabLabel(categoryData.subcategories_tab_label || 'Subcategories');
-        setDetailDescription(categoryData.detail_description || '');
       }
       if (subcategoryData) setSubcategories(subcategoryData);
-      if (featureData) {
-        setFeatures(
-          featureData.map((feature) => ({
-            ...feature,
-            sub_features: (subFeatureData || []).filter((subFeature) => subFeature.feature_id === feature.id),
-          })),
-        );
+      
+      // Group brands by subcategory
+      const brandsMap: Record<string, BrandItem[]> = {};
+      if (brandsData) {
+        brandsData.forEach((brand: any) => {
+          if (!brandsMap[brand.subcategory_id]) {
+            brandsMap[brand.subcategory_id] = [];
+          }
+          brandsMap[brand.subcategory_id].push(brand);
+        });
       }
+      setBrandsBySubcategory(brandsMap);
     };
 
-    loadCategoryData();
+    loadData();
 
     const channel = supabase
       .channel(`category_detail_${id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `id=eq.${id}` }, loadCategoryData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `category_id=eq.${id}` }, loadCategoryData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_features', filter: `category_id=eq.${id}` }, loadCategoryData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_sub_features' }, loadCategoryData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `id=eq.${id}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `category_id=eq.${id}` }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, loadData)
       .subscribe();
 
     return () => {
@@ -105,10 +98,13 @@ export default function CategoryDetail() {
     };
   }, [id]);
 
-  const saveCategoryField = async (payload: Partial<Category>) => {
-    if (!id) return;
-    await supabase.from('categories').update(payload).eq('id', id);
-    setCategory((current) => (current ? { ...current, ...payload } : current));
+  const handleSubcategoryClick = (sub: Subcategory) => {
+    if (brandsBySubcategory[sub.id]?.length > 0) {
+      setExpandedSubcategoryId(expandedSubcategoryId === sub.id ? null : sub.id);
+    } else if (sub.custom_link) {
+      window.open(sub.custom_link, '_blank');
+    }
+    // Else do nothing
   };
 
   if (!category) return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
@@ -130,8 +126,8 @@ export default function CategoryDetail() {
               )}
               <div>
                 <h1 className="text-2xl font-bold">{category.name}</h1>
-                {detailDescription && (
-                  <p className="mt-2 text-sm text-muted-foreground">{detailDescription}</p>
+                {category.detail_description && (
+                  <p className="mt-2 text-sm text-muted-foreground">{category.detail_description}</p>
                 )}
               </div>
             </div>
@@ -155,13 +151,8 @@ export default function CategoryDetail() {
                       <input
                         type="text"
                         value={subcategoriesTabLabel}
-                        onChange={(event) => setSubcategoriesTabLabel(event.target.value)}
-                        onClick={(event) => event.stopPropagation()}
-                        onBlur={() => {
-                          void saveCategoryField({
-                            subcategories_tab_label: subcategoriesTabLabel.trim() || 'Subcategories',
-                          });
-                        }}
+                        onChange={(e) => setSubcategoriesTabLabel(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                         className="w-28 rounded-lg border border-border bg-transparent px-2 py-1 text-sm font-medium text-current outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                       />
                     ) : (
@@ -176,60 +167,62 @@ export default function CategoryDetail() {
 
         <div className="container mx-auto px-4 py-8">
           {activeTab === 1 && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {subcategories.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
-                >
-                  {sub.custom_link ? (
-                    <a
-                      href={sub.custom_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group w-full text-left"
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
+              {subcategories.map((sub) => {
+                const hasBrands = brandsBySubcategory[sub.id]?.length > 0;
+                const isClickable = sub.custom_link || hasBrands;
+                const isExpanded = expandedSubcategoryId === sub.id;
+                
+                return (
+                  <div key={sub.id} className="rounded-xl border border-border bg-card p-4">
+                    <div
+                      onClick={() => isClickable && handleSubcategoryClick(sub)}
+                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
+                        isClickable 
+                          ? 'hover:text-primary cursor-pointer' 
+                          : ''
+                      }`}
                     >
-                      <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
-                        {sub.name}
-                      </span>
-                    </a>
-                  ) : (
-                    <Link
-                      to={`/category/${id}/subcategory/${sub.id}`}
-                      className="group w-full text-left"
-                    >
-                      <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
-                        {sub.name}
-                      </span>
-                    </Link>
-                  )}
-                </div>
-              ))}
-              {subcategories.length === 0 && <p className="text-muted-foreground">No subcategories available.</p>}
-            </div>
-          )}
-
-          {activeTab === 2 && (
-            <div className="space-y-6">
-              {features.length === 0 && <p className="text-muted-foreground">No features listed.</p>}
-              {features.map((feature) => (
-                <div key={feature.id}>
-                  <h3 className="mb-3 text-base font-bold">{feature.title}</h3>
-                  {feature.description && <p className="mb-4 text-sm text-muted-foreground">{feature.description}</p>}
-                  {feature.sub_features.length > 0 && (
-                    <div className="rounded-xl bg-muted/50 p-5">
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                        {feature.sub_features.map((subFeature) => (
-                          <div key={subFeature.id} className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3">
-                            <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
-                            <span className="text-sm font-medium">{subFeature.title}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <span>{sub.name}</span>
+                      {hasBrands && (
+                        isExpanded ? (
+                          <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                        )
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    
+                    {hasBrands && isExpanded && (
+                      <div className="mt-3 space-y-2">
+                        <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
+                          {brandsBySubcategory[sub.id]?.map((brand) => (
+                            brand.link ? (
+                              <a
+                                key={brand.id}
+                                href={brand.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
+                              >
+                                {brand.name}
+                              </a>
+                            ) : (
+                              <div
+                                key={brand.id}
+                                className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
+                              >
+                                {brand.name}
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {subcategories.length === 0 && <p className="text-muted-foreground">No subcategories available.</p>}
             </div>
           )}
         </div>

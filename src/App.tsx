@@ -10,7 +10,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import CategoryDetail from "./pages/CategoryDetail";
-import SubcategoryDetail from "./pages/SubcategoryDetail";
+import SubcategoryBrands from "./components/home/SubcategoryBrands";
 import FeaturedCardsPage from "./pages/FeaturedCardsPage";
 import AllSubcategoriesPage from "./pages/AllSubcategoriesPage";
 import ContactUs from "./pages/ContactUs";
@@ -36,7 +36,7 @@ const router = createBrowserRouter(
         { path: "/refund-policy", element: <RefundPolicy /> },
         { path: "/faqs", element: <FAQs /> },
         { path: "/category/:id", element: <CategoryDetail /> },
-        { path: "/category/:categoryId/subcategory/:subcategoryId", element: <SubcategoryDetail /> },
+        { path: "/category/:categoryId/subcategory/:subcategoryId/brands", element: <SubcategoryBrands /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
         { path: "/admin/login", element: <AdminLogin /> },

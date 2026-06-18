@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -4433,17 +4433,7 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Description 1</label>
-                      <textarea
-                        value={editingSub.detail_description || ''}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, detail_description: e.target.value } : s));
-                        }}
-                        className="min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="Enter first description here..."
-                      />
-                    </div>
+                    
 
                     <div className="space-y-3 border-t pt-4">
                       <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
@@ -4457,27 +4447,7 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Hero Background Color (Optional)</label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={editingSub.hero_background_color || '#ffffff'}
-                          onChange={(e) => {
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, hero_background_color: e.target.value } : s));
-                          }}
-                          className="w-12 h-10 rounded border border-input cursor-pointer"
-                        />
-                        <input
-                          value={editingSub.hero_background_color || ''}
-                          onChange={(e) => {
-                            setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, hero_background_color: e.target.value } : s));
-                          }}
-                          className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
-                          placeholder="#ffffff"
-                        />
-                      </div>
-                    </div>
+                 
                     <div className="border-t">
                       <button
                         type="button"
@@ -4490,17 +4460,9 @@ export default function AdminDashboard() {
 
                       {activeAccordion === 'brands' && (
                         <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Enable Brands Section</label>
-                            <Switch
-                              checked={editShowBrandsState[editingSub.id] ?? true}
-                              onCheckedChange={(value) => setEditShowBrandsState({ ...editShowBrandsState, [editingSub.id]: value })}
-                            />
-                          </div>
-                          {editShowBrandsState[editingSub.id] !== false && (
-                            <div className="space-y-4">
+                          <div className="space-y-4">
                               <div>
-                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                
                                 <input
                                   value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
                                   onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
@@ -4782,12 +4744,11 @@ export default function AdminDashboard() {
                                 )}
                               </div>
                             </div>
-                          )}
                         </div>
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'about-sections' ? null : 'about-sections')}
@@ -4878,7 +4839,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'key-features' ? null : 'key-features')}
@@ -5044,7 +5005,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'buttons' ? null : 'buttons')}
@@ -5112,7 +5073,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'resources' ? null : 'resources')}
@@ -5189,7 +5150,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'downloads' ? null : 'downloads')}
@@ -5298,7 +5259,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
+                    <div className="hidden">
                       <button
                         type="button"
                         onClick={() => setActiveAccordion(activeAccordion === 'pricing' ? null : 'pricing')}
@@ -5546,758 +5507,9 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="border-t">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'bottom-demo' ? null : 'bottom-demo')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <h3 className="text-lg font-bold">Watch Demo Section</h3>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'bottom-demo' ? 'rotate-180' : ''}`} />
-                      </button>
+                    
 
-                      {activeAccordion === 'bottom-demo' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <p className="text-sm text-muted-foreground">Manage the "About / Need Help Deciding?" section for this specific subcategory.</p>
-
-                          <ImageUpload
-                            label="Logo"
-                            value={editingSub.link || ''}
-                            onChange={(url) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, link: url } : s));
-                            }}
-                            folder="logos"
-                          />
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Section Heading</label>
-                              <input
-                                value={editingSub.about_heading || ''}
-                                onChange={(e) => {
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading: e.target.value } : s));
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="Need Help Deciding?"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Logo BG Color</label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={editingSub.about_heading_color || '#ffffff'}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading_color: e.target.value } : s));
-                                  }}
-                                  className="w-10 h-10 rounded border border-input cursor-pointer"
-                                />
-                                <input
-                                  value={editingSub.about_heading_color || ''}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_heading_color: e.target.value } : s));
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                  placeholder="#ffffff"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Section Subheading</label>
-                              <input
-                                value={editingSub.about_subheading || ''}
-                                onChange={(e) => {
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading: e.target.value } : s));
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="Talk to Solution Experts for Free."
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Subheading Color</label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={editingSub.about_subheading_color || '#9af24d'}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading_color: e.target.value } : s));
-                                  }}
-                                  className="w-10 h-10 rounded border border-input cursor-pointer"
-                                />
-                                <input
-                                  value={editingSub.about_subheading_color || ''}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_subheading_color: e.target.value } : s));
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                  placeholder="#9af24d"
-                                />
-                                </div>
-                              </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Section Description</label>
-                              <textarea
-                                value={editingSub.about_content || ''}
-                                onChange={(e) => {
-                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_content: e.target.value } : s));
-                                }}
-                                className="min-h-[90px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="We'll help you find the right tools..."
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Description Color</label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={editingSub.about_description_color || '#ffffff'}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_description_color: e.target.value } : s));
-                                  }}
-                                  className="w-10 h-10 rounded border border-input cursor-pointer"
-                                />
-                                <input
-                                  value={editingSub.about_description_color || ''}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_description_color: e.target.value } : s));
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                  placeholder="#ffffff"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3 border-t pt-4">
-                            <h4 className="text-sm font-semibold">Demo Form Settings</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Demo Form Heading</label>
-                                <textarea
-                                  value={editingSub.demo_form_heading || ''}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading: e.target.value } : s));
-                                  }}
-                                  className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="See The Software In Action&#10;Watch Free Demo!"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Demo Heading Color</label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="color"
-                                    value={editingSub.demo_form_heading_color || '#000000'}
-                                    onChange={(e) => {
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading_color: e.target.value } : s));
-                                    }}
-                                    className="w-10 h-10 rounded border border-input cursor-pointer"
-                                  />
-                                  <input
-                                    value={editingSub.demo_form_heading_color || ''}
-                                    onChange={(e) => {
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_form_heading_color: e.target.value } : s));
-                                    }}
-                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                    placeholder="#000000"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Demo Button Label</label>
-                                <input
-                                  value={editingSub.demo_button_label || ''}
-                                  onChange={(e) => {
-                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, demo_button_label: e.target.value } : s));
-                                  }}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Get Free Advice"
-                                />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-6">
-                                  <div>
-                                    <label className="block text-sm font-medium tracking-wider mb-1.5">Button BG Color</label>
-                                    <input
-                                      type="color"
-                                      value={editingSub.about_button_bg_color || '#16a34a'}
-                                      onChange={(e) => {
-                                        setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_bg_color: e.target.value } : s));
-                                      }}
-                                      className="w-10 h-10 rounded-lg border border-input cursor-pointer p-1 bg-background"
-                                      title="Button Background"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium tracking-wider mb-1.5">Button Text Color</label>
-                                    <input
-                                      type="color"
-                                      value={editingSub.about_button_text_color || '#ffffff'}
-                                      onChange={(e) => {
-                                        setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_button_text_color: e.target.value } : s));
-                                      }}
-                                      className="w-10 h-10 rounded-lg border border-input cursor-pointer p-1 bg-background"
-                                      title="Button Text Color"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3 border-t pt-4">
-                            <h4 className="text-sm font-semibold">Section Colors</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Background Color</label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="color"
-                                    value={editingSub.about_bg_color || '#013737'}
-                                    onChange={(e) => {
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_bg_color: e.target.value } : s));
-                                    }}
-                                    className="w-10 h-10 rounded border border-input cursor-pointer"
-                                  />
-                                  <input
-                                    value={editingSub.about_bg_color || ''}
-                                    onChange={(e) => {
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, about_bg_color: e.target.value } : s));
-                                    }}
-                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                                    placeholder="#013737"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="border-t">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'admin-sections' ? null : 'admin-sections')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Section Layout</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'admin-sections' ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {activeAccordion === 'admin-sections' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Manage Section Data</label>
-                            <button type="button" onClick={() => productOpenAddSectionModal(productAdminTab === 'layout' ? 'cards' : productAdminTab)} className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700">Add Section</button>
-                          </div>
-                      <div className="flex flex-wrap gap-2">
-                        {PRODUCT_ADMIN_TABS.map((item) => (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => setProductAdminTab(item.key)}
-                            className={`rounded-lg px-3 py-2 text-xs font-medium ${productAdminTab === item.key ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                      {productAdminTab === 'layout' ? (
-                        <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={(event) => productHandleSectionDragEnd(event, productSectionsLocal, editingSub.id)}>
-                          <SortableContext items={productSectionsLocal.map((section) => section.id)} strategy={verticalListSortingStrategy}>
-                            <div className="grid gap-2">
-                              {productSectionsLocal.map((section) => (
-                                <SortableAdminItem key={section.id} id={section.id}>
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className="text-sm font-medium">{section.heading?.trim() || section.name}</span>
-                                    <div className="flex items-center gap-2">
-                                      <Switch checked={section.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(section.id, Boolean(checked), editingSub.id)} />
-                                      <button type="button" onClick={() => productOpenHeadingModal(section.id, productSectionsLocal)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                                      <button type="button" onClick={() => productDeleteSection(section.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </div>
-                                  </div>
-                                </SortableAdminItem>
-                              ))}
-                              {productSectionsLocal.length === 0 && <p className="text-xs text-muted-foreground">No sections added yet.</p>}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      ) : null}
-
-                      {productAdminTab === 'cards' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedCards = productCards.filter((c) => c.section_id === productSelectedCardsSectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const cardsFixedModeEnabled = selectedCards.some((c) => c.is_fixed);
-                            const selectedCardsSection = productSections.find((s) => s.id === productSelectedCardsSectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'cards').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedCardsSectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedCardsSectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedCardsSection && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedCardsSection.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedCardsSection.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedCardsSection.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedCardsSection.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!productSelectedCardsSectionId) {
-                                  toast.error('Please add/select a Feature Cards section first.');
-                                  productOpenAddSectionModal('cards');
-                                  return;
-                                }
-                                setProductEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, background_color: null });
-                              }}
-                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                            >
-                              Add Card
-                            </button>
-                          </div>
-                          {productSelectedCardsSectionId && (
-                            <label className="flex items-center gap-2 text-xs">
-                              <Switch checked={cardsFixedModeEnabled} onCheckedChange={(checked) => productToggleFixedMode(PRODUCT_CARDS_TABLE, productSelectedCardsSectionId, Boolean(checked), editingSub.id)} />
-                              <span>Fixed Mode {cardsFixedModeEnabled ? 'ON' : 'OFF'}</span>
-                            </label>
-                          )}
-                          {cardsFixedModeEnabled ? (
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedCards, PRODUCT_CARDS_TABLE, cardsFixedModeEnabled)}>
-                              <SortableContext items={selectedCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedCards.map((card) => (
-                                    <SortableOfferItem key={card.id} id={card.id} disabled={!cardsFixedModeEnabled}>
-                                      {card.logo_url && (
-                                        <img src={card.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">{card.title}</span></div>
-                                      <button type="button" onClick={() => setProductEditCard(card)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_CARDS_TABLE, card.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          ) : (
-                            <div className="grid gap-2">
-                              {selectedCards.map((card) => (
-                                <div key={card.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {card.logo_url && (
-                                      <img src={card.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
-                                    )}
-                                    <span className="text-sm font-medium truncate">{card.title}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setProductEditCard(card)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                    <button type="button" onClick={() => productDeleteItem(PRODUCT_CARDS_TABLE, card.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {productAdminTab === 'offers' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedOffers = productOffers.filter((o) => o.section_id === productSelectedOffersSectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const offersFixedModeEnabled = selectedOffers.some((o) => o.is_fixed);
-                            const selectedOffersSection = productSections.find((s) => s.id === productSelectedOffersSectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'offers').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedOffersSectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedOffersSectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedOffersSection && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedOffersSection.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedOffersSection.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedOffersSection.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedOffersSection.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          {productSelectedOffersSectionId && <button type="button" onClick={() => setProductEditOffer({ heading: '', description: '', image_url: null, link: null, show_border: false })} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">Add Offer</button>}
-                          {productSelectedOffersSectionId && (
-                            <label className="flex items-center gap-2 text-xs">
-                              <Switch checked={offersFixedModeEnabled} onCheckedChange={(checked) => productToggleFixedMode(PRODUCT_OFFERS_TABLE, productSelectedOffersSectionId, Boolean(checked), editingSub.id)} />
-                              <span>Fixed Mode {offersFixedModeEnabled ? 'ON' : 'OFF'}</span>
-                            </label>
-                          )}
-                          {offersFixedModeEnabled ? (
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedOffers, PRODUCT_OFFERS_TABLE, offersFixedModeEnabled)}>
-                              <SortableContext items={selectedOffers.map((o) => o.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedOffers.map((offer) => (
-                                    <SortableOfferItem key={offer.id} id={offer.id} disabled={!offersFixedModeEnabled}>
-                                      {offer.image_url && (
-                                        <img src={offer.image_url} alt="" className="w-12 h-12 object-cover rounded bg-muted/50" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">{offer.heading}</span></div>
-                                      <button type="button" onClick={() => setProductEditOffer(offer)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_OFFERS_TABLE, offer.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          ) : (
-                            <div className="grid gap-2">
-                              {selectedOffers.map((offer) => (
-                                <div key={offer.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {offer.image_url && (
-                                      <img src={offer.image_url} alt="" className="w-12 h-12 object-cover rounded bg-muted/50" />
-                                    )}
-                                    <span className="text-sm font-medium truncate">{offer.heading}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setProductEditOffer(offer)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                    <button type="button" onClick={() => productDeleteItem(PRODUCT_OFFERS_TABLE, offer.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {productAdminTab === 'ads_1col' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedAds1 = productAds2.filter((a) => a.section_id === productSelectedAds1SectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const ads1FixedModeEnabled = selectedAds1.some((a) => a.is_fixed);
-                            const selectedAds1Section = productSections.find((s) => s.id === productSelectedAds1SectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'ads_1col').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedAds1SectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedAds1SectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedAds1Section && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedAds1Section.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedAds1Section.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedAds1Section.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedAds1Section.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!productSelectedAds1SectionId) {
-                                  toast.error('Please add/select an Ad 1 section first.');
-                                  productOpenAddSectionModal('ads_1col');
-                                  return;
-                                }
-                                setProductEditAd1({ image_url: null, link: null, show_border: false });
-                              }}
-                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                            >
-                              Add Ad 1
-                            </button>
-                          </div>
-                          {productSelectedAds1SectionId && (
-                            <label className="flex items-center gap-2 text-xs">
-                              <Switch checked={ads1FixedModeEnabled} onCheckedChange={(checked) => productToggleFixedMode(PRODUCT_ADS_2_TABLE, productSelectedAds1SectionId, Boolean(checked), editingSub.id)} />
-                              <span>Fixed Mode {ads1FixedModeEnabled ? 'ON' : 'OFF'}</span>
-                            </label>
-                          )}
-                          {ads1FixedModeEnabled ? (
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedAds1, PRODUCT_ADS_2_TABLE, ads1FixedModeEnabled)}>
-                              <SortableContext items={selectedAds1.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedAds1.map((ad) => (
-                                    <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads1FixedModeEnabled}>
-                                      {ad.image_url && (
-                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">Ad</span></div>
-                                      <button type="button" onClick={() => setProductEditAd1(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          ) : (
-                            <div className="grid gap-2">
-                              {selectedAds1.map((ad) => (
-                                <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {ad.image_url && (
-                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                    )}
-                                    <span className="text-sm font-medium">Ad</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setProductEditAd1(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                    <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {productAdminTab === 'ads_2col' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedAds2 = productAds2.filter((a) => a.section_id === productSelectedAds2SectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const ads2FixedModeEnabled = selectedAds2.some((a) => a.is_fixed);
-                            const selectedAds2Section = productSections.find((s) => s.id === productSelectedAds2SectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'ads_2col').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedAds2SectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedAds2SectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedAds2Section && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedAds2Section.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedAds2Section.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedAds2Section.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedAds2Section.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!productSelectedAds2SectionId) {
-                                  toast.error('Please add/select an Ad 2 section first.');
-                                  productOpenAddSectionModal('ads_2col');
-                                  return;
-                                }
-                                setProductEditAd2({ image_url: null, link: null, show_border: false });
-                              }}
-                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                            >
-                              Add Ad 2
-                            </button>
-                          </div>
-                          {productSelectedAds2SectionId && (
-                            <label className="flex items-center gap-2 text-xs">
-                              <Switch checked={ads2FixedModeEnabled} onCheckedChange={(checked) => productToggleFixedMode(PRODUCT_ADS_2_TABLE, productSelectedAds2SectionId, Boolean(checked), editingSub.id)} />
-                              <span>Fixed Mode {ads2FixedModeEnabled ? 'ON' : 'OFF'}</span>
-                            </label>
-                          )}
-                          {ads2FixedModeEnabled ? (
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedAds2, PRODUCT_ADS_2_TABLE, ads2FixedModeEnabled)}>
-                              <SortableContext items={selectedAds2.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedAds2.map((ad) => (
-                                    <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads2FixedModeEnabled}>
-                                      {ad.image_url && (
-                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">Ad</span></div>
-                                      <button type="button" onClick={() => setProductEditAd2(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          ) : (
-                            <div className="grid gap-2">
-                              {selectedAds2.map((ad) => (
-                                <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {ad.image_url && (
-                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                    )}
-                                    <span className="text-sm font-medium">Ad</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setProductEditAd2(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                    <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_2_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {productAdminTab === 'ads_3col' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedAds3 = productAds3.filter((a) => a.section_id === productSelectedAds3SectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const ads3FixedModeEnabled = selectedAds3.some((a) => a.is_fixed);
-                            const selectedAds3Section = productSections.find((s) => s.id === productSelectedAds3SectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'ads_3col').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedAds3SectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedAds3SectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedAds3Section && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedAds3Section.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedAds3Section.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedAds3Section.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedAds3Section.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!productSelectedAds3SectionId) {
-                                  toast.error('Please add/select an Ad 3 section first.');
-                                  productOpenAddSectionModal('ads_3col');
-                                  return;
-                                }
-                                setProductEditAd3({ image_url: null, heading: '', description: '', link: null, show_border: false });
-                              }}
-                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                            >
-                              Add Ad 3
-                            </button>
-                          </div>
-                          {productSelectedAds3SectionId && (
-                            <label className="flex items-center gap-2 text-xs">
-                              <Switch checked={ads3FixedModeEnabled} onCheckedChange={(checked) => productToggleFixedMode(PRODUCT_ADS_3_TABLE, productSelectedAds3SectionId, Boolean(checked), editingSub.id)} />
-                              <span>Fixed Mode {ads3FixedModeEnabled ? 'ON' : 'OFF'}</span>
-                            </label>
-                          )}
-                          {ads3FixedModeEnabled ? (
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedAds3, PRODUCT_ADS_3_TABLE, ads3FixedModeEnabled)}>
-                              <SortableContext items={selectedAds3.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedAds3.map((ad) => (
-                                    <SortableOfferItem key={ad.id} id={ad.id} disabled={!ads3FixedModeEnabled}>
-                                      {ad.image_url && (
-                                        <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">{ad.heading?.trim() || 'Ad'}</span></div>
-                                      <button type="button" onClick={() => setProductEditAd3(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_3_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          ) : (
-                            <div className="grid gap-2">
-                              {selectedAds3.map((ad) => (
-                                <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    {ad.image_url && (
-                                      <img src={ad.image_url} alt="" className="w-16 h-10 object-cover rounded bg-muted/50" />
-                                    )}
-                                    <span className="text-sm font-medium truncate">{ad.heading?.trim() || 'Ad'}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => setProductEditAd3(ad)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                    <button type="button" onClick={() => productDeleteItem(PRODUCT_ADS_3_TABLE, ad.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {productAdminTab === 'logo_steps' && (
-                        <div className="space-y-3">
-                          {(() => {
-                            const selectedLogoSteps = productLogoSteps.filter((s) => s.section_id === productSelectedLogoStepsSectionId).sort((a, b) => a.sort_order - b.sort_order);
-                            const selectedLogoSection = productSections.find((s) => s.id === productSelectedLogoStepsSectionId);
-                            return (
-                              <>
-                          <div className="flex flex-wrap gap-2">
-                            {productSections.filter((s) => s.section_type === 'logo_steps').map((s) => (
-                              <button key={s.id} type="button" onClick={() => setProductSelectedLogoStepsSectionId(s.id)} className={`rounded-lg px-3 py-2 text-xs ${productSelectedLogoStepsSectionId === s.id ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'}`}>{getSectionDisplayName(s as any)}</button>
-                            ))}
-                          </div>
-                          {selectedLogoSection && (
-                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2">
-                              <Switch checked={selectedLogoSection.is_visible} onCheckedChange={(checked) => productToggleSectionVisibility(selectedLogoSection.id, Boolean(checked), editingSub.id)} />
-                              <button type="button" onClick={() => productOpenHeadingModal(selectedLogoSection.id, productSections)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit Heading</button>
-                              <button type="button" onClick={() => productDeleteSection(selectedLogoSection.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete Section</button>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!productSelectedLogoStepsSectionId) {
-                                  toast.error('Please add/select a Logo Steps section first.');
-                                  productOpenAddSectionModal('logo_steps');
-                                  return;
-                                }
-                                setProductEditLogoStep({ title: '', description: '', logo_url: null });
-                              }}
-                              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                            >
-                              Add Logo Step
-                            </button>
-                          </div>
-                          {productSections.filter((s) => s.section_type === 'logo_steps').length === 0 && (
-                            <p className="text-xs text-muted-foreground">No Logo Steps section yet. Add a section first using the &quot;Add Section&quot; button, then add steps.</p>
-                          )}
-                          <div className="grid gap-2">
-                            <DndContext sensors={productSensors} collisionDetection={closestCenter} onDragEnd={productCreateItemDragHandler(selectedLogoSteps, PRODUCT_LOGO_STEPS_TABLE, true)}>
-                              <SortableContext items={selectedLogoSteps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                                <div className="grid gap-2">
-                                  {selectedLogoSteps.map((step) => (
-                                    <SortableOfferItem key={step.id} id={step.id} disabled={false}>
-                                      {step.logo_url && (
-                                        <img src={step.logo_url} alt="" className="w-10 h-10 object-contain rounded bg-muted/50 p-1" />
-                                      )}
-                                      <div className="flex-1 min-w-0"><span className="text-sm font-medium">{step.title}</span></div>
-                                      <button type="button" onClick={() => setProductEditLogoStep(step)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Edit</button>
-                                      <button type="button" onClick={() => productDeleteItem(PRODUCT_LOGO_STEPS_TABLE, step.id, editingSub.id)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground">Delete</button>
-                                    </SortableOfferItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    
 
                     {productShowAddSectionModal && (
                       <Modal title="Add Subcategory Section" onClose={() => setProductShowAddSectionModal(false)}>
