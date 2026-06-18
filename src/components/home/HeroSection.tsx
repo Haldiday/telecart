@@ -39,6 +39,13 @@ export default function HeroSection() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const videoRef = (element: HTMLVideoElement | null) => {
+    if (element) {
+      element.play().catch(() => {
+        // Autoplay might fail silently on some devices/browsers
+      });
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -250,6 +257,7 @@ export default function HeroSection() {
       className="relative py-20 md:py-28 overflow-hidden"
     >
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
