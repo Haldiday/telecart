@@ -143,6 +143,10 @@ interface FooterSettings {
   privacy_policy_visible?: boolean;
   terms_of_service_visible?: boolean;
   refund_policy_visible?: boolean;
+  whatsapp_number?: string;
+  whatsapp_visible?: boolean;
+  bottom_branding_visible?: boolean;
+  bottom_branding_text?: string;
 }
 
 // Product Tab Sections types and constants
@@ -490,6 +494,10 @@ export default function AdminDashboard() {
     instagram_link: '#',
     youtube_label: 'YouTube',
     youtube_link: '#',
+    whatsapp_number: '',
+    whatsapp_visible: false,
+    bottom_branding_visible: true,
+    bottom_branding_text: '',
   });
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [isSavingFooter, setIsSavingFooter] = useState(false);
@@ -708,6 +716,8 @@ export default function AdminDashboard() {
             youtube_label: 'YouTube',
             youtube_link: '#',
             youtube_visible: false,
+            whatsapp_number: '',
+            whatsapp_visible: false,
             ...footer.data
           });
           if (legal.data) setLegalPages(legal.data as LegalPage[]);
@@ -1012,6 +1022,8 @@ export default function AdminDashboard() {
       youtube_label: 'YouTube',
       youtube_link: '#',
       youtube_visible: false,
+      bottom_branding_visible: true,
+      bottom_branding_text: '',
       ...footer.data
     });
     if (legal.data) setLegalPages(legal.data as LegalPage[]);
@@ -2901,6 +2913,10 @@ export default function AdminDashboard() {
         youtube_label: footerSettings.youtube_label,
         youtube_link: footerSettings.youtube_link,
         youtube_visible: footerSettings.youtube_visible ?? false,
+        whatsapp_number: footerSettings.whatsapp_number ?? '',
+        whatsapp_visible: footerSettings.whatsapp_visible ?? false,
+        bottom_branding_visible: footerSettings.bottom_branding_visible ?? true,
+        bottom_branding_text: footerSettings.bottom_branding_text ?? '',
         updated_at: new Date().toISOString(),
       };
 
@@ -6287,8 +6303,10 @@ export default function AdminDashboard() {
               ) : (
                 <div className="grid gap-3">
                   {selectedAds1.map((ad) => (
-                    <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[2/1] bg-muted group">
-                      {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
+                    <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border bg-muted group">
+                      <div className="w-full h-[180px] sm:h-[220px] md:h-[260px]">
+                        {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-contain bg-white" />}
+                      </div>
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setEditAd1(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteAd2(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -6875,7 +6893,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* YouTube */}
-                <div className="space-y-4">
+                <div className="space-y-4 border-b pb-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-base">YouTube</h3>
                     <div className="flex items-center gap-2">
@@ -6905,6 +6923,52 @@ export default function AdminDashboard() {
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* WhatsApp */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">WhatsApp</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.whatsapp_visible ?? false}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, whatsapp_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">WhatsApp Number</label>
+                    <input
+                      value={footerSettings.whatsapp_number}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, whatsapp_number: e.target.value })}
+                      placeholder="e.g., +1234567890"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom Branding */}
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-base">Bottom Branding Section</h3>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.bottom_branding_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, bottom_branding_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.bottom_branding_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Branding Text</label>
+                    <input
+                      value={footerSettings.bottom_branding_text ?? ''}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, bottom_branding_text: e.target.value })}
+                      placeholder="e.g., by Telecart Technologies"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
                   </div>
                 </div>
               </div>

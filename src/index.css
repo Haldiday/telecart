@@ -9,17 +9,20 @@
         font-weight: 700;
         line-height: 24px;
         color: rgb(23, 49, 59);
-        @apply transition-colors hover:opacity-80;
+        @apply transition-colors;
+    }
+    .header-nav-link:hover {
+        opacity: 0.8;
     }
     .submit-header-button {
         font-family: 'Roboto', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 22px;
+        font-weight: 1000;
         line-height: 24px;
-        color: rgb(23, 49, 59);
-        border: 2px solid #17313B;
+        color: #1d4ed8;
         background-color: transparent;
-        @apply px-6 py-2 rounded-lg transition-all hover:bg-[#17313B] hover:text-white;
+        @apply px-6 py-2 rounded-lg;
+        transition: background-color 0.2s ease, color 0.2s ease;
     }
     .top-header-link {
         font-family: 'Roboto', sans-serif;
@@ -27,7 +30,10 @@
         font-weight: 400;
         line-height: 21px;
         color: rgb(255, 255, 255);
-        @apply transition-colors hover:opacity-80;
+        @apply transition-colors;
+    }
+    .top-header-link:hover {
+        opacity: 0.8;
     }
     .mega-menu-link {
         font-family: 'Roboto', sans-serif;
@@ -62,23 +68,25 @@
     .section-subtext {
         @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
     }
-
     /* TipTap Editor Styles */
-    .tiptap-editor-content, .ProseMirror {
+    .tiptap-editor-content,
+    .ProseMirror {
         @apply overflow-x-hidden break-words;
         word-break: break-word;
         overflow-wrap: break-word;
         outline: none !important;
     }
-    .tiptap-editor-content p, .ProseMirror p {
+    .tiptap-editor-content p,
+    .ProseMirror p {
         margin-bottom: 1.25rem !important;
     }
-    .tiptap-editor-content p:empty::before, .ProseMirror p:empty::before {
+    .tiptap-editor-content p:empty::before,
+    .ProseMirror p:empty::before {
         content: "\00a0";
         display: inline-block;
         min-height: 1em;
     }
-    .tiptap-editor-content ul, 
+    .tiptap-editor-content ul,
     .tiptap-editor-content ol,
     .ProseMirror ul,
     .ProseMirror ol {
@@ -86,27 +94,31 @@
         margin: 1rem 0 !important;
         list-style-position: inside !important;
     }
-    .tiptap-editor-content ul, .ProseMirror ul {
+    .tiptap-editor-content ul,
+    .ProseMirror ul {
         list-style-type: disc !important;
     }
-    .tiptap-editor-content ol, .ProseMirror ol {
+    .tiptap-editor-content ol,
+    .ProseMirror ol {
         list-style-type: decimal !important;
     }
-    .tiptap-editor-content li, .ProseMirror li {
+    .tiptap-editor-content li,
+    .ProseMirror li {
         margin: 0.25em 0 !important;
         padding-left: 0 !important;
     }
-    .tiptap-editor-content li p, .ProseMirror li p {
+    .tiptap-editor-content li p,
+    .ProseMirror li p {
         display: inline !important;
         margin: 0 !important;
     }
-    .tiptap-editor-content li::marker, .ProseMirror li::marker {
+    .tiptap-editor-content li::marker,
+    .ProseMirror li::marker {
         color: inherit !important;
         font-weight: inherit !important;
         font-family: inherit !important;
         font-size: inherit !important;
     }
-    
     /* Legal Content Styles */
     .legal-content {
         @apply overflow-x-hidden break-words;
@@ -217,7 +229,8 @@
     * {
         @apply border-border;
     }
-    html, body {
+    html,
+    body {
         overflow-x: hidden;
     }
     body {

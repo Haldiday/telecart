@@ -649,6 +649,8 @@ export type Database = {
           privacy_policy_visible: boolean
           terms_of_service_visible: boolean
           refund_policy_visible: boolean
+          bottom_branding_visible: boolean
+          bottom_branding_text: string
           twitter_label: string
           twitter_link: string
           twitter_visible: boolean
@@ -677,6 +679,8 @@ export type Database = {
           privacy_policy_visible?: boolean
           terms_of_service_visible?: boolean
           refund_policy_visible?: boolean
+          bottom_branding_visible?: boolean
+          bottom_branding_text?: string
           twitter_label?: string
           twitter_link?: string
           twitter_visible?: boolean
@@ -705,6 +709,8 @@ export type Database = {
           privacy_policy_visible?: boolean
           terms_of_service_visible?: boolean
           refund_policy_visible?: boolean
+          bottom_branding_visible?: boolean
+          bottom_branding_text?: string
           twitter_label?: string
           twitter_link?: string
           twitter_visible?: boolean

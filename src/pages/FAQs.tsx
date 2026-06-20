@@ -51,7 +51,7 @@ export default function FAQs() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 bg-white pt-4 md:pt-6 pb-12">
-        <div className="container mx-auto px-4 md:px-8 max-w-[1200px]">
+        <div className="container mx-auto px-4 md:px-8 max-w-[900px]">
           <h1 className="text-3xl font-bold mb-8 text-[#111111] text-center">Frequently Asked Questions</h1>
           
           {faqs.length === 0 ? (

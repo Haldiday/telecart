@@ -224,14 +224,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                         );
                       })}
                       
-                      <div className="p-4">
-                        <Link
-                          to={`/category/${category.id}`}
-                          className="w-full rounded-lg bg-primary/10 py-2.5 text-center text-sm font-semibold text-primary hover:bg-primary/20 transition-all"
-                        >
-                          Explore all
-                        </Link>
-                      </div>
+                      
                     </div>
                   )}
                 </div>
