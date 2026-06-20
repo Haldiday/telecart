@@ -730,14 +730,43 @@ export default function Header() {
 
           {/* Mobile Button */}
           <button
-            className="md:hidden ml-auto p-2"
+            type="button"
+            className="md:hidden ml-auto relative z-[70] inline-flex h-11 w-11 items-center justify-center rounded-md border border-border/60 bg-background/95 text-foreground shadow-sm transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
-            <PublicIcon
-              src={getPublicVideoIconPath(mobileOpen ? HEADER_ICON_FILES.close : HEADER_ICON_FILES.menu)}
-              alt={mobileOpen ? 'Close menu' : 'Open menu'}
-              className="w-5 h-5"
-            />
+            {mobileOpen ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 6h16" />
+                <path d="M4 12h16" />
+                <path d="M4 18h16" />
+              </svg>
+            )}
           </button>
         </div>
 
