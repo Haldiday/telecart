@@ -19,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save,
-  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown
+  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
@@ -244,7 +244,7 @@ interface LogoStepItem {
   section_id: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -409,6 +409,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
       { key: 'footer_about', label: 'About Us' },
       { key: 'footer_contact', label: 'Contact Page' },
       { key: 'footer_general', label: 'General Settings' },
+      { key: 'footer_subscribers', label: 'Subscribers' },
       { key: 'footer_privacy', label: 'Privacy Policy' },
       { key: 'footer', label: 'Social Media Links' },
       { key: 'footer_terms', label: 'Terms of Service' },
@@ -499,6 +500,7 @@ export default function AdminDashboard() {
     bottom_branding_visible: true,
     bottom_branding_text: '',
   });
+  const [footerSubscribers, setFooterSubscribers] = useState<Array<{ id: string; email: string; created_at: string }>>([]);
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [isSavingFooter, setIsSavingFooter] = useState(false);
   const [isSavingHeader, setIsSavingHeader] = useState(false);
@@ -649,7 +651,7 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer, faqsData] = await Promise.all([
+          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
             supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -669,6 +671,7 @@ export default function AdminDashboard() {
             supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
             supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
             supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('footer_subscribers').select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
             supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
           ]);
 
@@ -720,6 +723,15 @@ export default function AdminDashboard() {
             whatsapp_visible: false,
             ...footer.data
           });
+          if (subscribers.data) {
+            setFooterSubscribers(
+              (subscribers.data as Array<{ id: string; email: string; created_at: string }>).map(subscriber => ({
+                id: subscriber.id,
+                email: subscriber.email,
+                created_at: subscriber.created_at,
+              }))
+            );
+          }
           if (legal.data) setLegalPages(legal.data as LegalPage[]);
           if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
           if (h.data) { 
@@ -7052,6 +7064,49 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'footer_subscribers' && (
+            <div className="max-w-6xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">Footer Subscribers</h2>
+                  <p className="text-sm text-muted-foreground">People who have subscribed from the footer form.</p>
+                </div>
+                <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
+                  {footerSubscribers.length} subscriber{footerSubscribers.length === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+                {footerSubscribers.length === 0 ? (
+                  <div className="p-10 text-center text-sm text-muted-foreground">
+                    No subscribers have been added yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-border text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold">Email</th>
+                          <th className="px-4 py-3 text-left font-semibold">Subscribed On</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {footerSubscribers.map((subscriber) => (
+                          <tr key={subscriber.id}>
+                            <td className="px-4 py-3 font-medium">{subscriber.email}</td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {new Date(subscriber.created_at).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
