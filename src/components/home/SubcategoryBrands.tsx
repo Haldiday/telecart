@@ -39,7 +39,8 @@ export default function SubcategoryBrands() {
       if (categoryData) setCategory(categoryData);
       if (subcategoryData) setSubcategory(subcategoryData);
       if (brandData) {
-        setBrands(brandData.map((brand: any) => ({
+        const visibleBrands = brandData.filter((brand: any) => brand.is_visible !== false);
+        setBrands(visibleBrands.map((brand: any) => ({
           id: brand.id,
           name: brand.name || '',
           link: brand.link || '',

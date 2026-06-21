@@ -68,17 +68,20 @@ export default function CategoryDetail() {
         setCategory(categoryData);
         setSubcategoriesTabLabel(categoryData.subcategories_tab_label || 'Subcategories');
       }
-      if (subcategoryData) setSubcategories(subcategoryData);
+      const visibleSubcategories = (subcategoryData || []).filter((sub: any) => sub.is_visible !== false);
+      if (subcategoryData) setSubcategories(visibleSubcategories);
       
       // Group brands by subcategory
       const brandsMap: Record<string, BrandItem[]> = {};
       if (brandsData) {
-        brandsData.forEach((brand: any) => {
-          if (!brandsMap[brand.subcategory_id]) {
-            brandsMap[brand.subcategory_id] = [];
-          }
-          brandsMap[brand.subcategory_id].push(brand);
-        });
+        brandsData
+          .filter((brand: any) => brand.is_visible !== false && visibleSubcategories.some((sub: any) => sub.id === brand.subcategory_id))
+          .forEach((brand: any) => {
+            if (!brandsMap[brand.subcategory_id]) {
+              brandsMap[brand.subcategory_id] = [];
+            }
+            brandsMap[brand.subcategory_id].push(brand);
+          });
       }
       setBrandsBySubcategory(brandsMap);
     };
@@ -112,7 +115,7 @@ export default function CategoryDetail() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-24 md:pt-36">
         <div className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
             <Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">

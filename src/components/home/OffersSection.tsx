@@ -18,6 +18,7 @@ interface Offer {
   show_border: boolean;
   border_color: string | null;
   background_color: string | null;
+  show_image: boolean;
 }
 
 interface OffersSectionProps {
@@ -58,23 +59,28 @@ export default function OffersSection({
     return 4;
   }, [windowWidth]);
 
+  const visibleOffers = useMemo(
+    () => offers.filter((offer) => offer.show_image !== false),
+    [offers]
+  );
+
   const isHomePage = window.location.pathname === '/';
-  const fixedMode = offers.some((offer) => offer.is_fixed);
+  const fixedMode = visibleOffers.some((offer) => offer.is_fixed);
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
 
-  const totalFixedPages = Math.ceil(offers.length / visibleCount);
+  const totalFixedPages = Math.ceil(visibleOffers.length / visibleCount);
 
   // Group offers into pages for fixed mode sliding
   const fixedPages = useMemo(() => {
     const pages = [];
-    for (let i = 0; i < offers.length; i += visibleCount) {
-      pages.push(offers.slice(i, i + visibleCount));
+    for (let i = 0; i < visibleOffers.length; i += visibleCount) {
+      pages.push(visibleOffers.slice(i, i + visibleCount));
     }
     return pages;
-  }, [offers, visibleCount]);
+  }, [visibleOffers, visibleCount]);
 
-  const needsCarousel = !fixedMode && offers.length > visibleCount;
-  const showFixedControls = fixedMode && offers.length > visibleCount;
+  const needsCarousel = !fixedMode && visibleOffers.length > visibleCount;
+  const showFixedControls = fixedMode && visibleOffers.length > visibleCount;
 
   const {
     index,
@@ -89,7 +95,7 @@ export default function OffersSection({
     onTouchEnd,
     dragOffset,
     containerRef,
-  } = useInfiniteStepCarousel(offers.length, visibleCount, needsCarousel);
+  } = useInfiniteStepCarousel(visibleOffers.length, visibleCount, needsCarousel);
 
   const {
     containerRef: fixedContainerRef,
@@ -113,7 +119,14 @@ export default function OffersSection({
     
     const loadOffers = () => {
       db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Offer[] | null }) => {
-        if (data && mounted) setOffers((data as any[]).map((offer) => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null })));
+        if (data && mounted) setOffers((data as any[]).map((offer) => ({
+          ...offer,
+          is_fixed: offer.is_fixed ?? false,
+          show_border: offer.show_border ?? false,
+          border_color: offer.border_color ?? null,
+          background_color: offer.background_color ?? null,
+          show_image: offer.show_image ?? true,
+        })));
       });
     };
 
@@ -151,11 +164,11 @@ export default function OffersSection({
   }, [db, offersTable, sectionId, sectionTable]);
 
     const displayOffers = useMemo(
-    () => !fixedMode && needsCarousel ? [...offers, ...offers.slice(0, duplicatedCount)] : offers,
-    [offers, duplicatedCount, fixedMode, needsCarousel],
+    () => !fixedMode && needsCarousel ? [...visibleOffers, ...visibleOffers.slice(0, duplicatedCount)] : visibleOffers,
+    [visibleOffers, duplicatedCount, fixedMode, needsCarousel],
   );
 
-  if (offers.length === 0) return null;
+  if (visibleOffers.length === 0) return null;
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
@@ -220,7 +233,7 @@ export default function OffersSection({
                       className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
                       style={{ maxWidth: (isHomePage || isSubcategory) ? '330px' : undefined }}
                     >
-                      {offer.image_url && (
+                      {offer.show_image !== false && offer.image_url && (
                           <div
                             className={`overflow-hidden rounded-xl w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
                             style={{
@@ -237,7 +250,7 @@ export default function OffersSection({
                         </div>
                       )}
                       {(offer.heading || offer.description) && (
-                        <div className="pt-3 px-1 flex-grow flex flex-col justify-start">
+                        <div className={`px-1 flex-grow flex flex-col justify-start ${offer.show_image !== false && offer.image_url ? 'pt-3' : ''}`}>
                           {offer.heading && (
                             <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                               {offer.heading}
@@ -283,7 +296,7 @@ export default function OffersSection({
                         className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
                         style={{ maxWidth: (isHomePage || isSubcategory) ? '380px' : undefined }}
                       >
-                        {offer.image_url && (
+                        {offer.show_image !== false && offer.image_url && (
                           <div
                             className={`overflow-hidden rounded-xl mx-auto w-full flex-shrink-0 ${offer.show_border ? 'border' : ''}`}
                             style={{
@@ -300,7 +313,7 @@ export default function OffersSection({
                           </div>
                         )}
                         {(offer.heading || offer.description) && (
-                          <div className="pt-3 px-1 flex-grow flex flex-col justify-start">
+                          <div className={`px-1 flex-grow flex flex-col justify-start ${offer.show_image !== false && offer.image_url ? 'pt-3' : ''}`}>
                             {offer.heading && (
                               <h3 className="mb-1 text-center text-lg md:text-xl font-semibold line-clamp-1">
                                 {offer.heading}

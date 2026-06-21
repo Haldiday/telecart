@@ -58,10 +58,11 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
         .map((category) => ({
           ...category,
           subcategories: (subs || [])
-            .filter((sub) => sub.category_id === category.id)
-            .map(sub => ({
+            .filter((sub: any) => sub.category_id === category.id && sub.is_visible !== false)
+            .map((sub: any) => ({
               ...sub,
-              brands: (brands || []).filter((b: any) => b.subcategory_id === sub.id)
+              brands: (brands || [])
+                .filter((b: any) => b.subcategory_id === sub.id && b.is_visible !== false)
             })),
         }));
       if (mounted) setCategories(merged as unknown as Category[]);

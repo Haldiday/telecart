@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
+interface FooterBusinessLink {
+  label: string;
+  link: string;
+}
+
 interface FooterSettings {
   description: string;
   twitter_label: string;
@@ -22,11 +27,10 @@ interface FooterSettings {
   youtube_label: string;
   youtube_link: string;
   youtube_visible?: boolean;
-  refund_policy_visible?: boolean;
   whatsapp_number?: string;
   whatsapp_visible?: boolean;
-  bottom_branding_visible?: boolean;
-  bottom_branding_text?: string;
+  for_businesses_title?: string;
+  for_businesses_links?: FooterBusinessLink[];
 }
 
 const FOOTER_ICON_FILES = {
@@ -73,19 +77,28 @@ const getCachedFooterSettings = (): FooterSettings => {
       description: '',
       twitter_label: 'Twitter',
       twitter_link: '#',
+      twitter_visible: true,
       linkedin_label: 'LinkedIn',
       linkedin_link: '#',
+      linkedin_visible: true,
       facebook_label: 'Facebook',
       facebook_link: '#',
+      facebook_visible: true,
       instagram_label: 'Instagram',
       instagram_link: '#',
+      instagram_visible: false,
       youtube_label: 'YouTube',
       youtube_link: '#',
-      refund_policy_visible: true,
+      youtube_visible: false,
       whatsapp_number: '',
       whatsapp_visible: false,
-      bottom_branding_visible: true,
-      bottom_branding_text: '',
+      for_businesses_title: 'For Businesses',
+      for_businesses_links: [
+        { label: 'Advertise With Us', link: '#' },
+        { label: 'Write with us', link: '#' },
+        { label: 'Sell With Us', link: '#' },
+        { label: 'Editorial Policy', link: '#' },
+      ],
     };
   }
 
@@ -96,19 +109,28 @@ const getCachedFooterSettings = (): FooterSettings => {
         description: '',
         twitter_label: 'Twitter',
         twitter_link: '#',
+        twitter_visible: true,
         linkedin_label: 'LinkedIn',
         linkedin_link: '#',
+        linkedin_visible: true,
         facebook_label: 'Facebook',
         facebook_link: '#',
+        facebook_visible: true,
         instagram_label: 'Instagram',
         instagram_link: '#',
+        instagram_visible: false,
         youtube_label: 'YouTube',
         youtube_link: '#',
-        refund_policy_visible: true,
+        youtube_visible: false,
         whatsapp_number: '',
         whatsapp_visible: false,
-        bottom_branding_visible: true,
-        bottom_branding_text: '',
+        for_businesses_title: 'For Businesses',
+        for_businesses_links: [
+          { label: 'Advertise With Us', link: '#' },
+          { label: 'Write with us', link: '#' },
+          { label: 'Sell With Us', link: '#' },
+          { label: 'Editorial Policy', link: '#' },
+        ],
       };
     }
 
@@ -118,19 +140,28 @@ const getCachedFooterSettings = (): FooterSettings => {
       description: '',
       twitter_label: 'Twitter',
       twitter_link: '#',
+      twitter_visible: true,
       linkedin_label: 'LinkedIn',
       linkedin_link: '#',
+      linkedin_visible: true,
       facebook_label: 'Facebook',
       facebook_link: '#',
+      facebook_visible: true,
       instagram_label: 'Instagram',
       instagram_link: '#',
+      instagram_visible: false,
       youtube_label: 'YouTube',
       youtube_link: '#',
-      refund_policy_visible: true,
+      youtube_visible: false,
       whatsapp_number: '',
       whatsapp_visible: false,
-      bottom_branding_visible: true,
-      bottom_branding_text: '',
+      for_businesses_title: 'For Businesses',
+      for_businesses_links: [
+        { label: 'Advertise With Us', link: '#' },
+        { label: 'Write with us', link: '#' },
+        { label: 'Sell With Us', link: '#' },
+        { label: 'Editorial Policy', link: '#' },
+      ],
     };
   }
 };
@@ -200,24 +231,28 @@ export default function Footer() {
             description: footerData.description ?? '',
             twitter_label: footerData.twitter_label ?? 'Twitter',
             twitter_link: footerData.twitter_link ?? '#',
+            twitter_visible: footerData.twitter_visible ?? true,
             linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
             linkedin_link: footerData.linkedin_link ?? '#',
+            linkedin_visible: footerData.linkedin_visible ?? true,
             facebook_label: footerData.facebook_label ?? 'Facebook',
             facebook_link: footerData.facebook_link ?? '#',
+            facebook_visible: footerData.facebook_visible ?? true,
             instagram_label: footerData.instagram_label ?? 'Instagram',
             instagram_link: footerData.instagram_link ?? '#',
+            instagram_visible: footerData.instagram_visible ?? false,
             youtube_label: footerData.youtube_label ?? 'YouTube',
             youtube_link: footerData.youtube_link ?? '#',
-            refund_policy_visible: footerData.refund_policy_visible ?? true,
-            twitter_visible: footerData.twitter_visible ?? true,
-            linkedin_visible: footerData.linkedin_visible ?? true,
-            facebook_visible: footerData.facebook_visible ?? true,
-            instagram_visible: footerData.instagram_visible ?? false,
             youtube_visible: footerData.youtube_visible ?? false,
             whatsapp_number: footerData.whatsapp_number ?? '',
             whatsapp_visible: footerData.whatsapp_visible ?? false,
-            bottom_branding_visible: footerData.bottom_branding_visible ?? true,
-            bottom_branding_text: footerData.bottom_branding_text ?? '',
+            for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
+            for_businesses_links: footerData.for_businesses_links ?? [
+              { label: 'Advertise With Us', link: '#' },
+              { label: 'Write with us', link: '#' },
+              { label: 'Sell With Us', link: '#' },
+              { label: 'Editorial Policy', link: '#' },
+            ],
           };
 
           setSettings(prev => ({ ...prev, ...nextSettings }));
@@ -227,7 +262,7 @@ export default function Footer() {
         console.error('Failed to load footer settings:', err);
       }
     };
-
+  
     loadFooterSettings();
 
     const channel = supabase
@@ -246,11 +281,18 @@ export default function Footer() {
 
   const socialLinks = [
     {
+      key: 'facebook',
+      fileName: FOOTER_ICON_FILES.facebook,
+      link: settings.facebook_link,
+      visible: settings.facebook_visible ?? true,
+      alt: 'Facebook',
+    },
+    {
       key: 'twitter',
       fileName: FOOTER_ICON_FILES.twitter,
       link: settings.twitter_link,
       visible: settings.twitter_visible ?? true,
-      alt: 'Twitter',
+      alt: 'X/Twitter',
     },
     {
       key: 'linkedin',
@@ -260,11 +302,11 @@ export default function Footer() {
       alt: 'LinkedIn',
     },
     {
-      key: 'facebook',
-      fileName: FOOTER_ICON_FILES.facebook,
-      link: settings.facebook_link,
-      visible: settings.facebook_visible ?? true,
-      alt: 'Facebook',
+      key: 'youtube',
+      fileName: FOOTER_ICON_FILES.youtube,
+      link: settings.youtube_link,
+      visible: settings.youtube_visible ?? false,
+      alt: 'YouTube',
     },
     {
       key: 'instagram',
@@ -274,79 +316,104 @@ export default function Footer() {
       alt: 'Instagram',
     },
     {
-      key: 'youtube',
-      fileName: FOOTER_ICON_FILES.youtube,
-      link: settings.youtube_link,
-      visible: settings.youtube_visible ?? false,
-      alt: 'YouTube',
+      key: 'whatsapp',
+      fileName: FOOTER_ICON_FILES.whatsapp,
+      link: settings.whatsapp_number ? `https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}` : '#',
+      visible: settings.whatsapp_visible ?? false,
+      alt: 'WhatsApp',
     },
   ].filter(link => link.visible);
 
-  const showBottomBranding = settings.bottom_branding_visible ?? true;
-  const brandingText = settings.bottom_branding_text?.trim();
-
   return (
-    <>
-      <footer className="pt-16 pb-8" style={{ backgroundColor: '#F2F2F2' }}>
-        <div className="container mx-auto px-4 md:px-6 lg:px-10 xl:px-12">
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2 xl:gap-4 mb-12">
-            {/* Logo */}
-            <div className="flex flex-col items-start gap-4 text-left">
-              <div className="flex items-center gap-3 pt-0.5">
-                <span className="text-2xl md:text-3xl font-bold text-black">Biz<span className="text-[#1d4ed8]">Req</span></span>
-              </div>
-              <div className="flex flex-col gap-2 w-full">
-                {settings.description && (
-                  <p className="text-sm sm:text-base text-gray-500 leading-relaxed max-w-md">
-                    {settings.description}
-                  </p>
-                )}
-              </div>
-            </div>
+    <footer className="pt-8 pb-8" style={{ backgroundColor: '#F2F2F2' }}>
+      <div className="container mx-auto px-4 md:px-6 lg:px-10 xl:px-12">
+        {/* Subscribe Section */}
+        <div className="mb-10 border-b border-gray-300 pb-8">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+              Subscribe For Offers & Updates
+            </h3>
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <Input
+                type="email"
+                placeholder="Enter Your Email Id"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full sm:w-80 bg-white border border-gray-300 text-gray-900 placeholder:text-gray-400"
+                disabled={isSubscribing}
+              />
+              <Button
+                type="submit"
+                disabled={isSubscribing}
+                className="w-full sm:w-auto bg-[#1d4ed8] hover:bg-[#0055DD] text-white"
+              >
+                {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+              </Button>
+            </form>
+          </div>
+        </div>
 
-            {/* Company */}
-            <div>
-              <h4 className="font-bold mb-6 text-base text-black">Company</h4>
-              <ul className="space-y-4">
-                <li><Link to="/about-us" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">About Us</Link></li>
-                <li><Link to="/contact" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">Contact Us</Link></li>
-                <li><Link to="/faqs" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">FAQs</Link></li>
-              </ul>
+        {/* Footer Columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+          {/* Column 1: Logo & Description */}
+          <div className="flex flex-col items-start gap-4 text-left">
+            <div className="flex items-center gap-3 pt-0.5">
+              <span className="text-2xl md:text-3xl font-bold text-black">Biz<span className="text-[#1d4ed8]">Req</span></span>
             </div>
-
-            {/* Help & Support */}
-            <div>
-              <h4 className="font-bold mb-6 text-base text-black">Help & Support</h4>
-              <ul className="space-y-4">
-                <li><Link to="/privacy-policy" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms-of-service" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">Terms of Service</Link></li>
-                {(settings.refund_policy_visible ?? true) && (
-                  <li><Link to="/refund-policy" className="text-sm text-gray-800 hover:text-[#0055DD] transition-colors">Refund Policy</Link></li>
-                )}
-              </ul>
+            <div className="flex flex-col gap-2 w-full">
+              {settings.description && (
+                <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-xs">
+                  {settings.description}
+                </p>
+              )}
+              
             </div>
+          </div>
 
-            {/* Subscribe + Social Media + WhatsApp */}
-            <div className="w-full">
-              <h4 className="font-bold mb-6 text-base text-black">Subscribe for Offers</h4>
-              <form onSubmit={handleSubscribe} className="flex flex-col gap-3 sm:flex-row sm:items-stretch mb-6">
-                <Input
-                  type="email"
-                  placeholder="Enter Your Email Id"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full min-w-0 sm:flex-[2_2_0%] lg:flex-[3_3_0%] bg-white border-[#0055DD] text-gray-900 placeholder:text-gray-400 pr-4"
-                  disabled={isSubscribing}
-                />
-                <Button
-                  type="submit"
-                  disabled={isSubscribing}
-                  className="w-full shrink-0 sm:w-auto sm:flex-none bg-[#1d4ed8] hover:bg-[#0055DD] text-white"
-                >
-                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-                </Button>
-              </form>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4">
+          {/* Column 2: Company */}
+          <div>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Company</h4>
+            <ul className="space-y-4">
+              <li><Link to="/about-us" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">About Us</Link></li>
+              <li><Link to="/contact" className="font-regular text-[14px] text-[#666666] transition-colors">Contact Us</Link></li>
+              <li><Link to="/faqs" className="font-regular text-[14px] text-[#666666] transition-colors">FAQs</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 3: Help & Support */}
+          <div>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Help & Support</h4>
+            <ul className="space-y-4">
+              <li><Link to="/privacy-policy" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms-of-service" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">Terms of Service</Link></li>
+              <li><Link to="/refund-policy" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">Refund Policy</Link></li>
+            </ul>
+          </div>
+
+          {/* Column 4: For Businesses */}
+          <div>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">{settings.for_businesses_title}</h4>
+            <ul className="space-y-4">
+              {settings.for_businesses_links?.map((link, index) => (
+                <li key={index}>
+                  <a href={link.link} className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Footer Bar */}
+        <div className="pt-6 border-t border-gray-300">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <p className="text-sm text-gray-500 font-medium">
+              © {new Date().getFullYear()} BizReq. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-gray-700">Connect with us</span>
+              <div className="flex items-center gap-3">
                 {socialLinks.map((link) => (
                   <a
                     key={link.key}
@@ -358,47 +425,15 @@ export default function Footer() {
                     <PublicIcon
                       src={getPublicVideoIconPath(link.fileName)}
                       alt={link.alt}
-                      className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
+                      className="w-5 h-5 md:w-6 md:h-6 object-contain"
                     />
                   </a>
                 ))}
               </div>
-              {settings.whatsapp_visible && settings.whatsapp_number && (
-                <div className="relative inline-flex items-center bg-white rounded-full border-[2px] px-4 py-2 pl-8 sm:w-auto" style={{ borderColor: '#29A71A' }}>
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/3 w-12 h-12 flex items-center justify-center rounded-full">
-                    <PublicIcon
-                      src={getPublicVideoIconPath(FOOTER_ICON_FILES.whatsapp)}
-                      alt="WhatsApp"
-                      className="w-11 h-11 object-contain"
-                    />
-                  </div>
-                  <span className="ml-1 text-sm font-semibold break-all" style={{ color: '#020302ff' }}>
-                    {settings.whatsapp_number}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
-      </footer>
-      
-      {showBottomBranding && (
-        <div className="bg-[#F2F2F2] py-6 md:py-8">
-          <div className="container mx-auto px-4 md:px-8 lg:px-12 flex justify-center items-center">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="flex flex-wrap items-center justify-center gap-1">
-                <span className="text-2xl md:text-3xl font-bold text-black">Biz<span className="text-[#1d4ed8]">Req</span></span>
-                {brandingText && (
-                  <span className="text-black/500 text-sm md:text-lg">{brandingText}</span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 font-medium">
-                © {new Date().getFullYear()} BizReq. All rights reserved.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      </div>
+    </footer>
   );
 }

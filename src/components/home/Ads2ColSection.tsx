@@ -15,6 +15,7 @@ interface Ad {
   show_border: boolean;
   border_color: string | null;
   background_color: string | null;
+  show_image: boolean;
 }
 
 interface Ads2ColSectionProps {
@@ -42,9 +43,13 @@ export default function Ads2ColSection({
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
   const visibleCount = isMobile ? 1 : 2;
-  const fixedMode = ads.some((ad) => ad.is_fixed);
+  const visibleAds = useMemo(
+    () => ads.filter((ad) => ad.show_image !== false),
+    [ads]
+  );
+  const fixedMode = visibleAds.some((ad) => ad.is_fixed);
   // When Fixed Mode is ON, show only the first 2 ads selected/ordered by admin.
-  const adsToDisplay = fixedMode ? ads.filter(ad => ad.is_fixed).slice(0, 2) : ads;
+  const adsToDisplay = fixedMode ? visibleAds.filter(ad => ad.is_fixed).slice(0, 2) : visibleAds;
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
   const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
 
@@ -66,7 +71,7 @@ export default function Ads2ColSection({
     setFixedPageIndex((prev) => (prev < totalFixedPages - 1 ? prev + 1 : 0));
   };
 
-  const needsCarousel = !fixedMode && ads.length > visibleCount;
+  const needsCarousel = !fixedMode && adsToDisplay.length > visibleCount;
   // Disable slider/controls in fixed mode as per requirements
   const showFixedControls = false;
 
@@ -83,7 +88,7 @@ export default function Ads2ColSection({
     onTouchEnd,
     dragOffset,
     containerRef,
-  } = useInfiniteStepCarousel(ads.length, visibleCount, needsCarousel);
+  } = useInfiniteStepCarousel(adsToDisplay.length, visibleCount, needsCarousel);
 
   const {
     containerRef: fixedContainerRef,
@@ -106,6 +111,7 @@ export default function Ads2ColSection({
             show_border: ad.show_border ?? false,
             border_color: ad.border_color ?? null,
             background_color: ad.background_color ?? null,
+            show_image: ad.show_image ?? true,
           })));
         }
       });
@@ -149,7 +155,7 @@ export default function Ads2ColSection({
     [adsToDisplay, duplicatedCount, fixedMode, needsCarousel],
   );
 
-  if (ads.length === 0) return null;
+  if (adsToDisplay.length === 0) return null;
 
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
@@ -198,7 +204,7 @@ export default function Ads2ColSection({
                       backgroundColor: ad.background_color || undefined,
                     }}
                   >
-                    {ad.image_url && (
+                    {ad.show_image !== false && ad.image_url && (
                       <div className="w-full h-full flex items-center justify-center">
                         <img
                           src={ad.image_url}
@@ -247,7 +253,7 @@ export default function Ads2ColSection({
                           backgroundColor: ad.background_color || undefined,
                         }}
                       >
-                        {ad.image_url && (
+                        {ad.show_image !== false && ad.image_url && (
                           <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={ad.image_url}
@@ -281,7 +287,7 @@ export default function Ads2ColSection({
                           className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
                           style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
                         >
-                          {ad.image_url && (
+                          {ad.show_image !== false && ad.image_url && (
                           <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={ad.image_url}
@@ -317,7 +323,7 @@ export default function Ads2ColSection({
                       backgroundColor: ad.background_color || undefined,
                     }}
                   >
-                    {ad.image_url && (
+                    {ad.show_image !== false && ad.image_url && (
                       <div className="w-full h-full flex items-center justify-center">
                         <img
                           src={ad.image_url}

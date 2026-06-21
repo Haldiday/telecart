@@ -59,11 +59,11 @@ export default function ContactUs() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 bg-white">
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-16 md:py-24 max-w-[1200px]">
+      <main className="flex-1 bg-white pt-24 md:pt-36">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[1200px]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
             <div className="space-y-12">
-              <h1 className="text-4xl md:text-[44px] font-bold text-[#111111] leading-tight">
+              <h1 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight">
                 {settings?.heading || 'Contact'}
               </h1>
               

@@ -524,6 +524,71 @@ export type Database = {
           },
         ]
       }
+      subcategory_brands: {
+        Row: {
+          id: string
+          subcategory_id: string
+          name: string
+          link: string | null
+          sort_order: number
+          created_at: string
+          is_visible?: boolean | null
+          description?: string | null
+          primary_cta_label?: string | null
+          primary_cta_link?: string | null
+          primary_cta_visible?: boolean | null
+          more_actions_label?: string | null
+          more_actions_visible?: boolean | null
+          join_network_label?: string | null
+          join_network_link?: string | null
+          join_network_visible?: boolean | null
+        }
+        Insert: {
+          id?: string
+          subcategory_id: string
+          name: string
+          link?: string | null
+          sort_order?: number
+          created_at?: string
+          is_visible?: boolean | null
+          description?: string | null
+          primary_cta_label?: string | null
+          primary_cta_link?: string | null
+          primary_cta_visible?: boolean | null
+          more_actions_label?: string | null
+          more_actions_visible?: boolean | null
+          join_network_label?: string | null
+          join_network_link?: string | null
+          join_network_visible?: boolean | null
+        }
+        Update: {
+          id?: string
+          subcategory_id?: string
+          name?: string
+          link?: string | null
+          sort_order?: number
+          created_at?: string
+          is_visible?: boolean | null
+          description?: string | null
+          primary_cta_label?: string | null
+          primary_cta_link?: string | null
+          primary_cta_visible?: boolean | null
+          more_actions_label?: string | null
+          more_actions_visible?: boolean | null
+          join_network_label?: string | null
+          join_network_link?: string | null
+          join_network_visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategory_brands_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

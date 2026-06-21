@@ -13,6 +13,7 @@ interface Ad {
   show_border: boolean;
   border_color: string | null;
   background_color: string | null;
+  show_image: boolean;
 }
 
 interface Ads1ColSectionProps {
@@ -78,8 +79,7 @@ export default function Ads1ColSection({
                 is_fixed: ad.is_fixed ?? false,
                 show_border: ad.show_border ?? false,
                 border_color: ad.border_color ?? null,
-                background_color: ad.background_color ?? null,
-              }))
+                background_color: ad.background_color ?? null,                show_image: ad.show_image ?? true,              }))
             );
           }
         });
@@ -195,7 +195,7 @@ export default function Ads1ColSection({
                     >
                       <div className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]">
                         <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
-                          {ad.image_url && (
+                          {ad.show_image !== false && ad.image_url && (
                             <img
                               src={ad.image_url}
                               alt="Ad"
@@ -229,7 +229,7 @@ export default function Ads1ColSection({
                     className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
                   >
                     <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
-                      {ad.image_url && (
+                      {ad.show_image !== false && ad.image_url && (
                         <img
                           src={ad.image_url}
                           alt="Ad"

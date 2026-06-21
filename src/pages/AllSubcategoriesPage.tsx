@@ -59,17 +59,20 @@ export default function AllSubcategoriesPage() {
       if (!mounted) return;
 
       if (categoryData) setCategory(categoryData);
-      if (subcategoriesData) setSubcategories(subcategoriesData);
+      const visibleSubcategories = (subcategoriesData || []).filter((sub: any) => sub.is_visible !== false);
+      if (subcategoriesData) setSubcategories(visibleSubcategories);
       
       // Group brands by subcategory
       const brandsMap: Record<string, BrandItem[]> = {};
       if (brandsData) {
-        brandsData.forEach((brand: any) => {
-          if (!brandsMap[brand.subcategory_id]) {
-            brandsMap[brand.subcategory_id] = [];
-          }
-          brandsMap[brand.subcategory_id].push(brand);
-        });
+        brandsData
+          .filter((brand: any) => brand.is_visible !== false && visibleSubcategories.some((sub: any) => sub.id === brand.subcategory_id))
+          .forEach((brand: any) => {
+            if (!brandsMap[brand.subcategory_id]) {
+              brandsMap[brand.subcategory_id] = [];
+            }
+            brandsMap[brand.subcategory_id].push(brand);
+          });
       }
       setBrandsBySubcategory(brandsMap);
       
@@ -117,7 +120,7 @@ export default function AllSubcategoriesPage() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-24 md:pt-28">
         <div className="border-b border-border bg-card">
           <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
             {/* Breadcrumb */}

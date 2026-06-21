@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useSearch } from '@/contexts/SearchContext';
 
 export default function HeroSection() {
   const [mainTextPart1, setMainTextPart1] = useState('');
@@ -7,40 +8,48 @@ export default function HeroSection() {
   const [words, setWords] = useState<string[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const videoRef = (element: HTMLVideoElement | null) => {
-    if (element) {
-      element.play().catch(() => {
-        // Autoplay might fail silently on some devices/browsers
-      });
-    }
-  };
+  const {
+    query,
+    setQuery,
+    results,
+    isSearching,
+    searchError,
+    isSearchActive,
+    setIsSearchActive,
+    handleResultClick,
+    handleSearchButton,
+    showHeaderSearch,
+    searchContainerRef,
+  } = useSearch();
 
   useEffect(() => {
     let mounted = true;
     
-    supabase
-      .from('hero_settings')
-      .select('*')
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        if (data && mounted) {
-          const heroData = data as any;
-          const mainText = heroData.main_text || '';
-          let part1 = '';
-          let part2 = '';
-          if (mainText.includes('|||')) {
-            const split = mainText.split('|||');
-            part1 = split[0] || '';
-            part2 = split[1] || '';
-          } else {
-            part1 = mainText;
+    import('@/integrations/supabase/client').then(({ supabase }) => {
+      supabase
+        .from('hero_settings')
+        .select('*')
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data && mounted) {
+            const heroData = data as any;
+            const mainText = heroData.main_text || '';
+            let part1 = '';
+            let part2 = '';
+            if (mainText.includes('|||')) {
+              const split = mainText.split('|||');
+              part1 = split[0] || '';
+              part2 = split[1] || '';
+            } else {
+              part1 = mainText;
+            }
+            setMainTextPart1(part1);
+            setMainTextPart2(part2);
+            setWords(heroData.animated_words);
           }
-          setMainTextPart1(part1);
-          setMainTextPart2(part2);
-          setWords(heroData.animated_words);
-        }
-      });
+        });
+    });
     
     return () => {
       mounted = false;
@@ -50,10 +59,8 @@ export default function HeroSection() {
   useEffect(() => {
     if (words.length <= 1) return;
 
-    // Stay visible for 2.5 seconds
     const stayTimeout = setTimeout(() => {
       setIsTransitioning(true);
-      // After transitioning, switch to next word
       const transitionTimeout = setTimeout(() => {
         setCurrentWordIndex((prev) => (prev + 1) % words.length);
         setIsTransitioning(false);
@@ -67,17 +74,16 @@ export default function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative py-20 md:py-32 overflow-hidden"
+      className="relative py-20 md:py-32 overflow-visible"
     >
       <video
-        ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
         className="absolute left-0 right-0 w-full object-cover opacity-50 -z-10"
         style={{
-          top: '28px',
+          top: '50px',
           height: 'calc(100% + 28px)',
         }}
       >
@@ -85,7 +91,6 @@ export default function HeroSection() {
       </video>
       <div className="container mx-auto px-4 md:px-8 lg:px-12 text-center">
 
-        {/* HEADING */}
         <h1
           className="mb-4 text-[#1c1c1c] text-[30px] sm:text-[34px] md:text-[44px] leading-[1.3]"
           style={{
@@ -102,19 +107,17 @@ export default function HeroSection() {
         </h1>
 
 
-        {/* ANIMATED TEXT */}
         <div
           className="min-h-[50px] flex items-center justify-center relative"
           style={{
             fontFamily: 'Trustpilot Display, Arial, sans-serif',
             fontSize: '24px',
-            fontWeight: 60,
+            fontWeight: 600,
             lineHeight: '1.4',
           }}
         >
           {words.length > 1 ? (
             <>
-              {/* Current Word - Slides Out Down */}
               <div 
                 key={`current-${currentWordIndex}`}
                 className="absolute text-[#121511] transition-all duration-500 ease-in-out text-center"
@@ -127,7 +130,6 @@ export default function HeroSection() {
               >
                 {words[currentWordIndex]}
               </div>
-              {/* Next Word - Slides In From Top */}
               <div 
                 key={`next-${currentWordIndex}`}
                 className="absolute text-[#121511] transition-all duration-500 ease-in-out text-center"
@@ -144,6 +146,58 @@ export default function HeroSection() {
           ) : (
             <div className="text-[#121511] text-center w-full" style={{ wordWrap: 'break-word' }}>
               {words[0]}
+            </div>
+          )}
+        </div>
+
+        <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch ? searchContainerRef : undefined}>
+          {!showHeaderSearch && (
+            <div className="relative z-[100]">
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onFocus={() => setIsSearchActive(true)}
+                onBlur={() => setTimeout(() => setIsSearchActive(false), 120)}
+                placeholder="Search brand or category"
+                className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
+              />
+              <button
+                type="button"
+                onClick={handleSearchButton}
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#3c57bc] text-white"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="16.65" y1="16.65" x2="21" y2="21" />
+                </svg>
+              </button>
+              {isSearchActive && query.trim() && (
+                <div className="absolute left-0 right-0 top-full z-[200] mt-2 max-h-80 overflow-y-auto rounded-b-[16px] rounded-t-none border border-[#dcd6d1] bg-white shadow-lg">
+                  {isSearching ? (
+                    <div className="px-5 py-2 text-sm text-[#61646b]">Searching...</div>
+                  ) : searchError ? (
+                    <div className="px-5 py-2 text-sm text-[#b91c1c]">{searchError}</div>
+                  ) : results.length === 0 ? (
+                    <div className="px-5 py-2 text-sm text-[#61646b]">No results found.</div>
+                  ) : (
+                    results.map((result) => (
+                      <button
+                        key={`${result.type}-${result.id}`}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleResultClick(result)}
+                        className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
+                      >
+                        <span>{result.name}</span>
+                        {result.type === 'brand' && result.subcategoryName && (
+                          <span className="text-xs text-[#8a8f9a]">({result.subcategoryName})</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

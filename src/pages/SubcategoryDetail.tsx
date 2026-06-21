@@ -520,6 +520,11 @@ export default function SubcategoryDetail() {
       }
 
       if (subcategoryData) {
+        if ((subcategoryData as any).is_visible === false) {
+          setSubcategory(null);
+          setBrands([]);
+          return;
+        }
         setSubcategory(subcategoryData as unknown as Subcategory);
         setVideoUrl((subcategoryData as any).video_url || '');
         setVideoUrl2((subcategoryData as any).video_url_2 || []);
@@ -562,7 +567,8 @@ export default function SubcategoryDetail() {
       }
 
       if (brandData && brandData.length > 0) {
-        setBrands((brandData as unknown as BrandItem[]).map((brand) => ({
+        const visibleBrands = (brandData as any[]).filter((brand) => brand.is_visible !== false);
+        setBrands(visibleBrands.map((brand) => ({
           id: brand.id,
           name: brand.name || '',
           link: brand.link || '',
@@ -893,8 +899,23 @@ export default function SubcategoryDetail() {
     </div>
   );
 
-  if (!category || !subcategory) {
+  if (!category) {
     return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
+  }
+
+  if (!subcategory) {
+    return (
+      <div className="flex flex-col bg-background min-h-screen">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">Subcategory not found</h1>
+            <p className="mt-2 text-muted-foreground">This subcategory is currently hidden or unavailable.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
