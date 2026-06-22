@@ -616,6 +616,20 @@ export type Database = {
           description_1: string
           description_2: string
           image_url: string | null
+          phone: string
+          whatsapp: string
+          address: string
+          form_embed: string
+          contact_emails: Json
+          nodal_officer_title: string
+          nodal_officer_name: string
+          nodal_officer_phone: string
+          nodal_officer_email: string
+          appellate_authority_title: string
+          appellate_authority_name: string
+          appellate_authority_phone: string
+          appellate_authority_email: string
+          is_visible: boolean
           created_at: string
           updated_at: string
         }
@@ -627,6 +641,20 @@ export type Database = {
           description_1?: string
           description_2?: string
           image_url?: string | null
+          phone?: string
+          whatsapp?: string
+          address?: string
+          form_embed?: string
+          contact_emails?: Json
+          nodal_officer_title?: string
+          nodal_officer_name?: string
+          nodal_officer_phone?: string
+          nodal_officer_email?: string
+          appellate_authority_title?: string
+          appellate_authority_name?: string
+          appellate_authority_phone?: string
+          appellate_authority_email?: string
+          is_visible?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -638,6 +666,20 @@ export type Database = {
           description_1?: string
           description_2?: string
           image_url?: string | null
+          phone?: string
+          whatsapp?: string
+          address?: string
+          form_embed?: string
+          contact_emails?: Json
+          nodal_officer_title?: string
+          nodal_officer_name?: string
+          nodal_officer_phone?: string
+          nodal_officer_email?: string
+          appellate_authority_title?: string
+          appellate_authority_name?: string
+          appellate_authority_phone?: string
+          appellate_authority_email?: string
+          is_visible?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -731,6 +773,19 @@ export type Database = {
           youtube_label: string
           youtube_link: string
           youtube_visible: boolean
+          social_whatsapp_visible: boolean
+          faq_heading: string
+          faq_heading_visible: boolean
+          faq_visible: boolean
+          is_visible: boolean
+          whatsapp_number: string
+          whatsapp_visible: boolean
+          phone: string
+          phone_visible: boolean
+          email: string
+          email_visible: boolean
+          for_businesses_title: string
+          for_businesses_links: Json
           created_at: string
           updated_at: string
         }
@@ -761,6 +816,19 @@ export type Database = {
           youtube_label?: string
           youtube_link?: string
           youtube_visible?: boolean
+          social_whatsapp_visible?: boolean
+          faq_heading?: string
+          faq_heading_visible?: boolean
+          faq_visible?: boolean
+          is_visible?: boolean
+          whatsapp_number?: string
+          whatsapp_visible?: boolean
+          phone?: string
+          phone_visible?: boolean
+          email?: string
+          email_visible?: boolean
+          for_businesses_title?: string
+          for_businesses_links?: Json
           created_at?: string
           updated_at?: string
         }
@@ -791,6 +859,19 @@ export type Database = {
           youtube_label?: string
           youtube_link?: string
           youtube_visible?: boolean
+          social_whatsapp_visible?: boolean
+          faq_heading?: string
+          faq_heading_visible?: boolean
+          faq_visible?: boolean
+          is_visible?: boolean
+          whatsapp_number?: string
+          whatsapp_visible?: boolean
+          phone?: string
+          phone_visible?: boolean
+          email?: string
+          email_visible?: boolean
+          for_businesses_title?: string
+          for_businesses_links?: Json
           created_at?: string
           updated_at?: string
         }
@@ -802,6 +883,7 @@ export type Database = {
           slug: string
           title: string
           content: string | null
+          is_visible: boolean
           created_at: string
           updated_at: string
         }
@@ -810,6 +892,7 @@ export type Database = {
           slug: string
           title: string
           content?: string | null
+          is_visible?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -818,6 +901,7 @@ export type Database = {
           slug?: string
           title?: string
           content?: string | null
+          is_visible?: boolean
           created_at?: string
           updated_at?: string
         }

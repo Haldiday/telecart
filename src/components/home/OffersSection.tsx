@@ -93,6 +93,8 @@ export default function OffersSection({
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onMouseEnter,
+    onMouseLeave,
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(visibleOffers.length, visibleCount, needsCarousel);
@@ -119,14 +121,17 @@ export default function OffersSection({
     
     const loadOffers = () => {
       db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Offer[] | null }) => {
-        if (data && mounted) setOffers((data as any[]).map((offer) => ({
-          ...offer,
-          is_fixed: offer.is_fixed ?? false,
-          show_border: offer.show_border ?? false,
-          border_color: offer.border_color ?? null,
-          background_color: offer.background_color ?? null,
-          show_image: offer.show_image ?? true,
-        })));
+        if (data && mounted) setOffers((data as any[])
+          .filter(offer => offer.is_visible !== false)
+          .map((offer) => ({
+            ...offer,
+            is_fixed: offer.is_fixed ?? false,
+            show_border: offer.show_border ?? false,
+            border_color: offer.border_color ?? null,
+            background_color: offer.background_color ?? null,
+            show_image: offer.show_image ?? true,
+            is_visible: offer.is_visible ?? true,
+          })));
       });
     };
 
@@ -183,7 +188,7 @@ export default function OffersSection({
         )}
 
         <div className="relative group/fixed">
-          {(showFixedControls || needsCarousel) && (
+          {!isMobile && (showFixedControls || needsCarousel) && (
             <>
               <button
                 onClick={fixedMode ? handleFixedPrev : goPrev}
@@ -205,7 +210,7 @@ export default function OffersSection({
           )}
 
           {needsCarousel ? (
-            <div className="relative md:px-20">
+            <div className="relative md:px-20" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
             <div 
               className="overflow-hidden overflow-x-hidden rounded-lg -mx-[9px] md:-mx-10 touch-pan-y"
               style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}

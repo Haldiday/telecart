@@ -103,6 +103,8 @@ export default function Ads3ColSection({
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onMouseEnter,
+    onMouseLeave,
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(adsToDisplay.length, visibleCount, needsCarousel);
@@ -121,14 +123,17 @@ export default function Ads3ColSection({
     
     const loadAds = () => {
       db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
-        if (data && mounted) setAds((data as any[]).map((ad) => ({
-          ...ad,
-          is_fixed: ad.is_fixed ?? false,
-          show_border: ad.show_border ?? false,
-          border_color: ad.border_color ?? null,
-          background_color: ad.background_color ?? null,
-          show_image: ad.show_image ?? true,
-        })));
+        if (data && mounted) setAds((data as any[])
+          .filter(ad => ad.is_visible !== false)
+          .map((ad) => ({
+            ...ad,
+            is_fixed: ad.is_fixed ?? false,
+            show_border: ad.show_border ?? false,
+            border_color: ad.border_color ?? null,
+            background_color: ad.background_color ?? null,
+            show_image: ad.show_image ?? true,
+            is_visible: ad.is_visible ?? true,
+          })));
       });
     };
 
@@ -182,7 +187,7 @@ export default function Ads3ColSection({
           </h2>
         )}
         <div className="relative group/fixed">
-          {(showFixedControls || needsCarousel) && (
+          {!isMobile && (showFixedControls || needsCarousel) && (
             <>
               <button
                 onClick={fixedMode ? handleFixedPrev : goPrev}
@@ -204,7 +209,7 @@ export default function Ads3ColSection({
           )}
 
           {needsCarousel ? (
-            <div className="relative">
+            <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
               <div 
                 className="overflow-hidden overflow-x-hidden touch-pan-y"
                 style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}

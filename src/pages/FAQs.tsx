@@ -17,6 +17,7 @@ export default function FAQs() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [faqHeading, setFaqHeading] = useState('Frequently Asked Questions');
 
   useEffect(() => {
     const loadFaqs = async () => {
@@ -36,7 +37,25 @@ export default function FAQs() {
       }
     };
 
+    const loadFaqHeading = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('footer_settings')
+          .select('faq_heading')
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data?.faq_heading) {
+          setFaqHeading(data.faq_heading);
+        }
+      } catch (error) {
+        console.error('Error loading FAQ heading:', error);
+      }
+    };
+
     loadFaqs();
+    loadFaqHeading();
   }, []);
 
   const toggleAccordion = (id: string) => {
@@ -52,7 +71,7 @@ export default function FAQs() {
       <Header />
       <main className="flex-1 bg-white pt-24 md:pt-36 pb-12">
         <div className="container mx-auto px-4 md:px-8 max-w-[900px]">
-          <h1 className="text-3xl md:text-[32px] font-semibold mb-8 text-[#222222] text-center">Frequently Asked Questions</h1>
+          <h1 className="text-3xl md:text-[32px] font-semibold mb-8 text-[#222222] text-center">{faqHeading}</h1>
           
           {faqs.length === 0 ? (
             <p className="text-[#333333]">No FAQs available yet.</p>

@@ -15,6 +15,8 @@ interface FeaturedCard {
   show_border: boolean;
   border_color?: string | null;
   background_color?: string | null;
+  is_fixed: boolean;
+  is_visible: boolean;
   [key: string]: any;
 }
 
@@ -56,7 +58,17 @@ export default function FeaturedCardsPage() {
 
       if (!mounted) return;
 
-      if (cardsData) setCards(cardsData);
+      if (cardsData) setCards((cardsData as any[])
+        .filter((card: any) => card.is_visible !== false)
+        .map((card: any) => ({
+          ...card,
+          link: card.link ?? null,
+          is_fixed: card.is_fixed ?? false,
+          show_border: card.show_border ?? false,
+          border_color: card.border_color ?? null,
+          background_color: card.background_color ?? null,
+          is_visible: card.is_visible ?? true,
+        })));
       if (sectionData) setSection(sectionData);
       setLoading(false);
     };

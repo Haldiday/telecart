@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
 
@@ -39,6 +40,7 @@ export default function Ads1ColSection({
   const [ads, setAds] = useState<Ad[]>([]);
   const [heading, setHeading] = useState('Featured Ad');
   const [showHeading, setShowHeading] = useState(true);
+  const isMobile = useIsMobile();
   const fixedMode = ads.some((ad) => ad.is_fixed);
   const adsToDisplay = fixedMode ? ads.filter((ad) => ad.is_fixed) : ads;
   const needsCarousel = !fixedMode && adsToDisplay.length > 1;
@@ -54,6 +56,8 @@ export default function Ads1ColSection({
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onMouseEnter,
+    onMouseLeave,
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(adsToDisplay.length, 1, needsCarousel);
@@ -74,12 +78,17 @@ export default function Ads1ColSection({
         .then(({ data }) => {
           if (data && mounted) {
             setAds(
-              (data as any[]).map((ad) => ({
-                ...ad,
-                is_fixed: ad.is_fixed ?? false,
-                show_border: ad.show_border ?? false,
-                border_color: ad.border_color ?? null,
-                background_color: ad.background_color ?? null,                show_image: ad.show_image ?? true,              }))
+              (data as any[])
+                .filter(ad => ad.is_visible !== false)
+                .map((ad) => ({
+                  ...ad,
+                  is_fixed: ad.is_fixed ?? false,
+                  show_border: ad.show_border ?? false,
+                  border_color: ad.border_color ?? null,
+                  background_color: ad.background_color ?? null,
+                  show_image: ad.show_image ?? true,
+                  is_visible: ad.is_visible ?? true,
+                }))
             );
           }
         });
@@ -139,7 +148,7 @@ export default function Ads1ColSection({
         )}
 
         <div className="relative">
-          {needsCarousel && (
+          {!isMobile && needsCarousel && (
             <>
               <button
                 onClick={goPrev}
@@ -166,6 +175,8 @@ export default function Ads1ColSection({
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
+              onMouseEnter={onMouseEnter}
+              onMouseLeave={onMouseLeave}
             >
               <div
                 className="flex"

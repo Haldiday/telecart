@@ -10,6 +10,7 @@ export function useInfiniteStepCarousel(
   const [animate, setAnimate] = useState(true);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const isHorizontalSwipe = useRef<boolean | null>(null);
@@ -22,7 +23,7 @@ export function useInfiniteStepCarousel(
   }, [itemCount, visibleCount]);
 
   useEffect(() => {
-    if (!enabled || itemCount === 0 || isDragging) return;
+    if (!enabled || itemCount === 0 || isDragging || isPaused) return;
 
     const interval = window.setInterval(() => {
       setAnimate(true);
@@ -30,7 +31,15 @@ export function useInfiniteStepCarousel(
     }, delay);
 
     return () => window.clearInterval(interval);
-  }, [delay, enabled, itemCount, isDragging]);
+  }, [delay, enabled, itemCount, isDragging, isPaused]);
+
+  const onMouseEnter = () => {
+    setIsPaused(true);
+  };
+
+  const onMouseLeave = () => {
+    setIsPaused(false);
+  };
 
   const duplicatedCount = Math.min(visibleCount, itemCount);
   const slideWidth = useMemo(() => 100 / visibleCount, [visibleCount]);
@@ -140,6 +149,8 @@ export function useInfiniteStepCarousel(
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onMouseEnter,
+    onMouseLeave,
     dragOffset,
     containerRef,
   };

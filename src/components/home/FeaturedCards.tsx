@@ -96,6 +96,8 @@ export default function FeaturedCards({
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onMouseEnter,
+    onMouseLeave,
     dragOffset,
     containerRef,
   } = useInfiniteStepCarousel(cardsToDisplay.length, visibleCount, needsCarousel);
@@ -114,22 +116,25 @@ export default function FeaturedCards({
     
     const loadCards = () => {
       db
-        .from(cardsTable)
-        .select('*')
-        .eq('section_id', sectionId)
-        .order('sort_order')
-        .then(({ data }) => {
-          if (data && mounted) {
-            setCards((data as any[]).map((card) => ({
+      .from(cardsTable)
+      .select('*')
+      .eq('section_id', sectionId)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data && mounted) {
+          setCards((data as any[])
+            .filter(card => card.is_visible !== false)
+            .map((card) => ({
               ...card,
               link: card.link ?? null,
               is_fixed: card.is_fixed ?? false,
               show_border: card.show_border ?? false,
               border_color: card.border_color ?? null,
               background_color: card.background_color ?? null,
+              is_visible: card.is_visible ?? true,
             })));
-          }
-        });
+        }
+      });
     };
 
     const loadSection = async () => {
@@ -190,7 +195,7 @@ export default function FeaturedCards({
           </h2>
         )}
         <div className="relative group/fixed">
-          {(showFixedControls || needsCarousel) && (
+          {!isMobile && (showFixedControls || needsCarousel) && (
             <>
               <button
                 onClick={showFixedControls ? handleFixedPrev : goPrev}
@@ -261,7 +266,7 @@ export default function FeaturedCards({
               </div>
             </div>
           ) : needsCarousel ? (
-            <div className="relative">
+            <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
               <div 
                 className="overflow-hidden overflow-x-hidden touch-pan-y py-6"
                 style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}

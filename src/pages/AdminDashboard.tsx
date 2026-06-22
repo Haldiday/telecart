@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
-interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; }
+interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; is_visible: boolean; }
 interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; is_visible?: boolean; }
 interface Subcategory {
   id: string;
@@ -96,11 +96,11 @@ interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; sectio
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
 interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; button_bg_color?: string | null; card_bg_color?: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
-interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; }
-interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; }
-interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; }
+interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
+interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
+interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
-interface LegalPage { id: string; slug: string; title: string; content: string | null; }
+interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
 interface HeaderSettings {
   id?: string;
   leave_review_text: string;
@@ -122,6 +122,7 @@ interface HeaderSettings {
 interface FooterBusinessLink {
   label: string;
   link: string;
+  is_visible?: boolean;
 }
 
 interface FooterSettings {
@@ -143,14 +144,21 @@ interface FooterSettings {
   youtube_label: string;
   youtube_link: string;
   youtube_visible?: boolean;
+  social_whatsapp_visible?: boolean;
   social_media_visible?: boolean;
   about_us_visible?: boolean;
   contact_visible?: boolean;
   privacy_policy_visible?: boolean;
   terms_of_service_visible?: boolean;
   refund_policy_visible?: boolean;
+  faq_visible?: boolean;
+  faq_heading?: string;
   whatsapp_number?: string;
   whatsapp_visible?: boolean;
+  phone?: string;
+  phone_visible?: boolean;
+  email?: string;
+  email_visible?: boolean;
   bottom_branding_visible?: boolean;
   bottom_branding_text?: string;
   for_businesses_title?: string;
@@ -198,6 +206,7 @@ interface FeaturedCardItem {
   show_border: boolean;
   border_color: string | null;
   background_color?: string | null;
+  is_visible: boolean;
 }
 
 interface OfferItem {
@@ -213,6 +222,7 @@ interface OfferItem {
   border_color: string | null;
   background_color: string | null;
   show_image: boolean;
+  is_visible: boolean;
 }
 
 interface Ad2Item {
@@ -226,6 +236,7 @@ interface Ad2Item {
   border_color: string | null;
   background_color: string | null;
   show_image: boolean;
+  is_visible: boolean;
 }
 
 interface Ad3Item extends Ad2Item {
@@ -468,6 +479,11 @@ export default function AdminDashboard() {
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
 
+  interface ContactEmail {
+    label: string;
+    email: string;
+  }
+
   const [contactSettings, setContactSettings] = useState({
     id: undefined as string | undefined,
     heading: '',
@@ -476,6 +492,20 @@ export default function AdminDashboard() {
     description_1: '',
     description_2: '',
     image_url: '',
+    phone: '',
+    whatsapp: '',
+    address: '',
+    form_embed: '',
+    contact_emails: [] as ContactEmail[],
+    nodal_officer_title: '',
+    nodal_officer_name: '',
+    nodal_officer_phone: '',
+    nodal_officer_email: '',
+    appellate_authority_title: '',
+    appellate_authority_name: '',
+    appellate_authority_phone: '',
+    appellate_authority_email: '',
+    is_visible: true,
   });
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>({
     leave_review_text: 'Leave a Review',
@@ -495,34 +525,55 @@ export default function AdminDashboard() {
   });
   const [footerSettings, setFooterSettings] = useState<FooterSettings>({
     description: '',
+    description_visible: true,
     twitter_label: 'Twitter',
     twitter_link: '#',
+    twitter_visible: true,
     linkedin_label: 'LinkedIn',
     linkedin_link: '#',
+    linkedin_visible: true,
     facebook_label: 'Facebook',
     facebook_link: '#',
+    facebook_visible: true,
     instagram_label: 'Instagram',
     instagram_link: '#',
+    instagram_visible: false,
     youtube_label: 'YouTube',
     youtube_link: '#',
+    youtube_visible: false,
+    social_whatsapp_visible: false,
+    social_media_visible: true,
+    about_us_visible: true,
+    contact_visible: true,
+    privacy_policy_visible: true,
+    terms_of_service_visible: true,
+    refund_policy_visible: true,
+    faq_visible: true,
+    faq_heading: 'Frequently Asked Questions',
     whatsapp_number: '',
     whatsapp_visible: false,
+    phone: '',
+    phone_visible: false,
+    email: '',
+    email_visible: false,
     bottom_branding_visible: true,
     bottom_branding_text: '',
     for_businesses_title: 'For Businesses',
     for_businesses_links: [
-      { label: 'Advertise With Us', link: '#' },
-      { label: 'Write with us', link: '#' },
-      { label: 'Sell With Us', link: '#' },
-      { label: 'Editorial Policy', link: '#' },
+      { label: 'Get Listed', link: '#', is_visible: true },
+      { label: 'Advertise', link: '#', is_visible: true },
+      { label: 'Write for Us', link: '#', is_visible: true },
     ],
   });
   const [footerSubscribers, setFooterSubscribers] = useState<Array<{ id: string; email: string; created_at: string }>>([]);
+  const [isLoadingContactSettings, setIsLoadingContactSettings] = useState(true);
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [isSavingFooter, setIsSavingFooter] = useState(false);
   const [isSavingHeader, setIsSavingHeader] = useState(false);
   const [legalPages, setLegalPages] = useState<LegalPage[]>([]);
   const [isSavingLegal, setIsSavingLegal] = useState(false);
+  const [editableLegalTitles, setEditableLegalTitles] = useState<Record<string, string>>({});
+  const [editableLegalVisibility, setEditableLegalVisibility] = useState<Record<string, boolean>>({});
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -710,36 +761,89 @@ export default function AdminDashboard() {
           if (!mounted) return;
 
           if (s.data) setSections(s.data);
-          if (contact.data) setContactSettings(contact.data as any);
+          console.log('📥 Fetched contact settings data from Supabase:', contact.data);
+          
+          // Process contact settings
+          if (contact.data) {
+            // If we have data from Supabase, use it directly
+            console.log('✅ Loading contact settings from database');
+            setContactSettings({
+              id: contact.data.id,
+              heading: contact.data.heading ?? '',
+              email_label: contact.data.email_label ?? '',
+              email: contact.data.email ?? '',
+              description_1: contact.data.description_1 ?? '',
+              description_2: contact.data.description_2 ?? '',
+              image_url: contact.data.image_url ?? '',
+              phone: (contact.data as any).phone ?? '',
+              whatsapp: (contact.data as any).whatsapp ?? '',
+              address: (contact.data as any).address ?? '',
+              form_embed: (contact.data as any).form_embed ?? '',
+              contact_emails: (contact.data as any).contact_emails ?? [],
+              nodal_officer_title: (contact.data as any).nodal_officer_title ?? '',
+              nodal_officer_name: (contact.data as any).nodal_officer_name ?? '',
+              nodal_officer_phone: (contact.data as any).nodal_officer_phone ?? '',
+              nodal_officer_email: (contact.data as any).nodal_officer_email ?? '',
+              appellate_authority_title: (contact.data as any).appellate_authority_title ?? '',
+              appellate_authority_name: (contact.data as any).appellate_authority_name ?? '',
+              appellate_authority_phone: (contact.data as any).appellate_authority_phone ?? '',
+              appellate_authority_email: (contact.data as any).appellate_authority_email ?? '',
+              is_visible: (contact.data as any).is_visible ?? true,
+            });
+          } else {
+            console.log('⚠️ No contact settings data found in database');
+            // Keep default state if no data (don't overwrite)
+          }
+          
+          // Mark contact settings as loaded
+          setIsLoadingContactSettings(false);
           if (header.data) setHeaderSettings(header.data);
-          if (footer.data) setFooterSettings({
-            description: footer.data.description ?? '',
-            description_visible: true,
-            social_media_visible: true,
-            about_us_visible: true,
-            contact_visible: true,
-            privacy_policy_visible: true,
-            terms_of_service_visible: true,
-            refund_policy_visible: true,
-            twitter_label: 'Twitter',
-            twitter_link: '#',
-            twitter_visible: true,
-            linkedin_label: 'LinkedIn',
-            linkedin_link: '#',
-            linkedin_visible: true,
-            facebook_label: 'Facebook',
-            facebook_link: '#',
-            facebook_visible: true,
-            instagram_label: 'Instagram',
-            instagram_link: '#',
-            instagram_visible: false,
-            youtube_label: 'YouTube',
-            youtube_link: '#',
-            youtube_visible: false,
-            whatsapp_number: '',
-            whatsapp_visible: false,
-            ...footer.data
-          });
+          if (footer.data) {
+            const footerData = footer.data as any;
+            setFooterSettings({
+              id: footerData.id,
+              description: footerData.description ?? '',
+              description_visible: footerData.description_visible ?? true,
+              twitter_label: footerData.twitter_label ?? 'Twitter',
+              twitter_link: footerData.twitter_link ?? '#',
+              twitter_visible: footerData.twitter_visible ?? true,
+              linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
+              linkedin_link: footerData.linkedin_link ?? '#',
+              linkedin_visible: footerData.linkedin_visible ?? true,
+              facebook_label: footerData.facebook_label ?? 'Facebook',
+              facebook_link: footerData.facebook_link ?? '#',
+              facebook_visible: footerData.facebook_visible ?? true,
+              instagram_label: footerData.instagram_label ?? 'Instagram',
+              instagram_link: footerData.instagram_link ?? '#',
+              instagram_visible: footerData.instagram_visible ?? false,
+              youtube_label: footerData.youtube_label ?? 'YouTube',
+              youtube_link: footerData.youtube_link ?? '#',
+              youtube_visible: footerData.youtube_visible ?? false,
+              social_whatsapp_visible: footerData.social_whatsapp_visible ?? false,
+              social_media_visible: footerData.social_media_visible ?? true,
+              about_us_visible: footerData.about_us_visible ?? true,
+              contact_visible: footerData.contact_visible ?? true,
+              privacy_policy_visible: footerData.privacy_policy_visible ?? true,
+              terms_of_service_visible: footerData.terms_of_service_visible ?? true,
+              refund_policy_visible: footerData.refund_policy_visible ?? true,
+              faq_visible: footerData.faq_visible ?? true,
+              faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
+              whatsapp_number: footerData.whatsapp_number ?? '',
+              whatsapp_visible: footerData.whatsapp_visible ?? false,
+              phone: footerData.phone ?? '',
+              phone_visible: footerData.phone_visible ?? false,
+              email: footerData.email ?? '',
+              email_visible: footerData.email_visible ?? false,
+              bottom_branding_visible: footerData.bottom_branding_visible ?? true,
+              bottom_branding_text: footerData.bottom_branding_text ?? '',
+              for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
+              for_businesses_links: footerData.for_businesses_links ?? [
+                { label: 'Get Listed', link: '#', is_visible: true },
+                { label: 'Advertise', link: '#', is_visible: true },
+                { label: 'Write for Us', link: '#', is_visible: true },
+              ],
+            });
+          }
           if (subscribers.data) {
             setFooterSubscribers(
               (subscribers.data as Array<{ id: string; email: string; created_at: string }>).map(subscriber => ({
@@ -749,7 +853,18 @@ export default function AdminDashboard() {
               }))
             );
           }
-          if (legal.data) setLegalPages(legal.data as LegalPage[]);
+          if (legal.data) {
+            setLegalPages(legal.data as LegalPage[]);
+            // Initialize editable titles and visibility
+            const titles: Record<string, string> = {};
+            const visibility: Record<string, boolean> = {};
+            legal.data.forEach((page: any) => {
+              titles[page.slug] = page.title;
+              visibility[page.slug] = page.is_visible ?? true;
+            });
+            setEditableLegalTitles(titles);
+            setEditableLegalVisibility(visibility);
+          }
           if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
           if (h.data) { 
       const heroData = h.data as any;
@@ -1083,13 +1198,13 @@ export default function AdminDashboard() {
       console.log('Loading hero words:', heroData.animated_words);
       setHeroWords(heroData.animated_words || []); 
     }
-    if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
+    if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null, is_visible: card.is_visible ?? true })));
     if (cat.data) setCategories(cat.data);
     if (sub.data) setSubcategories(sub.data as unknown as Subcategory[]);
     if (downloads.data) setCategoryDownloads(downloads.data);
-    if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null })));
-    if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
-    if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null })));
+    if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, is_visible: offer.is_visible ?? true })));
+    if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, is_visible: ad.is_visible ?? true })));
+    if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, is_visible: ad.is_visible ?? true })));
     if (btns.data) {
       setButtons(btns.data);
       // Populate editButtonsState with buttons keyed by subcategory_id
@@ -2413,6 +2528,66 @@ export default function AdminDashboard() {
     }
   }
 
+  async function toggleFeaturedCardVisibility(id: string, isVisible: boolean) {
+    try {
+      const { error } = await supabase
+        .from('featured_cards' as any)
+        .update({ is_visible: isVisible })
+        .eq('id', id);
+      if (error) throw error;
+      loadAll();
+      toast.success(isVisible ? 'Featured card is now visible.' : 'Featured card is now hidden.');
+    } catch (error) {
+      console.error('Error toggling featured card visibility:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to update featured card visibility.');
+    }
+  }
+
+  async function toggleOfferVisibility(id: string, isVisible: boolean) {
+    try {
+      const { error } = await supabase
+        .from('offers' as any)
+        .update({ is_visible: isVisible })
+        .eq('id', id);
+      if (error) throw error;
+      loadAll();
+      toast.success(isVisible ? 'Offer is now visible.' : 'Offer is now hidden.');
+    } catch (error) {
+      console.error('Error toggling offer visibility:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to update offer visibility.');
+    }
+  }
+
+  async function toggleAd2Visibility(id: string, isVisible: boolean) {
+    try {
+      const { error } = await supabase
+        .from('ads_2col' as any)
+        .update({ is_visible: isVisible })
+        .eq('id', id);
+      if (error) throw error;
+      loadAll();
+      toast.success(isVisible ? 'Ad is now visible.' : 'Ad is now hidden.');
+    } catch (error) {
+      console.error('Error toggling ad visibility:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to update ad visibility.');
+    }
+  }
+
+  async function toggleAd3Visibility(id: string, isVisible: boolean) {
+    try {
+      const { error } = await supabase
+        .from('ads_3col' as any)
+        .update({ is_visible: isVisible })
+        .eq('id', id);
+      if (error) throw error;
+      loadAll();
+      toast.success(isVisible ? 'Ad is now visible.' : 'Ad is now hidden.');
+    } catch (error) {
+      console.error('Error toggling ad visibility:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error('Failed to update ad visibility.');
+    }
+  }
+
   async function updateCategorySortOrder(categoryId: string, newOrder: number) {
     try {
       const { error } = await supabase.from('categories' as any).update({ sort_order: newOrder }).eq('id', categoryId);
@@ -2850,6 +3025,21 @@ export default function AdminDashboard() {
   async function saveContactSettings() {
     setIsSavingContact(true);
     try {
+      console.log('Starting saveContactSettings...');
+      
+      // Step 1: Fetch ALL contact settings records (in case there are duplicates)
+      const { data: allRecords, error: fetchAllError } = await supabase
+        .from('contact_settings')
+        .select('*');
+
+      if (fetchAllError) {
+        console.error('❌ Error fetching all contact settings records:', fetchAllError);
+        throw fetchAllError;
+      }
+
+      console.log('📋 Fetched contact settings records:', allRecords);
+
+      // Prepare data to save (keep all current state values)
       const dataToSave = {
         heading: contactSettings.heading,
         email_label: contactSettings.email_label,
@@ -2857,74 +3047,113 @@ export default function AdminDashboard() {
         description_1: contactSettings.description_1,
         description_2: contactSettings.description_2,
         image_url: contactSettings.image_url,
-        updated_at: new Date().toISOString(),
+        phone: contactSettings.phone,
+        whatsapp: contactSettings.whatsapp,
+        address: contactSettings.address,
+        form_embed: contactSettings.form_embed,
+        contact_emails: contactSettings.contact_emails as any,
+        nodal_officer_title: contactSettings.nodal_officer_title,
+        nodal_officer_name: contactSettings.nodal_officer_name,
+        nodal_officer_phone: contactSettings.nodal_officer_phone,
+        nodal_officer_email: contactSettings.nodal_officer_email,
+        appellate_authority_title: contactSettings.appellate_authority_title,
+        appellate_authority_name: contactSettings.appellate_authority_name,
+        appellate_authority_phone: contactSettings.appellate_authority_phone,
+        appellate_authority_email: contactSettings.appellate_authority_email,
+        is_visible: contactSettings.is_visible ?? true,
       };
 
       let result;
-      if (contactSettings.id) {
-        // Update existing record
+      if (allRecords && allRecords.length > 0) {
+        // If records exist: UPDATE the first one, DELETE others
+        const firstRecordId = allRecords[0].id;
+        
+        // Update the first record
+        console.log('🔄 Updating existing record with ID:', firstRecordId);
         result = await supabase
           .from('contact_settings')
           .update(dataToSave)
-          .eq('id', contactSettings.id);
+          .eq('id', firstRecordId);
+
+        if (result.error) {
+          console.error('❌ Error updating contact settings:', result.error);
+          throw result.error;
+        }
+
+        // Delete any extra records if there are duplicates
+        if (allRecords.length > 1) {
+          console.log('🗑️ Deleting', allRecords.length - 1, 'duplicate record(s)');
+          const extraRecordIds = allRecords.slice(1).map(r => r.id);
+          await supabase
+            .from('contact_settings')
+            .delete()
+            .in('id', extraRecordIds);
+        }
       } else {
-        // Get first contact settings record ID or create new one
-        const { data: existingData } = await supabase
+        // If no records exist: INSERT a new one
+        console.log('➕ No existing records, inserting new one');
+        result = await supabase
           .from('contact_settings')
-          .select('id')
-          .limit(1);
-        
-        if (existingData && existingData.length > 0) {
-          result = await supabase
-            .from('contact_settings')
-            .update(dataToSave)
-            .eq('id', existingData[0].id);
-        } else {
-          result = await supabase
-            .from('contact_settings')
-            .insert([dataToSave]);
+          .insert([dataToSave])
+          .select('*');
+
+        if (result.error) {
+          console.error('❌ Error inserting contact settings:', result.error);
+          throw result.error;
         }
       }
 
-      const { error } = result;
-      if (error) throw error;
-      
+      console.log('✅ Contact settings saved successfully!');
       toast.success('Contact page settings saved successfully');
       loadAll();
     } catch (error: any) {
-      console.error('Error saving contact settings:', error);
+      console.error('💥 Error in saveContactSettings:', error);
       toast.error(`Failed to save contact settings: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSavingContact(false);
     }
   }
 
-  async function saveLegalPage(slug: string, content: string) {
+  async function saveLegalPage(slug: string, content: string, title: string, isVisible: boolean) {
     setIsSavingLegal(true);
     try {
       // Find existing page to get ID if available
       const existingPage = legalPages.find(p => p.slug === slug);
-      
-      let title = '';
-      if (slug === 'privacy-policy') title = 'Privacy Policy';
-      else if (slug === 'terms-of-service') title = 'Terms of Service';
-      else if (slug === 'refund-policy') title = 'Refund Policy';
-      else if (slug === 'about-us') title = 'About Us';
 
-      const { error } = await supabase
-        .from('legal_pages')
-        .upsert({
-          id: existingPage?.id,
-          slug,
-          content,
-          title,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'slug'
-        });
+      // Build data object without is_visible first, add it only if we're sure it's safe
+      const dataToUpsert: any = {
+        id: existingPage?.id,
+        slug,
+        content,
+        title,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
-      toast.success(`${title} saved successfully`);
+      // Try to add is_visible, but if it fails, save without it
+      try {
+        dataToUpsert.is_visible = isVisible;
+        const { error } = await supabase
+          .from('legal_pages')
+          .upsert(dataToUpsert, {
+            onConflict: 'slug'
+          });
+        if (error) {
+          // If is_visible caused an error, try saving without it
+          delete dataToUpsert.is_visible;
+          const { error: retryError } = await supabase
+            .from('legal_pages')
+            .upsert(dataToUpsert, {
+              onConflict: 'slug'
+            });
+          if (retryError) throw retryError;
+          toast.warning(`Page saved, but 'is_visible' column not found in your database. Please add it in Supabase!`);
+        } else {
+          toast.success(`${title} saved successfully`);
+        }
+      } catch (e) {
+        throw e;
+      }
+
       loadAll();
     } catch (error: any) {
       console.error('Error saving legal page:', error);
@@ -2998,6 +3227,7 @@ export default function AdminDashboard() {
       // Prepare data with only existing database columns
       const dataToSave: any = {
         description: footerSettings.description,
+        description_visible: footerSettings.description_visible ?? true,
         twitter_label: footerSettings.twitter_label,
         twitter_link: footerSettings.twitter_link,
         twitter_visible: footerSettings.twitter_visible ?? true,
@@ -3013,16 +3243,28 @@ export default function AdminDashboard() {
         youtube_label: footerSettings.youtube_label,
         youtube_link: footerSettings.youtube_link,
         youtube_visible: footerSettings.youtube_visible ?? false,
+        social_whatsapp_visible: footerSettings.social_whatsapp_visible ?? false,
+        social_media_visible: footerSettings.social_media_visible ?? true,
+        about_us_visible: footerSettings.about_us_visible ?? true,
+        contact_visible: footerSettings.contact_visible ?? true,
+        privacy_policy_visible: footerSettings.privacy_policy_visible ?? true,
+        terms_of_service_visible: footerSettings.terms_of_service_visible ?? true,
+        refund_policy_visible: footerSettings.refund_policy_visible ?? true,
+        faq_visible: footerSettings.faq_visible ?? true,
+        faq_heading: footerSettings.faq_heading ?? 'Frequently Asked Questions',
         whatsapp_number: footerSettings.whatsapp_number ?? '',
         whatsapp_visible: footerSettings.whatsapp_visible ?? false,
+        phone: footerSettings.phone ?? '',
+        phone_visible: footerSettings.phone_visible ?? false,
+        email: footerSettings.email ?? '',
+        email_visible: footerSettings.email_visible ?? false,
         bottom_branding_visible: footerSettings.bottom_branding_visible ?? true,
         bottom_branding_text: footerSettings.bottom_branding_text ?? '',
         for_businesses_title: footerSettings.for_businesses_title ?? 'For Businesses',
         for_businesses_links: footerSettings.for_businesses_links ?? [
-          { label: 'Advertise With Us', link: '#' },
-          { label: 'Write with us', link: '#' },
-          { label: 'Sell With Us', link: '#' },
-          { label: 'Editorial Policy', link: '#' },
+          { label: 'Get Listed', link: '#', is_visible: true },
+          { label: 'Advertise', link: '#', is_visible: true },
+          { label: 'Write for Us', link: '#', is_visible: true },
         ],
         updated_at: new Date().toISOString(),
       };
@@ -3900,6 +4142,13 @@ export default function AdminDashboard() {
                             <h3 className="font-semibold text-sm">{card.title}</h3>
                             <p className="text-xs text-muted-foreground truncate">{card.description}</p>
                           </div>
+                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                            <Switch
+                              checked={card.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleFeaturedCardVisibility(card.id, Boolean(checked))}
+                            />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(card.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                          </div>
                           <button onClick={() => setEditCard(card)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteCard(card.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                         </SortableOfferItem>
@@ -3917,6 +4166,13 @@ export default function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm">{card.title}</h3>
                         <p className="text-xs text-muted-foreground truncate">{card.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                        <Switch
+                          checked={card.is_visible ?? true}
+                          onCheckedChange={(checked) => toggleFeaturedCardVisibility(card.id, Boolean(checked))}
+                        />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{(card.is_visible ?? true) ? 'ON' : 'OFF'}</span>
                       </div>
                       <button onClick={() => setEditCard(card)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => deleteCard(card.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
@@ -5799,10 +6055,6 @@ export default function AdminDashboard() {
                       <Modal title={productEditOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setProductEditOffer(null)}>
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditOffer.show_image ?? true} onCheckedChange={(checked) => setProductEditOffer({ ...productEditOffer, show_image: Boolean(checked) })} />
-                            <span>Show Image</span>
-                          </label>
                           <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditOffer.description || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -5856,10 +6108,6 @@ export default function AdminDashboard() {
                       <Modal title={productEditAd1.id ? 'Edit Ad 1' : 'Add Ad 1'} onClose={() => setProductEditAd1(null)}>
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd1.show_image ?? true} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_image: Boolean(checked) })} />
-                            <span>Show Image</span>
-                          </label>
                           <input value={productEditAd1.link || ''} onChange={(e) => setProductEditAd1({ ...productEditAd1, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditAd1.show_border ?? false} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_border: Boolean(checked) })} />
@@ -5911,10 +6159,6 @@ export default function AdminDashboard() {
                       <Modal title={productEditAd2.id ? 'Edit Ad 2' : 'Add Ad 2'} onClose={() => setProductEditAd2(null)}>
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd2.show_image ?? true} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_image: Boolean(checked) })} />
-                            <span>Show Image</span>
-                          </label>
                           <input value={productEditAd2.link || ''} onChange={(e) => setProductEditAd2({ ...productEditAd2, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditAd2.show_border ?? false} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_border: Boolean(checked) })} />
@@ -5966,10 +6210,6 @@ export default function AdminDashboard() {
                       <Modal title={productEditAd3.id ? 'Edit Ad 3' : 'Add Ad 3'} onClose={() => setProductEditAd3(null)}>
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd3.show_image ?? true} onCheckedChange={(checked) => setProductEditAd3({ ...productEditAd3, show_image: Boolean(checked) })} />
-                            <span>Show Image</span>
-                          </label>
                           <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <textarea value={productEditAd3.description || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
                           <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -6143,9 +6383,13 @@ export default function AdminDashboard() {
                             <h3 className="font-semibold text-sm">{offer.heading}</h3>
                             {offer.description && <p className="text-xs text-muted-foreground truncate">{offer.description}</p>}
                           </div>
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={offer.show_image ?? true} onCheckedChange={(checked) => toggleOfferShowImage(offer.id, checked)} />
-                          </label>
+                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                            <Switch
+                              checked={offer.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleOfferVisibility(offer.id, Boolean(checked))}
+                            />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(offer.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                          </div>
                           <button onClick={() => setEditOffer(offer)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteOffer(offer.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                         </SortableOfferItem>
@@ -6162,9 +6406,13 @@ export default function AdminDashboard() {
                         <h3 className="font-semibold text-sm">{offer.heading}</h3>
                         {offer.description && <p className="text-xs text-muted-foreground truncate">{offer.description}</p>}
                       </div>
-                      <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Switch checked={offer.show_image ?? true} onCheckedChange={(checked) => toggleOfferShowImage(offer.id, checked)} />
-                      </label>
+                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                        <Switch
+                          checked={offer.is_visible ?? true}
+                          onCheckedChange={(checked) => toggleOfferVisibility(offer.id, Boolean(checked))}
+                        />
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{(offer.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                      </div>
                       <button onClick={() => setEditOffer(offer)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => deleteOffer(offer.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -6323,9 +6571,13 @@ export default function AdminDashboard() {
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-sm">Ad {selectedAds2.indexOf(ad) + 1}</h3>
                           </div>
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd2ShowImage(ad.id, checked)} />
-                          </label>
+                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                            <Switch
+                              checked={ad.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
+                            />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(ad.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                          </div>
                           <button onClick={() => setEditAd2(ad)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteAd2(ad.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                         </SortableOfferItem>
@@ -6341,9 +6593,12 @@ export default function AdminDashboard() {
                     <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[2/1] bg-muted group">
                       {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
-                          <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd2ShowImage(ad.id, checked)} />
-                        </label>
+                        <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
+                          <Switch
+                            checked={ad.is_visible ?? true}
+                            onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
+                          />
+                        </div>
                         <button onClick={() => setEditAd2(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteAd2(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -6495,9 +6750,13 @@ export default function AdminDashboard() {
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-sm">Ad {selectedAds1.indexOf(ad) + 1}</h3>
                           </div>
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd1ShowImage(ad.id, checked)} />
-                          </label>
+                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                            <Switch
+                              checked={ad.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
+                            />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(ad.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                          </div>
                           <button onClick={() => setEditAd1(ad)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteAd2(ad.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                         </SortableOfferItem>
@@ -6513,9 +6772,12 @@ export default function AdminDashboard() {
                         {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-contain bg-white" />}
                       </div>
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
-                          <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd1ShowImage(ad.id, checked)} />
-                        </label>
+                        <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
+                          <Switch
+                            checked={ad.is_visible ?? true}
+                            onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
+                          />
+                        </div>
                         <button onClick={() => setEditAd1(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteAd2(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -6668,9 +6930,13 @@ export default function AdminDashboard() {
                             <h3 className="font-semibold text-sm">{ad.heading?.trim() || `Ad ${selectedAds3.indexOf(ad) + 1}`}</h3>
                             {ad.description && <p className="text-xs text-muted-foreground truncate">{ad.description}</p>}
                           </div>
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd3ShowImage(ad.id, checked)} />
-                          </label>
+                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                            <Switch
+                              checked={ad.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleAd3Visibility(ad.id, Boolean(checked))}
+                            />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">{(ad.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                          </div>
                           <button onClick={() => setEditAd3(ad)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteAd3(ad.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                         </SortableOfferItem>
@@ -6686,9 +6952,12 @@ export default function AdminDashboard() {
                     <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[16/9] bg-muted group">
                       {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
-                          <Switch checked={ad.show_image ?? true} onCheckedChange={(checked) => toggleAd3ShowImage(ad.id, checked)} />
-                        </label>
+                        <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
+                          <Switch
+                            checked={ad.is_visible ?? true}
+                            onCheckedChange={(checked) => toggleAd3Visibility(ad.id, Boolean(checked))}
+                          />
+                        </div>
                         <button onClick={() => setEditAd3(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteAd3(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -6821,19 +7090,52 @@ export default function AdminDashboard() {
 
           {/* FAQS */}
           {tab === 'faqs' && (
-            <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">FAQs</h2>
-                <button
-                  onClick={() => {
-                    setEditFaq({ question: '', answer: '' });
-                    setShowAddFaqModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add FAQ
-                </button>
+            <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                    <input
+                      value={footerSettings.faq_heading ?? 'Frequently Asked Questions'}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, faq_heading: e.target.value })}
+                      placeholder="Enter page heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-lg font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium">Visible on Footer</label>
+                      <Switch
+                        checked={footerSettings.faq_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, faq_visible: v })}
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveFooter}
+                      disabled={isSavingFooter}
+                      className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSavingFooter ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">FAQs</h2>
+                  <button
+                    onClick={() => {
+                      setEditFaq({ question: '', answer: '' });
+                      setShowAddFaqModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add FAQ
+                  </button>
+                </div>
 
               {faqs.length === 0 ? (
                 <div className="text-center py-12 bg-card rounded-xl border border-border">
@@ -6921,6 +7223,7 @@ export default function AdminDashboard() {
                   </div>
                 </Modal>
               )}
+              </div>
             </div>
           )}
 
@@ -6939,7 +7242,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
               
-              <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className="space-y-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div>
                   <h3 className="font-semibold text-base mb-4">Footer Description</h3>
                   
@@ -6949,6 +7252,52 @@ export default function AdminDashboard() {
                     placeholder="Enter footer description..."
                     className="min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
+                </div>
+
+                <div className="space-y-6 border-t pt-6">
+                  <h3 className="font-semibold text-base mb-4">Contact Information</h3>
+                  
+                  
+                  
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">WhatsApp Number</label>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={footerSettings.whatsapp_visible ?? false}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, whatsapp_visible: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{(footerSettings.whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                        </div>
+                      </div>
+                      <input
+                        value={footerSettings.whatsapp_number || ''}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, whatsapp_number: e.target.value })}
+                        placeholder="e.g., +1 234 567 8900"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Email Address</label>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={footerSettings.email_visible ?? false}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, email_visible: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{(footerSettings.email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                        </div>
+                      </div>
+                      <input
+                        value={footerSettings.email || ''}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, email: e.target.value })}
+                        placeholder="e.g., contact@example.com"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                  
                 </div>
               </div>
             </div>
@@ -7146,10 +7495,10 @@ export default function AdminDashboard() {
                     <h3 className="font-semibold text-base">WhatsApp</h3>
                     <div className="flex items-center gap-2">
                       <Switch
-                        checked={footerSettings.whatsapp_visible ?? false}
-                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, whatsapp_visible: v })}
+                        checked={footerSettings.social_whatsapp_visible ?? false}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, social_whatsapp_visible: v })}
                       />
-                      <span className="text-sm text-muted-foreground">{(footerSettings.whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                      <span className="text-sm text-muted-foreground">{(footerSettings.social_whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
                     </div>
                   </div>
                   <div>
@@ -7176,34 +7525,47 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-3">
                     {(footerSettings.for_businesses_links ?? [
-                      { label: 'Advertise With Us', link: '#' },
-                      { label: 'Write with us', link: '#' },
-                      { label: 'Sell With Us', link: '#' },
-                      { label: 'Editorial Policy', link: '#' },
+                      { label: 'Advertise With Us', link: '#', is_visible: true },
+                      { label: 'Write with us', link: '#', is_visible: true },
+                      { label: 'Sell With Us', link: '#', is_visible: true },
+                      { label: 'Editorial Policy', link: '#', is_visible: true },
                     ]).map((item, index) => (
-                      <div key={`${item.label}-${index}`} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Label {index + 1}</label>
-                          <input
-                            value={item.label}
-                            onChange={(e) => {
-                              const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
-                              updatedLinks[index] = { ...updatedLinks[index], label: e.target.value };
-                              setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
-                            }}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                          />
+                      <div key={`${item.label}-${index}`} className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Label {index + 1}</label>
+                            <input
+                              value={item.label}
+                              onChange={(e) => {
+                                const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
+                                updatedLinks[index] = { ...updatedLinks[index], label: e.target.value };
+                                setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
+                              }}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Link {index + 1}</label>
+                            <input
+                              value={item.link}
+                              onChange={(e) => {
+                                const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
+                                updatedLinks[index] = { ...updatedLinks[index], link: e.target.value };
+                                setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
+                              }}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Link {index + 1}</label>
-                          <input
-                            value={item.link}
-                            onChange={(e) => {
+                        <div className="flex items-center justify-end gap-2">
+                          <label className="text-xs text-muted-foreground">{(item.is_visible ?? true) ? 'Visible' : 'Hidden'}</label>
+                          <Switch
+                            checked={item.is_visible ?? true}
+                            onCheckedChange={(v) => {
                               const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
-                              updatedLinks[index] = { ...updatedLinks[index], link: e.target.value };
+                              updatedLinks[index] = { ...updatedLinks[index], is_visible: v };
                               setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
                             }}
-                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                           />
                         </div>
                       </div>
@@ -7215,33 +7577,112 @@ export default function AdminDashboard() {
           )}
 
           {tab === 'footer_contact' && (
-            <div className="max-w-4xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Contact Page Details</h2>
-                <button
-                  onClick={saveContactSettings}
-                  disabled={isSavingContact}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {isSavingContact ? 'Saving...' : 'Save Contact'}
-                </button>
-              </div>
-              
-              <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Page Heading</label>
-                      <input
-                        value={contactSettings.heading}
-                        onChange={(e) => setContactSettings({ ...contactSettings, heading: e.target.value })}
-                        placeholder="e.g., Contact"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            <div className="max-w-4xl space-y-6">
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                    <input
+                      value={contactSettings.heading}
+                      onChange={(e) => setContactSettings({ ...contactSettings, heading: e.target.value })}
+                      placeholder="e.g., Contact"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-lg font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium">Visible on Footer</label>
+                      <Switch
+                        checked={contactSettings.is_visible ?? true}
+                        onCheckedChange={(v) => setContactSettings({ ...contactSettings, is_visible: v })}
                       />
                     </div>
+                    <button
+                      onClick={saveContactSettings}
+                      disabled={isSavingContact || isLoadingContactSettings}
+                      className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSavingContact ? 'Saving...' : 'Save Contact'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {isLoadingContactSettings ? (
+                <div className="space-y-6 rounded-2xl border border-border bg-card p-12 shadow-sm text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading contact settings...</p>
+                </div>
+              ) : (
+                <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="space-y-4">
+
+                  {/* Multiple Contact Emails */}
+                  <div className="space-y-4 border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium">Contact Emails</label>
+                      <button
+                        type="button"
+                        onClick={() => setContactSettings({
+                          ...contactSettings,
+                          contact_emails: [...contactSettings.contact_emails, { label: '', email: '' }]
+                        })}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20"
+                      >
+                        <Plus className="w-4 h-4" /> Add Email
+                      </button>
+                    </div>
+                    {contactSettings.contact_emails.map((item, index) => (
+                      <div key={index} className="flex gap-3 items-start">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Label</label>
+                            <input
+                              value={item.label}
+                              onChange={(e) => {
+                                const newEmails = [...contactSettings.contact_emails];
+                                newEmails[index].label = e.target.value;
+                                setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                              }}
+                              placeholder="e.g., Sales, Support"
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Email</label>
+                            <input
+                              type="email"
+                              value={item.email}
+                              onChange={(e) => {
+                                const newEmails = [...contactSettings.contact_emails];
+                                newEmails[index].email = e.target.value;
+                                setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                              }}
+                              placeholder="email@example.com"
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newEmails = contactSettings.contact_emails.filter((_, i) => i !== index);
+                            setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                          }}
+                          className="mt-6 text-destructive hover:text-destructive/80 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Single Email Fallback */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">Email Label</label>
+                      <label className="block text-sm font-medium mb-1.5">Email Label (Legacy)</label>
                       <input
                         value={contactSettings.email_label}
                         onChange={(e) => setContactSettings({ ...contactSettings, email_label: e.target.value })}
@@ -7250,7 +7691,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">Email Address</label>
+                      <label className="block text-sm font-medium mb-1.5">Email Address (Legacy)</label>
                       <input
                         type="email"
                         value={contactSettings.email}
@@ -7261,37 +7702,160 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <ImageUpload
-                      label="Side Image"
-                      value={contactSettings.image_url}
-                      onChange={(url) => setContactSettings({ ...contactSettings, image_url: url })}
-                      folder="site"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Phone Number</label>
+                      <input
+                        value={contactSettings.phone}
+                        onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
+                        placeholder="e.g., +1 234 567 890"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">WhatsApp Number</label>
+                      <input
+                        value={contactSettings.whatsapp}
+                        onChange={(e) => setContactSettings({ ...contactSettings, whatsapp: e.target.value })}
+                        placeholder="e.g., +1 234 567 890"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-4 border-t pt-6">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
+                    <label className="block text-sm font-medium mb-1.5">Address</label>
                     <textarea
-                      value={contactSettings.description_1}
-                      onChange={(e) => setContactSettings({ ...contactSettings, description_1: e.target.value })}
-                      placeholder="Enter the first paragraph of description"
-                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      value={contactSettings.address}
+                      onChange={(e) => setContactSettings({ ...contactSettings, address: e.target.value })}
+                      placeholder="Enter your address"
+                      className="min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
+
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-medium mb-1.5">Form Embed (URL or HTML code)</label>
                     <textarea
-                      value={contactSettings.description_2}
-                      onChange={(e) => setContactSettings({ ...contactSettings, description_2: e.target.value })}
-                      placeholder="Enter the second paragraph of description"
-                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      value={contactSettings.form_embed}
+                      onChange={(e) => setContactSettings({ ...contactSettings, form_embed: e.target.value })}
+                      placeholder="Enter form URL or full HTML embed code"
+                      className="min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     />
+                  </div>
+
+                  {/* Nodal Officer */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-4">Nodal Officer</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Title</label>
+                        <input
+                          value={contactSettings.nodal_officer_title}
+                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_title: e.target.value })}
+                          placeholder="e.g., Nodal Officer"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Name</label>
+                        <input
+                          value={contactSettings.nodal_officer_name}
+                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_name: e.target.value })}
+                          placeholder="e.g., John Doe"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Phone</label>
+                        <input
+                          value={contactSettings.nodal_officer_phone}
+                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_phone: e.target.value })}
+                          placeholder="e.g., +1 234 567 890"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Email</label>
+                        <input
+                          type="email"
+                          value={contactSettings.nodal_officer_email}
+                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_email: e.target.value })}
+                          placeholder="e.g., nodal@example.com"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Appellate Authority */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-semibold mb-4">Appellate Authority</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Title</label>
+                        <input
+                          value={contactSettings.appellate_authority_title}
+                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_title: e.target.value })}
+                          placeholder="e.g., Appellate Authority"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Name</label>
+                        <input
+                          value={contactSettings.appellate_authority_name}
+                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_name: e.target.value })}
+                          placeholder="e.g., Jane Smith"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Phone</label>
+                        <input
+                          value={contactSettings.appellate_authority_phone}
+                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_phone: e.target.value })}
+                          placeholder="e.g., +1 234 567 890"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Email</label>
+                        <input
+                          type="email"
+                          value={contactSettings.appellate_authority_email}
+                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_email: e.target.value })}
+                          placeholder="e.g., appellate@example.com"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
+                        <textarea
+                          value={contactSettings.description_1}
+                          onChange={(e) => setContactSettings({ ...contactSettings, description_1: e.target.value })}
+                          placeholder="Enter the first paragraph of description"
+                          className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
+                        <textarea
+                          value={contactSettings.description_2}
+                          onChange={(e) => setContactSettings({ ...contactSettings, description_2: e.target.value })}
+                          placeholder="Enter the second paragraph of description"
+                          className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )}
 
@@ -7342,49 +7906,83 @@ export default function AdminDashboard() {
             <div className="max-w-4xl space-y-6">
               {(() => {
                 let slug = '';
-                let title = '';
+                let defaultTitle = '';
                 if (tab === 'footer_privacy') { 
                   slug = 'privacy-policy'; 
-                  title = 'Privacy Policy'; 
+                  defaultTitle = 'Privacy Policy'; 
                 } else if (tab === 'footer_terms') { 
                   slug = 'terms-of-service'; 
-                  title = 'Terms of Service'; 
+                  defaultTitle = 'Terms of Service'; 
                 } else if (tab === 'footer_refund') { 
                   slug = 'refund-policy'; 
-                  title = 'Refund Policy'; 
+                  defaultTitle = 'Refund Policy'; 
                 } else if (tab === 'footer_about') { 
                   slug = 'about-us'; 
-                  title = 'About Us'; 
+                  defaultTitle = 'About Us'; 
                 }
 
                 const page = legalPages.find(p => p.slug === slug);
+                const currentTitle = editableLegalTitles[slug] || page?.title || defaultTitle;
+                const currentVisible = editableLegalVisibility[slug] ?? page?.is_visible ?? true;
                 
                 return (
                   <>
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-bold">{title}</h2>
-                      <button
-                        onClick={() => saveLegalPage(slug, page?.content || '')}
-                        disabled={isSavingLegal}
-                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
-                      >
-                        <Save className="w-4 h-4" />
-                        {isSavingLegal ? 'Saving...' : `Save ${title}`}
-                      </button>
-                    </div>
-                    
-                    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                      <div className="prose prose-sm max-w-none mb-4">
-                        <p className="text-muted-foreground">Use the editor below to format your {title}. You can add headings, lists, and more.</p>
+                    <div className="space-y-6">
+                      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium">Page Title</label>
+                            <input
+                              value={currentTitle}
+                              onChange={(e) => {
+                                setEditableLegalTitles(prev => ({
+                                  ...prev,
+                                  [slug]: e.target.value
+                                }));
+                              }}
+                              placeholder="Enter page title"
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-lg font-semibold"
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                            <div className="flex items-center gap-3">
+                              <label className="text-sm font-medium">Visible on Footer</label>
+                              <Switch
+                                checked={currentVisible}
+                                onCheckedChange={(checked) => {
+                                  setEditableLegalVisibility(prev => ({
+                                    ...prev,
+                                    [slug]: checked
+                                  }));
+                                }}
+                              />
+                            </div>
+                            <button
+                              onClick={() => saveLegalPage(slug, page?.content || '', currentTitle, currentVisible)}
+                              disabled={isSavingLegal}
+                              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                            >
+                              <Save className="w-4 h-4" />
+                              {isSavingLegal ? 'Saving...' : `Save ${currentTitle}`}
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <TipTapEditor
-                        value={page?.content || ''}
-                        onChange={(newContent) => {
-                          setLegalPages(prev => prev.map(p => p.slug === slug ? { ...p, content: newContent } : p));
-                        }}
-                        className="min-h-[300px]"
-                        placeholder={`Enter ${title} content here...`}
-                      />
+                    
+                      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                        <div className="prose prose-sm max-w-none mb-4">
+                          <p className="text-muted-foreground">Use the editor below to format your {currentTitle}. You can add headings, lists, and more.</p>
+                        </div>
+                        <TipTapEditor
+                          value={page?.content || ''}
+                          onChange={(newContent) => {
+                            setLegalPages(prev => prev.map(p => p.slug === slug ? { ...p, content: newContent } : p));
+                          }}
+                          className="min-h-[300px]"
+                          placeholder={`Enter ${currentTitle} content here...`}
+                        />
+                      </div>
                     </div>
                   </>
                 );
