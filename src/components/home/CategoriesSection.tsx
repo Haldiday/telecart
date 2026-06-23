@@ -205,7 +205,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                         href={brand.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="block w-full text-left text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
+                                        className="block w-full text-left text-sm font-normal text-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
                                       >
                                         {brand.name}
                                       </a>
@@ -307,14 +307,14 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                       href={brand.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
+                                      className="block w-full text-left text-sm md:text-base font-normal text-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
                                     >
                                       {brand.name}
                                     </a>
                                   ) : (
                                     <div
                                       key={brand.id}
-                                      className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
+                                      className="block w-full text-left text-sm md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
                                     >
                                       {brand.name}
                                     </div>

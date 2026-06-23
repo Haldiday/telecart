@@ -304,7 +304,7 @@ export default function Ads3ColSection({
                               <img
                                 src={ad.image_url}
                                 alt={ad.heading || 'Ad'}
-                                className="h-full w-full max-w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                               />
                             )}
                           </div>
@@ -352,7 +352,7 @@ export default function Ads3ColSection({
                         <img
                           src={ad.image_url}
                           alt={ad.heading || 'Ad'}
-                          className="h-full w-full max-w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                         />
                       )}
                     </div>

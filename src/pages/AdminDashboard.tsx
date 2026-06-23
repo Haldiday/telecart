@@ -120,6 +120,7 @@ interface HeaderSettings {
 }
 
 interface FooterBusinessLink {
+  id?: string;
   label: string;
   link: string;
   is_visible?: boolean;
@@ -159,6 +160,8 @@ interface FooterSettings {
   phone_visible?: boolean;
   email?: string;
   email_visible?: boolean;
+  bottom_footer_email?: string;
+  bottom_footer_email_visible?: boolean;
   bottom_branding_visible?: boolean;
   bottom_branding_text?: string;
   for_businesses_title?: string;
@@ -556,6 +559,8 @@ export default function AdminDashboard() {
     phone_visible: false,
     email: '',
     email_visible: false,
+    bottom_footer_email: '',
+    bottom_footer_email_visible: false,
     bottom_branding_visible: true,
     bottom_branding_text: '',
     for_businesses_title: 'For Businesses',
@@ -834,14 +839,19 @@ export default function AdminDashboard() {
               phone_visible: footerData.phone_visible ?? false,
               email: footerData.email ?? '',
               email_visible: footerData.email_visible ?? false,
+              bottom_footer_email: footerData.bottom_footer_email ?? '',
+              bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
               bottom_branding_visible: footerData.bottom_branding_visible ?? true,
               bottom_branding_text: footerData.bottom_branding_text ?? '',
               for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
-              for_businesses_links: footerData.for_businesses_links ?? [
+              for_businesses_links: (footerData.for_businesses_links ?? [
                 { label: 'Get Listed', link: '#', is_visible: true },
                 { label: 'Advertise', link: '#', is_visible: true },
                 { label: 'Write for Us', link: '#', is_visible: true },
-              ],
+              ]).map((link: any, idx: number) => ({
+                id: `link-${idx}`,
+                ...link,
+              })),
             });
           }
           if (subscribers.data) {
@@ -1170,10 +1180,10 @@ export default function AdminDashboard() {
       bottom_branding_text: '',
       for_businesses_title: 'For Businesses',
       for_businesses_links: [
-        { label: 'Advertise With Us', link: '#' },
-        { label: 'Write with us', link: '#' },
-        { label: 'Sell With Us', link: '#' },
-        { label: 'Editorial Policy', link: '#' },
+        { id: '1', label: 'Advertise With Us', link: '#' },
+        { id: '2', label: 'Write with us', link: '#' },
+        { id: '3', label: 'Sell With Us', link: '#' },
+        { id: '4', label: 'Editorial Policy', link: '#' },
       ],
       ...footer.data
     });
@@ -3258,6 +3268,8 @@ export default function AdminDashboard() {
         phone_visible: footerSettings.phone_visible ?? false,
         email: footerSettings.email ?? '',
         email_visible: footerSettings.email_visible ?? false,
+        bottom_footer_email: footerSettings.bottom_footer_email ?? '',
+        bottom_footer_email_visible: footerSettings.bottom_footer_email_visible ?? false,
         bottom_branding_visible: footerSettings.bottom_branding_visible ?? true,
         bottom_branding_text: footerSettings.bottom_branding_text ?? '',
         for_businesses_title: footerSettings.for_businesses_title ?? 'For Businesses',
@@ -7196,24 +7208,20 @@ export default function AdminDashboard() {
               {/* Add/Edit FAQ Modal */}
               {(showAddFaqModal || editFaq) && (
                 <Modal title={editFaq?.id ? 'Edit FAQ' : 'Add FAQ'} onClose={() => { setEditFaq(null); setShowAddFaqModal(false); }}>
-                  <div className="mx-auto w-full max-w-sm space-y-4 px-1">
+                  <div className="mx-auto w-full max-w-4xl space-y-4 px-1">
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Question</label>
-                      <input
-                        type="text"
+                      <TipTapEditor
                         value={editFaq?.question || ''}
-                        onChange={(e) => setEditFaq({ ...editFaq!, question: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                        onChange={(value) => setEditFaq({ ...editFaq!, question: value })}
                         placeholder="Enter question..."
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Answer</label>
-                      <textarea
+                      <TipTapEditor
                         value={editFaq?.answer || ''}
-                        onChange={(e) => setEditFaq({ ...editFaq!, answer: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                        rows={6}
+                        onChange={(value) => setEditFaq({ ...editFaq!, answer: value })}
                         placeholder="Enter answer..."
                       />
                     </div>
@@ -7294,6 +7302,25 @@ export default function AdminDashboard() {
                         value={footerSettings.email || ''}
                         onChange={(e) => setFooterSettings({ ...footerSettings, email: e.target.value })}
                         placeholder="e.g., contact@example.com"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Bottom Footer Email</label>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={footerSettings.bottom_footer_email_visible ?? false}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, bottom_footer_email_visible: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{(footerSettings.bottom_footer_email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                        </div>
+                      </div>
+                      <input
+                        value={footerSettings.bottom_footer_email || ''}
+                        onChange={(e) => setFooterSettings({ ...footerSettings, bottom_footer_email: e.target.value })}
+                        placeholder="e.g., support@example.com"
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       />
                     </div>
@@ -7524,13 +7551,8 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="space-y-3">
-                    {(footerSettings.for_businesses_links ?? [
-                      { label: 'Advertise With Us', link: '#', is_visible: true },
-                      { label: 'Write with us', link: '#', is_visible: true },
-                      { label: 'Sell With Us', link: '#', is_visible: true },
-                      { label: 'Editorial Policy', link: '#', is_visible: true },
-                    ]).map((item, index) => (
-                      <div key={`${item.label}-${index}`} className="space-y-2">
+                    {(footerSettings.for_businesses_links ?? []).map((item, index) => (
+                      <div key={`link-${index}`} className="space-y-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium mb-1.5">Label {index + 1}</label>

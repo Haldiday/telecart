@@ -83,15 +83,13 @@ export default function FAQs() {
                     onClick={() => toggleAccordion(faq.id)}
                     className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
                   >
-                    <span className="text-lg font-semibold text-[#111111]">{faq.question}</span>
+                    <span className="text-lg font-semibold text-[#111111]" dangerouslySetInnerHTML={{ __html: faq.question }} />
                     <span className={`text-2xl transition-transform duration-300 ${openId === faq.id ? 'rotate-45' : ''}`}>
                       +
                     </span>
                   </button>
                   {openId === faq.id && (
-                    <div className="mt-2 text-[#333333]">
-                      <p>{faq.answer}</p>
-                    </div>
+                    <div className="mt-2 text-[#333333]" dangerouslySetInnerHTML={{ __html: faq.answer }} />
                   )}
                 </div>
               ))}

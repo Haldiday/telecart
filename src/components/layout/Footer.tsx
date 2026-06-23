@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLayoutEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface FooterBusinessLink {
+  id?: string;
   label: string;
   link: string;
   is_visible?: boolean;
@@ -44,6 +45,8 @@ interface FooterSettings {
   phone_visible?: boolean;
   email?: string;
   email_visible?: boolean;
+  bottom_footer_email?: string;
+  bottom_footer_email_visible?: boolean;
   bottom_branding_visible?: boolean;
   bottom_branding_text?: string;
   for_businesses_title?: string;
@@ -122,12 +125,14 @@ const getCachedFooterSettings = (): FooterSettings => {
       phone_visible: false,
       email: '',
       email_visible: false,
+      bottom_footer_email: '',
+      bottom_footer_email_visible: false,
       for_businesses_title: 'For Businesses',
       for_businesses_links: [
-        { label: 'Get Listed', link: '#' },
-        { label: 'Advertise', link: '#' },
-        { label: 'Write for Us', link: '#' },
-      ],
+      { label: 'Get Listed', link: '#' },
+      { label: 'Advertise', link: '#' },
+      { label: 'Write for Us', link: '#' },
+    ],
     };
   }
 
@@ -158,6 +163,8 @@ const getCachedFooterSettings = (): FooterSettings => {
         phone_visible: false,
         email: '',
         email_visible: false,
+        bottom_footer_email: '',
+        bottom_footer_email_visible: false,
         for_businesses_title: 'For Businesses',
         for_businesses_links: [
           { label: 'Get Listed', link: '#' },
@@ -193,12 +200,14 @@ const getCachedFooterSettings = (): FooterSettings => {
       phone_visible: false,
       email: '',
       email_visible: false,
+      bottom_footer_email: '',
+      bottom_footer_email_visible: false,
       for_businesses_title: 'For Businesses',
       for_businesses_links: [
-        { label: 'Get Listed', link: '#' },
-        { label: 'Advertise', link: '#' },
-        { label: 'Write for Us', link: '#' },
-      ],
+      { label: 'Get Listed', link: '#' },
+      { label: 'Advertise', link: '#' },
+      { label: 'Write for Us', link: '#' },
+    ],
     };
   }
 };
@@ -312,6 +321,8 @@ export default function Footer() {
             phone_visible: footerData.phone_visible ?? false,
             email: footerData.email ?? '',
             email_visible: footerData.email_visible ?? false,
+            bottom_footer_email: footerData.bottom_footer_email ?? '',
+            bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
             bottom_branding_visible: footerData.bottom_branding_visible ?? true,
             bottom_branding_text: footerData.bottom_branding_text ?? '',
             for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
@@ -636,13 +647,13 @@ export default function Footer() {
             </div>
 
             {/* Right: Email */}
-            {settings.email_visible && settings.email && (
+            {settings.bottom_footer_email_visible && settings.bottom_footer_email && (
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#1d4ed8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <a href={`mailto:${settings.email}`} className="text-sm text-gray-700 hover:text-[#0055DD] transition-colors">
-                  {settings.email}
+                <a href={`mailto:${settings.bottom_footer_email}`} className="text-sm text-gray-700 hover:text-[#0055DD] transition-colors">
+                  {settings.bottom_footer_email}
                 </a>
               </div>
             )}
