@@ -104,6 +104,7 @@ export default function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const {
     query,
@@ -294,6 +295,15 @@ export default function Header() {
     };
   }, [mobileOpen]);
 
+  // Cleanup blur timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <header 
       ref={headerRef} 
@@ -357,8 +367,16 @@ export default function Header() {
                       placeholder="Search brand or category"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      onFocus={() => setIsSearchActive(true)}
-                      onBlur={() => setTimeout(() => setIsSearchActive(false), 100)}
+                      onFocus={() => {
+                        if (blurTimeoutRef.current) {
+                          clearTimeout(blurTimeoutRef.current);
+                          blurTimeoutRef.current = null;
+                        }
+                        setIsSearchActive(true);
+                      }}
+                      onBlur={() => {
+                        blurTimeoutRef.current = setTimeout(() => setIsSearchActive(false), 100);
+                      }}
                       onKeyDown={handleKeyDown}
                       className="w-full h-[42px] rounded-[32px] bg-transparent pl-5 pr-14 text-[14px] outline-none"
                       style={{
@@ -388,7 +406,7 @@ export default function Header() {
 
                   <div
                     className={`absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-none border-0 bg-transparent shadow-none transition-all duration-300 ${
-                      isSearchActive ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+                      isSearchActive && query.trim() ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
                     }`}
                   >
                     <div className="max-h-[360px] overflow-y-auto px-3 py-3 bg-white border border-gray-200 rounded-b-[32px] shadow-lg">
@@ -411,7 +429,13 @@ export default function Header() {
                               <button
                                 key={`${result.type}-${result.id}`}
                                 type="button"
-                                onMouseDown={() => setIsSearchActive(true)}
+                                onMouseDown={() => {
+                                  if (blurTimeoutRef.current) {
+                                    clearTimeout(blurTimeoutRef.current);
+                                    blurTimeoutRef.current = null;
+                                  }
+                                  setIsSearchActive(true);
+                                }}
                                 onClick={() => handleResultClick(result)}
                                 className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm ${
                                   selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'text-[#61646b] hover:bg-[#f5f5f5]'

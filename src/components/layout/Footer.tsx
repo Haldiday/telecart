@@ -471,7 +471,7 @@ export default function Footer() {
     <footer className="pt-12 pb-6" style={{ backgroundColor: '#F2F2F2' }}>
       <div className="container mx-auto px-4 md:px-6 lg:px-10 xl:px-12">
         {/* Footer Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Column 1: Logo & Description */}
           <div className="flex flex-col items-start gap-4 text-left">
             <div className="flex items-center gap-3 pt-0.5">
@@ -532,7 +532,18 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-
+           <div>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">{settings.for_businesses_title}</h4>
+            <ul className="space-y-3">
+              {settings.for_businesses_links?.filter((link) => link.is_visible ?? true).map((link, index) => (
+                <li key={index}>
+                  <a href={link.link} className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
           {/* Column 4: Reach Us */}
           <div>
             <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Reach Us</h4>

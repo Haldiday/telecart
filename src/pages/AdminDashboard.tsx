@@ -6,8 +6,6 @@ import { useSectionInstances } from '@/hooks/useSectionInstances';
 import { useScopedSectionInstances, type ScopedPageSection } from '@/hooks/useScopedSectionInstances';
 import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
-
-import FileUpload from '@/components/admin/FileUpload';
 import TipTapEditor from '@/components/admin/TipTapEditor';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -24,7 +22,7 @@ import {
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
 interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; is_visible: boolean; }
-interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_downloads_tab?: boolean; show_brands_tab?: boolean; is_visible?: boolean; }
+interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_brands_tab?: boolean; is_visible?: boolean; }
 interface Subcategory {
   id: string;
   category_id: string;
@@ -46,19 +44,13 @@ interface Subcategory {
   overview_points_heading?: string | null;
   detail_heading?: string | null;
   detail_description?: string | null;
-  show_downloads?: boolean;
   show_brands?: boolean;
-  show_resources?: boolean;
-  show_pricing_plans?: boolean;
   show_about_section?: boolean;
   show_header_points_section?: boolean;
   sort_order: number;
   about_subheading?: string | null;
   image_url?: string | null;
-  resources_tab_label?: string | null;
-  downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
-  pricing_plans_tab_label?: string | null;
   key_features_tab_label?: string | null;
   hero_background_color?: string | null;
   tab_order?: string[] | null;
@@ -70,8 +62,6 @@ interface Subcategory {
   about_button_text_color?: string | null;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
-interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
-interface CategoryDownload { id: string; category_id: string; file_name: string; file_url: string; file_type: string; }
 interface SubcategoryBrand { 
   id?: string; 
   name: string; 
@@ -92,7 +82,6 @@ interface SubcategoryBrand {
 interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; section_id?: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
-interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string; price: string; currency: string; duration: string; description: string | null; features: string[]; button_label: string; button_link: string | null; razorpay_link: string | null; button_bg_color?: string | null; card_bg_color?: string | null; is_popular: boolean; is_visible: boolean; sort_order: number; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
@@ -454,7 +443,6 @@ export default function AdminDashboard() {
   const [cards, setCards] = useState<FeaturedCard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [categoryDownloads, setCategoryDownloads] = useState<CategoryDownload[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [ads2, setAds2] = useState<Ad2[]>([]);
   const [ads3, setAds3] = useState<Ad3[]>([]);
@@ -569,23 +557,15 @@ export default function AdminDashboard() {
   const [showAddFaqModal, setShowAddFaqModal] = useState(false);
   const [editSubs, setEditSubs] = useState<Subcategory[]>([]);
   const [editSubcategory, setEditSubcategory] = useState<Partial<Subcategory> | null>(null);
-  const [editDownloads, setEditDownloads] = useState<Partial<CategoryDownload>[]>([]);
   const [editOffer, setEditOffer] = useState<Partial<Offer> | null>(null);
   const [editAd2, setEditAd2] = useState<Partial<Ad2> | null>(null);
   const [editAd3, setEditAd3] = useState<Partial<Ad3> | null>(null);
   const [editButtons, setEditButtons] = useState<CategoryButton[]>([]);
   const [editButtonsState, setEditButtonsState] = useState<Record<string, CategoryButton[]>>({});
-  const [editSubDownloads, setEditSubDownloads] = useState<SubcategoryDownload[]>([]);
-  const [editSubDownloadsState, setEditSubDownloadsState] = useState<Record<string, SubcategoryDownload[]>>({});
-  const [editShowDownloadsState, setEditShowDownloadsState] = useState<Record<string, boolean>>({});
+  const [editShowBrandsState, setEditShowBrandsState] = useState<Record<string, boolean>>({});
+  const [editBrandsTabLabelState, setEditBrandsTabLabelState] = useState<Record<string, string>>({});
   const [editSubBrands, setEditSubBrands] = useState<SubcategoryBrand[]>([]);
   const [editSubBrandsState, setEditSubBrandsState] = useState<Record<string, SubcategoryBrand[]>>({});
-  const [editShowBrandsState, setEditShowBrandsState] = useState<Record<string, boolean>>({});
-  const [editShowResourcesState, setEditShowResourcesState] = useState<Record<string, boolean>>({});
-  const [editResourcesTabLabelState, setEditResourcesTabLabelState] = useState<Record<string, string>>({});
-  const [editDownloadsTabLabelState, setEditDownloadsTabLabelState] = useState<Record<string, string>>({});
-  const [editBrandsTabLabelState, setEditBrandsTabLabelState] = useState<Record<string, string>>({});
-  const [editPricingPlansTabLabelState, setEditPricingPlansTabLabelState] = useState<Record<string, string>>({});
   const [editKeyFeaturesTabLabelState, setEditKeyFeaturesTabLabelState] = useState<Record<string, string>>({});
   const [editTabOrderState, setEditTabOrderState] = useState<Record<string, string[]>>({});
   const [editAd1, setEditAd1] = useState<Partial<Ad2> | null>(null);
@@ -593,11 +573,6 @@ export default function AdminDashboard() {
   const [editSubOverviewPointsState, setEditSubOverviewPointsState] = useState<Record<string, SubcategoryOverviewPoint[]>>({});
   const [keyFeaturesSections, setKeyFeaturesSections] = useState<SubcategoryKeyFeaturesSection[]>([]);
   const [editKeyFeaturesSections, setEditKeyFeaturesSections] = useState<Record<string, SubcategoryKeyFeaturesSection[]>>({});
-
-  // State for pricing plans
-  const [editPricingPlans, setEditPricingPlans] = useState<PricingPlan[]>([]);
-  const [editPricingPlansState, setEditPricingPlansState] = useState<Record<string, PricingPlan[]>>({});
-  const [editShowPricingPlansState, setEditShowPricingPlansState] = useState<Record<string, boolean>>({});
   const [editShowAboutSectionState, setEditShowAboutSectionState] = useState<Record<string, boolean>>({});
   const [editShowHeaderPointsSectionState, setEditShowHeaderPointsSectionState] = useState<Record<string, boolean>>({});
 
@@ -704,21 +679,18 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
+          const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
             supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('featured_cards').select('*').order('sort_order'),
             supabase.from('categories').select('*').order('sort_order'),
             supabase.from('subcategories').select('*').order('sort_order'),
-            supabase.from('category_downloads').select('*'),
             supabase.from('offers').select('*').order('sort_order'),
             supabase.from('ads_2col').select('*').order('sort_order'),
             supabase.from('ads_3col').select('*').order('sort_order'),
             supabase.from('category_buttons').select('*').order('sort_order'),
-            supabase.from('subcategory_downloads' as any).select('*').then(res => res, err => ({ data: null, error: err })),
             supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
-            supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
             supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
             supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
@@ -881,28 +853,18 @@ export default function AdminDashboard() {
       if (sub.data) {
         setSubcategories(sub.data as unknown as Subcategory[]);
         const map: Record<string, string> = {};
-        const pricingLabels: Record<string, string> = {};
         const keyFeaturesLabels: Record<string, string> = {};
         const brandsLabels: Record<string, string> = {};
-        const downloadsLabels: Record<string, string> = {};
-        const resourcesLabels: Record<string, string> = {};
         
         sub.data.forEach((s: any) => { 
           map[s.id] = s.name; 
-          pricingLabels[s.id] = s.pricing_plans_tab_label || 'Pricing Plans';
           keyFeaturesLabels[s.id] = s.key_features_tab_label || 'Key Features';
           brandsLabels[s.id] = s.brands_tab_label || 'Brands';
-          downloadsLabels[s.id] = s.downloads_tab_label || 'Downloads';
-          resourcesLabels[s.id] = s.resources_tab_label || 'Resources';
         });
         setSubcategoriesMap(map);
-        setEditPricingPlansTabLabelState(pricingLabels);
         setEditKeyFeaturesTabLabelState(keyFeaturesLabels);
         setEditBrandsTabLabelState(brandsLabels);
-        setEditDownloadsTabLabelState(downloadsLabels);
-        setEditResourcesTabLabelState(resourcesLabels);
       }
-      if (downloads.data) setCategoryDownloads(downloads.data);
       if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null, show_image: offer.show_image ?? true })));
       if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
       if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
@@ -923,20 +885,6 @@ export default function AdminDashboard() {
           }
         });
         setEditButtonsState(buttonsBySubcategory);
-      }
-      if (subDownloads.data) {
-        setEditSubDownloads(subDownloads.data as unknown as SubcategoryDownload[]);
-        const groupedDownloads: Record<string, SubcategoryDownload[]> = {};
-        subDownloads.data.forEach((download: any) => {
-          if (!groupedDownloads[download.subcategory_id]) groupedDownloads[download.subcategory_id] = [];
-          groupedDownloads[download.subcategory_id].push({
-            id: download.id,
-            file_name: download.file_name,
-            file_url: download.file_url,
-            file_type: download.file_type,
-          });
-        });
-        setEditSubDownloadsState(groupedDownloads);
       }
       if (subBrands.data) {
         const brandsBySubcategory: Record<string, SubcategoryBrand[]> = {};
@@ -1007,41 +955,6 @@ export default function AdminDashboard() {
         setEditAboutSections(aboutSectionsBySubcategory);
         setEditAboutSectionVisibility(aboutSectionVisibilityBySubcategory);
       }
-      if (pricingPlans.data) {
-        const pricingPlansBySubcategory: Record<string, PricingPlan[]> = {};
-        pricingPlans.data.forEach((plan: any) => {
-          if (!pricingPlansBySubcategory[plan.subcategory_id]) {
-            pricingPlansBySubcategory[plan.subcategory_id] = [];
-          }
-          // Handle features field - it might be stored as string or array
-          let features: string[] = [];
-          if (Array.isArray(plan.features)) {
-            features = plan.features;
-          } else if (typeof plan.features === 'string') {
-            features = plan.features.split('\n').filter(f => f.trim());
-          }
-          pricingPlansBySubcategory[plan.subcategory_id].push({
-            id: plan.id,
-            subcategory_id: plan.subcategory_id,
-            plan_name: plan.plan_name,
-            price: plan.price,
-            currency: plan.currency,
-            duration: plan.duration,
-            description: plan.description,
-            features: features,
-            button_label: plan.button_label,
-            button_link: plan.button_link,
-            razorpay_link: plan.razorpay_link,
-            button_bg_color: plan.button_bg_color || null,
-            card_bg_color: plan.card_bg_color || null,
-            is_popular: plan.is_popular,
-            is_visible: plan.is_visible,
-            sort_order: plan.sort_order,
-          });
-        });
-        console.log('Loaded pricing plans by subcategory:', pricingPlansBySubcategory);
-        setEditPricingPlansState(pricingPlansBySubcategory);
-      }
       if (kfSections.data) {
         setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
         const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
@@ -1071,17 +984,14 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'featured_cards' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, loadAllSafe)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'category_downloads' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_2col' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ads_3col' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons' }, loadAllSafe)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_downloads' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_about_sections' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_key_features_sections' as any }, loadAllSafe)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'footer_settings' as any }, loadAllSafe)
       .subscribe();
@@ -1093,21 +1003,18 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
-    const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer, faqsData] = await Promise.all([
+    const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, faqsData] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('featured_cards').select('*').order('sort_order'),
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('subcategories').select('*').order('sort_order'),
-      supabase.from('category_downloads').select('*'),
       supabase.from('offers').select('*').order('sort_order'),
       supabase.from('ads_2col').select('*').order('sort_order'),
       supabase.from('ads_3col').select('*').order('sort_order'),
       supabase.from('category_buttons').select('*').order('sort_order'),
-      supabase.from('subcategory_downloads' as any).select('*').then(res => res, err => ({ data: null, error: err })),
       supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
-      supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
       supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
       supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
@@ -1190,7 +1097,7 @@ export default function AdminDashboard() {
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null, is_visible: card.is_visible ?? true })));
     if (cat.data) setCategories(cat.data);
     if (sub.data) setSubcategories(sub.data as unknown as Subcategory[]);
-    if (downloads.data) setCategoryDownloads(downloads.data);
+
     if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, is_visible: offer.is_visible ?? true })));
     if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, is_visible: ad.is_visible ?? true })));
     if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, is_visible: ad.is_visible ?? true })));
@@ -1213,19 +1120,7 @@ export default function AdminDashboard() {
       });
       setEditButtonsState(buttonsBySubcategory);
     }
-    if (subDownloads.data) {
-      const groupedDownloads: Record<string, SubcategoryDownload[]> = {};
-      subDownloads.data.forEach((download: any) => {
-        if (!groupedDownloads[download.subcategory_id]) groupedDownloads[download.subcategory_id] = [];
-        groupedDownloads[download.subcategory_id].push({
-          id: download.id,
-          file_name: download.file_name,
-          file_url: download.file_url,
-          file_type: download.file_type,
-        });
-      });
-      setEditSubDownloadsState(groupedDownloads);
-    }
+
     if (subBrands.data) {
       const brandsBySubcategory: Record<string, SubcategoryBrand[]> = {};
       subBrands.data.forEach((brand: any) => {
@@ -1291,40 +1186,7 @@ export default function AdminDashboard() {
       });
       setEditAboutSections(aboutSectionsBySubcategory);
     }
-    if (pricingPlans.data) {
-      const pricingPlansBySubcategory: Record<string, PricingPlan[]> = {};
-      pricingPlans.data.forEach((plan: any) => {
-        if (!pricingPlansBySubcategory[plan.subcategory_id]) {
-          pricingPlansBySubcategory[plan.subcategory_id] = [];
-        }
-        // Handle features field - it might be stored as string or array
-        let features: string[] = [];
-        if (Array.isArray(plan.features)) {
-          features = plan.features;
-        } else if (typeof plan.features === 'string') {
-          features = plan.features.split('\n').filter(f => f.trim());
-        }
-        pricingPlansBySubcategory[plan.subcategory_id].push({
-          id: plan.id,
-          subcategory_id: plan.subcategory_id,
-          plan_name: plan.plan_name,
-          price: plan.price,
-          currency: plan.currency,
-          duration: plan.duration,
-          description: plan.description,
-          features: features,
-          button_label: plan.button_label,
-          button_link: plan.button_link,
-          razorpay_link: plan.razorpay_link,
-          button_bg_color: plan.button_bg_color || null,
-          card_bg_color: plan.card_bg_color || null,
-          is_popular: plan.is_popular,
-          is_visible: plan.is_visible,
-          sort_order: plan.sort_order,
-        });
-      });
-      setEditPricingPlansState(pricingPlansBySubcategory);
-    }
+
     if (kfSections.data) {
       setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
       const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
@@ -2559,18 +2421,12 @@ export default function AdminDashboard() {
       const effectiveButtonsState = activeSubId
         ? { ...editButtonsState, [activeSubId]: editButtons }
         : editButtonsState;
-      const effectiveSubDownloadsState = activeSubId
-        ? { ...editSubDownloadsState, [activeSubId]: editSubDownloads }
-        : editSubDownloadsState;
       const effectiveSubBrandsState = activeSubId
         ? { ...editSubBrandsState, [activeSubId]: editSubBrands }
         : editSubBrandsState;
       const effectiveSubOverviewPointsState = activeSubId
         ? { ...editSubOverviewPointsState, [activeSubId]: editSubOverviewPoints }
         : editSubOverviewPointsState;
-      const effectivePricingPlansState = activeSubId
-        ? { ...editPricingPlansState, [activeSubId]: editPricingPlans }
-        : editPricingPlansState;
 
       let categoryId = editCategory.id;
 
@@ -2583,7 +2439,6 @@ export default function AdminDashboard() {
             name: editCategory.name,
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
-            show_downloads_tab: editCategory.show_downloads_tab ?? true,
             show_brands_tab: editCategory.show_brands_tab ?? true,
             is_visible: editCategory.is_visible ?? true,
             section_id: selectedCategoriesSectionId
@@ -2598,7 +2453,6 @@ export default function AdminDashboard() {
             name: editCategory.name,
             icon_url: editCategory.icon_url,
             bg_color: editCategory.bg_color,
-            show_downloads_tab: editCategory.show_downloads_tab ?? true,
             show_brands_tab: editCategory.show_brands_tab ?? true,
             is_visible: editCategory.is_visible ?? true,
             section_id: selectedCategoriesSectionId,
@@ -2633,20 +2487,14 @@ export default function AdminDashboard() {
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
           is_visible: (sub as any).is_visible ?? true,
-          show_downloads: editShowDownloadsState[sub.id] ?? false,
           show_brands: editShowBrandsState[sub.id] ?? true,
-          show_resources: editShowResourcesState[sub.id] ?? false,
           show_about_section: editShowAboutSectionState[sub.id] ?? true,
           show_header_points_section: editShowHeaderPointsSectionState[sub.id] ?? true,
-          show_pricing_plans: editShowPricingPlansState[sub.id] ?? true,
-          resources_tab_label: editResourcesTabLabelState[sub.id] ?? 'Resources',
-          downloads_tab_label: editDownloadsTabLabelState[sub.id] ?? 'Downloads',
           brands_tab_label: editBrandsTabLabelState[sub.id] ?? 'Brands',
-          pricing_plans_tab_label: editPricingPlansTabLabelState[sub.id] || 'Pricing Plans',
           key_features_tab_label: editKeyFeaturesTabLabelState[sub.id] || 'Key Features',
           form_link: sub.form_link || null,
           show_form_in_separate_tab: sub.show_form_in_separate_tab ?? false,
-          tab_order: editTabOrderState[sub.id] || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'],
+          tab_order: editTabOrderState[sub.id] || ['overview', 'key_features', 'brands', 'form'],
           about_bg_color: sub.about_bg_color || null,
           about_heading_color: sub.about_heading_color || null,
           about_subheading_color: sub.about_subheading_color || null,
@@ -2682,23 +2530,15 @@ export default function AdminDashboard() {
         const deleteButtons = activeSubId
           ? supabase.from('category_buttons').delete().eq('subcategory_id', activeSubId)
           : supabase.from('category_buttons').delete().in('subcategory_id', subIds);
-        const deleteSubDownloads = activeSubId
-          ? supabase.from('subcategory_downloads' as any).delete().eq('subcategory_id', activeSubId)
-          : supabase.from('subcategory_downloads' as any).delete().in('subcategory_id', subIds);
         const deleteSubBrands = activeSubId
           ? supabase.from('subcategory_brands' as any).delete().eq('subcategory_id', activeSubId)
           : supabase.from('subcategory_brands' as any).delete().in('subcategory_id', subIds);
-        const deletePricingPlans = activeSubId
-          ? supabase.from('pricing_plans' as any).delete().eq('subcategory_id', activeSubId)
-          : supabase.from('pricing_plans' as any).delete().in('subcategory_id', subIds);
 
         // Run all deletes in parallel
         await Promise.all([
           deleteSubcategories,
           deleteButtons,
-          deleteSubDownloads,
           deleteSubBrands,
-          deletePricingPlans,
         ]);
 
         // Insert new buttons for each subcategory
@@ -2731,40 +2571,6 @@ export default function AdminDashboard() {
                   link: button.link?.trim() || null,
                   is_visible: button.is_visible,
                   sort_order: index,
-                });
-              }
-            });
-          }
-        }
-
-        // Insert new subcategory downloads
-        const subDownloadsToInsert = [];
-        if (activeSubId) {
-          // Only save downloads for the actively edited subcategory
-          const subDownloads = effectiveSubDownloadsState[activeSubId] || [];
-          subDownloads.forEach((download, index) => {
-            if (download.file_name && download.file_url) {
-              subDownloadsToInsert.push({
-                id: download.id || crypto.randomUUID(),
-                subcategory_id: activeSubId,
-                file_name: download.file_name,
-                file_url: download.file_url,
-                file_type: download.file_type || 'pdf',
-              });
-            }
-          });
-        } else {
-          // Save downloads for all subcategories when editing the whole category
-          for (const subId of subIds) {
-            const subDownloads = effectiveSubDownloadsState[subId] || [];
-            subDownloads.forEach((download, index) => {
-              if (download.file_name && download.file_url) {
-                subDownloadsToInsert.push({
-                  id: download.id || crypto.randomUUID(),
-                  subcategory_id: subId,
-                  file_name: download.file_name,
-                  file_url: download.file_url,
-                  file_type: download.file_type || 'pdf',
                 });
               }
             });
@@ -2829,66 +2635,9 @@ export default function AdminDashboard() {
           }
         }
 
-        // Insert new pricing plans
-        const pricingPlansToInsert = [];
-        if (activeSubId) {
-          // Only save pricing plans for the actively edited subcategory
-          const pricingPlans = effectivePricingPlansState[activeSubId] || [];
-          pricingPlans.forEach((plan, index) => {
-            if (plan.plan_name.trim() && plan.price.trim()) {
-              pricingPlansToInsert.push({
-                id: plan.id || crypto.randomUUID(),
-                subcategory_id: activeSubId,
-                plan_name: plan.plan_name.trim(),
-                price: plan.price.trim(),
-                currency: plan.currency || '₹',
-                duration: plan.duration || '/month',
-                description: plan.description?.trim() || null,
-                features: (plan.features || []).filter(f => f.trim()),
-                button_label: plan.button_label || 'Get started',
-                button_link: plan.button_link || null,
-                razorpay_link: plan.razorpay_link || null,
-                button_bg_color: plan.button_bg_color || null,
-                card_bg_color: plan.card_bg_color || null,
-                is_popular: plan.is_popular || false,
-                is_visible: plan.is_visible !== false,
-                sort_order: index,
-              });
-            }
-          });
-        } else {
-          // Save pricing plans for all subcategories when editing the whole category
-          for (const subId of subIds) {
-            const pricingPlans = effectivePricingPlansState[subId] || [];
-            pricingPlans.forEach((plan, index) => {
-              if (plan.plan_name.trim() && plan.price.trim()) {
-                pricingPlansToInsert.push({
-                  id: plan.id || crypto.randomUUID(),
-                  subcategory_id: subId,
-                  plan_name: plan.plan_name.trim(),
-                  price: plan.price.trim(),
-                  currency: plan.currency || '₹',
-                  duration: plan.duration || '/month',
-                  description: plan.description?.trim() || null,
-                  features: (plan.features || []).filter(f => f.trim()),
-                  button_label: plan.button_label || 'Get started',
-                  button_link: plan.button_link || null,
-                  razorpay_link: plan.razorpay_link || null,
-                  button_bg_color: plan.button_bg_color || null,
-                  card_bg_color: plan.card_bg_color || null,
-                  is_popular: plan.is_popular || false,
-                  is_visible: plan.is_visible !== false,
-                  sort_order: index,
-                });
-              }
-            });
-          }
-        }
-
         // Run all inserts in parallel
         await Promise.all([
           buttonsToInsert.length > 0 ? supabase.from('category_buttons').insert(buttonsToInsert) : Promise.resolve(),
-          subDownloadsToInsert.length > 0 ? supabase.from('subcategory_downloads' as any).insert(subDownloadsToInsert) : Promise.resolve(),
           (async () => {
             if (subBrandsToInsert.length === 0) return;
             try {
@@ -2910,19 +2659,6 @@ export default function AdminDashboard() {
               if (secondError) throw secondError;
             }
           })(),
-          (async () => {
-            if (pricingPlansToInsert.length === 0) return;
-            try {
-              const { error } = await supabase.from('pricing_plans' as any).insert(pricingPlansToInsert);
-              if (error) throw error;
-            } catch (err) {
-              console.warn('Failed to insert pricing plans, retrying with safe fields...', err);
-              // Fallback: try inserting without potentially new columns
-              const safePricingPlans = pricingPlansToInsert.map(({ button_bg_color, card_bg_color, is_visible, ...rest }) => rest);
-              const { error: secondError } = await supabase.from('pricing_plans' as any).insert(safePricingPlans);
-              if (secondError) throw secondError;
-            }
-          })(),
         ]);
 
         // Save About sections for each subcategory in parallel
@@ -2931,27 +2667,9 @@ export default function AdminDashboard() {
         await Promise.all(subIds.map(subId => saveKeyFeaturesSections(subId, effectiveSubOverviewPointsState[subId] || [])));
       }
 
-      // Save downloads
-      // Delete existing downloads
-      await supabase.from('category_downloads').delete().eq('category_id', categoryId);
-
-      // Insert new downloads
-      const validDownloads = editDownloads.filter(download => download.file_name && download.file_url && download.file_type);
-      const downloadsToInsert = validDownloads.map(download => ({
-        category_id: categoryId,
-        file_name: download.file_name!,
-        file_url: download.file_url!,
-        file_type: download.file_type!,
-      }));
-      if (downloadsToInsert.length > 0) {
-        const { error: downloadError } = await supabase.from('category_downloads').insert(downloadsToInsert);
-        if (downloadError) throw downloadError;
-      }
-
       toast.success('Category saved successfully!');
       setEditCategory(null);
       setEditSubs([]);
-      setEditDownloads([]);
       loadAll();
     } catch (error) {
       console.error('Error saving category:', error instanceof Error ? error.message : JSON.stringify(error));
@@ -4250,7 +3968,7 @@ export default function AdminDashboard() {
                           <span className="md:hidden">Delete</span>
                         </button>
                         <button
-                          onClick={() => { setEditCategory({ name: '', bg_color: '#FFF9C4', icon_url: null, show_downloads_tab: true, show_brands_tab: true }); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                          onClick={() => { setEditCategory({ name: '', bg_color: '#FFF9C4', icon_url: null, show_brands_tab: true }); setEditSubs([]); setEditSubcategory(null); }}
                           className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                         >
                           <Plus className="w-4 h-4" />
@@ -4273,7 +3991,7 @@ export default function AdminDashboard() {
                           <div className="flex-1">
                             <h3 className="font-semibold text-sm">{cat.name}</h3>
                             <p className="text-xs text-muted-foreground">
-                              {subcategories.filter(s => s.category_id === cat.id).length} subcategories, {categoryDownloads.filter((download) => download.category_id === cat.id).length} downloads
+                              {subcategories.filter(s => s.category_id === cat.id).length} subcategories
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -4284,7 +4002,7 @@ export default function AdminDashboard() {
                               />
                               <span className="text-[10px] font-medium text-muted-foreground uppercase">{(cat.is_visible ?? true) ? 'ON' : 'OFF'}</span>
                             </div>
-                            <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditDownloads(categoryDownloads.filter((download) => download.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                             <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </SortableCategoryItem>
@@ -4298,7 +4016,7 @@ export default function AdminDashboard() {
                               <div className="flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                                  onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
                                   className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                                 >
                                   Cancel
@@ -4307,10 +4025,8 @@ export default function AdminDashboard() {
                                   if (editingSubcategoryId) {
                                     const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
                                     if (editingSub) {
-                                      setEditPricingPlansState(prev => ({ ...prev, [editingSub.id]: editPricingPlans }));
                                       setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
                                       setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                                      setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                                       setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
                                     }
                                   }
@@ -4340,7 +4056,7 @@ export default function AdminDashboard() {
                                   <label className="text-sm font-medium">Subcategories</label>
                                   <button
                                     type="button"
-                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length, show_downloads: false, show_resources: false })}
+                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
                                     className="text-sm text-primary font-semibold"
                                   >
                                     + Add
@@ -4374,21 +4090,13 @@ export default function AdminDashboard() {
                                             onClick={() => {
                                               setEditingSubcategoryId(sub.id);
                                               setEditButtons(editButtonsState[sub.id] || []);
-                                              setEditSubDownloads(editSubDownloadsState[sub.id] || []);
-                                              setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? false }));
                                               setEditSubBrands(editSubBrandsState[sub.id] || []);
                                               setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                              setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? false }));
                                               setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
                                               setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                              setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
-                                              setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                               setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                              setEditPricingPlansTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).pricing_plans_tab_label || 'Pricing Plans' }));
                                               setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
-                                              setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'] }));
-                                              setEditPricingPlans(editPricingPlansState[sub.id] || []);
-                                              setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
+                                              setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
                                               setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
                                               setEditKeyFeaturesSections(prev => ({
                                                 ...prev,
@@ -4416,57 +4124,6 @@ export default function AdminDashboard() {
                                   </div>
                                 )}
                               </div>
-                              <div>
-                                
-                                <div className="space-y-3">
-                                  {editDownloads.map((download, i) => (
-                                    <div key={download.id || i} className="rounded-xl border border-border p-3">
-                                      <div className="mb-3 flex items-center justify-between">
-                                        <span className="text-sm font-medium">Download {i + 1}</span>
-                                        <button type="button" onClick={() => setEditDownloads(editDownloads.filter((_, index) => index !== i))} className="p-1 text-destructive">
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                      <FileUpload
-                                        label="Document"
-                                        value={download.file_url || null}
-                                        fileName={download.file_name}
-                                        folder="downloads"
-                                        onChange={(file) => {
-                                          const nextDownloads = [...editDownloads];
-                                          nextDownloads[i] = {
-                                            ...nextDownloads[i],
-                                            file_name: file.name,
-                                            file_url: file.url,
-                                            file_type: file.type,
-                                          };
-                                          setEditDownloads(nextDownloads);
-                                        }}
-                                        onRemove={() => {
-                                          const nextDownloads = [...editDownloads];
-                                          nextDownloads[i] = {
-                                            ...nextDownloads[i],
-                                            file_name: '',
-                                            file_url: '',
-                                            file_type: 'file',
-                                          };
-                                          setEditDownloads(nextDownloads);
-                                        }}
-                                      />
-                                      <input
-                                        placeholder="Button label"
-                                        value={download.file_name || ''}
-                                        onChange={(e) => {
-                                          const nextDownloads = [...editDownloads];
-                                          nextDownloads[i] = { ...nextDownloads[i], file_name: e.target.value };
-                                          setEditDownloads(nextDownloads);
-                                        }}
-                                        className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
                             </div>
                           </div>
                         )}
@@ -4485,7 +4142,7 @@ export default function AdminDashboard() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => { setEditCategory(null); setEditSubs([]); setEditDownloads([]); setEditSubcategory(null); }}
+                        onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
                         className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                       >
                         Cancel
@@ -4494,10 +4151,8 @@ export default function AdminDashboard() {
                         if (editingSubcategoryId) {
                           const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
                           if (editingSub) {
-                            setEditPricingPlansState(prev => ({ ...prev, [editingSub.id]: editPricingPlans }));
                             setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
                             setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                            setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                             setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
                           }
                         }
@@ -4521,17 +4176,13 @@ export default function AdminDashboard() {
                         <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
                       </div>
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Switch checked={editCategory.show_downloads_tab ?? true} onCheckedChange={(checked) => setEditCategory({ ...editCategory, show_downloads_tab: Boolean(checked) })} />
-                      <span>Show Downloads tab</span>
-                    </label>
 
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium">Subcategories</label>
                         <button
                           type="button"
-                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length, show_downloads: false, show_resources: false })}
+                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
                           className="text-sm text-primary font-semibold"
                         >
                           + Add
@@ -4554,24 +4205,14 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    console.log('Editing subcategory:', sub.id);
-                                    console.log('editPricingPlansState:', editPricingPlansState);
-                                    console.log('Pricing plans for this subcategory:', editPricingPlansState[sub.id]);
                                     setEditingSubcategoryId(sub.id);
                                     setEditButtons(editButtonsState[sub.id] || []);
-                                    setEditSubDownloads(editSubDownloadsState[sub.id] || []);
-                                    setEditShowDownloadsState((prev) => ({ ...prev, [sub.id]: (sub as any).show_downloads ?? true }));
                                     setEditSubBrands(editSubBrandsState[sub.id] || []);
                                     setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                    setEditShowResourcesState((prev) => ({ ...prev, [sub.id]: sub.show_resources ?? true }));
                                     setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
                                     setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                    setEditResourcesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).resources_tab_label || 'Resources' }));
-                                    setEditDownloadsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).downloads_tab_label || 'Downloads' }));
                                     setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'] }));
-                                    setEditPricingPlans(editPricingPlansState[sub.id] || []);
-                                    setEditShowPricingPlansState((prev) => ({ ...prev, [sub.id]: (sub as any).show_pricing_plans ?? true }));
+                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
                                     setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
                                     setEditKeyFeaturesSections(prev => ({
                                       ...prev,
@@ -4598,71 +4239,6 @@ export default function AdminDashboard() {
                           ))}
                         </div>
                       )}
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Overview Downloads</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditDownloads([
-                              ...editDownloads,
-                              { id: crypto.randomUUID(), category_id: editCategory.id || '', file_name: '', file_url: '', file_type: 'file' },
-                            ]);
-                          }}
-                          className="text-sm text-primary font-semibold"
-                        >
-                          + Add
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        {editDownloads.map((download, i) => (
-                          <div key={download.id || i} className="rounded-xl border border-border p-3">
-                            <div className="mb-3 flex items-center justify-between">
-                              <span className="text-sm font-medium">Download {i + 1}</span>
-                              <button type="button" onClick={() => setEditDownloads(editDownloads.filter((_, index) => index !== i))} className="p-1 text-destructive">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <FileUpload
-                              label="Document"
-                              value={download.file_url || null}
-                              fileName={download.file_name}
-                              folder="downloads"
-                              onChange={(file) => {
-                                const nextDownloads = [...editDownloads];
-                                nextDownloads[i] = {
-                                  ...nextDownloads[i],
-                                  file_name: file.name,
-                                  file_url: file.url,
-                                  file_type: file.type,
-                                };
-                                setEditDownloads(nextDownloads);
-                              }}
-                              onRemove={() => {
-                                const nextDownloads = [...editDownloads];
-                                nextDownloads[i] = {
-                                  ...nextDownloads[i],
-                                  file_name: '',
-                                  file_url: '',
-                                  file_type: 'file',
-                                };
-                                setEditDownloads(nextDownloads);
-                              }}
-                            />
-                            <input
-                              placeholder="Button label"
-                              value={download.file_name || ''}
-                              onChange={(e) => {
-                                const nextDownloads = [...editDownloads];
-                                nextDownloads[i] = { ...nextDownloads[i], file_name: e.target.value };
-                                setEditDownloads(nextDownloads);
-                              }}
-                              className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            />
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -4703,12 +4279,9 @@ export default function AdminDashboard() {
                             video_url_2: (editSubcategory.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
                             detail_description: editSubcategory.detail_description?.trim() || null,
                             is_visible: (editSubcategory as any).is_visible ?? true,
-                            show_downloads: editShowDownloadsState[editSubcategory.id || 'new'] ?? false,
                             show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
-                            show_resources: editShowResourcesState[editSubcategory.id || 'new'] ?? false,
                             show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
                             show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
-                            show_pricing_plans: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true,
                             sort_order: editSubs.length,
                           };
                           setEditSubs((current) => {
@@ -4721,12 +4294,9 @@ export default function AdminDashboard() {
                             return [...current, nextSub];
                           });
                           const subcategoryId = nextSub.id;
-                          setEditShowDownloadsState((prev) => ({ ...prev, [subcategoryId]: editShowDownloadsState[editSubcategory.id || 'new'] ?? false }));
                           setEditShowBrandsState((prev) => ({ ...prev, [subcategoryId]: editShowBrandsState[editSubcategory.id || 'new'] ?? true }));
-                          setEditShowResourcesState((prev) => ({ ...prev, [subcategoryId]: editShowResourcesState[editSubcategory.id || 'new'] ?? false }));
                           setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
                           setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
-                          setEditShowPricingPlansState((prev) => ({ ...prev, [subcategoryId]: editShowPricingPlansState[editSubcategory.id || 'new'] ?? true }));
                           setEditSubcategory(null);
                           toast.success('Subcategory added! Click the main Save button to persist changes.');
                         }}
@@ -4755,10 +4325,8 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => {
-                                setEditPricingPlansState(prev => ({ ...prev, [editingSub.id]: editPricingPlans }));
                                 setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
                                 setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                                setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                                 setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
                                 setEditingSubcategoryId(null);
                               }}
@@ -4769,21 +4337,13 @@ export default function AdminDashboard() {
                             </button>
                             <button
                               onClick={async () => {
-                                setEditPricingPlansState(prev => ({ ...prev, [editingSub.id]: editPricingPlans }));
                                 setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
                                 setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                                setEditSubDownloadsState(prev => ({ ...prev, [editingSub.id]: editSubDownloads }));
                                 setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
-                                setEditShowDownloadsState(prev => ({ ...prev, [editingSub.id]: editShowDownloadsState[editingSub.id] ?? false }));
                                 setEditShowBrandsState(prev => ({ ...prev, [editingSub.id]: editShowBrandsState[editingSub.id] ?? true }));
-                                setEditShowResourcesState(prev => ({ ...prev, [editingSub.id]: editShowResourcesState[editingSub.id] ?? false }));
                                 setEditShowAboutSectionState(prev => ({ ...prev, [editingSub.id]: editShowAboutSectionState[editingSub.id] ?? true }));
                                 setEditShowHeaderPointsSectionState(prev => ({ ...prev, [editingSub.id]: editShowHeaderPointsSectionState[editingSub.id] ?? true }));
-                                setEditShowPricingPlansState(prev => ({ ...prev, [editingSub.id]: editShowPricingPlansState[editingSub.id] ?? true }));
-                                setEditResourcesTabLabelState(prev => ({ ...prev, [editingSub.id]: editResourcesTabLabelState[editingSub.id] ?? 'Resources' }));
-                                setEditDownloadsTabLabelState(prev => ({ ...prev, [editingSub.id]: editDownloadsTabLabelState[editingSub.id] ?? 'Downloads' }));
                                 setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
-                                setEditPricingPlansTabLabelState(prev => ({ ...prev, [editingSub.id]: editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans' }));
                                 setEditKeyFeaturesTabLabelState(prev => ({ ...prev, [editingSub.id]: editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features' }));
                                 await saveCategory();
                                 setEditingSubcategoryId(null);
@@ -5462,439 +5022,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'resources' ? null : 'resources')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Resources</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'resources' ? 'rotate-180' : ''}`} />
-                      </button>
 
-                      {activeAccordion === 'resources' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Enable Resources Section</label>
-                            <Switch
-                              checked={editShowResourcesState[editingSub.id] ?? false}
-                              onCheckedChange={(value) => setEditShowResourcesState({ ...editShowResourcesState, [editingSub.id]: value })}
-                            />
-                          </div>
-                          {editShowResourcesState[editingSub.id] !== false && (
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                                <input
-                                  value={editResourcesTabLabelState[editingSub.id] ?? 'Resources'}
-                                  onChange={(e) => setEditResourcesTabLabelState({ ...editResourcesTabLabelState, [editingSub.id]: e.target.value })}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Resources"
-                                />
-                              </div>
-
-                              <div className="space-y-3 pt-2">
-                                <label className="block text-sm font-medium">Video URLs (Resources)</label>
-                                <div className="space-y-3">
-                                  {(editingSub.video_url_2 || []).map((url, index) => (
-                                    <div key={index} className="flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={url || ''}
-                                        onChange={(e) => {
-                                          const newUrls = [...(editingSub.video_url_2 || [])];
-                                          newUrls[index] = e.target.value;
-                                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                                        }}
-                                        placeholder="Enter YouTube or video URL"
-                                        className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-sm"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newUrls = (editingSub.video_url_2 || []).filter((_, i) => i !== index);
-                                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                                        }}
-                                        className="px-3 py-2 rounded-lg bg-destructive text-destructive-foreground"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newUrls = [...(editingSub.video_url_2 || []), ''];
-                                      setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, video_url_2: newUrls } : s));
-                                    }}
-                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                  >
-                                    <Plus className="w-4 h-4" /> Add Video URL
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'downloads' ? null : 'downloads')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Downloads</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'downloads' ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {activeAccordion === 'downloads' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Downloads</label>
-                            <Switch
-                              checked={editShowDownloadsState[editingSub.id] ?? false}
-                              onCheckedChange={(value) => setEditShowDownloadsState({ ...editShowDownloadsState, [editingSub.id]: value })}
-                            />
-                          </div>
-                          {editShowDownloadsState[editingSub.id] === true && (
-                            <>
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                                <input
-                                  value={editDownloadsTabLabelState[editingSub.id] ?? 'Downloads'}
-                                  onChange={(e) => setEditDownloadsTabLabelState({ ...editDownloadsTabLabelState, [editingSub.id]: e.target.value })}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Downloads"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                {editSubDownloads.map((download, index) => (
-                                  <div key={download.id || index} className="rounded-xl border border-border p-3">
-                                    <div className="mb-3 flex items-center justify-between">
-                                      <span className="text-sm font-medium">Download {index + 1}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newDownloads = [...editSubDownloads];
-                                          newDownloads.splice(index, 1);
-                                          setEditSubDownloads(newDownloads);
-                                        }}
-                                        className="p-1 text-destructive"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                    <input
-                                      placeholder="File name"
-                                      value={download.file_name || ''}
-                                      onChange={(e) => {
-                                        const newDownloads = [...editSubDownloads];
-                                        newDownloads[index] = { ...newDownloads[index], file_name: e.target.value };
-                                        setEditSubDownloads(newDownloads);
-                                      }}
-                                      className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <FileUpload
-                                      label="Upload File"
-                                      value={download.file_url || null}
-                                      fileName={download.file_name || undefined}
-                                      folder="downloads"
-                                      onChange={({ url, name }) => {
-                                        const newDownloads = [...editSubDownloads];
-                                        newDownloads[index] = {
-                                          ...newDownloads[index],
-                                          file_url: url,
-                                          file_name: newDownloads[index].file_name?.trim() ? newDownloads[index].file_name : name,
-                                        };
-                                        setEditSubDownloads(newDownloads);
-                                      }}
-                                      onRemove={() => {
-                                        const newDownloads = [...editSubDownloads];
-                                        newDownloads[index] = { ...newDownloads[index], file_url: '' };
-                                        setEditSubDownloads(newDownloads);
-                                      }}
-                                    />
-                                    <select
-                                      value={download.file_type || 'pdf'}
-                                      onChange={(e) => {
-                                        const newDownloads = [...editSubDownloads];
-                                        newDownloads[index] = { ...newDownloads[index], file_type: e.target.value };
-                                        setEditSubDownloads(newDownloads);
-                                      }}
-                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    >
-                                      <option value="pdf">PDF</option>
-                                      <option value="file">File</option>
-                                      <option value="image">Image</option>
-                                      <option value="video">Video</option>
-                                    </select>
-                                  </div>
-                                ))}
-                              </div>
-                              {editSubDownloads.length < 10 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setEditSubDownloads([...editSubDownloads, { id: crypto.randomUUID(), file_name: '', file_url: '', file_type: 'pdf' }])}
-                                  className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                >
-                                  <Plus className="w-4 h-4" /> Add Download
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'pricing' ? null : 'pricing')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Pricing</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'pricing' ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {activeAccordion === 'pricing' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium">Enable Pricing Section</label>
-                            <Switch
-                              checked={editShowPricingPlansState[editingSub.id] ?? true}
-                              onCheckedChange={(value) => setEditShowPricingPlansState({ ...editShowPricingPlansState, [editingSub.id]: value })}
-                            />
-                          </div>
-                          {editShowPricingPlansState[editingSub.id] !== false && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                                <input
-                                  value={editPricingPlansTabLabelState[editingSub.id] ?? 'Pricing Plans'}
-                                  onChange={(e) => setEditPricingPlansTabLabelState({ ...editPricingPlansTabLabelState, [editingSub.id]: e.target.value })}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Pricing Plans"
-                                />
-                              </div>
-                              {editPricingPlans.map((plan, index) => (
-                                <div key={plan.id || index} className="rounded-xl border border-border p-3">
-                                  <div className="mb-3 flex items-center justify-between">
-                                    <span className="text-sm font-medium">Plan {index + 1}</span>
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
-                                        <Switch
-                                          checked={plan.is_visible ?? true}
-                                          onCheckedChange={(checked) => {
-                                            const newPlans = [...editPricingPlans];
-                                            newPlans[index] = { ...newPlans[index], is_visible: Boolean(checked) };
-                                            setEditPricingPlans(newPlans);
-                                          }}
-                                        />
-                                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{(plan.is_visible ?? true) ? 'ON' : 'OFF'}</span>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newPlans = [...editPricingPlans];
-                                          newPlans.splice(index, 1);
-                                          setEditPricingPlans(newPlans);
-                                        }}
-                                        className="p-1 text-destructive"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <input
-                                      placeholder="Plan name (e.g., Basic plan)"
-                                      value={plan.plan_name || ''}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], plan_name: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <div className="flex gap-2">
-                                      <select
-                                        value={plan.currency || '₹'}
-                                        onChange={(e) => {
-                                          const newPlans = [...editPricingPlans];
-                                          newPlans[index] = { ...newPlans[index], currency: e.target.value };
-                                          setEditPricingPlans(newPlans);
-                                        }}
-                                        className="w-16 rounded-lg border border-input bg-background px-1 py-2 text-sm"
-                                      >
-                                        <option value="₹">₹</option>
-                                        <option value="$">$</option>
-                                        <option value="£">£</option>
-                                        <option value="€">€</option>
-                                        <option value="¥">¥</option>
-                                      </select>
-                                      <input
-                                        placeholder="Price"
-                                        value={plan.price || ''}
-                                        onChange={(e) => {
-                                          const newPlans = [...editPricingPlans];
-                                          newPlans[index] = { ...newPlans[index], price: e.target.value };
-                                          setEditPricingPlans(newPlans);
-                                        }}
-                                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                  <input
-                                    placeholder="Duration (e.g., /month)"
-                                    value={plan.duration || '/month'}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], duration: e.target.value };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  />
-                                  <textarea
-                                    placeholder="Description (optional)"
-                                    value={plan.description || ''}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], description: e.target.value };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    rows={2}
-                                  />
-                                  <div className="mb-3">
-                                    <label className="block text-xs font-medium mb-1.5">Features (one per line)</label>
-                                    <textarea
-                                      placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
-                                      value={plan.features.join('\n') || ''}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], features: e.target.value.split('\n') };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                      rows={4}
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <input
-                                      placeholder="Button label (e.g., Get started)"
-                                      value={plan.button_label || 'Get started'}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], button_label: e.target.value };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <input
-                                      placeholder="Button link"
-                                      value={plan.button_link || ''}
-                                      onChange={(e) => {
-                                        const newPlans = [...editPricingPlans];
-                                        newPlans[index] = { ...newPlans[index], button_link: e.target.value || null };
-                                        setEditPricingPlans(newPlans);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                  </div>
-                                  <input
-                                    placeholder="Razorpay payment link (optional)"
-                                    value={plan.razorpay_link || ''}
-                                    onChange={(e) => {
-                                      const newPlans = [...editPricingPlans];
-                                      newPlans[index] = { ...newPlans[index], razorpay_link: e.target.value || null };
-                                      setEditPricingPlans(newPlans);
-                                    }}
-                                    className="mb-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  />
-                                  <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div>
-                                      <label className="mb-1.5 block text-xs font-medium">Card Background Color</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="color"
-                                          value={plan.card_bg_color || '#ffffff'}
-                                          onChange={(e) => {
-                                            const newPlans = [...editPricingPlans];
-                                            newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
-                                            setEditPricingPlans(newPlans);
-                                          }}
-                                          className="h-10 w-12 cursor-pointer rounded border border-input"
-                                        />
-                                        <input
-                                          value={plan.card_bg_color || '#ffffff'}
-                                          onChange={(e) => {
-                                            const newPlans = [...editPricingPlans];
-                                            newPlans[index] = { ...newPlans[index], card_bg_color: e.target.value };
-                                            setEditPricingPlans(newPlans);
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          placeholder="#ffffff"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <label className="mb-1.5 block text-xs font-medium">Button Color</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="color"
-                                          value={plan.button_bg_color || '#0f7fb3'}
-                                          onChange={(e) => {
-                                            const newPlans = [...editPricingPlans];
-                                            newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
-                                            setEditPricingPlans(newPlans);
-                                          }}
-                                          className="h-10 w-12 cursor-pointer rounded border border-input"
-                                        />
-                                        <input
-                                          value={plan.button_bg_color || '#0f7fb3'}
-                                          onChange={(e) => {
-                                            const newPlans = [...editPricingPlans];
-                                            newPlans[index] = { ...newPlans[index], button_bg_color: e.target.value };
-                                            setEditPricingPlans(newPlans);
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          placeholder="#0f7fb3"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <label className="flex items-center gap-2 text-sm">
-                                      <input
-                                        type="checkbox"
-                                        checked={plan.is_popular}
-                                        onChange={(e) => {
-                                          const newPlans = [...editPricingPlans];
-                                          newPlans[index] = { ...newPlans[index], is_popular: e.target.checked };
-                                          setEditPricingPlans(newPlans);
-                                        }}
-                                        className="w-4 h-4"
-                                      />
-                                      Mark as Popular
-                                    </label>
-                                    <span className="text-xs text-muted-foreground">{plan.is_visible ? 'Visible' : 'Hidden'}</span>
-                                  </div>
-                                </div>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => setEditPricingPlans([...editPricingPlans, { id: crypto.randomUUID(), plan_name: '', price: '', currency: '₹', duration: '/month', description: null, features: [], button_label: 'Get started', button_link: null, razorpay_link: null, button_bg_color: '#0f7fb3', card_bg_color: '#ffffff', is_popular: false, is_visible: true, sort_order: editPricingPlans.length }])}
-                                className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                              >
-                                <Plus className="w-4 h-4" /> Add Pricing Plan
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
 
                     
 

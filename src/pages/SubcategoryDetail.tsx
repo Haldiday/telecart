@@ -11,7 +11,6 @@ import Ads3ColSection from '@/components/home/Ads3ColSection';
 
 import { toast } from 'sonner';
 import {
-  Download,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
@@ -19,15 +18,13 @@ import {
   ChevronUp,
   ChevronRight,
   Info,
-  Play,
   Maximize2,
   Plus,
   X,
-  Package,
-  FileText,
   CheckCircle2,
   Image,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -65,19 +62,13 @@ interface Subcategory {
   about_content?: string | null;
   detail_heading?: string | null;
   detail_description?: string | null;
-  show_downloads?: boolean;
   show_brands?: boolean;
-  show_resources?: boolean;
-  show_pricing_plans?: boolean;
   show_about_section?: boolean;
   show_header_points_section?: boolean;
   category_id: string;
   image_url?: string | null;
-  resources_tab_label?: string | null;
-  downloads_tab_label?: string | null;
   brands_tab_label?: string | null;
   key_features_tab_label?: string | null;
-  pricing_plans_tab_label?: string | null;
   hero_background_color?: string | null;
   tab_order?: string[] | null;
   about_bg_color?: string | null;
@@ -96,7 +87,6 @@ interface Category {
   detail_heading?: string | null;
   detail_description?: string | null;
   overview_points_heading?: string | null;
-  show_downloads_tab?: boolean;
   show_overview_section?: boolean;
   show_products_tab?: boolean;
   show_brands_tab?: boolean;
@@ -111,31 +101,7 @@ interface CategoryButton {
   sort_order: number;
 }
 
-interface Download {
-  id: string;
-  file_name: string;
-  file_url: string;
-  file_type: string;
-}
 
-interface PricingPlan {
-  id: string;
-  subcategory_id: string;
-  plan_name: string;
-  price: string;
-  currency: string;
-  duration: string;
-  description: string | null;
-  features: string[];
-  button_label: string;
-  button_link: string | null;
-  razorpay_link: string | null;
-  is_popular: boolean;
-  is_visible: boolean;
-  sort_order: number;
-  card_bg_color?: string | null;
-  button_bg_color?: string | null;
-}
 
 interface CategoryProduct {
   id: string;
@@ -255,15 +221,9 @@ const normalizeExternalUrl = (url: string) => {
   return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
 };
 
-const getDownloadFileType = (fileName?: string | null) => {
-  const extension = fileName?.split('.').pop()?.trim().toLowerCase();
-  if (!extension) return 'other';
 
-  const supportedTypes = new Set(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip']);
-  return supportedTypes.has(extension) ? extension : 'other';
-};
 
-// Adjust these values to control the desktop download card size.
+
 
 export default function SubcategoryDetail() {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
@@ -272,8 +232,6 @@ export default function SubcategoryDetail() {
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [showVideoFullscreen, setShowVideoFullscreen] = useState(false);
-  const [downloads, setDownloads] = useState<Download[]>([]);
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
   const [products, setProducts] = useState<CategoryProduct[]>([]);
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [overviewPoints, setOverviewPoints] = useState<CategoryOverviewPoint[]>([]);
@@ -322,29 +280,21 @@ export default function SubcategoryDetail() {
 
   const hasVideoResource = Boolean(videoUrl.trim());
   const hasVideoResource2 = videoUrl2.some(url => url?.trim());
-  const showDownloadsTab = subcategory?.show_downloads === true;
   const showProductsTab = category?.show_products_tab !== false;
   const showBrandsTab = subcategory?.show_brands !== false && brands.length > 0;
-  const showBrandsInOverview = subcategory?.show_brands !== false && brands.length > 0;
-  const showPricingPlansTab = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
-  const showPricingPlansInOverview = subcategory?.show_pricing_plans !== false && pricingPlans.filter(p => p.is_visible !== false).length > 0;
   const showFormAsTab = Boolean(formLink.trim() && showFormTab);
-  const showResourcesTab = subcategory?.show_resources === true;
   const showHeaderPointsSection = subcategory?.show_header_points_section !== false;
   const showHeaderPointsTab = showHeaderPointsSection && overviewPoints.length > 0;
   const showAboutSection = subcategory?.show_about_section ?? true;
 
   const allPossibleTabs = [
     { key: 'overview', label: 'Overview', icon: <Info className="h-4 w-4" />, visible: showAboutSection },
-    { key: 'resources', label: subcategory?.resources_tab_label || 'Resources', icon: <Play className="h-4 w-4" />, visible: showResourcesTab },
-    { key: 'downloads', label: subcategory?.downloads_tab_label || 'Downloads', icon: <Download className="h-4 w-4" />, visible: showDownloadsTab },
     { key: 'key_features', label: subcategory?.key_features_tab_label || 'Key Features', icon: <CheckCircle2 className="h-4 w-4" />, visible: showHeaderPointsTab },
-    { key: 'pricing', label: subcategory?.pricing_plans_tab_label || 'Pricing', icon: <Package className="h-4 w-4" />, visible: showPricingPlansTab },
     { key: 'brands', label: subcategory?.brands_tab_label || 'Brands', icon: <Image className="h-4 w-4" />, visible: showBrandsTab },
     { key: 'form', label: 'Form', icon: <FileText className="h-4 w-4" />, visible: showFormAsTab },
   ];
 
-  const tabOrder = subcategory?.tab_order || ['overview', 'resources', 'downloads', 'key_features', 'pricing', 'brands', 'form'];
+  const tabOrder = subcategory?.tab_order || ['overview', 'key_features', 'brands', 'form'];
 
   const tabs = useMemo(() => {
     const orderedTabs = tabOrder
@@ -359,14 +309,11 @@ export default function SubcategoryDetail() {
     });
 
     return orderedTabs;
-  }, [tabOrder, subcategory, showResourcesTab, showDownloadsTab, showHeaderPointsTab, showPricingPlansTab, showBrandsTab, showFormAsTab]);
+  }, [tabOrder, subcategory, showHeaderPointsTab, showBrandsTab, showFormAsTab]);
 
   const activeTabKey = useMemo(() => tabs[activeTab]?.key, [tabs, activeTab]);
 
-  const resourcesTabLabel = subcategory?.resources_tab_label?.trim() || 'Resources';
-  const downloadsTabLabel = subcategory?.downloads_tab_label?.trim() || 'Downloads';
   const brandsTabLabel = subcategory?.brands_tab_label?.trim() || 'Brands';
-  const pricingPlansTabLabel = subcategory?.pricing_plans_tab_label?.trim() || 'Pricing Plans';
 
   const productItems: ProductCardItem[] = useMemo(
     () =>
@@ -445,7 +392,7 @@ export default function SubcategoryDetail() {
   const isGenericDetailDescription = (description: string, categoryName?: string | null) => {
     const trimmed = description.trim();
     if (!trimmed) return true;
-    if (categoryName && trimmed === `Explore all subcategories, download resources, and discover key features related to ${categoryName}.`) return true;
+    if (categoryName && trimmed === `Explore all subcategories and discover key features related to ${categoryName}.`) return true;
     return false;
   };
 
@@ -494,11 +441,9 @@ export default function SubcategoryDetail() {
     let mounted = true;
     
     const loadData = async () => {
-      const [{ data: categoryData }, { data: subcategoryData }, { data: downloadData }, { data: pricingPlansData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }, { data: aboutSectionsData }, { data: subcategorySectionsData }, { data: kfSectionsData }] = await Promise.all([
+      const [{ data: categoryData }, { data: subcategoryData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }, { data: aboutSectionsData }, { data: subcategorySectionsData }, { data: kfSectionsData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
-        supabase.from('subcategory_downloads' as any).select('*').eq('subcategory_id', subcategoryId),
-        supabase.from('pricing_plans' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
         supabase.from('category_products' as any).select('*').eq('category_id', categoryId).order('sort_order'),
         supabase.from('category_buttons').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
         supabase.from('subcategory_overview_points' as any).select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
@@ -597,8 +542,6 @@ export default function SubcategoryDetail() {
       setKeyFeaturesSections((kfSectionsData as unknown as SubcategoryKeyFeaturesSection[]) || []);
       setAboutSections((aboutSectionsData as unknown as SubcategoryAboutSection[]) || []);
       setSubcategorySections((subcategorySectionsData as unknown as SubcategoryPageSection[]) || []);
-      setDownloads((downloadData as unknown as Download[]) || []);
-      setPricingPlans((pricingPlansData as unknown as PricingPlan[]) || []);
     };
 
     loadData();
@@ -607,8 +550,6 @@ export default function SubcategoryDetail() {
       .channel(`subcategory_detail_${subcategoryId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `id=eq.${subcategoryId}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_downloads', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_products', filter: `category_id=eq.${categoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'category_buttons', filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_overview_points' as any, filter: `subcategory_id=eq.${subcategoryId}` }, loadData)
@@ -692,7 +633,6 @@ export default function SubcategoryDetail() {
             about_button_text_color: aboutButtonTextColor || null,
             overview_points_heading: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
             key_features_tab_label: overviewPointsHeading.trim() || defaultOverviewPointsHeading,
-            pricing_plans_tab_label: pricingPlansTabLabel.trim() || 'Pricing Plans',
             detail_heading:
               !isGenericDetailHeading(detailHeading.trim(), subcategory?.name || '') && detailHeading.trim()
                 ? detailHeading.trim()
@@ -779,21 +719,6 @@ export default function SubcategoryDetail() {
     );
   };
 
-  const renderDownloadGrid = () => (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-      {downloads.map((download) => (
-        <a
-          key={download.id}
-          href={download.file_url}
-          download
-          className="flex items-center rounded-xl border border-border/50 bg-background px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:border-primary/50 hover:shadow-md hover:text-primary hover:underline"
-        >
-          <span>{download.file_name}</span>
-        </a>
-      ))}
-    </div>
-  );
-
   const renderHeaderPoints = (sectionId?: string) => {
     const sectionPoints = visibleOverviewPoints.filter(p => p.section_id === sectionId);
 
@@ -837,59 +762,6 @@ export default function SubcategoryDetail() {
       </div>
     );
   };
-
-  const renderPricingPlans = () => (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {pricingPlans.filter(p => p.is_visible !== false).map((plan) => (
-        <div
-          key={plan.id}
-          className={`relative rounded-2xl border-2 p-6 transition-all ${
-            plan.is_popular && !plan.card_bg_color
-              ? 'border-primary bg-primary/5 shadow-lg scale-105'
-              : 'border-border bg-background hover:border-primary/50'
-          }`}
-          style={plan.card_bg_color ? { backgroundColor: plan.card_bg_color, borderColor: plan.is_popular ? 'var(--primary)' : undefined } : {}}
-        >
-          {plan.is_popular && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
-              Popular
-            </div>
-          )}
-          <div className="mb-4 text-center">
-            <h3 className="text-xl font-bold text-foreground">{plan.plan_name}</h3>
-            <div className="mt-2 flex items-baseline justify-center gap-1">
-              <span className="text-3xl font-bold text-foreground">{plan.currency || '₹'}{plan.price}</span>
-            <span className="text-[15px] text-muted-foreground">{plan.duration}</span>
-          </div>
-        </div>
-        {plan.description && (
-          <p className="mb-4 text-center text-[15px] text-muted-foreground">{plan.description}</p>
-        )}
-        <ul className="mb-6 space-y-3">
-          {(plan.features || []).filter(f => f && f.trim()).map((feature, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-[15px] text-foreground">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-          <a
-            href={plan.razorpay_link || plan.button_link || '#'}
-            target={plan.button_link ? '_blank' : undefined}
-            rel={plan.button_link ? 'noopener noreferrer' : undefined}
-            className={`block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold transition-all ${
-              !plan.button_bg_color && plan.is_popular
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : !plan.button_bg_color ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' : ''
-            }`}
-            style={plan.button_bg_color ? { backgroundColor: plan.button_bg_color, color: 'white' } : {}}
-          >
-            {plan.button_label}
-          </a>
-        </div>
-      ))}
-    </div>
-  );
 
   if (!category) {
     return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
@@ -1072,62 +944,7 @@ export default function SubcategoryDetail() {
                   </div>
                 )}
 
-                {/* Video Resources in Overview - only show when Resources tab is visible */}
-                {showResourcesTab && videoUrl2.filter(url => url?.trim()).length > 0 && (
-                  <div className="w-full rounded-none border border-border bg-card p-6 shadow-sm">
-                    <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {videoUrl2.filter(url => url?.trim()).map((url, index) => {
-                        const youtubeId = getYouTubeVideoId(url);
-                        const isYouTube = youtubeId !== null;
-
-                        return (
-                          <div key={index} className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                            <div className="group relative aspect-video bg-muted">
-                              {isYouTube ? (
-                                <iframe
-                                  src={getYouTubeEmbedUrl(youtubeId)}
-                                  title={`Video Resource ${index + 1}`}
-                                  className="h-full w-full"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                />
-                              ) : (
-                                <>
-                                  <video
-                                    src={url}
-                                    className="h-full w-full object-cover"
-                                    controls
-                                    preload="metadata"
-                                    poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
-                                  />
-                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
-                                    <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
-                                      <Play className="h-6 w-6 fill-current" />
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {showDownloadsTab && (
-                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
-                    <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
-                    {downloads.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No downloads available.</p>
-                    ) : (
-                      renderDownloadGrid()
-                    )}
-                  </div>
-                )}
-
-                {showBrandsInOverview && (
+                {showBrandsTab && (
                   <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
                     <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
                     {brands.length > 0 ? (
@@ -1135,13 +952,6 @@ export default function SubcategoryDetail() {
                     ) : (
                       <p className="text-sm text-muted-foreground">No brands available yet.</p>
                     )}
-                  </div>
-                )}
-
-                {showPricingPlansInOverview && (
-                  <div className="w-full rounded-none border border-border bg-card pt-3 pb-4 px-6 md:pl-8 shadow-sm">
-                    <h2 className={SECTION_HEADING_CLASS}>{pricingPlansTabLabel}</h2>
-                    {renderPricingPlans()}
                   </div>
                 )}
 
@@ -1273,68 +1083,6 @@ export default function SubcategoryDetail() {
             </div>
           )}
 
-          {activeTabKey === 'resources' && showResourcesTab && (
-            <div className="w-full">
-              <h2 className={SECTION_HEADING_CLASS}>{resourcesTabLabel}</h2>
-              {videoUrl2.filter(url => url?.trim()).length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No resources available.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {videoUrl2.filter(url => url?.trim()).map((url, index) => {
-                    const youtubeId = getYouTubeVideoId(url);
-                    const isYouTube = youtubeId !== null;
-
-                    return (
-                      <div key={index} className="w-full overflow-hidden rounded-xl border border-border bg-card">
-                        <div className="group relative aspect-video bg-muted">
-                          {isYouTube ? (
-                            <iframe
-                              src={getYouTubeEmbedUrl(youtubeId)}
-                              title={`Video Resource ${index + 1}`}
-                              className="h-full w-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            />
-                          ) : (
-                            <>
-                              <video
-                                src={url}
-                                className="h-full w-full object-cover"
-                                controls
-                                preload="metadata"
-                                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect fill='%23e5e7eb' width='16' height='9'/%3E%3C/svg%3E"
-                              />
-                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/50">
-                                <div className="cursor-pointer rounded-full bg-primary p-5 text-primary-foreground transition-transform group-hover:scale-110">
-                                  <Play className="h-6 w-6 fill-current" />
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                                              </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTabKey === 'downloads' && showDownloadsTab && (
-            <div className="w-full">
-              <h2 className={SECTION_HEADING_CLASS}>{downloadsTabLabel}</h2>
-
-              {downloads.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No downloads available.</p>
-              ) : (
-                renderDownloadGrid()
-              )}
-            </div>
-          )}
-
-
           {activeTabKey === 'brands' && showBrandsTab && (
             <div className="w-full">
               <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
@@ -1343,13 +1091,6 @@ export default function SubcategoryDetail() {
               ) : (
                 <p className="text-sm text-muted-foreground">No brands available yet.</p>
               )}
-            </div>
-          )}
-
-          {activeTabKey === 'pricing' && showPricingPlansTab && (
-            <div className="w-full">
-              <h2 className={SECTION_HEADING_CLASS}>{pricingPlansTabLabel}</h2>
-              {renderPricingPlans()}
             </div>
           )}
 
