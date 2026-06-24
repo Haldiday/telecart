@@ -26,10 +26,12 @@ interface ContactSettings {
   nodal_officer_name: string;
   nodal_officer_phone: string;
   nodal_officer_email: string;
+  nodal_officer_visible?: boolean;
   appellate_authority_title: string;
   appellate_authority_name: string;
   appellate_authority_phone: string;
   appellate_authority_email: string;
+  appellate_authority_visible?: boolean;
   is_visible: boolean;
   created_at: string;
   updated_at: string;
@@ -235,12 +237,12 @@ export default function ContactUs() {
         </div>
 
         {/* Nodal Officer & Appellate Authority Section */}
-        {(settings?.nodal_officer_title || settings?.appellate_authority_title) && (
+        {((settings?.nodal_officer_title && settings?.nodal_officer_visible !== false) || (settings?.appellate_authority_title && settings?.appellate_authority_visible !== false)) && (
           <div className="bg-gray-50 py-12">
             <div className="container mx-auto px-4 md:px-8 lg:px-10 max-w-[1200px]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Nodal Officer Card */}
-                {settings.nodal_officer_title && (
+                {settings.nodal_officer_title && settings.nodal_officer_visible !== false && (
                   <div className="bg-white rounded-xl p-6 shadow-sm">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.nodal_officer_title}</h3>
                     {settings.nodal_officer_name && (
@@ -286,7 +288,7 @@ export default function ContactUs() {
                 )}
 
                 {/* Appellate Authority Card */}
-                {settings.appellate_authority_title && (
+                {settings.appellate_authority_title && settings.appellate_authority_visible !== false && (
                   <div className="bg-white rounded-xl p-6 shadow-sm">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.appellate_authority_title}</h3>
                     {settings.appellate_authority_name && (

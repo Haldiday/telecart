@@ -53,9 +53,7 @@ interface Subcategory {
   show_about_section?: boolean;
   show_header_points_section?: boolean;
   sort_order: number;
-  demo_form_heading?: string | null;
   about_subheading?: string | null;
-  demo_button_label?: string | null;
   image_url?: string | null;
   resources_tab_label?: string | null;
   downloads_tab_label?: string | null;
@@ -70,7 +68,6 @@ interface Subcategory {
   about_description_color?: string | null;
   about_button_bg_color?: string | null;
   about_button_text_color?: string | null;
-  demo_form_heading_color?: string | null;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface SubcategoryDownload { id?: string; file_name: string; file_url: string; file_type: string; }
@@ -99,7 +96,6 @@ interface PricingPlan { id?: string; subcategory_id?: string; plan_name: string;
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
-interface Lead { id: string; name: string; email: string | null; phone: string | null; message: string | null; created_at: string; organization?: string | null; subcategory_id?: string | null; terms_accepted?: boolean; }
 interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
 interface HeaderSettings {
   id?: string;
@@ -174,9 +170,8 @@ const PRODUCT_CARDS_TABLE = 'subcategory_featured_cards';
 const PRODUCT_OFFERS_TABLE = 'subcategory_offers';
 const PRODUCT_ADS_2_TABLE = 'subcategory_ads_2col';
 const PRODUCT_ADS_3_TABLE = 'subcategory_ads_3col';
-const PRODUCT_LOGO_STEPS_TABLE = 'subcategory_logo_steps';
 
-type ProductAdminTab = 'layout' | 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'logo_steps';
+type ProductAdminTab = 'layout' | 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col';
 
 const PRODUCT_ADMIN_TABS: { key: ProductAdminTab; label: string; icon: React.ReactNode }[] = [
   { key: 'layout', label: 'Sections', icon: <Layers className="h-4 w-4" /> },
@@ -185,7 +180,6 @@ const PRODUCT_ADMIN_TABS: { key: ProductAdminTab; label: string; icon: React.Rea
   { key: 'ads_1col', label: 'Ad 1', icon: <Image className="h-4 w-4" /> },
   { key: 'ads_2col', label: 'Ad 2', icon: <Image className="h-4 w-4" /> },
   { key: 'ads_3col', label: 'Ad 3', icon: <Image className="h-4 w-4" /> },
-  { key: 'logo_steps', label: 'Logo Steps', icon: <CheckCircle2 className="h-4 w-4" /> },
 ];
 
 const PRODUCT_SECTION_TYPE_OPTIONS = [
@@ -194,7 +188,6 @@ const PRODUCT_SECTION_TYPE_OPTIONS = [
   { value: 'ads_1col', label: 'Ad 1' },
   { value: 'ads_2col', label: 'Ad 2' },
   { value: 'ads_3col', label: 'Ad 3' },
-  { value: 'logo_steps', label: 'Logo Steps' },
 ];
 
 interface FeaturedCardItem {
@@ -258,17 +251,7 @@ interface FAQ {
   updated_at: string;
 }
 
-interface LogoStepItem {
-  id: string;
-  title: string;
-  description: string | null;
-  logo_url: string | null;
-  link: string | null;
-  sort_order: number;
-  section_id: string;
-}
-
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'leads' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -424,7 +407,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: 'ads_1col', label: '1-Col Ad', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_2col', label: '2-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_3col', label: '3-Col Ads', icon: <Image className="w-5 h-5" /> },
-  { key: 'leads', label: 'Demo Leads', icon: <Star className="w-5 h-5" /> },
   { 
     key: 'footer', 
     label: 'Footer Options', 
@@ -478,7 +460,6 @@ export default function AdminDashboard() {
   const [ads3, setAds3] = useState<Ad3[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
 
@@ -504,10 +485,12 @@ export default function AdminDashboard() {
     nodal_officer_name: '',
     nodal_officer_phone: '',
     nodal_officer_email: '',
+    nodal_officer_visible: true,
     appellate_authority_title: '',
     appellate_authority_name: '',
     appellate_authority_phone: '',
     appellate_authority_email: '',
+    appellate_authority_visible: true,
     is_visible: true,
   });
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>({
@@ -656,13 +639,11 @@ export default function AdminDashboard() {
   const [productOffers, setProductOffers] = useState<OfferItem[]>([]);
   const [productAds2, setProductAds2] = useState<Ad2Item[]>([]);
   const [productAds3, setProductAds3] = useState<Ad3Item[]>([]);
-  const [productLogoSteps, setProductLogoSteps] = useState<LogoStepItem[]>([]);
   const [productSelectedCardsSectionId, setProductSelectedCardsSectionId] = useState('');
   const [productSelectedOffersSectionId, setProductSelectedOffersSectionId] = useState('');
   const [productSelectedAds1SectionId, setProductSelectedAds1SectionId] = useState('');
   const [productSelectedAds2SectionId, setProductSelectedAds2SectionId] = useState('');
   const [productSelectedAds3SectionId, setProductSelectedAds3SectionId] = useState('');
-  const [productSelectedLogoStepsSectionId, setProductSelectedLogoStepsSectionId] = useState('');
   const [productShowAddSectionModal, setProductShowAddSectionModal] = useState(false);
   const [productAddSectionType, setProductAddSectionType] = useState<ProductAdminTab>('cards');
   const [productAddSectionName, setProductAddSectionName] = useState('');
@@ -675,7 +656,6 @@ export default function AdminDashboard() {
   const [productEditAd1, setProductEditAd1] = useState<Partial<Ad2Item> | null>(null);
   const [productEditAd2, setProductEditAd2] = useState<Partial<Ad2Item> | null>(null);
   const [productEditAd3, setProductEditAd3] = useState<Partial<Ad3Item> | null>(null);
-  const [productEditLogoStep, setProductEditLogoStep] = useState<Partial<LogoStepItem> | null>(null);
   const [productSectionsLocal, setProductSectionsLocal] = useState<ScopedPageSection[]>([]);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -724,7 +704,7 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, leadsData, pricingPlans, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
+          const [s, h, header, c, cat, sub, downloads, o, a2, a3, btns, subDownloads, aboutSects, pricingPlans, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
             supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -738,7 +718,6 @@ export default function AdminDashboard() {
             supabase.from('category_buttons').select('*').order('sort_order'),
             supabase.from('subcategory_downloads' as any).select('*').then(res => res, err => ({ data: null, error: err })),
             supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
-            supabase.from('leads' as any).select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
             supabase.from('pricing_plans' as any).select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
             supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
@@ -789,10 +768,12 @@ export default function AdminDashboard() {
               nodal_officer_name: (contact.data as any).nodal_officer_name ?? '',
               nodal_officer_phone: (contact.data as any).nodal_officer_phone ?? '',
               nodal_officer_email: (contact.data as any).nodal_officer_email ?? '',
+              nodal_officer_visible: (contact.data as any).nodal_officer_visible ?? true,
               appellate_authority_title: (contact.data as any).appellate_authority_title ?? '',
               appellate_authority_name: (contact.data as any).appellate_authority_name ?? '',
               appellate_authority_phone: (contact.data as any).appellate_authority_phone ?? '',
               appellate_authority_email: (contact.data as any).appellate_authority_email ?? '',
+              appellate_authority_visible: (contact.data as any).appellate_authority_visible ?? true,
               is_visible: (contact.data as any).is_visible ?? true,
             });
           } else {
@@ -1076,7 +1057,6 @@ export default function AdminDashboard() {
         });
         setEditKeyFeaturesSections(groupedKFSections);
       }
-      if (leadsData.data) setLeads(leadsData.data as unknown as Lead[]);
         } catch (error) {
           console.error('Error in loadAllSafe:', error);
         }
@@ -1102,7 +1082,6 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_about_sections' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_key_features_sections' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_plans' as any }, loadAllSafe)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'footer_settings' as any }, loadAllSafe)
       .subscribe();
@@ -1930,23 +1909,20 @@ export default function AdminDashboard() {
       setProductOffers([]);
       setProductAds2([]);
       setProductAds3([]);
-      setProductLogoSteps([]);
       return;
     }
 
-    const [{ data: cardsData }, { data: offersData }, { data: ads2Data }, { data: ads3Data }, { data: logoStepsData }] = await Promise.all([
+    const [{ data: cardsData }, { data: offersData }, { data: ads2Data }, { data: ads3Data }] = await Promise.all([
       db.from(PRODUCT_CARDS_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
       db.from(PRODUCT_OFFERS_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
       db.from(PRODUCT_ADS_2_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
       db.from(PRODUCT_ADS_3_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
-      db.from(PRODUCT_LOGO_STEPS_TABLE).select('*').in('section_id', sectionIds).order('sort_order'),
     ]);
 
     setProductCards(((cardsData || []) as FeaturedCardItem[]).map((card) => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
     setProductOffers(((offersData || []) as OfferItem[]).map((offer) => ({ ...offer, link: offer.link ?? null, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null, show_image: offer.show_image ?? true })));
     setProductAds2(((ads2Data || []) as Ad2Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
     setProductAds3(((ads3Data || []) as Ad3Item[]).map((ad) => ({ ...ad, link: ad.link ?? null, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
-    setProductLogoSteps(((logoStepsData || []) as LogoStepItem[]).map((step) => ({ ...step, description: step.description ?? null, logo_url: step.logo_url ?? null })));
   }, [productSections]);
 
   const productOpenAddSectionModal = (sectionType: ProductAdminTab = 'cards') => {
@@ -1961,7 +1937,6 @@ export default function AdminDashboard() {
       const newSection = await addProductSection(sectionType, productAddSectionName.trim() || undefined);
       setProductShowAddSectionModal(false);
       if (newSection?.id) {
-        if (sectionType === 'logo_steps') setProductSelectedLogoStepsSectionId(newSection.id);
         if (sectionType === 'cards') setProductSelectedCardsSectionId(newSection.id);
         if (sectionType === 'offers') setProductSelectedOffersSectionId(newSection.id);
         if (sectionType === 'ads_1col') setProductSelectedAds1SectionId(newSection.id);
@@ -2335,48 +2310,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const productSaveLogoStep = async (subcategoryId: string) => {
-    if (!productEditLogoStep?.title?.trim() || !productSelectedLogoStepsSectionId) {
-      toast.error('Title and section are required.');
-      return;
-    }
-
-    const selectedLogoSteps = productLogoSteps.filter((step) => step.section_id === productSelectedLogoStepsSectionId).sort((a, b) => a.sort_order - b.sort_order);
-
-    try {
-      if (productEditLogoStep.id) {
-        const { error } = await db
-          .from(PRODUCT_LOGO_STEPS_TABLE)
-          .update({
-            title: productEditLogoStep.title.trim(),
-            description: productEditLogoStep.description || null,
-            logo_url: productEditLogoStep.logo_url || null,
-            link: productEditLogoStep.link || null,
-          })
-          .eq('id', productEditLogoStep.id);
-        if (error) throw error;
-      } else {
-        const { error } = await db.from(PRODUCT_LOGO_STEPS_TABLE).insert({
-          title: productEditLogoStep.title.trim(),
-          description: productEditLogoStep.description || null,
-          logo_url: productEditLogoStep.logo_url || null,
-          link: productEditLogoStep.link || null,
-          sort_order: selectedLogoSteps.length,
-          section_id: productSelectedLogoStepsSectionId,
-        });
-        if (error) throw error;
-      }
-
-      setProductEditLogoStep(null);
-      await loadProductSectionContent(subcategoryId);
-      toast.success('Logo step saved.');
-    } catch (error) {
-      console.error('Error saving logo step:', error);
-      const message = error instanceof Error ? error.message : 'Failed to save logo step.';
-      toast.error(message);
-    }
-  };
-
   const productToggleOfferShowImage = async (itemId: string, showImage: boolean, subcategoryId: string) => {
     try {
       await db.from(PRODUCT_OFFERS_TABLE).update({ show_image: showImage }).eq('id', itemId);
@@ -2436,7 +2369,6 @@ export default function AdminDashboard() {
     setProductSelectedAds1SectionId((current) => current && productSections.some((s) => s.id === current) ? current : firstByType('ads_1col'));
     setProductSelectedAds2SectionId((current) => current && productSections.some((s) => s.id === current) ? current : firstByType('ads_2col'));
     setProductSelectedAds3SectionId((current) => current && productSections.some((s) => s.id === current) ? current : firstByType('ads_3col'));
-    setProductSelectedLogoStepsSectionId((current) => current && productSections.some((s) => s.id === current) ? current : firstByType('logo_steps'));
   }, [productSections]);
 
   async function updateAds3SortOrder(adId: string, newOrder: number) {
@@ -2697,8 +2629,6 @@ export default function AdminDashboard() {
           about_heading: sub.about_heading || 'About',
           about_subheading: sub.about_subheading || null,
           about_content: sub.about_content || null,
-          demo_form_heading: sub.demo_form_heading || 'See The Software In Action\nWatch Free Demo!',
-          demo_button_label: sub.demo_button_label || 'Get Free Advice',
           overview_points_heading: editKeyFeaturesTabLabelState[sub.id] || sub.overview_points_heading || 'Header',
           detail_description: sub.detail_description || null,
           hero_background_color: sub.hero_background_color || null,
@@ -2723,7 +2653,6 @@ export default function AdminDashboard() {
           about_description_color: sub.about_description_color || null,
           about_button_bg_color: sub.about_button_bg_color || null,
           about_button_text_color: sub.about_button_text_color || null,
-          demo_form_heading_color: sub.demo_form_heading_color || null,
           sort_order: index,
         }));
         
@@ -3066,10 +2995,12 @@ export default function AdminDashboard() {
         nodal_officer_name: contactSettings.nodal_officer_name,
         nodal_officer_phone: contactSettings.nodal_officer_phone,
         nodal_officer_email: contactSettings.nodal_officer_email,
+        nodal_officer_visible: contactSettings.nodal_officer_visible ?? true,
         appellate_authority_title: contactSettings.appellate_authority_title,
         appellate_authority_name: contactSettings.appellate_authority_name,
         appellate_authority_phone: contactSettings.appellate_authority_phone,
         appellate_authority_email: contactSettings.appellate_authority_email,
+        appellate_authority_visible: contactSettings.appellate_authority_visible ?? true,
         is_visible: contactSettings.is_visible ?? true,
       };
 
@@ -3082,7 +3013,7 @@ export default function AdminDashboard() {
         console.log('🔄 Updating existing record with ID:', firstRecordId);
         result = await supabase
           .from('contact_settings')
-          .update(dataToSave)
+          .update(dataToSave as any)
           .eq('id', firstRecordId);
 
         if (result.error) {
@@ -3104,7 +3035,7 @@ export default function AdminDashboard() {
         console.log('➕ No existing records, inserting new one');
         result = await supabase
           .from('contact_settings')
-          .insert([dataToSave])
+          .insert([dataToSave as any])
           .select('*');
 
         if (result.error) {
@@ -6271,17 +6202,6 @@ export default function AdminDashboard() {
                         </div>
                       </Modal>
                     )}
-                    {productEditLogoStep && (
-                      <Modal title={productEditLogoStep.id ? 'Edit Logo Step' : 'Add Logo Step'} onClose={() => setProductEditLogoStep(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Logo" value={productEditLogoStep.logo_url || null} onChange={(url) => setProductEditLogoStep({ ...productEditLogoStep, logo_url: url })} folder="logos" />
-                          <input value={productEditLogoStep.title || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <textarea value={productEditLogoStep.description || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
-                          <input value={productEditLogoStep.link || ''} onChange={(e) => setProductEditLogoStep({ ...productEditLogoStep, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <button type="button" onClick={() => productSaveLogoStep(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
 
                   </div>
                 );
@@ -7042,64 +6962,6 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* DEMO LEADS */}
-          {tab === 'leads' && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Demo Requests</h2>
-              </div>
-
-              {leads.length === 0 ? (
-                <div className="text-center py-12 bg-card rounded-xl border border-border">
-                  <p className="text-muted-foreground">No demo requests yet.</p>
-                </div>
-              ) : (
-                <div className="bg-card rounded-xl border border-border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-muted">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Organization</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Subcategory</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Terms</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {leads.map((lead) => (
-                          <tr key={lead.id} className="border-t border-border">
-                            <td className="px-4 py-3 text-sm">
-                              {new Date(lead.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium">{lead.name}</td>
-                            <td className="px-4 py-3 text-sm">{lead.phone}</td>
-                            <td className="px-4 py-3 text-sm">{lead.email}</td>
-                            <td className="px-4 py-3 text-sm">{lead.organization}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {lead.subcategory_id ? subcategoriesMap[lead.subcategory_id] || 'Unknown' : 'N/A'}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {lead.terms_accepted ? (
-                                <span className="inline-flex items-center gap-1 text-green-600">
-                                  <CheckCircle2 className="w-4 h-4" /> Accepted
-                                </span>
-                              ) : (
-                                <span className="text-red-600">Not Accepted</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* FAQS */}
           {tab === 'faqs' && (
             <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
@@ -7767,7 +7629,16 @@ export default function AdminDashboard() {
 
                   {/* Nodal Officer */}
                   <div className="border-t pt-4">
-                    <h3 className="text-lg font-semibold mb-4">Nodal Officer</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Nodal Officer</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Visible</span>
+                        <Switch
+                          checked={contactSettings.nodal_officer_visible ?? true}
+                          onCheckedChange={(v) => setContactSettings({ ...contactSettings, nodal_officer_visible: v })}
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Title</label>
@@ -7811,7 +7682,16 @@ export default function AdminDashboard() {
 
                   {/* Appellate Authority */}
                   <div className="border-t pt-4">
-                    <h3 className="text-lg font-semibold mb-4">Appellate Authority</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Appellate Authority</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Visible</span>
+                        <Switch
+                          checked={contactSettings.appellate_authority_visible ?? true}
+                          onCheckedChange={(v) => setContactSettings({ ...contactSettings, appellate_authority_visible: v })}
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Title</label>

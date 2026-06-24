@@ -65,9 +65,9 @@ export default function Ads3ColSection({
     if (windowWidth < 768) return 1; // Mobile
     if (windowWidth < 1024) return 2; // Tablet
     
-    // Desktop: 3 columns if 3+ ads, otherwise match ad count
-    return adsToDisplay.length < 3 ? Math.max(1, adsToDisplay.length) : 3;
-  }, [windowWidth, adsToDisplay.length]);
+    // Desktop: Always show 3 columns for consistent height
+    return 3;
+  }, [windowWidth]);
   
   const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
 
@@ -245,11 +245,7 @@ export default function Ads3ColSection({
                           }}
                         >
                           <div
-                            className={`w-full overflow-hidden ${
-                              adsToDisplay.length < 3
-                                ? 'h-[160px] md:h-[300px]'
-                                : 'h-[160px] sm:h-auto sm:aspect-[16/9]'
-                            }`}
+                            className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
                           >
                           {ad.show_image !== false && ad.image_url && (
                             <img
@@ -294,11 +290,7 @@ export default function Ads3ColSection({
                           }}
                         >
                           <div
-                            className={`w-full overflow-hidden ${
-                              visibleCount === 2
-                                ? 'h-[160px] sm:h-auto sm:aspect-[16/9]'
-                                : 'h-[160px] md:h-auto md:aspect-[16/9]'
-                            }`}
+                            className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
                           >
                             {ad.show_image !== false && ad.image_url && (
                               <img
@@ -342,11 +334,7 @@ export default function Ads3ColSection({
                       }}
                     >
                       <div
-                        className={`w-full overflow-hidden ${
-                          adsToDisplay.length < 3
-                            ? 'h-[160px] md:h-[300px]'
-                            : 'h-[160px] sm:h-auto sm:aspect-[16/9]'
-                        }`}
+                        className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
                       >
                       {ad.show_image !== false && ad.image_url && (
                         <img

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { useLayoutEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -545,7 +545,7 @@ export default function Footer() {
                     alt="WhatsApp"
                     className="w-5 h-5 object-contain"
                   />
-                  <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}`} className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
+                  <a className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
                     {settings.whatsapp_number}
                   </a>
                 </li>

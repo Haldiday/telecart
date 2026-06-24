@@ -8,8 +8,6 @@ import OffersSection from '@/components/home/OffersSection';
 import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
-import LogoStepsSection from '@/components/home/LogoStepsSection';
-import WatchDemoForm from '@/components/home/WatchDemoForm';
 
 import { toast } from 'sonner';
 import {
@@ -221,7 +219,7 @@ const SECTION_SUBTEXT_CLASS = 'section-subtext';
 interface SubcategoryPageSection {
   id: string;
   subcategory_id: string;
-  section_type: 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'logo_steps';
+  section_type: 'cards' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col';
   sort_order: number;
   is_visible: boolean;
   background_color: string | null;
@@ -318,9 +316,6 @@ export default function SubcategoryDetail() {
   const [keyFeaturesSections, setKeyFeaturesSections] = useState<SubcategoryKeyFeaturesSection[]>([]);
   const [expandedAboutSection, setExpandedAboutSection] = useState(false);
   const [subcategorySections, setSubcategorySections] = useState<SubcategoryPageSection[]>([]);
-  const [demoFormHeading, setDemoFormHeading] = useState('See The Software In Action\nWatch Free Demo!');
-  const [demoFormHeadingColor, setDemoFormHeadingColor] = useState('#000000');
-  const [demoButtonLabel, setDemoButtonLabel] = useState('Get Free Advice');
 
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [openMoreActionsBrandId, setOpenMoreActionsBrandId] = useState<string | null>(null);
@@ -540,9 +535,6 @@ export default function SubcategoryDetail() {
         setAboutButtonBgColor((subcategoryData as any).about_button_bg_color || '#16a34a');
         setAboutButtonTextColor((subcategoryData as any).about_button_text_color || '#ffffff');
         setOverviewPointsHeading((subcategoryData as any).key_features_tab_label || (subcategoryData as any).overview_points_heading || defaultOverviewPointsHeading);
-        setDemoFormHeading((subcategoryData as any).demo_form_heading || 'See The Software In Action\nWatch Free Demo!');
-        setDemoFormHeadingColor((subcategoryData as any).demo_form_heading_color || '#000000');
-        setDemoButtonLabel((subcategoryData as any).demo_button_label || 'Get Free Advice');
         setShowOverviewPointsSection(true);
         const normalizedDetailHeading = isGenericDetailHeading((subcategoryData as any).detail_heading || '', subcategoryData.name)
           ? ''
@@ -1247,19 +1239,6 @@ export default function SubcategoryDetail() {
                         />
                       );
                     }
-                    if (section.section_type === 'logo_steps') {
-                      return (
-                        <LogoStepsSection
-                          key={section.id}
-                          sectionId={section.id}
-                          sectionTable="subcategory_page_sections"
-                          stepsTable="subcategory_logo_steps"
-                          compact
-                          backgroundColor={section.background_color}
-                          headingClassName={SECTION_HEADING_CLASS}
-                        />
-                      );
-                    }
                     return null;
                   })}
             </div>
@@ -1399,7 +1378,7 @@ export default function SubcategoryDetail() {
               className="rounded-none py-6 md:py-10 px-6 md:px-12 shadow-sm"
               style={{ backgroundColor: aboutBgColor }}
             >
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start md:gap-10">
+            <div className="grid grid-cols-1 md:items-start">
               <div className="md:pl-4">
                 <div 
                   className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full"
@@ -1427,19 +1406,8 @@ export default function SubcategoryDetail() {
                   className={`mt-5 max-w-[560px] ${SECTION_SUBTEXT_CLASS}`}
                   style={{ color: aboutDescriptionColor }}
                 >
-                  {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs. Just fill in the form and we'll get back to you."}
+                  {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs."}
                 </p>
-              </div>
-              <div className="flex justify-center md:justify-center">
-                <WatchDemoForm 
-                  subcategoryId={subcategoryId} 
-                  demoLink={subcategory?.schedule_link} 
-                  demoFormHeading={demoFormHeading} 
-                  demoFormHeadingColor={demoFormHeadingColor}
-                  demoButtonLabel={demoButtonLabel}
-                  buttonBgColor={aboutButtonBgColor}
-                  buttonTextColor={aboutButtonTextColor}
-                />
               </div>
             </div>
             </div>
