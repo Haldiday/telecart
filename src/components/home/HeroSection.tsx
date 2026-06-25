@@ -19,6 +19,7 @@ export default function HeroSection() {
     handleResultClick,
     handleSearchButton,
     showHeaderSearch,
+    showMobileStickySearch,
     searchContainerRef,
   } = useSearch();
 
@@ -138,8 +139,8 @@ export default function HeroSection() {
           )}
         </div>
 
-        <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch ? searchContainerRef : undefined}>
-          {!showHeaderSearch && (
+        <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? searchContainerRef : undefined}>
+          {!showHeaderSearch && !showMobileStickySearch && (
             <div className="relative z-[100]">
               <input
                 type="search"

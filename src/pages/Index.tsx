@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useSearch } from '@/contexts/SearchContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/home/HeroSection';
@@ -33,6 +34,7 @@ const SECTION_MAP: Record<string, React.FC<any>> = {
 export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
   const location = useLocation();
+  const { showMobileStickySearch } = useSearch();
 
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
@@ -114,7 +116,7 @@ export default function Index() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 pt-24 md:pt-32">
+      <main className={`flex-1 ${showMobileStickySearch ? 'pt-40' : 'pt-24'} md:pt-32`}>
         {sections.filter(s => s.is_visible).map((section) => {
           const Component = SECTION_MAP[section.section_type];
           if (!Component) return null;

@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type SearchResultType = 'category' | 'subcategory' | 'brand';
 
@@ -17,6 +18,7 @@ interface SearchResult {
   name: string;
   categoryId?: string;
   subcategoryName?: string;
+  brandName?: string; // For subcategory results that show a brand
   link?: string | null;
   custom_link?: string | null;
   custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
@@ -36,37 +38,52 @@ interface SearchContextType {
   handleSearchButton: () => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   showHeaderSearch: boolean;
+  showMobileStickySearch: boolean;
   searchContainerRef: React.MutableRefObject<HTMLDivElement | null>;
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [showHeaderSearch, setShowHeaderSearch] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const mountedRef = useRef(true);
-  const lastRequestRef = useRef<number>(0);
-  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+    children,
+  }) => {
+    const navigate = useNavigate();
+    const isMobile = useIsMobile();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
+    const [isSearchActive, setIsSearchActive] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [showHeaderSearch, setShowHeaderSearch] = useState(false);
+    const [showMobileStickySearch, setShowMobileStickySearch] = useState(false);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const mountedRef = useRef(true);
+    const lastRequestRef = useRef<number>(0);
+    const requestIdCounterRef = useRef<number>(0);
+    const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Scroll detection for header search
   useEffect(() => {
     const handleScroll = () => {
       const scrollThreshold = 100;
-      setShowHeaderSearch(window.scrollY > scrollThreshold);
+      const scrolled = window.scrollY > scrollThreshold;
+      
+      // Desktop: show header search when scrolled
+      // Mobile: never show header search, but show sticky search when scrolled
+      if (isMobile) {
+        setShowHeaderSearch(false);
+        setShowMobileStickySearch(scrolled);
+      } else {
+        setShowHeaderSearch(scrolled);
+        setShowMobileStickySearch(false);
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Call once to set initial state
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMobile]);
 
   // Search logic with proper request tracking and cleanup
   useEffect(() => {
@@ -75,15 +92,26 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       setSearchError(null);
       setIsSearching(false);
       setSelectedIndex(-1);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       return;
     }
 
     const searchTerm = query.trim();
-    const requestId = Date.now();
+    requestIdCounterRef.current += 1;
+    const requestId = requestIdCounterRef.current;
     lastRequestRef.current = requestId;
 
-    const timeout = setTimeout(async () => {
-      if (!mountedRef.current || lastRequestRef.current !== requestId) return;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(async () => {
+      if (!mountedRef.current || lastRequestRef.current !== requestId) {
+        return;
+      }
 
       setIsSearching(true);
       setSearchError(null);
@@ -99,22 +127,33 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             .from('categories')
             .select('id, name')
             .ilike('name', `%${searchTerm}%`)
-            .order('sort_order'),
+            .order('sort_order')
+            .limit(20),
           (supabase as any)
             .from('subcategories')
             .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
             .ilike('name', `%${searchTerm}%`)
-            .order('sort_order'),
+            .order('sort_order')
+            .limit(20),
           (supabase as any)
             .from('subcategory_brands')
             .select('id, name, link, subcategory_id, subcategories(name)')
             .ilike('name', `%${searchTerm}%`)
-            .order('sort_order'),
+            .order('sort_order')
+            .limit(20),
         ]);
 
-        if (!mountedRef.current || lastRequestRef.current !== requestId) return;
+        if (!mountedRef.current || lastRequestRef.current !== requestId) {
+          return;
+        }
 
+        console.log('[SearchContext] searchTerm:', searchTerm);
+        console.log('[SearchContext] categories:', categories, 'error:', categoriesError);
+        console.log('[SearchContext] subcategories:', subcategories, 'error:', subcategoriesError);
+        console.log('[SearchContext] brandMatches:', brandMatches, 'error:', brandMatchesError);
+        
         if (categoriesError || subcategoriesError || brandMatchesError) {
+          console.error('[SearchContext] errors:', { categoriesError, subcategoriesError, brandMatchesError });
           setSearchError('Unable to search right now.');
           setResults([]);
         } else {
@@ -128,7 +167,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           const seenResults = new Set<string>();
 
           const addUniqueResult = (result: SearchResult) => {
-            const key = `${result.type}:${result.id}`;
+            // For subcategory results with a brand, include the brand name in the key to avoid deduping
+            let key: string;
+            if (result.type === 'subcategory' && result.brandName) {
+              key = `${result.type}:${result.id}:${result.brandName}`;
+            } else {
+              key = `${result.type}:${result.id}`;
+            }
             if (!seenResults.has(key)) {
               seenResults.add(key);
               processedResults.push(result);
@@ -138,17 +183,20 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           (subcategories || []).forEach((subcategory) => {
             const brands = subcategory.subcategory_brands || [];
             if (brands.length > 0) {
+              // For subcategories with brands: create one subcategory result per brand
               brands.forEach((brand: any) => {
                 addUniqueResult({
-                  id: brand.id,
-                  type: 'brand' as const,
-                  name: brand.name,
-                  subcategoryName: subcategory.name,
-                  link: brand.link,
+                  id: subcategory.id, // Use subcategory's id so clicking navigates to subcategory page
+                  type: 'subcategory' as const,
+                  name: `${subcategory.name} (${brand.name})`,
+                  categoryId: subcategory.category_id,
+                  custom_link: subcategory.custom_link,
+                  custom_link_type: subcategory.custom_link_type,
+                  brandName: brand.name,
                 });
               });
             } else {
-              // Always add the subcategory itself regardless of custom_link
+              // For subcategories with no brands: just add the subcategory
               addUniqueResult({
                 id: subcategory.id,
                 type: 'subcategory' as const,
@@ -168,11 +216,17 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             link: brand.link,
           }));
 
+          categoryResults.forEach((result) => {
+            addUniqueResult(result);
+          });
+          
           brandResults.forEach((result) => {
             addUniqueResult(result);
           });
 
-          setResults([...categoryResults, ...processedResults]);
+          const finalResults = [...processedResults];
+          console.log('[SearchContext] finalResults:', finalResults);
+          setResults(finalResults);
         }
       } catch (error) {
         if (!mountedRef.current || lastRequestRef.current !== requestId) return;
@@ -183,10 +237,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           setIsSearching(false);
         }
       }
-    }, 250);
+    }, 150);
 
     return () => {
-      clearTimeout(timeout);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     };
   }, [query]);
 
@@ -304,6 +361,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         handleSearchButton,
         handleKeyDown,
         showHeaderSearch,
+        showMobileStickySearch,
         searchContainerRef,
       }}
     >
