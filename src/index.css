@@ -19,7 +19,7 @@
         line-height: 24px;
         color: #d8391d;
         background-color: transparent;
-        @apply px-2 py-2 rounded-lg mr-12;
+        @apply px-2 py-2 rounded-lg mr-8;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
     .top-header-link {
