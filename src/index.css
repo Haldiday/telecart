@@ -19,10 +19,9 @@
         line-height: 24px;
         color: #1d4ed8;
         background-color: transparent;
-        @apply px-2 py-2 rounded-lg mr-16;
+        @apply px-2 py-2 rounded-lg mr-12;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
-    
     .top-header-link {
         font-family: 'Roboto', sans-serif;
         font-size: 15px;
