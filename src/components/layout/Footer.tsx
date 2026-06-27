@@ -5,13 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
-interface FooterBusinessLink {
-  id?: string;
-  label: string;
-  link: string;
-  is_visible?: boolean;
-}
-
 interface FooterSettings {
   description: string;
   description_visible?: boolean;
@@ -49,8 +42,12 @@ interface FooterSettings {
   bottom_footer_email_visible?: boolean;
   bottom_branding_visible?: boolean;
   bottom_branding_text?: string;
-  for_businesses_title?: string;
-  for_businesses_links?: FooterBusinessLink[];
+  submit_rft_label?: string;
+  submit_rft_url?: string;
+  submit_rft_enabled?: boolean;
+  get_recommendations_label?: string;
+  get_recommendations_url?: string;
+  get_recommendations_enabled?: boolean;
 }
 
 interface LegalPage {
@@ -100,115 +97,54 @@ const PublicIcon = ({
 };
 
 const getCachedFooterSettings = (): FooterSettings => {
+  const defaults = {
+    description: '',
+    twitter_label: 'Twitter',
+    twitter_link: '#',
+    twitter_visible: true,
+    linkedin_label: 'LinkedIn',
+    linkedin_link: '#',
+    linkedin_visible: true,
+    facebook_label: 'Facebook',
+    facebook_link: '#',
+    facebook_visible: true,
+    instagram_label: 'Instagram',
+    instagram_link: '#',
+    instagram_visible: false,
+    youtube_label: 'YouTube',
+    youtube_link: '#',
+    youtube_visible: false,
+    social_whatsapp_visible: false,
+    whatsapp_number: '',
+    whatsapp_visible: false,
+    phone: '',
+    phone_visible: false,
+    email: '',
+    email_visible: false,
+    bottom_footer_email: '',
+    bottom_footer_email_visible: false,
+    submit_rft_label: 'Submit RFT',
+    submit_rft_url: '',
+    submit_rft_enabled: false,
+    get_recommendations_label: 'Get Recommendations',
+    get_recommendations_url: '',
+    get_recommendations_enabled: false,
+  };
+
   if (typeof window === 'undefined') {
-    return {
-      description: '',
-      twitter_label: 'Twitter',
-      twitter_link: '#',
-      twitter_visible: true,
-      linkedin_label: 'LinkedIn',
-      linkedin_link: '#',
-      linkedin_visible: true,
-      facebook_label: 'Facebook',
-      facebook_link: '#',
-      facebook_visible: true,
-      instagram_label: 'Instagram',
-      instagram_link: '#',
-      instagram_visible: false,
-      youtube_label: 'YouTube',
-      youtube_link: '#',
-      youtube_visible: false,
-      social_whatsapp_visible: false,
-      whatsapp_number: '',
-      whatsapp_visible: false,
-      phone: '',
-      phone_visible: false,
-      email: '',
-      email_visible: false,
-      bottom_footer_email: '',
-      bottom_footer_email_visible: false,
-      for_businesses_title: 'For Businesses',
-      for_businesses_links: [
-      { label: 'Get Listed', link: '#' },
-      { label: 'Advertise', link: '#' },
-      { label: 'Write for Us', link: '#' },
-    ],
-    };
+    return defaults;
   }
 
   try {
     const cached = window.localStorage.getItem(FOOTER_SETTINGS_CACHE_KEY);
     if (!cached) {
-      return {
-        description: '',
-        twitter_label: 'Twitter',
-        twitter_link: '#',
-        twitter_visible: true,
-        linkedin_label: 'LinkedIn',
-        linkedin_link: '#',
-        linkedin_visible: true,
-        facebook_label: 'Facebook',
-        facebook_link: '#',
-        facebook_visible: true,
-        instagram_label: 'Instagram',
-        instagram_link: '#',
-        instagram_visible: false,
-        youtube_label: 'YouTube',
-        youtube_link: '#',
-        youtube_visible: false,
-        social_whatsapp_visible: false,
-        whatsapp_number: '',
-        whatsapp_visible: false,
-        phone: '',
-        phone_visible: false,
-        email: '',
-        email_visible: false,
-        bottom_footer_email: '',
-        bottom_footer_email_visible: false,
-        for_businesses_title: 'For Businesses',
-        for_businesses_links: [
-          { label: 'Get Listed', link: '#' },
-          { label: 'Advertise', link: '#' },
-          { label: 'Write for Us', link: '#' },
-        ],
-      };
+      return defaults;
     }
 
-    return JSON.parse(cached) as FooterSettings;
+    const parsed = JSON.parse(cached) as Partial<FooterSettings>;
+    return { ...defaults, ...parsed };
   } catch {
-    return {
-      description: '',
-      twitter_label: 'Twitter',
-      twitter_link: '#',
-      twitter_visible: true,
-      linkedin_label: 'LinkedIn',
-      linkedin_link: '#',
-      linkedin_visible: true,
-      facebook_label: 'Facebook',
-      facebook_link: '#',
-      facebook_visible: true,
-      instagram_label: 'Instagram',
-      instagram_link: '#',
-      instagram_visible: false,
-      youtube_label: 'YouTube',
-      youtube_link: '#',
-      youtube_visible: false,
-      social_whatsapp_visible: false,
-      whatsapp_number: '',
-      whatsapp_visible: false,
-      phone: '',
-      phone_visible: false,
-      email: '',
-      email_visible: false,
-      bottom_footer_email: '',
-      bottom_footer_email_visible: false,
-      for_businesses_title: 'For Businesses',
-      for_businesses_links: [
-      { label: 'Get Listed', link: '#' },
-      { label: 'Advertise', link: '#' },
-      { label: 'Write for Us', link: '#' },
-    ],
-    };
+    return defaults;
   }
 };
 
@@ -325,12 +261,12 @@ export default function Footer() {
             bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
             bottom_branding_visible: footerData.bottom_branding_visible ?? true,
             bottom_branding_text: footerData.bottom_branding_text ?? '',
-            for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
-            for_businesses_links: footerData.for_businesses_links ?? [
-              { label: 'Get Listed', link: '#', is_visible: true },
-              { label: 'Advertise', link: '#', is_visible: true },
-              { label: 'Write for Us', link: '#', is_visible: true },
-            ],
+            submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
+            submit_rft_url: footerData.submit_rft_url ?? '',
+            submit_rft_enabled: footerData.submit_rft_enabled ?? false,
+            get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
+            get_recommendations_url: footerData.get_recommendations_url ?? '',
+            get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
           };
 
           setSettings(prev => ({ ...prev, ...nextSettings }));
@@ -471,7 +407,7 @@ export default function Footer() {
     <footer className="pt-12 pb-6" style={{ backgroundColor: '#F2F2F2' }}>
       <div className="container mx-auto px-4 md:px-6 lg:px-10 xl:px-12">
         {/* Footer Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-10 mb-12">
           {/* Column 1: Logo & Description */}
           <div className="flex flex-col items-start gap-4 text-left">
             <div className="flex items-center gap-3 pt-0.5">
@@ -493,7 +429,7 @@ export default function Footer() {
                 const showAbout = (aboutInfo.isVisible && (settings.about_us_visible ?? true));
                 if (showAbout) {
                   return (
-                    <li key="about"><Link to="/about-us" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">{aboutInfo.title}</Link></li>
+                    <li key="about"><Link to="/about-us" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{aboutInfo.title}</Link></li>
                   );
                 }
                 return null;
@@ -502,7 +438,7 @@ export default function Footer() {
                 const showContact = (contactSettings.is_visible ?? true) && (settings.contact_visible ?? true);
                 if (showContact) {
                   return (
-                    <li key="contact"><Link to="/contact" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">{contactSettings.heading}</Link></li>
+                    <li key="contact"><Link to="/contact" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{contactSettings.heading}</Link></li>
                   );
                 }
                 return null;
@@ -511,7 +447,7 @@ export default function Footer() {
                 const showFaq = settings.faq_visible ?? true;
                 if (showFaq) {
                   return (
-                    <li key="faqs"><Link to="/faqs" className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.faq_heading ?? 'FAQs'}</Link></li>
+                    <li key="faqs"><Link to="/faqs" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.faq_heading ?? 'FAQs'}</Link></li>
                   );
                 }
                 return null;
@@ -519,32 +455,52 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: For Businesses */}
+          {/* Column 3: Vendors */}
           <div>
-            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">{settings.for_businesses_title}</h4>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Vendors</h4>
             <ul className="space-y-3">
-              {settings.for_businesses_links?.filter((link) => link.is_visible ?? true).map((link, index) => (
-                <li key={index}>
-                  <a href={link.link} className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              <li><Link to="/get-listed" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Get Listed</Link></li>
+              <li><Link to="/advertise" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Advertise</Link></li>
+              <li><Link to="/write-for-us" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Write for Us</Link></li>
+              <li><Link to="/vendor-guidelines" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Vendor Guidelines</Link></li>
             </ul>
           </div>
-           <div>
-            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">{settings.for_businesses_title}</h4>
+
+          {/* Column 4: Buyers */}
+          <div>
+            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Buyers</h4>
             <ul className="space-y-3">
-              {settings.for_businesses_links?.filter((link) => link.is_visible ?? true).map((link, index) => (
-                <li key={index}>
-                  <a href={link.link} className="font-regular text-[14px] text-[#666666] hover:text-[#0055DD] transition-colors">
-                    {link.label}
-                  </a>
+              <li><Link to="/browse-all-directories" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Browse All Directories</Link></li>
+              {settings.submit_rft_enabled && settings.submit_rft_label && (
+                <li>
+                  {settings.submit_rft_url ? (
+                    settings.submit_rft_url.startsWith('/') ? (
+                      <Link to={settings.submit_rft_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</Link>
+                    ) : (
+                      <a href={settings.submit_rft_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</a>
+                    )
+                  ) : (
+                    <span className="font-regular text-[16px] text-[#666666]">{settings.submit_rft_label}</span>
+                  )}
                 </li>
-              ))}
+              )}
+              {settings.get_recommendations_enabled && settings.get_recommendations_label && (
+                <li>
+                  {settings.get_recommendations_url ? (
+                    settings.get_recommendations_url.startsWith('/') ? (
+                      <Link to={settings.get_recommendations_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</Link>
+                    ) : (
+                      <a href={settings.get_recommendations_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</a>
+                    )
+                  ) : (
+                    <span className="font-regular text-[16px] text-[#666666]">{settings.get_recommendations_label}</span>
+                  )}
+                </li>
+              )}
             </ul>
           </div>
-          {/* Column 4: Reach Us */}
+
+          {/* Column 5: Reach Us */}
           <div>
             <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Reach Us</h4>
             <ul className="space-y-3 mb-6">

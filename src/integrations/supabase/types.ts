@@ -955,6 +955,419 @@ export type Database = {
         }
         Relationships: []
       }
+      advertise_page_settings: {
+        Row: {
+          id: string
+          hero_small_heading: string
+          hero_main_heading: string
+          hero_description: string
+          hero_button_text: string | null
+          hero_button_link: string | null
+          hero_image_url: string | null
+          hero_image_visible: boolean
+          hero_visible: boolean
+          section3_small_heading: string
+          section3_main_heading: string
+          section3_description: string
+          section3_image_url: string | null
+          section3_background_color: string | null
+          section3_visible: boolean
+          section4_small_heading: string
+          section4_main_heading: string
+          section4_description: string
+          section4_button_text: string | null
+          section4_button_link: string | null
+          section4_image_url: string | null
+          section4_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          hero_small_heading?: string
+          hero_main_heading?: string
+          hero_description?: string
+          hero_button_text?: string | null
+          hero_button_link?: string | null
+          hero_image_url?: string | null
+          hero_image_visible?: boolean
+          hero_visible?: boolean
+          section3_small_heading?: string
+          section3_main_heading?: string
+          section3_description?: string
+          section3_image_url?: string | null
+          section3_background_color?: string | null
+          section3_visible?: boolean
+          section4_small_heading?: string
+          section4_main_heading?: string
+          section4_description?: string
+          section4_button_text?: string | null
+          section4_button_link?: string | null
+          section4_image_url?: string | null
+          section4_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          hero_small_heading?: string
+          hero_main_heading?: string
+          hero_description?: string
+          hero_button_text?: string | null
+          hero_button_link?: string | null
+          hero_image_url?: string | null
+          hero_image_visible?: boolean
+          hero_visible?: boolean
+          section3_small_heading?: string
+          section3_main_heading?: string
+          section3_description?: string
+          section3_image_url?: string | null
+          section3_background_color?: string | null
+          section3_visible?: boolean
+          section4_small_heading?: string
+          section4_main_heading?: string
+          section4_description?: string
+          section4_button_text?: string | null
+          section4_button_link?: string | null
+          section4_image_url?: string | null
+          section4_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      advertise_cards: {
+        Row: {
+          id: string
+          logo_url: string | null
+          heading: string
+          description: string
+          sort_order: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          logo_url?: string | null
+          heading: string
+          description: string
+          sort_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          logo_url?: string | null
+          heading?: string
+          description?: string
+          sort_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      advertise_sections: {
+        Row: {
+          id: string
+          small_heading: string
+          main_heading: string
+          description: string
+          button_text: string | null
+          button_link: string | null
+          image_url: string | null
+          sort_order: number
+          is_visible: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          small_heading?: string
+          main_heading?: string
+          description?: string
+          button_text?: string | null
+          button_link?: string | null
+          image_url?: string | null
+          sort_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          small_heading?: string
+          main_heading?: string
+          description?: string
+          button_text?: string | null
+          button_link?: string | null
+          image_url?: string | null
+          sort_order?: number
+          is_visible?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      get_listed_settings: {
+        Row: {
+          id: string
+          main_heading: string
+          comparison_heading: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          main_heading?: string
+          comparison_heading?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          main_heading?: string
+          comparison_heading?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      get_listed_plans: {
+        Row: {
+          id: string
+          plan_name: string
+          price_inr: number
+          duration: string
+          button_text: string | null
+          button_link: string | null
+          button_visible: boolean
+          popular: boolean
+          visible: boolean
+          show_view_more: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          plan_name: string
+          price_inr: number
+          duration: string
+          button_text?: string | null
+          button_link?: string | null
+          button_visible?: boolean
+          popular?: boolean
+          visible?: boolean
+          show_view_more?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          plan_name?: string
+          price_inr?: number
+          duration?: string
+          button_text?: string | null
+          button_link?: string | null
+          button_visible?: boolean
+          popular?: boolean
+          visible?: boolean
+          show_view_more?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      get_listed_plan_features: {
+        Row: {
+          id: string
+          plan_id: string
+          feature_text: string
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          feature_text: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          feature_text?: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "get_listed_plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "get_listed_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      get_listed_comparison_rows: {
+        Row: {
+          id: string
+          row_title: string
+          visible: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          row_title: string
+          visible?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          row_title?: string
+          visible?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      get_listed_comparison_cells: {
+        Row: {
+          id: string
+          row_id: string
+          plan_id: string
+          tick_enabled: boolean
+          custom_text: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          row_id: string
+          plan_id: string
+          tick_enabled?: boolean
+          custom_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          row_id?: string
+          plan_id?: string
+          tick_enabled?: boolean
+          custom_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "get_listed_comparison_cells_row_id_fkey"
+            columns: ["row_id"]
+            isOneToOne: false
+            referencedRelation: "get_listed_comparison_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "get_listed_comparison_cells_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "get_listed_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      write_for_us_settings: {
+        Row: {
+          id: string
+          heading: string
+          banner_image_url: string | null
+          content: string
+          contact_email: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          heading?: string
+          banner_image_url?: string | null
+          content?: string
+          contact_email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          heading?: string
+          banner_image_url?: string | null
+          content?: string
+          contact_email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vendor_guidelines_settings: {
+        Row: {
+          id: string
+          heading: string
+          content: string
+          contact_email: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          heading?: string
+          content?: string
+          contact_email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          heading?: string
+          content?: string
+          contact_email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      browse_all_directories_settings: {
+        Row: {
+          id: string
+          heading: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          heading?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          heading?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

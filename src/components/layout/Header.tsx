@@ -483,7 +483,7 @@ export default function Header() {
 
           <nav className="hidden md:flex items-center gap-8 ml-auto">
             <Link to="/" className="header-nav-link">
-              Homepro
+              Home
             </Link>
 
             <div className="static" ref={menuRef}>

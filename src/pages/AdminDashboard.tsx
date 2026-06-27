@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save,
-  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail
+  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail, PenTool
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
@@ -86,6 +86,111 @@ interface Offer { id: string; image_url: string | null; heading: string; descrip
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
+interface AdvertiseSettings {
+  id?: string;
+  hero_small_heading: string;
+  hero_main_heading: string;
+  hero_description: string;
+  hero_button_text?: string | null;
+  hero_button_link?: string | null;
+  hero_image_url?: string | null;
+  hero_image_visible: boolean;
+  hero_visible: boolean;
+  marketing_cards_main_heading: string;
+  marketing_cards_subheading: string;
+  section3_small_heading: string;
+  section3_main_heading: string;
+  section3_description: string;
+  section3_image_url?: string | null;
+  section3_background_color?: string | null;
+  section3_visible: boolean;
+  section4_small_heading: string;
+  section4_main_heading: string;
+  section4_description: string;
+  section4_button_text?: string | null;
+  section4_button_link?: string | null;
+  section4_image_url?: string | null;
+  section4_visible: boolean;
+  dynamic_sections_heading_part1: string;
+  dynamic_sections_heading_part2: string;
+}
+interface AdvertiseCard {
+  id: string;
+  logo_url?: string | null;
+  heading: string;
+  description: string;
+  sort_order: number;
+  is_visible: boolean;
+}
+interface AdvertiseSection {
+  id: string;
+  small_heading: string;
+  main_heading: string;
+  description: string;
+  button_text?: string | null;
+  button_link?: string | null;
+  image_url?: string | null;
+  sort_order: number;
+  is_visible: boolean;
+}
+
+interface WriteForUsSettings {
+  id?: string;
+  heading: string;
+  banner_image_url?: string | null;
+  content: string;
+  contact_email: string;
+  contact_intro_text: string;
+}
+
+interface VendorGuidelinesSettings {
+  id?: string;
+  heading: string;
+  content: string;
+  contact_email: string;
+  contact_intro_text: string;
+}
+
+interface BrowseAllDirectoriesSettings {
+  id?: string;
+  heading: string;
+}
+
+interface GetListedPlan {
+  id?: string;
+  plan_name: string;
+  price_inr: number;
+  duration: string;
+  button_text?: string | null;
+  button_link?: string | null;
+  button_visible: boolean;
+  popular: boolean;
+  visible: boolean;
+  show_view_more: boolean;
+  sort_order: number;
+}
+
+interface GetListedPlanFeature {
+  id?: string;
+  plan_id: string;
+  feature_text: string;
+  sort_order: number;
+}
+
+interface GetListedComparisonRow {
+  id?: string;
+  row_title: string;
+  visible: boolean;
+  sort_order: number;
+}
+
+interface GetListedComparisonCell {
+  id?: string;
+  row_id: string;
+  plan_id: string;
+  tick_enabled: boolean;
+  custom_text?: string | null;
+}
 interface HeaderSettings {
   id?: string;
   leave_review_text: string;
@@ -102,13 +207,6 @@ interface HeaderSettings {
   submit_button_text: string;
   submit_button_link: string;
   submit_button_visible: boolean;
-}
-
-interface FooterBusinessLink {
-  id?: string;
-  label: string;
-  link: string;
-  is_visible?: boolean;
 }
 
 interface FooterSettings {
@@ -149,8 +247,12 @@ interface FooterSettings {
   bottom_footer_email_visible?: boolean;
   bottom_branding_visible?: boolean;
   bottom_branding_text?: string;
-  for_businesses_title?: string;
-  for_businesses_links?: FooterBusinessLink[];
+  submit_rft_label?: string;
+  submit_rft_url?: string;
+  submit_rft_enabled?: boolean;
+  get_recommendations_label?: string;
+  get_recommendations_url?: string;
+  get_recommendations_enabled?: boolean;
 }
 
 // Product Tab Sections types and constants
@@ -240,7 +342,7 @@ interface FAQ {
   updated_at: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -401,6 +503,11 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
     label: 'Footer Options', 
     icon: <Home className="w-5 h-5" />,
     children: [
+      { key: 'advertise', label: 'Advertise Page' },
+      { key: 'get-listed', label: 'Get Listed' },
+      { key: 'write-for-us', label: 'Write For Us' },
+      { key: 'vendor-guidelines', label: 'Vendor Guidelines' },
+      { key: 'browse-all-directories', label: 'Browse All Directories' },
       { key: 'footer_about', label: 'About Us' },
       { key: 'footer_contact', label: 'Contact Page' },
       { key: 'footer_general', label: 'General Settings' },
@@ -534,12 +641,12 @@ export default function AdminDashboard() {
     bottom_footer_email_visible: false,
     bottom_branding_visible: true,
     bottom_branding_text: '',
-    for_businesses_title: 'For Businesses',
-    for_businesses_links: [
-      { label: 'Get Listed', link: '#', is_visible: true },
-      { label: 'Advertise', link: '#', is_visible: true },
-      { label: 'Write for Us', link: '#', is_visible: true },
-    ],
+    submit_rft_label: 'Submit RFT',
+    submit_rft_url: '',
+    submit_rft_enabled: false,
+    get_recommendations_label: 'Get Recommendations',
+    get_recommendations_url: '',
+    get_recommendations_enabled: false,
   });
   const [footerSubscribers, setFooterSubscribers] = useState<Array<{ id: string; email: string; created_at: string }>>([]);
   const [isLoadingContactSettings, setIsLoadingContactSettings] = useState(true);
@@ -550,6 +657,77 @@ export default function AdminDashboard() {
   const [isSavingLegal, setIsSavingLegal] = useState(false);
   const [editableLegalTitles, setEditableLegalTitles] = useState<Record<string, string>>({});
   const [editableLegalVisibility, setEditableLegalVisibility] = useState<Record<string, boolean>>({});
+
+  // Advertise Page States
+  const [advertiseSettings, setAdvertiseSettings] = useState<AdvertiseSettings>({
+    hero_small_heading: '',
+    hero_main_heading: '',
+    hero_description: '',
+    hero_button_text: '',
+    hero_button_link: '',
+    hero_image_url: '',
+    hero_image_visible: true,
+    hero_visible: true,
+    marketing_cards_main_heading: 'Marketing Strategies',
+    marketing_cards_subheading: 'that can do wonders for your business',
+    section3_small_heading: '',
+    section3_main_heading: '',
+    section3_description: '',
+    section3_image_url: '',
+    section3_background_color: '',
+    section3_visible: true,
+    section4_small_heading: '',
+    section4_main_heading: '',
+    section4_description: '',
+    section4_button_text: '',
+    section4_button_link: '',
+    section4_image_url: '',
+    section4_visible: true,
+    dynamic_sections_heading_part1: '',
+    dynamic_sections_heading_part2: '',
+  });
+  const [advertiseCards, setAdvertiseCards] = useState<AdvertiseCard[]>([]);
+  const [advertiseSections, setAdvertiseSections] = useState<AdvertiseSection[]>([]);
+  const [showAddAdvertiseCardModal, setShowAddAdvertiseCardModal] = useState(false);
+  const [showAddAdvertiseSectionModal, setShowAddAdvertiseSectionModal] = useState(false);
+  const [editAdvertiseCard, setEditAdvertiseCard] = useState<Partial<AdvertiseCard> | null>(null);
+  const [editAdvertiseSection, setEditAdvertiseSection] = useState<Partial<AdvertiseSection> | null>(null);
+
+  // Get Listed Page States
+  const [getListedPlans, setGetListedPlans] = useState<GetListedPlan[]>([]);
+  const [getListedPlanFeatures, setGetListedPlanFeatures] = useState<GetListedPlanFeature[]>([]);
+  const [getListedComparisonRows, setGetListedComparisonRows] = useState<GetListedComparisonRow[]>([]);
+  const [getListedComparisonCells, setGetListedComparisonCells] = useState<GetListedComparisonCell[]>([]);
+  const [getListedSettings, setGetListedSettings] = useState<{ id: string; main_heading: string; comparison_heading: string }>({
+    id: '',
+    main_heading: 'Choose the best plan for your business.',
+    comparison_heading: 'Detailed pricing'
+  });
+  const [writeForUsSettings, setWriteForUsSettings] = useState<WriteForUsSettings>({
+    id: '',
+    heading: 'Write For Us',
+    banner_image_url: '',
+    content: '',
+    contact_email: 'email@example.com',
+    contact_intro_text: 'Or else you connect with us at'
+  });
+  const [vendorGuidelinesSettings, setVendorGuidelinesSettings] = useState<VendorGuidelinesSettings>({
+    id: '',
+    heading: 'Vendor Guidelines',
+    content: '',
+    contact_email: 'email@example.com',
+    contact_intro_text: 'Or else you connect with us at'
+  });
+  const [browseAllDirectoriesSettings, setBrowseAllDirectoriesSettings] = useState<BrowseAllDirectoriesSettings>({
+    id: '',
+    heading: 'All Directories & Reviews'
+  });
+  const [showAddGetListedPlanModal, setShowAddGetListedPlanModal] = useState(false);
+  const [showAddGetListedComparisonRowModal, setShowAddGetListedComparisonRowModal] = useState(false);
+  const [editGetListedPlan, setEditGetListedPlan] = useState<Partial<GetListedPlan> | null>(null);
+  const [editGetListedComparisonRow, setEditGetListedComparisonRow] = useState<Partial<GetListedComparisonRow> | null>(null);
+  const [getListedSelectedPlanId, setGetListedSelectedPlanId] = useState<string | null>(null);
+  const [cellInputValues, setCellInputValues] = useState<Record<string, string>>({}); // key: `${rowId}-${planId}`
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -679,7 +857,7 @@ export default function AdminDashboard() {
     
       const loadAllSafe = async () => {
         try {
-          const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, subscribers, faqsData] = await Promise.all([
+          const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, subscribers, faqsData, advertiseSettingsData, advertiseCardsData, advertiseSectionsData, getListedPlansData, getListedPlanFeaturesData, getListedComparisonRowsData, getListedComparisonCellsData, getListedSettingsData, writeForUsSettingsData, vendorGuidelinesSettingsData, browseAllDirectoriesSettingsData] = await Promise.all([
             supabase.from('page_sections').select('*').order('sort_order'),
             supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -697,6 +875,17 @@ export default function AdminDashboard() {
             supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             supabase.from('footer_subscribers').select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
             supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
+            supabase.from('advertise_page_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('advertise_cards').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('advertise_sections').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('get_listed_plans').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
+            supabase.from('get_listed_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            (supabase as any).from('write_for_us_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            (supabase as any).from('vendor_guidelines_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            (supabase as any).from('browse_all_directories_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
           ]);
 
           let subBrands;
@@ -796,15 +985,12 @@ export default function AdminDashboard() {
               bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
               bottom_branding_visible: footerData.bottom_branding_visible ?? true,
               bottom_branding_text: footerData.bottom_branding_text ?? '',
-              for_businesses_title: footerData.for_businesses_title ?? 'For Businesses',
-              for_businesses_links: (footerData.for_businesses_links ?? [
-                { label: 'Get Listed', link: '#', is_visible: true },
-                { label: 'Advertise', link: '#', is_visible: true },
-                { label: 'Write for Us', link: '#', is_visible: true },
-              ]).map((link: any, idx: number) => ({
-                id: `link-${idx}`,
-                ...link,
-              })),
+              submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
+              submit_rft_url: footerData.submit_rft_url ?? '',
+              submit_rft_enabled: footerData.submit_rft_enabled ?? false,
+              get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
+              get_recommendations_url: footerData.get_recommendations_url ?? '',
+              get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
             });
           }
           if (subscribers.data) {
@@ -970,6 +1156,45 @@ export default function AdminDashboard() {
         });
         setEditKeyFeaturesSections(groupedKFSections);
       }
+      
+      // Load Advertise Data
+      console.log('📥 Fetched advertise settings data from Supabase:', advertiseSettingsData);
+      if (advertiseSettingsData.data) {
+        console.log('✅ Setting advertise settings:', advertiseSettingsData.data);
+        setAdvertiseSettings(advertiseSettingsData.data as AdvertiseSettings);
+      } else {
+        console.log('⚠️ No advertise settings data found');
+      }
+      if (advertiseCardsData.data) {
+        setAdvertiseCards(advertiseCardsData.data as AdvertiseCard[]);
+      }
+      if (advertiseSectionsData.data) {
+            setAdvertiseSections(advertiseSectionsData.data as AdvertiseSection[]);
+          }
+          if (getListedPlansData.data) {
+            setGetListedPlans(getListedPlansData.data as GetListedPlan[]);
+          }
+          if (getListedPlanFeaturesData.data) {
+            setGetListedPlanFeatures(getListedPlanFeaturesData.data as GetListedPlanFeature[]);
+          }
+          if (getListedComparisonRowsData.data) {
+            setGetListedComparisonRows(getListedComparisonRowsData.data as GetListedComparisonRow[]);
+          }
+          if (getListedComparisonCellsData.data) {
+            setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
+          }
+          if (getListedSettingsData.data) {
+            setGetListedSettings(getListedSettingsData.data as { id: string; main_heading: string; comparison_heading: string });
+          }
+          if (writeForUsSettingsData.data) {
+            setWriteForUsSettings(writeForUsSettingsData.data as WriteForUsSettings);
+          }
+          if (vendorGuidelinesSettingsData.data) {
+            setVendorGuidelinesSettings(vendorGuidelinesSettingsData.data as VendorGuidelinesSettings);
+          }
+          if (browseAllDirectoriesSettingsData.data) {
+            setBrowseAllDirectoriesSettings(browseAllDirectoriesSettingsData.data as BrowseAllDirectoriesSettings);
+          }
         } catch (error) {
           console.error('Error in loadAllSafe:', error);
         }
@@ -994,6 +1219,17 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_key_features_sections' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'header_settings' as any }, loadAllSafe)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'footer_settings' as any }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'advertise_page_settings' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'advertise_cards' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'advertise_sections' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'get_listed_plans' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'get_listed_plan_features' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'get_listed_comparison_rows' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'get_listed_comparison_cells' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'get_listed_settings' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'write_for_us_settings' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_guidelines_settings' }, loadAllSafe)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'browse_all_directories_settings' }, loadAllSafe)
       .subscribe();
 
     return () => {
@@ -1003,7 +1239,7 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
-    const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, faqsData] = await Promise.all([
+    const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, faqsData, advertiseSettingsData, advertiseCardsData, advertiseSectionsData, getListedPlansData, getListedPlanFeaturesData, getListedComparisonRowsData, getListedComparisonCellsData, getListedSettingsData] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -1020,6 +1256,14 @@ export default function AdminDashboard() {
       supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
       supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
       supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
+      supabase.from('advertise_page_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+      supabase.from('advertise_cards').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('advertise_sections').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('get_listed_plans').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
+      supabase.from('get_listed_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
     ]);
     let subBrands;
     try {
@@ -1064,13 +1308,6 @@ export default function AdminDashboard() {
       youtube_visible: false,
       bottom_branding_visible: true,
       bottom_branding_text: '',
-      for_businesses_title: 'For Businesses',
-      for_businesses_links: [
-        { id: '1', label: 'Advertise With Us', link: '#' },
-        { id: '2', label: 'Write with us', link: '#' },
-        { id: '3', label: 'Sell With Us', link: '#' },
-        { id: '4', label: 'Editorial Policy', link: '#' },
-      ],
       ...footer.data
     });
     if (legal.data) setLegalPages(legal.data as LegalPage[]);
@@ -1202,7 +1439,618 @@ export default function AdminDashboard() {
       });
       setEditKeyFeaturesSections(groupedKFSections);
     }
+
+    // Load Advertise Data
+    console.log('advertiseSettingsData:', advertiseSettingsData);
+    console.log('advertiseCardsData:', advertiseCardsData);
+    console.log('advertiseSectionsData:', advertiseSectionsData);
+    
+    if (advertiseSettingsData.data) {
+      console.log('Setting advertiseSettings:', advertiseSettingsData.data);
+      setAdvertiseSettings(advertiseSettingsData.data as AdvertiseSettings);
+    } else {
+      console.log('No advertiseSettingsData.data found');
+    }
+    
+    if (advertiseCardsData.data) {
+      setAdvertiseCards(advertiseCardsData.data as AdvertiseCard[]);
+    }
+    
+    if (advertiseSectionsData.data) {
+      setAdvertiseSections(advertiseSectionsData.data as AdvertiseSection[]);
+    }
+
+    // Load Get Listed Data
+    if (getListedPlansData.data) {
+      setGetListedPlans(getListedPlansData.data as GetListedPlan[]);
+    }
+    if (getListedPlanFeaturesData.data) {
+      setGetListedPlanFeatures(getListedPlanFeaturesData.data as GetListedPlanFeature[]);
+    }
+    if (getListedComparisonRowsData.data) {
+      setGetListedComparisonRows(getListedComparisonRowsData.data as GetListedComparisonRow[]);
+    }
+    if (getListedComparisonCellsData.data) {
+      setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
+    }
+    if (getListedSettingsData.data) {
+      setGetListedSettings(getListedSettingsData.data as { id: string; main_heading: string; comparison_heading: string });
+    }
   }
+
+  // Advertise Page Functions
+  const handleSaveAdvertiseSettings = async () => {
+    try {
+      console.log('Saving advertise settings:', advertiseSettings);
+      
+      // Prepare data with only existing database columns
+      const dataToSave: any = {
+        hero_small_heading: advertiseSettings.hero_small_heading,
+        hero_main_heading: advertiseSettings.hero_main_heading,
+        hero_description: advertiseSettings.hero_description,
+        hero_button_text: advertiseSettings.hero_button_text,
+        hero_button_link: advertiseSettings.hero_button_link,
+        hero_image_url: advertiseSettings.hero_image_url,
+        hero_image_visible: advertiseSettings.hero_image_visible,
+        hero_visible: advertiseSettings.hero_visible,
+        marketing_cards_main_heading: advertiseSettings.marketing_cards_main_heading,
+        marketing_cards_subheading: advertiseSettings.marketing_cards_subheading,
+        section3_small_heading: advertiseSettings.section3_small_heading,
+        section3_main_heading: advertiseSettings.section3_main_heading,
+        section3_description: advertiseSettings.section3_description,
+        section3_image_url: advertiseSettings.section3_image_url,
+        section3_background_color: advertiseSettings.section3_background_color,
+        section3_visible: advertiseSettings.section3_visible,
+        section4_small_heading: advertiseSettings.section4_small_heading,
+        section4_main_heading: advertiseSettings.section4_main_heading,
+        section4_description: advertiseSettings.section4_description,
+        section4_button_text: advertiseSettings.section4_button_text,
+        section4_button_link: advertiseSettings.section4_button_link,
+        section4_image_url: advertiseSettings.section4_image_url,
+        section4_visible: advertiseSettings.section4_visible,
+        dynamic_sections_heading_part1: advertiseSettings.dynamic_sections_heading_part1,
+        dynamic_sections_heading_part2: advertiseSettings.dynamic_sections_heading_part2,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (advertiseSettings.id) {
+        // Update existing record
+        console.log('Updating existing record with id:', advertiseSettings.id);
+        result = await supabase
+          .from('advertise_page_settings')
+          .update(dataToSave)
+          .eq('id', advertiseSettings.id);
+      } else {
+        // Get first record ID or create new one
+        console.log('Checking for existing data...');
+        const { data: existingData } = await supabase
+          .from('advertise_page_settings')
+          .select('id')
+          .limit(1);
+        console.log('existingData:', existingData);
+        
+        if (existingData && existingData.length > 0) {
+          console.log('Updating existing record:', existingData[0].id);
+          result = await supabase
+            .from('advertise_page_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          console.log('Inserting new record');
+          result = await supabase
+            .from('advertise_page_settings')
+            .insert([dataToSave])
+            .select(); // Add select() to get the inserted data back!
+        }
+      }
+
+      console.log('Supabase result:', result);
+      const { error } = result;
+      if (error) throw error;
+      
+      console.log('Advertise settings saved successfully!');
+      toast.success('Advertise settings saved successfully!');
+      loadAll(); // Reload data to confirm save
+    } catch (error: any) {
+      console.error('Error saving advertise settings:', error);
+      toast.error(`Failed to save advertise settings: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSaveWriteForUsSettings = async () => {
+    try {
+      console.log('Saving write for us settings:', writeForUsSettings);
+
+      const dataToSave: any = {
+        heading: writeForUsSettings.heading,
+        banner_image_url: writeForUsSettings.banner_image_url,
+        content: writeForUsSettings.content,
+        contact_email: writeForUsSettings.contact_email,
+        contact_intro_text: writeForUsSettings.contact_intro_text,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (writeForUsSettings.id) {
+        console.log('Updating existing record with id:', writeForUsSettings.id);
+        result = await supabase
+          .from('write_for_us_settings')
+          .update(dataToSave)
+          .eq('id', writeForUsSettings.id);
+      } else {
+        console.log('Checking for existing data...');
+        const { data: existingData } = await supabase
+          .from('write_for_us_settings')
+          .select('id')
+          .limit(1);
+        console.log('existingData:', existingData);
+
+        if (existingData && existingData.length > 0) {
+          console.log('Updating existing record:', existingData[0].id);
+          result = await supabase
+            .from('write_for_us_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          console.log('Inserting new record');
+          result = await supabase
+            .from('write_for_us_settings')
+            .insert([dataToSave])
+            .select();
+        }
+      }
+
+      console.log('Supabase result:', result);
+      const { error } = result;
+      if (error) throw error;
+
+      console.log('Write For Us settings saved successfully!');
+      toast.success('Write For Us settings saved successfully!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving write for us settings:', error);
+      toast.error(`Failed to save write for us settings: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSaveVendorGuidelinesSettings = async () => {
+    try {
+      console.log('Saving vendor guidelines settings:', vendorGuidelinesSettings);
+
+      const dataToSave: any = {
+        heading: vendorGuidelinesSettings.heading,
+        content: vendorGuidelinesSettings.content,
+        contact_email: vendorGuidelinesSettings.contact_email,
+        contact_intro_text: vendorGuidelinesSettings.contact_intro_text,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (vendorGuidelinesSettings.id) {
+        console.log('Updating existing record with id:', vendorGuidelinesSettings.id);
+        result = await supabase
+          .from('vendor_guidelines_settings')
+          .update(dataToSave)
+          .eq('id', vendorGuidelinesSettings.id);
+      } else {
+        console.log('Checking for existing data...');
+        const { data: existingData } = await supabase
+          .from('vendor_guidelines_settings')
+          .select('id')
+          .limit(1);
+        console.log('existingData:', existingData);
+
+        if (existingData && existingData.length > 0) {
+          console.log('Updating existing record:', existingData[0].id);
+          result = await supabase
+            .from('vendor_guidelines_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          console.log('Inserting new record');
+          result = await supabase
+            .from('vendor_guidelines_settings')
+            .insert([dataToSave])
+            .select();
+        }
+      }
+
+      console.log('Supabase result:', result);
+      const { error } = result;
+      if (error) throw error;
+
+      console.log('Vendor Guidelines settings saved successfully!');
+      toast.success('Vendor Guidelines settings saved successfully!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving vendor guidelines settings:', error);
+      toast.error(`Failed to save vendor guidelines settings: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSaveBrowseAllDirectoriesSettings = async () => {
+    try {
+      console.log('Saving browse all directories settings:', browseAllDirectoriesSettings);
+
+      const dataToSave: any = {
+        heading: browseAllDirectoriesSettings.heading,
+        updated_at: new Date().toISOString(),
+      };
+
+      let result;
+      if (browseAllDirectoriesSettings.id) {
+        console.log('Updating existing record with id:', browseAllDirectoriesSettings.id);
+        result = await supabase
+          .from('browse_all_directories_settings')
+          .update(dataToSave)
+          .eq('id', browseAllDirectoriesSettings.id);
+      } else {
+        console.log('Checking for existing data...');
+        const { data: existingData } = await supabase
+          .from('browse_all_directories_settings')
+          .select('id')
+          .limit(1);
+        console.log('existingData:', existingData);
+
+        if (existingData && existingData.length > 0) {
+          console.log('Updating existing record:', existingData[0].id);
+          result = await supabase
+            .from('browse_all_directories_settings')
+            .update(dataToSave)
+            .eq('id', existingData[0].id);
+        } else {
+          console.log('Inserting new record');
+          result = await supabase
+            .from('browse_all_directories_settings')
+            .insert([dataToSave])
+            .select();
+        }
+      }
+
+      console.log('Supabase result:', result);
+      const { error } = result;
+      if (error) throw error;
+
+      console.log('Browse All Directories settings saved successfully!');
+      toast.success('Browse All Directories settings saved successfully!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving browse all directories settings:', error);
+      toast.error(`Failed to save browse all directories settings: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSaveAdvertiseCard = async () => {
+    if (!editAdvertiseCard) return;
+    try {
+      console.log('Saving advertise card:', editAdvertiseCard);
+      let result;
+      if (editAdvertiseCard.id) {
+        // Prepare update data without id
+        const { id, ...updateData } = editAdvertiseCard;
+        result = await supabase
+          .from('advertise_cards')
+          .update(updateData)
+          .eq('id', editAdvertiseCard.id);
+      } else {
+        const { data: lastCard } = await supabase
+          .from('advertise_cards')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1);
+        const nextSortOrder = lastCard && lastCard.length > 0 ? lastCard[0].sort_order + 1 : 0;
+        const newCard = {
+          heading: editAdvertiseCard.heading || '',
+          description: editAdvertiseCard.description || '',
+          logo_url: editAdvertiseCard.logo_url,
+          sort_order: nextSortOrder,
+          is_visible: true,
+        };
+        result = await supabase.from('advertise_cards').insert(newCard);
+      }
+      
+      const { error } = result;
+      if (error) throw error;
+      
+      console.log('Advertise card saved successfully!');
+      setShowAddAdvertiseCardModal(false);
+      setEditAdvertiseCard(null);
+      toast.success('Advertise card saved!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving advertise card:', error);
+      toast.error(`Failed to save advertise card: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteAdvertiseCard = async (id: string) => {
+    try {
+      await supabase.from('advertise_cards').delete().eq('id', id);
+      toast.success('Advertise card deleted!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to delete advertise card');
+      console.error(error);
+    }
+  };
+
+  const handleSaveAdvertiseSection = async () => {
+    if (!editAdvertiseSection) return;
+    try {
+      console.log('Saving advertise section:', editAdvertiseSection);
+      let result;
+      if (editAdvertiseSection.id) {
+        // Prepare update data without id
+        const { id, ...updateData } = editAdvertiseSection;
+        result = await supabase
+          .from('advertise_sections')
+          .update(updateData)
+          .eq('id', editAdvertiseSection.id);
+      } else {
+        const { data: lastSection } = await supabase
+          .from('advertise_sections')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1);
+        const nextSortOrder = lastSection && lastSection.length > 0 ? lastSection[0].sort_order + 1 : 0;
+        const newSection = {
+          small_heading: editAdvertiseSection.small_heading || '',
+          main_heading: editAdvertiseSection.main_heading || '',
+          description: editAdvertiseSection.description || '',
+          button_text: editAdvertiseSection.button_text,
+          button_link: editAdvertiseSection.button_link,
+          image_url: editAdvertiseSection.image_url,
+          sort_order: nextSortOrder,
+          is_visible: true,
+        };
+        result = await supabase.from('advertise_sections').insert(newSection);
+      }
+      
+      const { error } = result;
+      if (error) throw error;
+      
+      console.log('Advertise section saved successfully!');
+      setShowAddAdvertiseSectionModal(false);
+      setEditAdvertiseSection(null);
+      toast.success('Advertise section saved!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving advertise section:', error);
+      toast.error(`Failed to save advertise section: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteAdvertiseSection = async (id: string) => {
+    try {
+      await supabase.from('advertise_sections').delete().eq('id', id);
+      toast.success('Advertise section deleted!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to delete advertise section');
+      console.error(error);
+    }
+  };
+
+  // Debounce timer for comparison cell updates
+  const debounceTimerRef = useRef<Record<string, NodeJS.Timeout | null>>({});
+
+  // Get Listed Page Functions
+  const handleSaveGetListedPlan = async () => {
+    if (!editGetListedPlan) return;
+    try {
+      console.log('Saving get listed plan:', editGetListedPlan);
+      let result;
+      if (editGetListedPlan.id) {
+        // Prepare update data without id
+        const { id, ...updateData } = editGetListedPlan;
+        result = await supabase
+          .from('get_listed_plans')
+          .update(updateData)
+          .eq('id', editGetListedPlan.id);
+      } else {
+        const { data: lastPlan } = await supabase
+          .from('get_listed_plans')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1);
+        const nextSortOrder = lastPlan && lastPlan.length > 0 ? lastPlan[0].sort_order + 1 : 0;
+        const newPlan = {
+          plan_name: editGetListedPlan.plan_name || '',
+          price_inr: editGetListedPlan.price_inr || 0,
+          duration: editGetListedPlan.duration || '',
+          button_text: editGetListedPlan.button_text || '',
+          button_link: editGetListedPlan.button_link || '',
+          button_visible: editGetListedPlan.button_visible ?? true,
+          popular: editGetListedPlan.popular ?? false,
+          visible: editGetListedPlan.visible ?? true,
+          show_view_more: editGetListedPlan.show_view_more ?? true,
+          sort_order: nextSortOrder,
+        };
+        result = await supabase.from('get_listed_plans').insert(newPlan);
+      }
+
+      const { error } = result;
+      if (error) throw error;
+
+      console.log('Get listed plan saved successfully!');
+      setShowAddGetListedPlanModal(false);
+      setEditGetListedPlan(null);
+      toast.success('Get listed plan saved!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving get listed plan:', error);
+      toast.error(`Failed to save get listed plan: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteGetListedPlan = async (id: string) => {
+    try {
+      await supabase.from('get_listed_plans').delete().eq('id', id);
+      toast.success('Get listed plan deleted!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to delete get listed plan');
+      console.error(error);
+    }
+  };
+
+  const handleAddGetListedPlanFeature = async (planId: string, featureText: string) => {
+    try {
+      const { data: lastFeature } = await supabase
+        .from('get_listed_plan_features')
+        .select('sort_order')
+        .eq('plan_id', planId)
+        .order('sort_order', { ascending: false })
+        .limit(1);
+      const nextSortOrder = lastFeature && lastFeature.length > 0 ? lastFeature[0].sort_order + 1 : 0;
+      await supabase.from('get_listed_plan_features').insert({
+        plan_id: planId,
+        feature_text: featureText,
+        sort_order: nextSortOrder,
+      });
+      toast.success('Feature added!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to add feature');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteGetListedPlanFeature = async (id: string) => {
+    try {
+      await supabase.from('get_listed_plan_features').delete().eq('id', id);
+      toast.success('Feature deleted!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to delete feature');
+      console.error(error);
+    }
+  };
+
+  const handleSaveGetListedComparisonRow = async () => {
+    if (!editGetListedComparisonRow) return;
+    try {
+      console.log('Saving get listed comparison row:', editGetListedComparisonRow);
+      let result;
+      if (editGetListedComparisonRow.id) {
+        const { id, ...updateData } = editGetListedComparisonRow;
+        result = await supabase
+          .from('get_listed_comparison_rows')
+          .update(updateData)
+          .eq('id', editGetListedComparisonRow.id);
+      } else {
+        const { data: lastRow } = await supabase
+          .from('get_listed_comparison_rows')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1);
+        const nextSortOrder = lastRow && lastRow.length > 0 ? lastRow[0].sort_order + 1 : 0;
+        const newRow = {
+          row_title: editGetListedComparisonRow.row_title || '',
+          visible: editGetListedComparisonRow.visible ?? true,
+          sort_order: nextSortOrder,
+        };
+        result = await supabase.from('get_listed_comparison_rows').insert(newRow);
+      }
+      const { error } = result;
+      if (error) throw error;
+
+      console.log('Get listed comparison row saved successfully!');
+      setShowAddGetListedComparisonRowModal(false);
+      setEditGetListedComparisonRow(null);
+      toast.success('Comparison row saved!');
+      loadAll();
+    } catch (error: any) {
+      console.error('Error saving get listed comparison row:', error);
+      toast.error(`Failed to save comparison row: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteGetListedComparisonRow = async (id: string) => {
+    try {
+      await supabase.from('get_listed_comparison_rows').delete().eq('id', id);
+      toast.success('Comparison row deleted!');
+      loadAll();
+    } catch (error) {
+      toast.error('Failed to delete comparison row');
+      console.error(error);
+    }
+  };
+
+  const handleSaveGetListedSettings = async () => {
+    try {
+      console.log('handleSaveGetListedSettings called, current state:', getListedSettings);
+      if (!getListedSettings.id) {
+        // Create new settings if not exists
+        const newSettings = {
+          main_heading: getListedSettings.main_heading,
+          comparison_heading: getListedSettings.comparison_heading,
+        };
+        const insertResult = await supabase.from('get_listed_settings').insert(newSettings).select();
+        console.log('Insert result:', insertResult);
+        if (insertResult.data && insertResult.data.length > 0) {
+          setGetListedSettings(insertResult.data[0] as any);
+        }
+      } else {
+        const updateResult = await supabase
+          .from('get_listed_settings')
+          .update({
+            main_heading: getListedSettings.main_heading,
+            comparison_heading: getListedSettings.comparison_heading,
+          })
+          .eq('id', getListedSettings.id)
+          .select();
+        console.log('Update result:', updateResult);
+        if (updateResult.data && updateResult.data.length > 0) {
+          setGetListedSettings(updateResult.data[0] as any);
+        }
+      }
+      toast.success('Get Listed settings saved!');
+      // Do NOT call loadAll() to prevent race conditions - we've already updated state with latest data!
+    } catch (error) {
+      toast.error('Failed to save Get Listed settings');
+      console.error('Error saving get listed settings:', error);
+    }
+  };
+
+  const handleUpdateGetListedComparisonCell = async (rowId: string, planId: string, tickEnabled: boolean, customText: string, showToast: boolean = true) => {
+    try {
+      // Check if cell already exists
+      const { data: existingCell } = await supabase
+        .from('get_listed_comparison_cells')
+        .select('*')
+        .eq('row_id', rowId)
+        .eq('plan_id', planId)
+        .maybeSingle();
+
+      if (existingCell) {
+        await supabase
+          .from('get_listed_comparison_cells')
+          .update({
+            tick_enabled: tickEnabled,
+            custom_text: customText,
+          })
+          .eq('id', existingCell.id);
+      } else {
+        await supabase.from('get_listed_comparison_cells').insert({
+          row_id: rowId,
+          plan_id: planId,
+          tick_enabled: tickEnabled,
+          custom_text: customText,
+        });
+      }
+      if (showToast) {
+        toast.success('Comparison cell updated!');
+      }
+      loadAll();
+    } catch (error) {
+      if (showToast) {
+        toast.error('Failed to update comparison cell');
+      }
+      console.error(error);
+    }
+  };
 
   function getSectionDisplayName(section: PageSection | undefined) {
     if (!section) return '';
@@ -2921,12 +3769,12 @@ export default function AdminDashboard() {
         bottom_footer_email_visible: footerSettings.bottom_footer_email_visible ?? false,
         bottom_branding_visible: footerSettings.bottom_branding_visible ?? true,
         bottom_branding_text: footerSettings.bottom_branding_text ?? '',
-        for_businesses_title: footerSettings.for_businesses_title ?? 'For Businesses',
-        for_businesses_links: footerSettings.for_businesses_links ?? [
-          { label: 'Get Listed', link: '#', is_visible: true },
-          { label: 'Advertise', link: '#', is_visible: true },
-          { label: 'Write for Us', link: '#', is_visible: true },
-        ],
+        submit_rft_label: footerSettings.submit_rft_label ?? 'Submit RFT',
+        submit_rft_url: footerSettings.submit_rft_url ?? '',
+        submit_rft_enabled: footerSettings.submit_rft_enabled ?? false,
+        get_recommendations_label: footerSettings.get_recommendations_label ?? 'Get Recommendations',
+        get_recommendations_url: footerSettings.get_recommendations_url ?? '',
+        get_recommendations_enabled: footerSettings.get_recommendations_enabled ?? false,
         updated_at: new Date().toISOString(),
       };
 
@@ -6225,6 +7073,817 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* ADVERTISE PAGE */}
+          {tab === 'advertise' && (
+            <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
+              {/* Hero Section */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-semibold text-xl">Hero Section</h3>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={advertiseSettings.hero_visible}
+                      onCheckedChange={(v) => setAdvertiseSettings({ ...advertiseSettings, hero_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">Visible</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Small Heading</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.hero_small_heading}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_small_heading: e.target.value })}
+                      placeholder="Enter small heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Main Heading</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.hero_main_heading}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_main_heading: e.target.value })}
+                      placeholder="Enter main heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Description</label>
+                    <textarea
+                      value={advertiseSettings.hero_description}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_description: e.target.value })}
+                      placeholder="Enter description..."
+                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={advertiseSettings.hero_image_visible}
+                      onCheckedChange={(v) => setAdvertiseSettings({ ...advertiseSettings, hero_image_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">Show Image</span>
+                  </div>
+                  {advertiseSettings.hero_image_visible && (
+                    <ImageUpload
+                      label="Hero Image"
+                      value={advertiseSettings.hero_image_url || null}
+                      onChange={(url) => setAdvertiseSettings({ ...advertiseSettings, hero_image_url: url || '' })}
+                      folder="advertise"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Marketing Strategy Cards */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-semibold text-xl">Marketing Strategy Cards</h3>
+                  <button
+                    onClick={() => {
+                      setEditAdvertiseCard({ heading: '', description: '' });
+                      setShowAddAdvertiseCardModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Card
+                  </button>
+                </div>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Section Main Heading</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.marketing_cards_main_heading}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, marketing_cards_main_heading: e.target.value })}
+                      placeholder="Enter section main heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Section Subheading</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.marketing_cards_subheading}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, marketing_cards_subheading: e.target.value })}
+                      placeholder="Enter section subheading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                {advertiseCards.length === 0 ? (
+                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                    <p className="text-muted-foreground">No cards yet. Add your first one!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {advertiseCards.map((card) => (
+                      <div key={card.id} className="p-4 border border-border rounded-xl bg-background">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={card.is_visible}
+                              onCheckedChange={async (v) => {
+                                await supabase.from('advertise_cards').update({ is_visible: v }).eq('id', card.id);
+                                loadAll();
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground">{card.is_visible ? 'Visible' : 'Hidden'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setEditAdvertiseCard(card);
+                                setShowAddAdvertiseCardModal(true);
+                              }}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAdvertiseCard(card.id)}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                        <h4 className="font-semibold text-base mb-2">{card.heading}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{card.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
+
+              
+
+              {/* Dynamic Sections Heading */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <h3 className="font-semibold text-xl mb-6">Dynamic Sections Heading</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Heading Part 1 (Normal weight)</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.dynamic_sections_heading_part1}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, dynamic_sections_heading_part1: e.target.value })}
+                      placeholder="Enter heading part 1..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Heading Part 2 (Medium weight)</label>
+                    <input
+                      type="text"
+                      value={advertiseSettings.dynamic_sections_heading_part2}
+                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, dynamic_sections_heading_part2: e.target.value })}
+                      placeholder="Enter heading part 2..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Advertise Sections */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-xl">Dynamic Advertise Sections</h3>
+                  <button
+                    onClick={() => {
+                      setEditAdvertiseSection({ small_heading: '', main_heading: '', description: '' });
+                      setShowAddAdvertiseSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Section
+                  </button>
+                </div>
+                {advertiseSections.length === 0 ? (
+                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                    <p className="text-muted-foreground">No dynamic sections yet. Add your first one!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {advertiseSections.map((section, index) => {
+                      const isLeftImage = index % 2 === 0;
+                      return (
+                        <div key={section.id} className="p-4 border border-border rounded-xl bg-background">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={section.is_visible}
+                                onCheckedChange={async (v) => {
+                                  await supabase.from('advertise_sections').update({ is_visible: v }).eq('id', section.id);
+                                  loadAll();
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">{section.is_visible ? 'Visible' : 'Hidden'}</span>
+                              <span className="text-xs text-muted-foreground">({isLeftImage ? 'Image Left' : 'Image Right'})</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setEditAdvertiseSection(section);
+                                  setShowAddAdvertiseSectionModal(true);
+                                }}
+                                className="p-1 hover:bg-muted rounded"
+                              >
+                                <Pencil className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAdvertiseSection(section.id)}
+                                className="p-1 hover:bg-muted rounded"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                          <h4 className="font-semibold text-base mb-2">{section.main_heading}</h4>
+                          {section.small_heading && (
+                            <p className="text-sm text-primary mb-1">{section.small_heading}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground line-clamp-3">{section.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Save Button */}
+              <button
+                onClick={handleSaveAdvertiseSettings}
+                className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90"
+              >
+                Save Advertise Settings
+              </button>
+
+              {/* Advertise Card Modal */}
+              {showAddAdvertiseCardModal && (
+                <Modal
+                  title={editAdvertiseCard?.id ? 'Edit Card' : 'Add Card'}
+                  onClose={() => {
+                    setShowAddAdvertiseCardModal(false);
+                    setEditAdvertiseCard(null);
+                  }}
+                >
+                  <div className="space-y-4">
+                    <ImageUpload
+                      label="Logo/Icon"
+                      value={editAdvertiseCard?.logo_url || null}
+                      onChange={(url) => setEditAdvertiseCard(prev => prev ? { ...prev, logo_url: url } : null)}
+                      folder="advertise"
+                    />
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Heading</label>
+                      <input
+                        type="text"
+                        value={editAdvertiseCard?.heading || ''}
+                        onChange={(e) => setEditAdvertiseCard(prev => prev ? { ...prev, heading: e.target.value } : null)}
+                        placeholder="Enter card heading..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Description</label>
+                      <textarea
+                        value={editAdvertiseCard?.description || ''}
+                        onChange={(e) => setEditAdvertiseCard(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        placeholder="Enter card description..."
+                        className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveAdvertiseCard}
+                      className="w-full px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold"
+                    >
+                      Save Card
+                    </button>
+                  </div>
+                </Modal>
+              )}
+
+              {/* Advertise Section Modal */}
+              {showAddAdvertiseSectionModal && (
+                <Modal
+                  title={editAdvertiseSection?.id ? 'Edit Section' : 'Add Section'}
+                  onClose={() => {
+                    setShowAddAdvertiseSectionModal(false);
+                    setEditAdvertiseSection(null);
+                  }}
+                >
+                  <div className="space-y-4">
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Main Heading</label>
+                      <input
+                        type="text"
+                        value={editAdvertiseSection?.main_heading || ''}
+                        onChange={(e) => setEditAdvertiseSection(prev => prev ? { ...prev, main_heading: e.target.value } : null)}
+                        placeholder="Enter main heading..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Description</label>
+                      <textarea
+                        value={editAdvertiseSection?.description || ''}
+                        onChange={(e) => setEditAdvertiseSection(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        placeholder="Enter section description..."
+                        className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    
+                    <ImageUpload
+                      label="Image"
+                      value={editAdvertiseSection?.image_url || null}
+                      onChange={(url) => setEditAdvertiseSection(prev => prev ? { ...prev, image_url: url } : null)}
+                      folder="advertise"
+                    />
+                    <button
+                      onClick={handleSaveAdvertiseSection}
+                      className="w-full px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold"
+                    >
+                      Save Section
+                    </button>
+                  </div>
+                </Modal>
+              )}
+            </div>
+          )}
+
+          {/* GET LISTED TAB */}
+          {tab === 'get-listed' && (
+            <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Page Settings */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  
+                  <button
+                    onClick={handleSaveGetListedSettings}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
+                  >
+                    Save Settings
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  
+                  
+                </div>
+              </div>
+
+              {/* Pricing Plans */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Main Heading</label>
+                    <input
+                      type="text"
+                      value={getListedSettings?.main_heading || 'Choose the best plan for your business.'}
+                      onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, main_heading: e.target.value } : null)}
+                      placeholder="Enter main heading..."
+                      className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditGetListedPlan({
+                        plan_name: '',
+                        price_inr: 0,
+                        duration: '',
+                        button_text: '',
+                        button_link: '',
+                        button_visible: true,
+                        popular: false,
+                        visible: true,
+                        show_view_more: true,
+                      });
+                      setShowAddGetListedPlanModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Plan
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {getListedPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="rounded-xl border border-border p-4 bg-background"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-lg">{plan.plan_name}</h4>
+                          {plan.popular && (
+                            <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-bold">
+                              Popular
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={plan.visible}
+                            onCheckedChange={(v) => {
+                              setGetListedPlans(prev => prev.map(p => p.id === plan.id ? { ...p, visible: v } : p));
+                              supabase.from('get_listed_plans').update({ visible: v }).eq('id', plan.id);
+                            }}
+                          />
+                          <span className="text-sm text-muted-foreground">{plan.visible ? 'Visible' : 'Hidden'}</span>
+                          <button
+                            onClick={() => {
+                              setEditGetListedPlan(plan);
+                              setShowAddGetListedPlanModal(true);
+                            }}
+                            className="p-2 rounded-lg hover:bg-accent text-muted-foreground"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('Delete this plan?')) {
+                                handleDeleteGetListedPlan(plan.id);
+                              }
+                            }}
+                            className="p-2 rounded-lg hover:bg-red-100 text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Price (INR)</label>
+                          <span className="text-lg font-bold">₹{plan.price_inr.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Duration</label>
+                          <span className="text-sm">{plan.duration}</span>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Button Visible</label>
+                          <span className="text-sm">{plan.button_visible ? 'Yes' : 'No'}</span>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Show View More</label>
+                          <span className="text-sm">{plan.show_view_more ? 'Yes' : 'No'}</span>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-medium text-sm">Features</h5>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder="Add new feature..."
+                              id={`feature-input-${plan.id}`}
+                              className="w-64 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                            />
+                            <button
+                              onClick={() => {
+                                const input = document.getElementById(`feature-input-${plan.id}`) as HTMLInputElement;
+                                if (input.value.trim()) {
+                                  handleAddGetListedPlanFeature(plan.id, input.value.trim());
+                                  input.value = '';
+                                }
+                              }}
+                              className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {getListedPlanFeatures
+                            .filter(f => f.plan_id === plan.id)
+                            .map((feature) => (
+                              <div
+                                key={feature.id}
+                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                              >
+                                <span className="text-sm flex items-center gap-2">
+                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                  {feature.feature_text}
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteGetListedPlanFeature(feature.id)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Comparison Heading</label>
+                    <input
+                      type="text"
+                      value={getListedSettings?.comparison_heading || 'Detailed pricing'}
+                      onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, comparison_heading: e.target.value } : null)}
+                      placeholder="Enter comparison heading..."
+                      className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditGetListedComparisonRow({
+                        row_title: '',
+                        visible: true,
+                      });
+                      setShowAddGetListedComparisonRowModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Row
+                  </button>
+                </div>
+
+                {getListedPlans.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Add pricing plans first to see the comparison table
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-border">
+                          <th className="text-left py-3 px-4 font-semibold bg-gray-50 w-1/4">Feature</th>
+                          {getListedPlans.map((plan) => (
+                            <th key={plan.id} className="text-center py-3 px-4 font-semibold bg-gray-50">
+                              {plan.plan_name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Engagement Duration (Auto) */}
+                        <tr className="border-b border-border">
+                          <td className="py-3 px-4 font-medium">Engagement Duration</td>
+                          {getListedPlans.map((plan) => (
+                            <td key={plan.id} className="py-3 px-4 text-center text-sm">
+                              {plan.duration}
+                            </td>
+                          ))}
+                        </tr>
+
+                        {/* Custom Rows */}
+                        {getListedComparisonRows
+                          .filter(row => row.visible)
+                          .map((row) => (
+                            <tr key={row.id} className="border-b border-border">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{row.row_title}</span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditGetListedComparisonRow(row);
+                                        setShowAddGetListedComparisonRowModal(true);
+                                      }}
+                                      className="p-1 rounded hover:bg-accent text-muted-foreground"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('Delete this row?')) {
+                                          handleDeleteGetListedComparisonRow(row.id);
+                                        }
+                                      }}
+                                      className="p-1 rounded hover:bg-red-100 text-red-600"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                              {getListedPlans.map((plan) => {
+                                const cellKey = `${row.id}-${plan.id}`;
+                                const cell = getListedComparisonCells.find(
+                                  c => c.row_id === row.id && c.plan_id === plan.id
+                                );
+                                const currentValue = cellInputValues[cellKey] ?? (cell?.custom_text || '');
+
+                                return (
+                                  <td key={plan.id} className="py-3 px-4 text-center">
+                                    <div className="flex flex-col items-center gap-2">
+                                      <Switch
+                                        checked={cell?.tick_enabled ?? false}
+                                        onCheckedChange={(v) => {
+                                          // Clear any pending debounce for this cell
+                                          if (debounceTimerRef.current[cellKey]) {
+                                            clearTimeout(debounceTimerRef.current[cellKey]!);
+                                          }
+                                          handleUpdateGetListedComparisonCell(
+                                            row.id,
+                                            plan.id,
+                                            v,
+                                            currentValue
+                                          );
+                                        }}
+                                      />
+                                      {!(cell?.tick_enabled) && (
+                                        <input
+                                          type="text"
+                                          value={currentValue}
+                                          placeholder="Enter text..."
+                                          onChange={(e) => {
+                                            const newValue = e.target.value;
+                                            setCellInputValues(prev => ({
+                                              ...prev,
+                                              [cellKey]: newValue
+                                            }));
+
+                                            // Debounce save
+                                            if (debounceTimerRef.current[cellKey]) {
+                                              clearTimeout(debounceTimerRef.current[cellKey]!);
+                                            }
+                                            debounceTimerRef.current[cellKey] = setTimeout(() => {
+                                              handleUpdateGetListedComparisonCell(
+                                                row.id,
+                                                plan.id,
+                                                cell?.tick_enabled ?? false,
+                                                newValue,
+                                                false // Don't show toast for every keystroke
+                                              );
+                                            }, 500);
+                                          }}
+                                          onBlur={() => {
+                                            // Save on blur
+                                            if (debounceTimerRef.current[cellKey]) {
+                                              clearTimeout(debounceTimerRef.current[cellKey]!);
+                                            }
+                                            handleUpdateGetListedComparisonCell(
+                                              row.id,
+                                              plan.id,
+                                              cell?.tick_enabled ?? false,
+                                              currentValue,
+                                              false
+                                            );
+                                          }}
+                                          className="w-full px-2 py-1 text-sm rounded border border-input"
+                                        />
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Add/Edit Plan Modal */}
+              {showAddGetListedPlanModal && (
+                <Modal
+                  title={editGetListedPlan?.id ? 'Edit Plan' : 'Add Plan'}
+                  onClose={() => {
+                    setShowAddGetListedPlanModal(false);
+                    setEditGetListedPlan(null);
+                  }}
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Plan Name</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.plan_name || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, plan_name: e.target.value } : null)}
+                        placeholder="Enter plan name..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Price (INR)</label>
+                      <input
+                        type="number"
+                        value={editGetListedPlan?.price_inr || 0}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, price_inr: Number(e.target.value) } : null)}
+                        placeholder="0"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Duration</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.duration || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, duration: e.target.value } : null)}
+                        placeholder="e.g., 1 Month"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.button_text || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, button_text: e.target.value } : null)}
+                        placeholder="e.g., Get Started"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.button_link || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, button_link: e.target.value } : null)}
+                        placeholder="https://..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={editGetListedPlan?.button_visible ?? true}
+                        onCheckedChange={(v) => setEditGetListedPlan(prev => prev ? { ...prev, button_visible: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">Button Visible</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={editGetListedPlan?.popular ?? false}
+                        onCheckedChange={(v) => setEditGetListedPlan(prev => prev ? { ...prev, popular: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">Popular Plan</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={editGetListedPlan?.visible ?? true}
+                        onCheckedChange={(v) => setEditGetListedPlan(prev => prev ? { ...prev, visible: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">Plan Visible</span>
+                    </div>
+                    
+                    <button
+                      onClick={handleSaveGetListedPlan}
+                      className="w-full px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold"
+                    >
+                      Save Plan
+                    </button>
+                  </div>
+                </Modal>
+              )}
+
+              {/* Add/Edit Comparison Row Modal */}
+              {showAddGetListedComparisonRowModal && (
+                <Modal
+                  title={editGetListedComparisonRow?.id ? 'Edit Row' : 'Add Row'}
+                  onClose={() => {
+                    setShowAddGetListedComparisonRowModal(false);
+                    setEditGetListedComparisonRow(null);
+                  }}
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Row Title</label>
+                      <input
+                        type="text"
+                        value={editGetListedComparisonRow?.row_title || ''}
+                        onChange={(e) => setEditGetListedComparisonRow(prev => prev ? { ...prev, row_title: e.target.value } : null)}
+                        placeholder="e.g., Support"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={editGetListedComparisonRow?.visible ?? true}
+                        onCheckedChange={(v) => setEditGetListedComparisonRow(prev => prev ? { ...prev, visible: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">Row Visible</span>
+                    </div>
+                    <button
+                      onClick={handleSaveGetListedComparisonRow}
+                      className="w-full px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold"
+                    >
+                      Save Row
+                    </button>
+                  </div>
+                </Modal>
+              )}
+            </div>
+          )}
+
           {/* FOOTER GENERAL SETTINGS */}
           {tab === 'footer_general' && (
             <div className="max-w-4xl">
@@ -6315,6 +7974,243 @@ export default function AdminDashboard() {
                       />
                     </div>
                   
+                </div>
+
+                <div className="space-y-6 border-t pt-6">
+                  <h3 className="font-semibold text-base mb-4">Custom Footer Links</h3>
+
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Link 1: Submit RFT</label>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={footerSettings.submit_rft_enabled ?? false}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, submit_rft_enabled: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{(footerSettings.submit_rft_enabled ?? false) ? 'Visible' : 'Hidden'}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground block mb-1">Label</label>
+                          <input
+                            value={footerSettings.submit_rft_label || 'Submit RFT'}
+                            onChange={(e) => setFooterSettings({ ...footerSettings, submit_rft_label: e.target.value })}
+                            placeholder="Enter link label..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground block mb-1">URL</label>
+                          <input
+                            value={footerSettings.submit_rft_url || ''}
+                            onChange={(e) => setFooterSettings({ ...footerSettings, submit_rft_url: e.target.value })}
+                            placeholder="Enter URL (internal or external)..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Link 2: Get Recommendations</label>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={footerSettings.get_recommendations_enabled ?? false}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, get_recommendations_enabled: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{(footerSettings.get_recommendations_enabled ?? false) ? 'Visible' : 'Hidden'}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground block mb-1">Label</label>
+                          <input
+                            value={footerSettings.get_recommendations_label || 'Get Recommendations'}
+                            onChange={(e) => setFooterSettings({ ...footerSettings, get_recommendations_label: e.target.value })}
+                            placeholder="Enter link label..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground block mb-1">URL</label>
+                          <input
+                            value={footerSettings.get_recommendations_url || ''}
+                            onChange={(e) => setFooterSettings({ ...footerSettings, get_recommendations_url: e.target.value })}
+                            placeholder="Enter URL (internal or external)..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* WRITE FOR US TAB */}
+          {tab === 'write-for-us' && (
+            <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Write For Us Settings */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Write For Us Settings</h2>
+                  <button
+                    onClick={handleSaveWriteForUsSettings}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
+                  >
+                    Save Settings
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Heading */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                    <input
+                      type="text"
+                      value={writeForUsSettings.heading}
+                      onChange={(e) => setWriteForUsSettings({ ...writeForUsSettings, heading: e.target.value })}
+                      placeholder="Enter page heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  {/* Banner Image */}
+                  <div className="space-y-2">
+                    <ImageUpload
+                      label="Banner Image"
+                      value={writeForUsSettings.banner_image_url || null}
+                      onChange={(url) => setWriteForUsSettings({ ...writeForUsSettings, banner_image_url: url || '' })}
+                      folder="write-for-us"
+                    />
+                  </div>
+
+                  {/* Content Editor */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Page Content</label>
+                    <TipTapEditor
+                      value={writeForUsSettings.content}
+                      onChange={(content) => setWriteForUsSettings({ ...writeForUsSettings, content })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Contact Email</label>
+                    <input
+                      type="email"
+                      value={writeForUsSettings.contact_email}
+                      onChange={(e) => setWriteForUsSettings({ ...writeForUsSettings, contact_email: e.target.value })}
+                      placeholder="Enter contact email..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Contact Intro Text</label>
+                    <input
+                      type="text"
+                      value={writeForUsSettings.contact_intro_text}
+                      onChange={(e) => setWriteForUsSettings({ ...writeForUsSettings, contact_intro_text: e.target.value })}
+                      placeholder="Enter contact intro text..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VENDOR GUIDELINES TAB */}
+          {tab === 'vendor-guidelines' && (
+            <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Vendor Guidelines Settings */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Vendor Guidelines Settings</h2>
+                  <button
+                    onClick={handleSaveVendorGuidelinesSettings}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
+                  >
+                    Save Settings
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Heading */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                    <input
+                      type="text"
+                      value={vendorGuidelinesSettings.heading}
+                      onChange={(e) => setVendorGuidelinesSettings({ ...vendorGuidelinesSettings, heading: e.target.value })}
+                      placeholder="Enter page heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  {/* Content Editor */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Page Content</label>
+                    <TipTapEditor
+                      value={vendorGuidelinesSettings.content}
+                      onChange={(content) => setVendorGuidelinesSettings({ ...vendorGuidelinesSettings, content })}
+                    />
+                  </div>
+
+                  {/* Contact Email */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Contact Email</label>
+                    <input
+                      type="email"
+                      value={vendorGuidelinesSettings.contact_email}
+                      onChange={(e) => setVendorGuidelinesSettings({ ...vendorGuidelinesSettings, contact_email: e.target.value })}
+                      placeholder="Enter contact email..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  {/* Contact Intro Text */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Contact Intro Text</label>
+                    <input
+                      type="text"
+                      value={vendorGuidelinesSettings.contact_intro_text}
+                      onChange={(e) => setVendorGuidelinesSettings({ ...vendorGuidelinesSettings, contact_intro_text: e.target.value })}
+                      placeholder="Enter contact intro text..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* BROWSE ALL DIRECTORIES TAB */}
+          {tab === 'browse-all-directories' && (
+            <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Browse All Directories Settings */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Browse All Directories Settings</h2>
+                  <button
+                    onClick={handleSaveBrowseAllDirectoriesSettings}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
+                  >
+                    Save Settings
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Heading */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                    <input
+                      type="text"
+                      value={browseAllDirectoriesSettings.heading}
+                      onChange={(e) => setBrowseAllDirectoriesSettings({ ...browseAllDirectoriesSettings, heading: e.target.value })}
+                      placeholder="Enter page heading..."
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -6529,61 +8425,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* For Businesses */}
-                <div className="space-y-4 border-t pt-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">For Businesses Title</label>
-                    <input
-                      value={footerSettings.for_businesses_title ?? 'For Businesses'}
-                      onChange={(e) => setFooterSettings({ ...footerSettings, for_businesses_title: e.target.value })}
-                      placeholder="For Businesses"
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    {(footerSettings.for_businesses_links ?? []).map((item, index) => (
-                      <div key={`link-${index}`} className="space-y-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Label {index + 1}</label>
-                            <input
-                              value={item.label}
-                              onChange={(e) => {
-                                const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
-                                updatedLinks[index] = { ...updatedLinks[index], label: e.target.value };
-                                setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
-                              }}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Link {index + 1}</label>
-                            <input
-                              value={item.link}
-                              onChange={(e) => {
-                                const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
-                                updatedLinks[index] = { ...updatedLinks[index], link: e.target.value };
-                                setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
-                              }}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-2">
-                          <label className="text-xs text-muted-foreground">{(item.is_visible ?? true) ? 'Visible' : 'Hidden'}</label>
-                          <Switch
-                            checked={item.is_visible ?? true}
-                            onCheckedChange={(v) => {
-                              const updatedLinks = [...(footerSettings.for_businesses_links ?? [])];
-                              updatedLinks[index] = { ...updatedLinks[index], is_visible: v };
-                              setFooterSettings({ ...footerSettings, for_businesses_links: updatedLinks });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+
               </div>
             </div>
           )}

@@ -20,6 +20,11 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import RefundPolicy from "./pages/RefundPolicy";
 import FAQs from "./pages/FAQs";
+import AdvertisePage from "./pages/AdvertisePage";
+import GetListedPage from "./pages/GetListedPage";
+import WriteForUsPage from "./pages/WriteForUsPage";
+import VendorGuidelinesPage from "./pages/VendorGuidelinesPage";
+import BrowseAllDirectoriesPage from "./pages/BrowseAllDirectoriesPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
 
 const queryClient = new QueryClient();
@@ -36,6 +41,11 @@ const router = createBrowserRouter(
         { path: "/terms-of-service", element: <TermsOfService /> },
         { path: "/refund-policy", element: <RefundPolicy /> },
         { path: "/faqs", element: <FAQs /> },
+        { path: "/advertise", element: <AdvertisePage /> },
+        { path: "/get-listed", element: <GetListedPage /> },
+        { path: "/write-for-us", element: <WriteForUsPage /> },
+                  { path: "/vendor-guidelines", element: <VendorGuidelinesPage /> },
+                  { path: "/browse-all-directories", element: <BrowseAllDirectoriesPage /> },
         { path: "/category/:id", element: <CategoryDetail /> },
         { path: "/category/:categoryId/subcategory/:subcategoryId/brands", element: <SubcategoryBrands /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
