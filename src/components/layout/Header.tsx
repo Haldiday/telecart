@@ -481,7 +481,7 @@ export default function Header() {
             )}
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 ml-auto">
+          <nav className="hidden md:flex items-center gap-12 ml-auto pr-6 lg:pr-10">
             <Link to="/" className="header-nav-link">
               Home
             </Link>
