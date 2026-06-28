@@ -112,102 +112,125 @@ export default function ContactUs() {
     );
   };
 
+  const hasContactDetails = Boolean(
+    settings?.address ||
+      settings?.phone ||
+      settings?.whatsapp ||
+      settings?.email ||
+      (settings?.contact_emails && settings.contact_emails.length > 0)
+  );
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 bg-white pt-24 md:pt-36">
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[1200px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-            <div className="space-y-12">
-              <h1 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight">
-                {settings?.heading || 'Contact'}
-              </h1>
-              
-              <div className="space-y-3">
-                {/* Address */}
-                {settings?.address && (
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-[#212121] flex-shrink-0 mt-0.5" />
-                    <p className="text-[16px] text-[#212121] font-normal leading-[24px]" style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}>
-                      {settings.address}
-                    </p>
+      <main className="flex-1 bg-gray-50 pt-24 md:pt-36">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[1400px]">
+          <h1 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight">
+            {settings?.heading || 'Contact'}
+          </h1>
+
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            <div className="space-y-8">
+              <div className="space-y-8">
+                {hasContactDetails && (
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="space-y-4">
+                      {settings?.address && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            <MapPin className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-xs text-gray-500">Address</p>
+                            <p
+                              className="text-sm text-gray-900 leading-[1.4]"
+                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                            >
+                              {settings.address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {settings?.phone && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            <Phone className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-xs text-gray-500">Call</p>
+                            <a
+                              href={`tel:${settings.phone}`}
+                              className="text-sm text-gray-900 hover:underline"
+                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                            >
+                              {settings.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {settings?.whatsapp && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            <img src="/videos/whatsapp.png" alt="WhatsApp" className="w-4 h-4" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-xs text-gray-500">WhatsApp</p>
+                            <a
+                              href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-gray-900 hover:underline"
+                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                            >
+                              {settings.whatsapp}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {settings?.email && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            <Mail className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-xs text-gray-500">{settings?.email_label || 'Email Us'}</p>
+                            <a
+                              href={`mailto:${settings.email}`}
+                              className="text-sm text-gray-900 hover:underline break-all"
+                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                            >
+                              {settings.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {settings?.contact_emails &&
+                        settings.contact_emails.length > 0 &&
+                        settings.contact_emails.map((item, idx) => (
+                          <div key={`${item.email}-${idx}`} className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                              <Mail className="w-4 h-4 text-gray-600" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-gray-500">{item.label || 'Email Us'}</p>
+                              <a
+                                href={`mailto:${item.email}`}
+                                className="text-sm text-gray-900 hover:underline break-all"
+                                style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                              >
+                                {item.email}
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Phone */}
-                {settings?.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-[#212121] flex-shrink-0" />
-                    <a 
-                      href={`tel:${settings.phone}`}
-                      className="text-[16px] text-[#212121] hover:underline transition-colors font-normal leading-[24px]"
-                      style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                    >
-                      {settings.phone}
-                    </a>
-                  </div>
-                )}
-
-                {/* WhatsApp */}
-                {settings?.whatsapp && (
-                  <div className="flex items-center gap-2">
-                    <img 
-                      src="/videos/whatsapp.png" 
-                      alt="WhatsApp" 
-                      className="w-4 h-4 flex-shrink-0" 
-                    />
-                    <a 
-                      href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[16px] text-[#212121] hover:underline transition-colors font-normal leading-[24px]"
-                      style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                    >
-                      {settings.whatsapp}
-                    </a>
-                  </div>
-                )}
-
-                {/* Legacy Email (always show first if available) */}
-                {settings?.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[#212121] flex-shrink-0" />
-                    <a 
-                      href={`mailto:${settings.email}`}
-                      className="text-[16px] text-[#212121] hover:underline transition-colors font-normal leading-[24px]"
-                      style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                    >
-                      {settings.email}
-                    </a>
-                  </div>
-                )}
-
-                {/* Multiple Emails (show as "Label : Email" without icon) */}
-                {settings?.contact_emails && settings.contact_emails.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    {settings.contact_emails.map((item, idx) => (
-                      <div key={idx} className="flex items-baseline gap-1">
-                        {item.label && (
-                          <span 
-                            className="text-[16px] text-[#212121] font-normal leading-[24px]"
-                            style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                          >
-                            {item.label} :
-                          </span>
-                        )}
-                        <a 
-                          href={`mailto:${item.email}`}
-                          className="text-[16px] text-[#212121] hover:underline transition-colors font-normal leading-[24px]"
-                          style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                        >
-                          {item.email}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Descriptions */}
                 <div className="space-y-4 max-w-[500px] pt-4">
                   {settings?.description_1 && (
                     <p className="text-[17px] leading-[1.6] text-[#111111]">

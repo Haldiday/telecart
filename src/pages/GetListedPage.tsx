@@ -24,6 +24,7 @@ interface GetListedPlanFeature {
   id: string;
   plan_id: string;
   feature_text: string;
+  visible?: boolean;
   sort_order: number;
 }
 
@@ -46,6 +47,8 @@ interface GetListedSettings {
   id: string;
   main_heading: string;
   comparison_heading: string;
+  comparison_footer_content?: string | null;
+  comparison_footer_line?: string | null;
 }
 
 const GetListedPage = () => {
@@ -58,6 +61,7 @@ const GetListedPage = () => {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const [exchangeRate, setExchangeRate] = useState<number>(0.012); // Default fallback
   const [expandedPlans, setExpandedPlans] = useState<string[]>([]);
+  const pageContentContainerClassName = "max-w-6xl mx-auto";
 
   useEffect(() => {
     const loadData = async () => {
@@ -81,7 +85,12 @@ const GetListedPage = () => {
       if (cellsResult.data) setComparisonCells(cellsResult.data);
 
       // Load settings first to avoid flicker - don't set isLoading until after settings are loaded
-      const settingsResult = await supabase.from('get_listed_settings').select('*').limit(1).maybeSingle();
+      const settingsResult = await supabase
+        .from('get_listed_settings')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (settingsResult.data) {
         setSettings(settingsResult.data as GetListedSettings);
       } else {
@@ -89,7 +98,9 @@ const GetListedPage = () => {
         setSettings({
           id: '',
           main_heading: 'Choose the best plan for your business.',
-          comparison_heading: 'Detailed pricing'
+          comparison_heading: 'Detailed pricing',
+          comparison_footer_content: '',
+          comparison_footer_line: ''
         } as any);
       }
       setIsLoading(false);
@@ -148,7 +159,12 @@ const GetListedPage = () => {
         { event: '*', schema: 'public', table: 'get_listed_settings' },
         async () => {
           // Just update settings without full reload all
-          const settingsResult = await supabase.from('get_listed_settings').select('*').limit(1).maybeSingle();
+          const settingsResult = await supabase
+            .from('get_listed_settings')
+            .select('*')
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
           if (settingsResult.data) {
             setSettings(settingsResult.data as GetListedSettings);
           }
@@ -189,7 +205,7 @@ const GetListedPage = () => {
   };
 
   const getPlanFeatures = (planId: string) => {
-    return features.filter(f => f.plan_id === planId);
+    return features.filter(f => f.plan_id === planId && (f.visible ?? true));
   };
 
   const toggleExpand = (planId: string) => {
@@ -214,167 +230,185 @@ const GetListedPage = () => {
     return <Minus className="w-4 h-4 text-gray-400 mx-auto" />;
   };
 
+  const renderContent = (html: string) => {
+    return { __html: html };
+  };
+
   const visiblePlans = plans.filter(p => p.visible);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <Header />
 
-      {/* Pricing Section */}
-      <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
-        <div className="max-w-5xl mx-auto">
-          {!isLoading && (
-            <h1 className="text-[32px] font-bold text-center text-gray-900 mb-4">
-              {settings?.main_heading || 'Choose the best plan for your business.'}
-            </h1>
-          )}
-
-          {/* Currency Toggle */}
-          <div className="flex justify-center mb-12">
-            <div className="bg-white p-1 rounded-full shadow-sm inline-flex">
-              <button
-                onClick={() => setCurrency('INR')}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  currency === 'INR' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                INR
-              </button>
-              <button
-                onClick={() => setCurrency('USD')}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  currency === 'USD' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                USD
-              </button>
-            </div>
-          </div>
-
-          {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {visiblePlans.map((plan) => {
-              const planFeatures = getPlanFeatures(plan.id);
-              const isExpanded = expandedPlans.includes(plan.id);
-              const showAllFeatures = !plan.show_view_more;
-              const visibleFeatures = showAllFeatures 
-                ? planFeatures 
-                : isExpanded 
-                  ? planFeatures 
-                  : planFeatures.slice(0, 5);
-
-              return (
-                <div 
-                  key={plan.id} 
-                  className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-blue-600 hover:scale-105 hover:shadow-xl"
-                >
-                  {plan.popular && (
-                    <div className="absolute top-4 right-0 bg-orange-500 text-white text-[10px] font-semibold px-7 py-2 rotate-45 translate-x-8">
-                      MOST POPULAR
-                    </div>
-                  )}
-
-                  <div className="p-8">
-                    <h3 className="text-xl font-medium text-gray-800 mb-2">{plan.plan_name}</h3>
-                    <p className="text-4xl font-bold text-gray-900 mb-4">{getPrice(plan.price_inr)}</p>
-                    <div className="border-t border-gray-200 my-4"></div>
-                    <p className="text-sm text-gray-600 mb-6">{plan.duration}</p>
-
-                    <ul className="space-y-3 mb-8">
-                      {visibleFeatures.map((feature) => (
-                        <li key={feature.id} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700">{feature.feature_text}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {plan.show_view_more && planFeatures.length > 5 && (
-                      <button
-                        onClick={() => toggleExpand(plan.id)}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6 mx-auto"
-                      >
-                        {isExpanded ? 'View Less' : 'View More'}
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
-                    )}
-
-                    {plan.button_visible && plan.button_text && (
-                      <Button className="w-full bg-blue-800 hover:bg-blue-900 text-white">
-                        {plan.button_link ? (
-                          <a href={plan.button_link}>{plan.button_text}</a>
-                        ) : (
-                          plan.button_text
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Comparison Table Section */}
-      {comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
-        <section className="py-16 px-4 md:px-8 bg-white mt-8">
-          <div className="max-w-5xl mx-auto">
+      <main className="flex-1">
+        {/* Pricing Section */}
+        <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
+          <div className={pageContentContainerClassName}>
             {!isLoading && (
-              <h2 className="text-[32px] font-bold text-gray-900 mb-8">
-                {settings?.comparison_heading || 'Detailed pricing'}
-              </h2>
+              <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-bold leading-normal text-black justify-center text-center mb-12">
+                {settings?.main_heading || 'Choose the best plan for your business.'}
+              </h1>
             )}
-            
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-blue-800">
-                    <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/4"></th>
-                    {visiblePlans.map((plan) => (
-                      <th key={plan.id} className="text-center py-4 px-6 font-bold text-blue-800 text-lg">
-                        {plan.plan_name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Engagement Duration Row (Auto) */}
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="py-4 px-6 font-semibold text-gray-700">Engagement Duration</td>
-                    {visiblePlans.map((plan) => (
-                      <td key={plan.id} className="py-4 px-6 text-center text-gray-700">
-                        {plan.duration}
-                      </td>
-                    ))}
-                  </tr>
 
-                  {/* Comparison Rows */}
-                  {comparisonRows
-                    .filter(row => row.visible)
-                    .map((row, index) => (
-                      <tr 
-                        key={row.id} 
-                        className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                      >
-                        <td className="py-4 px-6 font-medium text-gray-700">{row.row_title}</td>
-                        {visiblePlans.map((plan) => (
-                          <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center">
-                            {getCellContent(row.id, plan.id)}
-                          </td>
+            {/* Currency Toggle */}
+            <div className="flex justify-center mb-12">
+              <div className="bg-white p-1 rounded-full shadow-sm inline-flex">
+                <button
+                  onClick={() => setCurrency('INR')}
+                  className={`px-6 py-2 rounded-full font-medium transition-all ${
+                    currency === 'INR' 
+                      ? 'bg-[#001965] text-white' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  INR
+                </button>
+                <button
+                  onClick={() => setCurrency('USD')}
+                  className={`px-6 py-2 rounded-full font-medium transition-all ${
+                    currency === 'USD' 
+                      ? 'bg-[#001965] text-white' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  USD
+                </button>
+              </div>
+            </div>
+
+            {/* Pricing Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {visiblePlans.map((plan) => {
+                const planFeatures = getPlanFeatures(plan.id);
+                const isExpanded = expandedPlans.includes(plan.id);
+                const showAllFeatures = !plan.show_view_more;
+                const visibleFeatures = showAllFeatures 
+                  ? planFeatures 
+                  : isExpanded 
+                    ? planFeatures 
+                    : planFeatures.slice(0, 5);
+
+                return (
+                  <div 
+                    key={plan.id} 
+                    className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-[#001965] hover:scale-105 hover:shadow-xl"
+                  >
+                    {plan.popular && (
+                      <div className="absolute top-4 right-0 bg-orange-500 text-white text-[10px] font-semibold px-7 py-2 rotate-45 translate-x-8 shadow-xl">
+                        MOST POPULAR
+                      </div>
+                    )}
+
+                    <div className="p-8">
+                      <h3 className="text-[22px] font-normal leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
+                      <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan.price_inr)}</p>
+                      <div className="border-t border-gray-200 my-4"></div>
+                      <p className="text-[16px] font-normal leading-normal text-[#606F7B] mb-6">{plan.duration}</p>
+
+                      <ul className="space-y-3 mb-8">
+                        {visibleFeatures.map((feature) => (
+                          <li key={feature.id} className="flex items-start gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700">{feature.feature_text}</span>
+                          </li>
                         ))}
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+                      </ul>
+
+                      {plan.show_view_more && planFeatures.length > 5 && (
+                        <button
+                          onClick={() => toggleExpand(plan.id)}
+                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6 mx-auto"
+                        >
+                          {isExpanded ? 'View Less' : 'View More'}
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      )}
+
+                      {plan.button_visible && plan.button_text && (
+                        <Button className="w-full bg-[#001965] hover:bg-[#001965] text-white">
+                          {plan.button_link ? (
+                            <a href={plan.button_link}>{plan.button_text}</a>
+                          ) : (
+                            plan.button_text
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
-      )}
+
+        {/* Comparison Table Section */}
+        {comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
+          <section className="py-16 px-4 md:px-8 bg-white mt-8">
+            <div className={pageContentContainerClassName}>
+              {!isLoading && (
+                <h2 className="text-[32px] font-bold text-gray-900 mb-8">
+                  {settings?.comparison_heading || 'Detailed pricing'}
+                </h2>
+              )}
+              
+              <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.15)]">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-blue-800">
+                      <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/4"></th>
+                      {visiblePlans.map((plan) => (
+                        <th key={plan.id} className="text-center py-4 px-6 text-[22px] font-normal leading-normal text-[#001965]">
+                          {plan.plan_name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Engagement Duration Row (Auto) */}
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <td className="py-4 px-6 text-[15px] font-bold leading-[21.4286px] text-[#606F7B]">Engagement Duration</td>
+                      {visiblePlans.map((plan) => (
+                        <td key={plan.id} className="py-4 px-6 text-center text-gray-700">
+                          {plan.duration}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Comparison Rows */}
+                    {comparisonRows
+                      .filter(row => row.visible)
+                      .map((row, index) => (
+                        <tr 
+                          key={row.id} 
+                          className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                        >
+                          <td className="py-4 px-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">{row.row_title}</td>
+                          {visiblePlans.map((plan) => (
+                            <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
+                              {getCellContent(row.id, plan.id)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {settings?.comparison_footer_content && (
+                <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_p]:m-0 [&_p+p]:mt-2 [&_ul]:m-0 [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1">
+                  <div dangerouslySetInnerHTML={renderContent(settings.comparison_footer_content)} />
+                </div>
+              )}
+
+              {settings?.comparison_footer_line && (
+                <div className="mt-4 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
+                  {settings.comparison_footer_line}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
 
       <Footer />
     </div>

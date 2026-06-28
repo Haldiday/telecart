@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import BrandActionLinks from '@/components/shared/BrandActionLinks';
 
 interface Brand {
   id: string;
   name: string;
   link: string | null;
   sort_order: number;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
 }
 
 interface Subcategory {
@@ -39,10 +52,10 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
   const [subcategoryExpanded, setSubcategoryExpanded] = useState<Record<string, boolean>>({});
+  const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -199,25 +212,16 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                               <div className="px-4 pb-4 pt-1 space-y-3">
                                 <div className="space-y-2 border-l-2 border-blue-500 pl-4 ml-1">
                                   {displayBrands.map((brand) => (
-                                    brand.link ? (
-                                      <a
-                                        key={brand.id}
-                                        href={brand.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block w-full text-left text-sm font-normal text-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
-                                      >
-                                        {brand.name}
-                                      </a>
-                                    ) : (
-                                      <div
-                                        key={brand.id}
-                                        className="block w-full text-left text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
-                                      >
-                                        {brand.name}
-                                      </div>
-                                    )
-                                  ))}
+                                  <BrandActionLinks
+                                    key={brand.id}
+                                    brand={brand}
+                                    isExpanded={Boolean(expandedBrandIds[brand.id])}
+                                    onToggle={() => setExpandedBrandIds((prev) => ({
+                                      ...prev,
+                                      [brand.id]: !prev[brand.id],
+                                    }))}
+                                  />
+                                ))}
                                 </div>
                               </div>
                             )}
@@ -301,24 +305,15 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                             <div className="pb-3 pt-1 space-y-2">
                               <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
                                 {displayBrands.map((brand) => (
-                                  brand.link ? (
-                                    <a
-                                      key={brand.id}
-                                      href={brand.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block w-full text-left text-sm md:text-base font-normal text-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
-                                    >
-                                      {brand.name}
-                                    </a>
-                                  ) : (
-                                    <div
-                                      key={brand.id}
-                                      className="block w-full text-left text-sm md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
-                                    >
-                                      {brand.name}
-                                    </div>
-                                  )
+                                  <BrandActionLinks
+                                    key={brand.id}
+                                    brand={brand}
+                                    isExpanded={Boolean(expandedBrandIds[brand.id])}
+                                    onToggle={() => setExpandedBrandIds((prev) => ({
+                                      ...prev,
+                                      [brand.id]: !prev[brand.id],
+                                    }))}
+                                  />
                                 ))}
                               </div>
                             </div>

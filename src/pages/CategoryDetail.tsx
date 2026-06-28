@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, List, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import BrandActionLinks from '@/components/shared/BrandActionLinks';
 
 interface Category {
   id: string;
@@ -29,18 +30,30 @@ interface BrandItem {
   subcategory_id: string;
   name: string;
   link?: string | null;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
 }
 
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
-  const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [brandsBySubcategory, setBrandsBySubcategory] = useState<Record<string, BrandItem[]>>({});
   const [subcategoriesTabLabel, setSubcategoriesTabLabel] = useState('Subcategories');
   const [activeTab, setActiveTab] = useState(1);
   const [expandedSubcategoryId, setExpandedSubcategoryId] = useState<string | null>(null);
+  const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
 
   const tabs = [
     { key: 'subcategories', label: subcategoriesTabLabel, icon: <List className="h-4 w-4" /> },
@@ -200,24 +213,15 @@ export default function CategoryDetail() {
                       <div className="mt-3 space-y-2">
                         <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
                           {brandsBySubcategory[sub.id]?.map((brand) => (
-                            brand.link ? (
-                              <a
-                                key={brand.id}
-                                href={brand.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground hover:text-primary transition-colors border-b border-border/30 last:border-0 py-1"
-                              >
-                                {brand.name}
-                              </a>
-                            ) : (
-                              <div
-                                key={brand.id}
-                                className="block w-full text-left text-xs md:text-sm font-normal text-muted-foreground border-b border-border/30 last:border-0 py-1"
-                              >
-                                {brand.name}
-                              </div>
-                            )
+                            <BrandActionLinks
+                              key={brand.id}
+                              brand={brand}
+                              isExpanded={Boolean(expandedBrandIds[brand.id])}
+                              onToggle={() => setExpandedBrandIds((prev) => ({
+                                ...prev,
+                                [brand.id]: !prev[brand.id],
+                              }))}
+                            />
                           ))}
                         </div>
                       </div>

@@ -118,6 +118,18 @@ interface BrandItem {
   description?: string | null;
   buttons?: CategoryButton[];
   sort_order: number;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
   primary_cta_label?: string | null;
   primary_cta_link?: string | null;
   primary_cta_visible?: boolean;
@@ -513,6 +525,18 @@ export default function SubcategoryDetail() {
           description: brand.description || null,
           buttons: brand.buttons || [],
           sort_order: brand.sort_order ?? 0,
+          action_link_1_text: brand.action_link_1_text,
+          action_link_1_url: brand.action_link_1_url,
+          action_link_1_new_tab: brand.action_link_1_new_tab,
+          action_link_1_enabled: brand.action_link_1_enabled,
+          action_link_2_text: brand.action_link_2_text,
+          action_link_2_url: brand.action_link_2_url,
+          action_link_2_new_tab: brand.action_link_2_new_tab,
+          action_link_2_enabled: brand.action_link_2_enabled,
+          action_link_3_text: brand.action_link_3_text,
+          action_link_3_url: brand.action_link_3_url,
+          action_link_3_new_tab: brand.action_link_3_new_tab,
+          action_link_3_enabled: brand.action_link_3_enabled,
           primary_cta_label: brand.primary_cta_label,
           primary_cta_link: brand.primary_cta_link,
           primary_cta_visible: brand.primary_cta_visible,

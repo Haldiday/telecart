@@ -76,43 +76,31 @@ const VendorGuidelinesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <Header />
 
-      <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
-        <div className="max-w-5xl mx-auto">
-          {!isLoading && (
-            <>
-              {settings?.heading && (
-                <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
-                  {settings.heading}
-                </h1>
-              )}
+      <main className="flex-1">
+        <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
+          <div className="max-w-6xl mx-auto">
+            {!isLoading && (
+              <div className="bg-white border border-gray-200 shadow-2xl p-6 md:p-10">
+                {settings?.heading && (
+                  <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+                    {settings.heading}
+                  </h1>
+                )}
 
-              {settings?.content && (
-                <div
-                  className="prose prose-lg max-w-none mb-12"
-                  dangerouslySetInnerHTML={renderContent(settings.content)}
-                />
-              )}
-
-              {settings?.contact_email && (
-                <div className="bg-blue-50 rounded-xl p-6 text-center">
-                  <p className="text-lg text-gray-800">
-                    {settings?.contact_intro_text || 'Or else you connect with us at'}{' '}
-                    <a
-                      href={`mailto:${settings.contact_email}`}
-                      className="text-blue-700 hover:text-blue-900 font-semibold"
-                    >
-                      {settings.contact_email}
-                    </a>
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+                {settings?.content && (
+                  <div
+                    className="rich-html-content prose prose-lg max-w-none mb-12"
+                    dangerouslySetInnerHTML={renderContent(settings.content)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </div>

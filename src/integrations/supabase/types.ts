@@ -534,6 +534,18 @@ export type Database = {
           created_at: string
           is_visible?: boolean | null
           description?: string | null
+          action_link_1_text?: string | null
+          action_link_1_url?: string | null
+          action_link_1_new_tab?: boolean | null
+          action_link_1_enabled?: boolean | null
+          action_link_2_text?: string | null
+          action_link_2_url?: string | null
+          action_link_2_new_tab?: boolean | null
+          action_link_2_enabled?: boolean | null
+          action_link_3_text?: string | null
+          action_link_3_url?: string | null
+          action_link_3_new_tab?: boolean | null
+          action_link_3_enabled?: boolean | null
           primary_cta_label?: string | null
           primary_cta_link?: string | null
           primary_cta_visible?: boolean | null
@@ -552,6 +564,18 @@ export type Database = {
           created_at?: string
           is_visible?: boolean | null
           description?: string | null
+          action_link_1_text?: string | null
+          action_link_1_url?: string | null
+          action_link_1_new_tab?: boolean | null
+          action_link_1_enabled?: boolean | null
+          action_link_2_text?: string | null
+          action_link_2_url?: string | null
+          action_link_2_new_tab?: boolean | null
+          action_link_2_enabled?: boolean | null
+          action_link_3_text?: string | null
+          action_link_3_url?: string | null
+          action_link_3_new_tab?: boolean | null
+          action_link_3_enabled?: boolean | null
           primary_cta_label?: string | null
           primary_cta_link?: string | null
           primary_cta_visible?: boolean | null
@@ -570,6 +594,18 @@ export type Database = {
           created_at?: string
           is_visible?: boolean | null
           description?: string | null
+          action_link_1_text?: string | null
+          action_link_1_url?: string | null
+          action_link_1_new_tab?: boolean | null
+          action_link_1_enabled?: boolean | null
+          action_link_2_text?: string | null
+          action_link_2_url?: string | null
+          action_link_2_new_tab?: boolean | null
+          action_link_2_enabled?: boolean | null
+          action_link_3_text?: string | null
+          action_link_3_url?: string | null
+          action_link_3_new_tab?: boolean | null
+          action_link_3_enabled?: boolean | null
           primary_cta_label?: string | null
           primary_cta_link?: string | null
           primary_cta_visible?: boolean | null
@@ -1116,6 +1152,8 @@ export type Database = {
           id: string
           main_heading: string
           comparison_heading: string
+          comparison_footer_content: string | null
+          comparison_footer_line: string | null
           created_at: string
           updated_at: string
         }
@@ -1123,6 +1161,8 @@ export type Database = {
           id?: string
           main_heading?: string
           comparison_heading?: string
+          comparison_footer_content?: string | null
+          comparison_footer_line?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1130,6 +1170,8 @@ export type Database = {
           id?: string
           main_heading?: string
           comparison_heading?: string
+          comparison_footer_content?: string | null
+          comparison_footer_line?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1188,6 +1230,7 @@ export type Database = {
           id: string
           plan_id: string
           feature_text: string
+          visible: boolean
           sort_order: number
           created_at: string
           updated_at: string
@@ -1196,6 +1239,7 @@ export type Database = {
           id?: string
           plan_id: string
           feature_text: string
+          visible?: boolean
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -1204,6 +1248,7 @@ export type Database = {
           id?: string
           plan_id?: string
           feature_text?: string
+          visible?: boolean
           sort_order?: number
           created_at?: string
           updated_at?: string

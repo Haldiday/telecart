@@ -70,6 +70,18 @@ interface SubcategoryBrand {
   description?: string | null;
   buttons?: CategoryButton[];
   is_visible: boolean; 
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
   primary_cta_label?: string | null;
   primary_cta_link?: string | null;
   primary_cta_visible?: boolean;
@@ -174,6 +186,7 @@ interface GetListedPlanFeature {
   id?: string;
   plan_id: string;
   feature_text: string;
+  visible?: boolean;
   sort_order: number;
 }
 
@@ -190,6 +203,13 @@ interface GetListedComparisonCell {
   plan_id: string;
   tick_enabled: boolean;
   custom_text?: string | null;
+}
+interface GetListedSettings {
+  id?: string;
+  main_heading: string;
+  comparison_heading: string;
+  comparison_footer_content: string;
+  comparison_footer_line: string;
 }
 interface HeaderSettings {
   id?: string;
@@ -698,10 +718,12 @@ export default function AdminDashboard() {
   const [getListedPlanFeatures, setGetListedPlanFeatures] = useState<GetListedPlanFeature[]>([]);
   const [getListedComparisonRows, setGetListedComparisonRows] = useState<GetListedComparisonRow[]>([]);
   const [getListedComparisonCells, setGetListedComparisonCells] = useState<GetListedComparisonCell[]>([]);
-  const [getListedSettings, setGetListedSettings] = useState<{ id: string; main_heading: string; comparison_heading: string }>({
-    id: '',
+  const [getListedSettings, setGetListedSettings] = useState<GetListedSettings>({
+    id: undefined,
     main_heading: 'Choose the best plan for your business.',
-    comparison_heading: 'Detailed pricing'
+    comparison_heading: 'Detailed pricing',
+    comparison_footer_content: '',
+    comparison_footer_line: ''
   });
   const [writeForUsSettings, setWriteForUsSettings] = useState<WriteForUsSettings>({
     id: '',
@@ -728,6 +750,8 @@ export default function AdminDashboard() {
   const [editGetListedComparisonRow, setEditGetListedComparisonRow] = useState<Partial<GetListedComparisonRow> | null>(null);
   const [getListedSelectedPlanId, setGetListedSelectedPlanId] = useState<string | null>(null);
   const [cellInputValues, setCellInputValues] = useState<Record<string, string>>({}); // key: `${rowId}-${planId}`
+  const [editingGetListedFeatureId, setEditingGetListedFeatureId] = useState<string | null>(null);
+  const [editingGetListedFeatureText, setEditingGetListedFeatureText] = useState<string>('');
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -882,7 +906,7 @@ export default function AdminDashboard() {
             supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
             supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
             supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+            supabase.from('get_listed_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             (supabase as any).from('write_for_us_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             (supabase as any).from('vendor_guidelines_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
             (supabase as any).from('browse_all_directories_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -1086,6 +1110,18 @@ export default function AdminDashboard() {
             description: brand.description,
             buttons: brand.buttons || [],
             is_visible: brand.is_visible,
+            action_link_1_text: brand.action_link_1_text,
+            action_link_1_url: brand.action_link_1_url,
+            action_link_1_new_tab: brand.action_link_1_new_tab,
+            action_link_1_enabled: brand.action_link_1_enabled,
+            action_link_2_text: brand.action_link_2_text,
+            action_link_2_url: brand.action_link_2_url,
+            action_link_2_new_tab: brand.action_link_2_new_tab,
+            action_link_2_enabled: brand.action_link_2_enabled,
+            action_link_3_text: brand.action_link_3_text,
+            action_link_3_url: brand.action_link_3_url,
+            action_link_3_new_tab: brand.action_link_3_new_tab,
+            action_link_3_enabled: brand.action_link_3_enabled,
             primary_cta_label: brand.primary_cta_label,
             primary_cta_link: brand.primary_cta_link,
             primary_cta_visible: brand.primary_cta_visible,
@@ -1184,7 +1220,7 @@ export default function AdminDashboard() {
             setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
           }
           if (getListedSettingsData.data) {
-            setGetListedSettings(getListedSettingsData.data as { id: string; main_heading: string; comparison_heading: string });
+            setGetListedSettings(getListedSettingsData.data as unknown as GetListedSettings);
           }
           if (writeForUsSettingsData.data) {
             setWriteForUsSettings(writeForUsSettingsData.data as WriteForUsSettings);
@@ -1239,6 +1275,25 @@ export default function AdminDashboard() {
   }, []);
 
   async function loadAll() {
+    const writeForUsSettingsPromise = (supabase as any)
+      .from('write_for_us_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+      .then(res => res, err => ({ data: null, error: err }));
+    const vendorGuidelinesSettingsPromise = (supabase as any)
+      .from('vendor_guidelines_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+      .then(res => res, err => ({ data: null, error: err }));
+    const browseAllDirectoriesSettingsPromise = (supabase as any)
+      .from('browse_all_directories_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+      .then(res => res, err => ({ data: null, error: err }));
+
     const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, faqsData, advertiseSettingsData, advertiseCardsData, advertiseSectionsData, getListedPlansData, getListedPlanFeaturesData, getListedComparisonRowsData, getListedComparisonCellsData, getListedSettingsData] = await Promise.all([
       supabase.from('page_sections').select('*').order('sort_order'),
       supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
@@ -1263,7 +1318,13 @@ export default function AdminDashboard() {
       supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
       supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
       supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
-      supabase.from('get_listed_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+      supabase.from('get_listed_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+    ]);
+
+    const [writeForUsSettingsData, vendorGuidelinesSettingsData, browseAllDirectoriesSettingsData] = await Promise.all([
+      writeForUsSettingsPromise,
+      vendorGuidelinesSettingsPromise,
+      browseAllDirectoriesSettingsPromise,
     ]);
     let subBrands;
     try {
@@ -1372,6 +1433,18 @@ export default function AdminDashboard() {
           description: brand.description,
           buttons: brand.buttons || [],
           is_visible: brand.is_visible,
+          action_link_1_text: brand.action_link_1_text,
+          action_link_1_url: brand.action_link_1_url,
+          action_link_1_new_tab: brand.action_link_1_new_tab,
+          action_link_1_enabled: brand.action_link_1_enabled,
+          action_link_2_text: brand.action_link_2_text,
+          action_link_2_url: brand.action_link_2_url,
+          action_link_2_new_tab: brand.action_link_2_new_tab,
+          action_link_2_enabled: brand.action_link_2_enabled,
+          action_link_3_text: brand.action_link_3_text,
+          action_link_3_url: brand.action_link_3_url,
+          action_link_3_new_tab: brand.action_link_3_new_tab,
+          action_link_3_enabled: brand.action_link_3_enabled,
           primary_cta_label: brand.primary_cta_label,
           primary_cta_link: brand.primary_cta_link,
           primary_cta_visible: brand.primary_cta_visible,
@@ -1474,7 +1547,16 @@ export default function AdminDashboard() {
       setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
     }
     if (getListedSettingsData.data) {
-      setGetListedSettings(getListedSettingsData.data as { id: string; main_heading: string; comparison_heading: string });
+      setGetListedSettings(getListedSettingsData.data as unknown as GetListedSettings);
+    }
+    if (writeForUsSettingsData.data) {
+      setWriteForUsSettings(writeForUsSettingsData.data as WriteForUsSettings);
+    }
+    if (vendorGuidelinesSettingsData.data) {
+      setVendorGuidelinesSettings(vendorGuidelinesSettingsData.data as VendorGuidelinesSettings);
+    }
+    if (browseAllDirectoriesSettingsData.data) {
+      setBrowseAllDirectoriesSettings(browseAllDirectoriesSettingsData.data as BrowseAllDirectoriesSettings);
     }
   }
 
@@ -1907,6 +1989,7 @@ export default function AdminDashboard() {
       await supabase.from('get_listed_plan_features').insert({
         plan_id: planId,
         feature_text: featureText,
+        visible: true,
         sort_order: nextSortOrder,
       });
       toast.success('Feature added!');
@@ -1924,6 +2007,42 @@ export default function AdminDashboard() {
       loadAll();
     } catch (error) {
       toast.error('Failed to delete feature');
+      console.error(error);
+    }
+  };
+
+  const handleUpdateGetListedPlanFeatureText = async (id: string, featureText: string) => {
+    try {
+      await supabase
+        .from('get_listed_plan_features')
+        .update({ feature_text: featureText })
+        .eq('id', id);
+      setGetListedPlanFeatures(prev => prev.map(f => f.id === id ? { ...f, feature_text: featureText } : f));
+      setEditingGetListedFeatureId(null);
+      setEditingGetListedFeatureText('');
+      toast.success('Feature updated!');
+    } catch (error: any) {
+      const message = error?.message || 'Unknown error';
+      toast.error(`Failed to update feature: ${message}`);
+      console.error(error);
+    }
+  };
+
+  const handleToggleGetListedPlanFeatureVisibility = async (id: string, visible: boolean) => {
+    try {
+      await supabase
+        .from('get_listed_plan_features')
+        .update({ visible })
+        .eq('id', id);
+      setGetListedPlanFeatures(prev => prev.map(f => f.id === id ? { ...f, visible } : f));
+      toast.success('Feature visibility updated!');
+    } catch (error: any) {
+      const message = error?.message || 'Unknown error';
+      if (typeof message === 'string' && message.toLowerCase().includes('visible')) {
+        toast.error('Failed to update: missing database column "visible" in get_listed_plan_features');
+      } else {
+        toast.error(`Failed to update feature visibility: ${message}`);
+      }
       console.error(error);
     }
   };
@@ -1986,6 +2105,8 @@ export default function AdminDashboard() {
         const newSettings = {
           main_heading: getListedSettings.main_heading,
           comparison_heading: getListedSettings.comparison_heading,
+          comparison_footer_content: getListedSettings.comparison_footer_content,
+          comparison_footer_line: getListedSettings.comparison_footer_line,
         };
         const insertResult = await supabase.from('get_listed_settings').insert(newSettings).select();
         console.log('Insert result:', insertResult);
@@ -1998,6 +2119,8 @@ export default function AdminDashboard() {
           .update({
             main_heading: getListedSettings.main_heading,
             comparison_heading: getListedSettings.comparison_heading,
+            comparison_footer_content: getListedSettings.comparison_footer_content,
+            comparison_footer_line: getListedSettings.comparison_footer_line,
           })
           .eq('id', getListedSettings.id)
           .select();
@@ -2006,10 +2129,27 @@ export default function AdminDashboard() {
           setGetListedSettings(updateResult.data[0] as any);
         }
       }
+
+      const latestSettingsResult = await supabase
+        .from('get_listed_settings')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestSettingsResult.data) {
+        setGetListedSettings(latestSettingsResult.data as any);
+      }
       toast.success('Get Listed settings saved!');
       // Do NOT call loadAll() to prevent race conditions - we've already updated state with latest data!
-    } catch (error) {
-      toast.error('Failed to save Get Listed settings');
+    } catch (error: any) {
+      const message = error?.message || 'Unknown error';
+      if (typeof message === 'string' && message.toLowerCase().includes('comparison_footer_content')) {
+        toast.error('Failed to save: missing database column "comparison_footer_content" in get_listed_settings');
+      } else if (typeof message === 'string' && message.toLowerCase().includes('comparison_footer_line')) {
+        toast.error('Failed to save: missing database column "comparison_footer_line" in get_listed_settings');
+      } else {
+        toast.error(`Failed to save Get Listed settings: ${message}`);
+      }
       console.error('Error saving get listed settings:', error);
     }
   };
@@ -3442,6 +3582,18 @@ export default function AdminDashboard() {
                 buttons: brand.buttons || [],
                 is_visible: brand.is_visible ?? true,
                 sort_order: index,
+                action_link_1_text: brand.action_link_1_text,
+                action_link_1_url: brand.action_link_1_url,
+                action_link_1_new_tab: brand.action_link_1_new_tab,
+                action_link_1_enabled: brand.action_link_1_enabled,
+                action_link_2_text: brand.action_link_2_text,
+                action_link_2_url: brand.action_link_2_url,
+                action_link_2_new_tab: brand.action_link_2_new_tab,
+                action_link_2_enabled: brand.action_link_2_enabled,
+                action_link_3_text: brand.action_link_3_text,
+                action_link_3_url: brand.action_link_3_url,
+                action_link_3_new_tab: brand.action_link_3_new_tab,
+                action_link_3_enabled: brand.action_link_3_enabled,
                 primary_cta_label: brand.primary_cta_label,
                 primary_cta_link: brand.primary_cta_link,
                 primary_cta_visible: brand.primary_cta_visible,
@@ -3469,6 +3621,18 @@ export default function AdminDashboard() {
                   buttons: brand.buttons || [],
                   is_visible: brand.is_visible ?? true,
                   sort_order: index,
+                  action_link_1_text: brand.action_link_1_text,
+                  action_link_1_url: brand.action_link_1_url,
+                  action_link_1_new_tab: brand.action_link_1_new_tab,
+                  action_link_1_enabled: brand.action_link_1_enabled,
+                  action_link_2_text: brand.action_link_2_text,
+                  action_link_2_url: brand.action_link_2_url,
+                  action_link_2_new_tab: brand.action_link_2_new_tab,
+                  action_link_2_enabled: brand.action_link_2_enabled,
+                  action_link_3_text: brand.action_link_3_text,
+                  action_link_3_url: brand.action_link_3_url,
+                  action_link_3_new_tab: brand.action_link_3_new_tab,
+                  action_link_3_enabled: brand.action_link_3_enabled,
                   primary_cta_label: brand.primary_cta_label,
                   primary_cta_link: brand.primary_cta_link,
                   primary_cta_visible: brand.primary_cta_visible,
@@ -5327,191 +5491,68 @@ export default function AdminDashboard() {
                                       className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                     />
 
-                                    {/* New CTA Buttons Configuration */}
-                                    {/* <div className="mt-4 space-y-4 border-t pt-4">
-                                      <h4 className="text-sm font-semibold text-foreground">CTA Buttons Configuration</h4>
-                                      
-                                      {/* Primary CTA */}
-                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 1 (Primary CTA)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.primary_cta_visible ?? false}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], primary_cta_visible: checked };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.primary_cta_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                                          </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            placeholder="Button Label"
-                                            value={brand.primary_cta_label || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], primary_cta_label: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Button Link"
-                                            value={brand.primary_cta_link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], primary_cta_link: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                        </div>
-                                      </div> */}
+                                    <div className="mt-4 space-y-4 border-t pt-4">
+                                      <h4 className="text-sm font-semibold text-foreground">Brand action links</h4>
+                                      {['action_link_1', 'action_link_2', 'action_link_3'].map((field, actionIndex) => {
+                                        const textKey = `${field}_text` as 'action_link_1_text' | 'action_link_2_text' | 'action_link_3_text';
+                                        const urlKey = `${field}_url` as 'action_link_1_url' | 'action_link_2_url' | 'action_link_3_url';
+                                        const newTabKey = `${field}_new_tab` as 'action_link_1_new_tab' | 'action_link_2_new_tab' | 'action_link_3_new_tab';
+                                        const enabledKey = `${field}_enabled` as 'action_link_1_enabled' | 'action_link_2_enabled' | 'action_link_3_enabled';
+                                        return (
+                                          <div key={field} className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                              <div>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Link {actionIndex + 1}</p>
+                                                <p className="text-[11px] text-muted-foreground">Visible only if enabled and text/url are set.</p>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <Switch
+                                                  checked={Boolean(brand[enabledKey])}
+                                                  onCheckedChange={(checked) => {
+                                                    const newBrands = [...editSubBrands];
+                                                    newBrands[index] = { ...newBrands[index], [enabledKey]: checked };
+                                                    setEditSubBrands(newBrands);
+                                                  }}
+                                                />
+                                                <span className="text-[10px] font-medium uppercase text-muted-foreground">{brand[enabledKey] ? 'Enabled' : 'Hidden'}</span>
+                                              </div>
+                                            </div>
 
-                                      {/* More Actions / Contact */}
-                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 2 (More Actions)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.more_actions_visible ?? false}
-                                              onCheckedChange={(checked) => {
+                                            <input
+                                              placeholder="Link text"
+                                              value={brand[textKey] || ''}
+                                              onChange={(e) => {
                                                 const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], more_actions_visible: checked };
+                                                newBrands[index] = { ...newBrands[index], [textKey]: e.target.value || null };
                                                 setEditSubBrands(newBrands);
                                               }}
+                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                             />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.more_actions_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                                          </div>
-                                        </div>
-                                        <input
-                                          placeholder="Button Label (e.g. Contact)"
-                                          value={brand.more_actions_label || ''}
-                                          onChange={(e) => {
-                                            const newBrands = [...editSubBrands];
-                                            newBrands[index] = { ...newBrands[index], more_actions_label: e.target.value };
-                                            setEditSubBrands(newBrands);
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                        />
-                                        <p className="text-[10px] text-muted-foreground italic">Note: This button will trigger the existing CTA buttons below.</p>
-                                      </div> */}
-
-                                      {/* Join Network */}
-                                      {/* <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Button 3 (Join Network)</span>
-                                          <div className="flex items-center gap-2">
-                                            <Switch
-                                              checked={brand.join_network_visible ?? false}
-                                              onCheckedChange={(checked) => {
+                                            <input
+                                              placeholder="Link URL"
+                                              value={brand[urlKey] || ''}
+                                              onChange={(e) => {
                                                 const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], join_network_visible: checked };
+                                                newBrands[index] = { ...newBrands[index], [urlKey]: e.target.value || null };
                                                 setEditSubBrands(newBrands);
                                               }}
+                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                             />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.join_network_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                                            <div className="flex items-center gap-2">
+                                              <Switch
+                                                checked={Boolean(brand[newTabKey])}
+                                                onCheckedChange={(checked) => {
+                                                  const newBrands = [...editSubBrands];
+                                                  newBrands[index] = { ...newBrands[index], [newTabKey]: checked };
+                                                  setEditSubBrands(newBrands);
+                                                }}
+                                              />
+                                              <span className="text-[12px] text-muted-foreground">Open in new tab</span>
+                                            </div>
                                           </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            placeholder="Button Label"
-                                            value={brand.join_network_label || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], join_network_label: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Join Link (WhatsApp/Telegram/etc)"
-                                            value={brand.join_network_link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[index] = { ...newBrands[index], join_network_link: e.target.value };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                                          />
-                                        </div>
-                                      </div> */}
-                                    {/* </div> */}
-
-                                    {/* <div className="mt-4 space-y-2 border-t pt-3">
-                                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Existing CTA Buttons (triggered by Button 2)</label>
-                                      {(brand.buttons || []).map((btn, btnIndex) => (
-                                        <div key={btnIndex} className="flex gap-2 items-center">
-                                          <input
-                                            placeholder="Label"
-                                            value={btn.label}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons[btnIndex] = { ...newButtons[btnIndex], label: e.target.value };
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
-                                          />
-                                          <input
-                                            placeholder="Link"
-                                            value={btn.link || ''}
-                                            onChange={(e) => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons[btnIndex] = { ...newButtons[btnIndex], link: e.target.value };
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="flex-[2] rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
-                                          />
-                                          <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
-                                            <Switch
-                                              checked={btn.is_visible ?? true}
-                                              onCheckedChange={(checked) => {
-                                                const newBrands = [...editSubBrands];
-                                                const newButtons = [...(newBrands[index].buttons || [])];
-                                                newButtons[btnIndex] = { ...newButtons[btnIndex], is_visible: Boolean(checked) };
-                                                newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                            />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground">{(btn.is_visible ?? true) ? 'ON' : 'OFF'}</span>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const newBrands = [...editSubBrands];
-                                              const newButtons = [...(newBrands[index].buttons || [])];
-                                              newButtons.splice(btnIndex, 1);
-                                              newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                              setEditSubBrands(newBrands);
-                                            }}
-                                            className="p-1.5 text-destructive"
-                                          >
-                                            <X className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ))}
-                                      {(brand.buttons || []).length < 4 && (
-                                         <button
-                                           type="button"
-                                           onClick={() => {
-                                             const newBrands = [...editSubBrands];
-                                             const newButtons = [...(newBrands[index].buttons || []), { label: '', link: '', is_visible: true }];
-                                             newBrands[index] = { ...newBrands[index], buttons: newButtons };
-                                             setEditSubBrands(newBrands);
-                                           }}
-                                           className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
-                                         >
-                                           <Plus className="w-3.5 h-3.5" /> Add Button
-                                         </button>
-                                       )}
-                                    </div> */}
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 ))}
                                 {editSubBrands.length < 10 && (
@@ -5525,6 +5566,18 @@ export default function AdminDashboard() {
                                       description: '', 
                                       buttons: [], 
                                       is_visible: true,
+                                      action_link_1_text: null,
+                                      action_link_1_url: null,
+                                      action_link_1_new_tab: false,
+                                      action_link_1_enabled: false,
+                                      action_link_2_text: null,
+                                      action_link_2_url: null,
+                                      action_link_2_new_tab: false,
+                                      action_link_2_enabled: false,
+                                      action_link_3_text: null,
+                                      action_link_3_url: null,
+                                      action_link_3_new_tab: false,
+                                      action_link_3_enabled: false,
                                       primary_cta_label: 'Submit RFP',
                                       primary_cta_link: '',
                                       primary_cta_visible: false,
@@ -7567,18 +7620,64 @@ export default function AdminDashboard() {
                             .map((feature) => (
                               <div
                                 key={feature.id}
-                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50"
                               >
-                                <span className="text-sm flex items-center gap-2">
-                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                  {feature.feature_text}
-                                </span>
-                                <button
-                                  onClick={() => handleDeleteGetListedPlanFeature(feature.id)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <Switch
+                                    checked={feature.visible ?? true}
+                                    onCheckedChange={(v) => feature.id && handleToggleGetListedPlanFeatureVisibility(feature.id, v)}
+                                  />
+                                  {editingGetListedFeatureId === feature.id ? (
+                                    <input
+                                      type="text"
+                                      value={editingGetListedFeatureText}
+                                      onChange={(e) => setEditingGetListedFeatureText(e.target.value)}
+                                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                                    />
+                                  ) : (
+                                    <span className="text-sm flex items-center gap-2 truncate">
+                                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                      {feature.feature_text}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {editingGetListedFeatureId === feature.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => feature.id && handleUpdateGetListedPlanFeatureText(feature.id, editingGetListedFeatureText)}
+                                        className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingGetListedFeatureId(null);
+                                          setEditingGetListedFeatureText('');
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg border border-input bg-background text-sm"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setEditingGetListedFeatureId(feature.id || null);
+                                        setEditingGetListedFeatureText(feature.feature_text || '');
+                                      }}
+                                      className="p-2 rounded-lg hover:bg-accent text-muted-foreground"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => feature.id && handleDeleteGetListedPlanFeature(feature.id)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                         </div>
@@ -7751,6 +7850,26 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 )}
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium mb-1.5">Comparison Footer Content</label>
+                  <TipTapEditor
+                    value={getListedSettings?.comparison_footer_content || ''}
+                    onChange={(value) => setGetListedSettings(prev => prev ? { ...prev, comparison_footer_content: value } : null)}
+                    placeholder="Enter footer notes/content..."
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium mb-1.5">Comparison Footer Line</label>
+                  <input
+                    type="text"
+                    value={getListedSettings?.comparison_footer_line || ''}
+                    onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, comparison_footer_line: e.target.value } : null)}
+                    placeholder="Enter footer line..."
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </div>
               </div>
 
               {/* Add/Edit Plan Modal */}

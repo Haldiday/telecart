@@ -88,12 +88,12 @@ const FontSize = Extension.create({
       setFontSize:
         (fontSize) =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize }).updateAttributes('listItem', { fontSize }).run();
+          return chain().setMark('textStyle', { fontSize }).run();
         },
       unsetFontSize:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontSize: null }).updateAttributes('listItem', { fontSize: null }).removeEmptyTextStyle().run();
+          return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
         },
     };
   },
@@ -171,12 +171,12 @@ const FontFamily = Extension.create({
       setFontFamily:
         (fontFamily) =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontFamily }).updateAttributes('listItem', { fontFamily }).run();
+          return chain().setMark('textStyle', { fontFamily }).run();
         },
       unsetFontFamily:
         () =>
         ({ chain }) => {
-          return chain().setMark('textStyle', { fontFamily: null }).updateAttributes('listItem', { fontFamily: null }).removeEmptyTextStyle().run();
+          return chain().setMark('textStyle', { fontFamily: null }).removeEmptyTextStyle().run();
         },
     };
   },
@@ -294,8 +294,7 @@ function MenuBar({ editor }: { editor: Editor }) {
         onClick={() => {
           editor.chain().focus().toggleBold().run();
           if (editor.isActive('listItem')) {
-            const isBold = editor.isActive('bold');
-            editor.chain().focus().updateAttributes('listItem', { fontWeight: isBold ? 'bold' : 'normal' }).run();
+            editor.chain().focus().updateAttributes('listItem', { fontWeight: null }).run();
           }
         }}
         className={btnClass(toolbar.isBold)}
@@ -337,7 +336,11 @@ function MenuBar({ editor }: { editor: Editor }) {
         value={toolbar.fontFamily}
         onPointerDown={handleFontControlPointerDown}
         onBlur={handleFontControlBlur}
-        onChange={(e) => applyWithSavedSelection((chain) => chain.setFontFamily(e.target.value))}
+        onChange={(e) =>
+          applyWithSavedSelection((chain) =>
+            chain.updateAttributes('listItem', { fontFamily: null }).setFontFamily(e.target.value),
+          )
+        }
         className="px-2 py-1 rounded border border-input bg-background text-sm cursor-pointer"
         title="Font Family"
       >
@@ -355,7 +358,11 @@ function MenuBar({ editor }: { editor: Editor }) {
         value={toolbar.fontSize}
         onPointerDown={handleFontControlPointerDown}
         onBlur={handleFontControlBlur}
-        onChange={(e) => applyWithSavedSelection((chain) => chain.setFontSize(e.target.value))}
+        onChange={(e) =>
+          applyWithSavedSelection((chain) =>
+            chain.updateAttributes('listItem', { fontSize: null }).setFontSize(e.target.value),
+          )
+        }
         className="px-2 py-1 rounded border border-input bg-background text-sm cursor-pointer"
         title="Font Size"
       >
@@ -463,7 +470,7 @@ function MenuBar({ editor }: { editor: Editor }) {
         onMouseDown={preventToolbarBlur}
         onChange={(e) => {
           const color = e.target.value;
-          editor.chain().focus().setColor(color).updateAttributes('listItem', { color }).run();
+          editor.chain().focus().updateAttributes('listItem', { color: null }).setColor(color).run();
         }}
         className="w-8 h-8 rounded cursor-pointer border border-input"
         title="Text Color"
