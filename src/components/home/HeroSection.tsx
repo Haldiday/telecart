@@ -16,8 +16,11 @@ export default function HeroSection() {
     searchError,
     isSearchActive,
     setIsSearchActive,
+    selectedIndex,
+    setSelectedIndex,
     handleResultClick,
     handleSearchButton,
+    handleKeyDown,
     showHeaderSearch,
     showMobileStickySearch,
     searchContainerRef,
@@ -148,6 +151,7 @@ export default function HeroSection() {
                 onChange={(event) => setQuery(event.target.value)}
                 onFocus={() => setIsSearchActive(true)}
                 onBlur={() => setTimeout(() => setIsSearchActive(false), 120)}
+                onKeyDown={handleKeyDown}
                 placeholder="Search brand or category"
                 className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
               />
@@ -170,13 +174,15 @@ export default function HeroSection() {
                   ) : results.length === 0 ? (
                     <div className="px-5 py-2 text-sm text-[#61646b]">No results found.</div>
                   ) : (
-                    results.map((result) => (
+                    results.map((result, index) => (
                       <button
                         key={`${result.type}-${result.id}`}
                         type="button"
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => handleResultClick(result)}
-                        className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
+                        className={`flex w-full items-center gap-2 px-5 py-2 text-left text-sm ${
+                          selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'hover:bg-[#f5f5f5]'
+                        }`}
                       >
                         <span>{result.name}</span>
                         {result.type === 'brand' && result.subcategoryName && (
