@@ -172,9 +172,11 @@ interface GetListedPlan {
   id?: string;
   plan_name: string;
   price_inr: number;
+  price_usd: number;
   duration: string;
   button_text?: string | null;
   button_link?: string | null;
+  button_link_usd?: string | null;
   button_visible: boolean;
   popular: boolean;
   visible: boolean;
@@ -255,6 +257,10 @@ interface FooterSettings {
   privacy_policy_visible?: boolean;
   terms_of_service_visible?: boolean;
   refund_policy_visible?: boolean;
+  refund_policy_1_visible?: boolean;
+  refund_policy_2_visible?: boolean;
+  refund_policy_3_visible?: boolean;
+  refund_policy_4_visible?: boolean;
   faq_visible?: boolean;
   faq_heading?: string;
   whatsapp_number?: string;
@@ -362,7 +368,7 @@ interface FAQ {
   updated_at: string;
 }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
+type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -536,6 +542,10 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
       { key: 'footer', label: 'Social Media Links' },
       { key: 'footer_terms', label: 'Terms of Service' },
       { key: 'footer_refund', label: 'Refund Policy' },
+      { key: 'footer_refund_1', label: 'Refund Policy 1' },
+      { key: 'footer_refund_2', label: 'Refund Policy 2' },
+      { key: 'footer_refund_3', label: 'Refund Policy 3' },
+      { key: 'footer_refund_4', label: 'Refund Policy 4' },
       { key: 'faqs', label: 'FAQs' },
     ]
   },
@@ -649,6 +659,10 @@ export default function AdminDashboard() {
     privacy_policy_visible: true,
     terms_of_service_visible: true,
     refund_policy_visible: true,
+    refund_policy_1_visible: true,
+    refund_policy_2_visible: true,
+    refund_policy_3_visible: true,
+    refund_policy_4_visible: true,
     faq_visible: true,
     faq_heading: 'Frequently Asked Questions',
     whatsapp_number: '',
@@ -997,6 +1011,10 @@ export default function AdminDashboard() {
               privacy_policy_visible: footerData.privacy_policy_visible ?? true,
               terms_of_service_visible: footerData.terms_of_service_visible ?? true,
               refund_policy_visible: footerData.refund_policy_visible ?? true,
+              refund_policy_1_visible: footerData.refund_policy_1_visible ?? true,
+              refund_policy_2_visible: footerData.refund_policy_2_visible ?? true,
+              refund_policy_3_visible: footerData.refund_policy_3_visible ?? true,
+              refund_policy_4_visible: footerData.refund_policy_4_visible ?? true,
               faq_visible: footerData.faq_visible ?? true,
               faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
               whatsapp_number: footerData.whatsapp_number ?? '',
@@ -1940,9 +1958,11 @@ export default function AdminDashboard() {
         const newPlan = {
           plan_name: editGetListedPlan.plan_name || '',
           price_inr: editGetListedPlan.price_inr || 0,
+          price_usd: editGetListedPlan.price_usd || 0,
           duration: editGetListedPlan.duration || '',
           button_text: editGetListedPlan.button_text || '',
           button_link: editGetListedPlan.button_link || '',
+          button_link_usd: editGetListedPlan.button_link_usd || '',
           button_visible: editGetListedPlan.button_visible ?? true,
           popular: editGetListedPlan.popular ?? false,
           visible: editGetListedPlan.visible ?? true,
@@ -2042,6 +2062,26 @@ export default function AdminDashboard() {
         toast.error('Failed to update: missing database column "visible" in get_listed_plan_features');
       } else {
         toast.error(`Failed to update feature visibility: ${message}`);
+      }
+      console.error(error);
+    }
+  };
+
+  const handleToggleGetListedPlanVisibility = async (id: string, visible: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('get_listed_plans')
+        .update({ visible })
+        .eq('id', id);
+      if (error) throw error;
+      setGetListedPlans(prev => prev.map(p => p.id === id ? { ...p, visible } : p));
+      toast.success('Plan visibility updated!');
+    } catch (error: any) {
+      const message = error?.message || 'Unknown error';
+      if (typeof message === 'string' && message.toLowerCase().includes('visible')) {
+        toast.error('Failed to update: missing database column "visible" in get_listed_plans');
+      } else {
+        toast.error(`Failed to update plan visibility: ${message}`);
       }
       console.error(error);
     }
@@ -2746,6 +2786,12 @@ export default function AdminDashboard() {
       toast.error('Failed to save FAQ order.');
       return false;
     }
+  }
+
+  function stripHtml(html: string): string {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
   }
 
   // Product Tab Sections helper functions for Edit Subcategory view
@@ -3921,6 +3967,10 @@ export default function AdminDashboard() {
         privacy_policy_visible: footerSettings.privacy_policy_visible ?? true,
         terms_of_service_visible: footerSettings.terms_of_service_visible ?? true,
         refund_policy_visible: footerSettings.refund_policy_visible ?? true,
+        refund_policy_1_visible: footerSettings.refund_policy_1_visible ?? true,
+        refund_policy_2_visible: footerSettings.refund_policy_2_visible ?? true,
+        refund_policy_3_visible: footerSettings.refund_policy_3_visible ?? true,
+        refund_policy_4_visible: footerSettings.refund_policy_4_visible ?? true,
         faq_visible: footerSettings.faq_visible ?? true,
         faq_heading: footerSettings.faq_heading ?? 'Frequently Asked Questions',
         whatsapp_number: footerSettings.whatsapp_number ?? '',
@@ -6994,135 +7044,151 @@ export default function AdminDashboard() {
           {/* FAQS */}
           {tab === 'faqs' && (
             <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Page Heading</label>
-                    <input
-                      value={footerSettings.faq_heading ?? 'Frequently Asked Questions'}
-                      onChange={(e) => setFooterSettings({ ...footerSettings, faq_heading: e.target.value })}
-                      placeholder="Enter page heading..."
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-lg font-semibold"
-                    />
-                  </div>
+              {!showAddFaqModal && !editFaq ? (
+                <>
+                  <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Page Heading</label>
+                        <input
+                          value={footerSettings.faq_heading ?? 'Frequently Asked Questions'}
+                          onChange={(e) => setFooterSettings({ ...footerSettings, faq_heading: e.target.value })}
+                          placeholder="Enter page heading..."
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-lg font-semibold"
+                        />
+                      </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm font-medium">Visible on Footer</label>
-                      <Switch
-                        checked={footerSettings.faq_visible ?? true}
-                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, faq_visible: v })}
-                      />
-                    </div>
-                    <button
-                      onClick={handleSaveFooter}
-                      disabled={isSavingFooter}
-                      className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      {isSavingFooter ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">FAQs</h2>
-                  <button
-                    onClick={() => {
-                      setEditFaq({ question: '', answer: '' });
-                      setShowAddFaqModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add FAQ
-                  </button>
-                </div>
-
-              {faqs.length === 0 ? (
-                <div className="text-center py-12 bg-card rounded-xl border border-border">
-                  <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
-                </div>
-              ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
-                  const { active, over } = event;
-                  if (!over) return;
-                  const oldIndex = faqs.findIndex((faq) => faq.id === active.id);
-                  const newIndex = faqs.findIndex((faq) => faq.id === over.id);
-                  if (oldIndex === -1 || newIndex === -1) return;
-
-                  const newOrder = arrayMove(faqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
-                  setFaqs(newOrder);
-
-                  for (const faq of newOrder) {
-                    await updateFaqSortOrder(faq.id, faq.sort_order);
-                  }
-
-                  toast.success('FAQ order saved!');
-                }}>
-                  <SortableContext items={faqs.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
-                    <div className="rounded-xl border border-border bg-card overflow-hidden">
-                      {faqs.map((faq, index) => (
-                        <div key={faq.id}>
-                          <SortableAdminItem
-                            id={faq.id}
-                            className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
-                          >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <h3 className="font-semibold text-sm md:text-base truncate">{faq.question}</h3>
-                              <div className="flex items-center gap-1">
-                                <Switch
-                                  checked={faq.is_visible}
-                                  onCheckedChange={async (checked) => {
-                                    await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
-                                    setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
-                                    toast.success('FAQ visibility updated!');
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{faq.answer}</p>
-                          </div>
-                            <button onClick={() => setEditFaq(faq)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                          </SortableAdminItem>
-                          {index < faqs.length - 1 && <div className="border-t border-border" />}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <label className="text-sm font-medium">Visible on Footer</label>
+                          <Switch
+                            checked={footerSettings.faq_visible ?? true}
+                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, faq_visible: v })}
+                          />
                         </div>
-                      ))}
+                        <button
+                          onClick={handleSaveFooter}
+                          disabled={isSavingFooter}
+                          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          <Save className="w-4 h-4" />
+                          {isSavingFooter ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
                     </div>
-                  </SortableContext>
-                </DndContext>
-              )}
+                  </div>
 
-              {/* Add/Edit FAQ Modal */}
-              {(showAddFaqModal || editFaq) && (
-                <Modal title={editFaq?.id ? 'Edit FAQ' : 'Add FAQ'} onClose={() => { setEditFaq(null); setShowAddFaqModal(false); }}>
-                  <div className="mx-auto w-full max-w-4xl space-y-4 px-1">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Question</label>
-                      <TipTapEditor
-                        value={editFaq?.question || ''}
-                        onChange={(value) => setEditFaq({ ...editFaq!, question: value })}
-                        placeholder="Enter question..."
-                      />
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-bold">FAQs</h2>
+                      <button
+                        onClick={() => {
+                          setEditFaq({ question: '', answer: '' });
+                          setShowAddFaqModal(true);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                      >
+                        <Plus className="w-4 h-4" /> Add FAQ
+                      </button>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Answer</label>
-                      <TipTapEditor
-                        value={editFaq?.answer || ''}
-                        onChange={(value) => setEditFaq({ ...editFaq!, answer: value })}
-                        placeholder="Enter answer..."
-                      />
+
+                  {faqs.length === 0 ? (
+                    <div className="text-center py-12 bg-card rounded-xl border border-border">
+                      <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
                     </div>
-                    <button onClick={saveFaq} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold w-full">
-                      Save
+                  ) : (
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
+                      const { active, over } = event;
+                      if (!over) return;
+                      const oldIndex = faqs.findIndex((faq) => faq.id === active.id);
+                      const newIndex = faqs.findIndex((faq) => faq.id === over.id);
+                      if (oldIndex === -1 || newIndex === -1) return;
+
+                      const newOrder = arrayMove(faqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
+                      setFaqs(newOrder);
+
+                      for (const faq of newOrder) {
+                        await updateFaqSortOrder(faq.id, faq.sort_order);
+                      }
+
+                      toast.success('FAQ order saved!');
+                    }}>
+                      <SortableContext items={faqs.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
+                        <div className="rounded-xl border border-border bg-card overflow-hidden">
+                          {faqs.map((faq, index) => (
+                            <div key={faq.id}>
+                              <SortableAdminItem
+                                id={faq.id}
+                                className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
+                              >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <h3 className="font-semibold text-sm md:text-base truncate">{stripHtml(faq.question)}</h3>
+                                  <div className="flex items-center gap-1">
+                                    <Switch
+                                      checked={faq.is_visible}
+                                      onCheckedChange={async (checked) => {
+                                        await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
+                                        setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
+                                        toast.success('FAQ visibility updated!');
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{stripHtml(faq.answer)}</p>
+                              </div>
+                                <button onClick={() => setEditFaq(faq)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                              </SortableAdminItem>
+                              {index < faqs.length - 1 && <div className="border-t border-border" />}
+                            </div>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => {
+                        setEditFaq(null);
+                        setShowAddFaqModal(false);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-semibold flex items-center gap-2 hover:bg-muted/80"
+                    >
+                      ← Back to FAQs
                     </button>
                   </div>
-                </Modal>
+
+                  <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h2 className="text-2xl font-bold mb-6">{editFaq?.id ? 'Edit FAQ' : 'Add FAQ'}</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Question</label>
+                        <TipTapEditor
+                          value={editFaq?.question || ''}
+                          onChange={(value) => setEditFaq({ ...editFaq!, question: value })}
+                          placeholder="Enter question..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">Answer</label>
+                        <TipTapEditor
+                          value={editFaq?.answer || ''}
+                          onChange={(value) => setEditFaq({ ...editFaq!, answer: value })}
+                          placeholder="Enter answer..."
+                        />
+                      </div>
+                      <button onClick={saveFaq} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold w-full">
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
-              </div>
             </div>
           )}
 
@@ -7542,10 +7608,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={plan.visible}
-                            onCheckedChange={(v) => {
-                              setGetListedPlans(prev => prev.map(p => p.id === plan.id ? { ...p, visible: v } : p));
-                              supabase.from('get_listed_plans').update({ visible: v }).eq('id', plan.id);
-                            }}
+                            onCheckedChange={(v) => handleToggleGetListedPlanVisibility(plan.id, v)}
                           />
                           <span className="text-sm text-muted-foreground">{plan.visible ? 'Visible' : 'Hidden'}</span>
                           <button
@@ -7903,6 +7966,16 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm font-medium mb-1.5">Price (USD)</label>
+                      <input
+                        type="number"
+                        value={editGetListedPlan?.price_usd || 0}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, price_usd: Number(e.target.value) } : null)}
+                        placeholder="0"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium mb-1.5">Duration</label>
                       <input
                         type="text"
@@ -7923,11 +7996,21 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                      <label className="block text-sm font-medium mb-1.5">Button Link (INR)</label>
                       <input
                         type="text"
                         value={editGetListedPlan?.button_link || ''}
                         onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, button_link: e.target.value } : null)}
+                        placeholder="https://..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Button Link (USD)</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.button_link_usd || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, button_link_usd: e.target.value } : null)}
                         placeholder="https://..."
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -8893,7 +8976,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {(tab === 'footer_privacy' || tab === 'footer_terms' || tab === 'footer_about' || tab === 'footer_refund') && (
+          {(tab === 'footer_privacy' || tab === 'footer_terms' || tab === 'footer_about' || tab === 'footer_refund' || tab === 'footer_refund_1' || tab === 'footer_refund_2' || tab === 'footer_refund_3' || tab === 'footer_refund_4') && (
             <div className="max-w-4xl space-y-6">
               {(() => {
                 let slug = '';
@@ -8907,6 +8990,18 @@ export default function AdminDashboard() {
                 } else if (tab === 'footer_refund') { 
                   slug = 'refund-policy'; 
                   defaultTitle = 'Refund Policy'; 
+                } else if (tab === 'footer_refund_1') { 
+                  slug = 'refund-policy-1'; 
+                  defaultTitle = 'Refund Policy 1'; 
+                } else if (tab === 'footer_refund_2') { 
+                  slug = 'refund-policy-2'; 
+                  defaultTitle = 'Refund Policy 2'; 
+                } else if (tab === 'footer_refund_3') { 
+                  slug = 'refund-policy-3'; 
+                  defaultTitle = 'Refund Policy 3'; 
+                } else if (tab === 'footer_refund_4') { 
+                  slug = 'refund-policy-4'; 
+                  defaultTitle = 'Refund Policy 4'; 
                 } else if (tab === 'footer_about') { 
                   slug = 'about-us'; 
                   defaultTitle = 'About Us'; 

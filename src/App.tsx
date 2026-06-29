@@ -19,6 +19,10 @@ import AboutUs from "./pages/AboutUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import RefundPolicy from "./pages/RefundPolicy";
+import RefundPolicy1 from "./pages/RefundPolicy1";
+import RefundPolicy2 from "./pages/RefundPolicy2";
+import RefundPolicy3 from "./pages/RefundPolicy3";
+import RefundPolicy4 from "./pages/RefundPolicy4";
 import FAQs from "./pages/FAQs";
 import AdvertisePage from "./pages/AdvertisePage";
 import GetListedPage from "./pages/GetListedPage";
@@ -40,6 +44,10 @@ const router = createBrowserRouter(
         { path: "/privacy-policy", element: <PrivacyPolicy /> },
         { path: "/terms-of-service", element: <TermsOfService /> },
         { path: "/refund-policy", element: <RefundPolicy /> },
+        { path: "/refund-policy-1", element: <RefundPolicy1 /> },
+        { path: "/refund-policy-2", element: <RefundPolicy2 /> },
+        { path: "/refund-policy-3", element: <RefundPolicy3 /> },
+        { path: "/refund-policy-4", element: <RefundPolicy4 /> },
         { path: "/faqs", element: <FAQs /> },
         { path: "/advertise", element: <AdvertisePage /> },
         { path: "/get-listed", element: <GetListedPage /> },

@@ -10,9 +10,11 @@ interface GetListedPlan {
   id: string;
   plan_name: string;
   price_inr: number;
+  price_usd: number;
   duration: string;
   button_text?: string | null;
   button_link?: string | null;
+  button_link_usd?: string | null;
   button_visible: boolean;
   popular: boolean;
   visible: boolean;
@@ -59,9 +61,8 @@ const GetListedPage = () => {
   const [settings, setSettings] = useState<GetListedSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
-  const [exchangeRate, setExchangeRate] = useState<number>(0.012); // Default fallback
   const [expandedPlans, setExpandedPlans] = useState<string[]>([]);
-  const pageContentContainerClassName = "max-w-6xl mx-auto";
+  const pageContentContainerClassName = "max-w-10xl mx-auto";
 
   useEffect(() => {
     const loadData = async () => {
@@ -181,27 +182,18 @@ const GetListedPage = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchExchangeRate = async () => {
-      try {
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/INR');
-        const data = await response.json();
-        if (data.rates && data.rates.USD) {
-          setExchangeRate(data.rates.USD);
-        }
-      } catch (error) {
-        console.error('Failed to fetch exchange rate:', error);
-      }
-    };
-    fetchExchangeRate();
-  }, []);
-
-  const getPrice = (priceInr: number) => {
+  const getPrice = (plan: GetListedPlan) => {
     if (currency === 'INR') {
-      return `₹${priceInr.toLocaleString('en-IN')}`;
+      return `₹${plan.price_inr.toLocaleString('en-IN')}`;
     }
-    const priceUsd = priceInr * exchangeRate;
-    return `$${priceUsd.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+    return `$${plan.price_usd.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  };
+
+  const getButtonLink = (plan: GetListedPlan) => {
+    if (currency === 'INR') {
+      return plan.button_link;
+    }
+    return plan.button_link_usd;
   };
 
   const getPlanFeatures = (planId: string) => {
@@ -245,7 +237,7 @@ const GetListedPage = () => {
         <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
           <div className={pageContentContainerClassName}>
             {!isLoading && (
-              <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-bold leading-normal text-black justify-center text-center mb-12">
+              <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-semibold leading-normal text-[#222222] justify-center text-center mb-12">
                 {settings?.main_heading || 'Choose the best plan for your business.'}
               </h1>
             )}
@@ -301,7 +293,7 @@ const GetListedPage = () => {
 
                     <div className="p-8">
                       <h3 className="text-[22px] font-normal leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
-                      <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan.price_inr)}</p>
+                      <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan)}</p>
                       <div className="border-t border-gray-200 my-4"></div>
                       <p className="text-[16px] font-normal leading-normal text-[#606F7B] mb-6">{plan.duration}</p>
 
@@ -325,13 +317,15 @@ const GetListedPage = () => {
                       )}
 
                       {plan.button_visible && plan.button_text && (
-                        <Button className="w-full bg-[#001965] hover:bg-[#001965] text-white">
-                          {plan.button_link ? (
-                            <a href={plan.button_link}>{plan.button_text}</a>
-                          ) : (
-                            plan.button_text
-                          )}
-                        </Button>
+                        getButtonLink(plan) ? (
+                          <Button asChild className="w-full bg-[#001965] hover:bg-[#001965] text-white">
+                            <a href={getButtonLink(plan)}>{plan.button_text}</a>
+                          </Button>
+                        ) : (
+                          <Button className="w-full bg-[#001965] hover:bg-[#001965] text-white">
+                            {plan.button_text}
+                          </Button>
+                        )
                       )}
                     </div>
                   </div>
@@ -346,7 +340,7 @@ const GetListedPage = () => {
           <section className="py-16 px-4 md:px-8 bg-white mt-8">
             <div className={pageContentContainerClassName}>
               {!isLoading && (
-                <h2 className="text-[32px] font-bold text-gray-900 mb-8">
+                <h2 className="text-[32px] font-semibold text-[#222222] mb-8">
                   {settings?.comparison_heading || 'Detailed pricing'}
                 </h2>
               )}
@@ -355,7 +349,7 @@ const GetListedPage = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-blue-800">
-                      <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/4"></th>
+                      <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/3"></th>
                       {visiblePlans.map((plan) => (
                         <th key={plan.id} className="text-center py-4 px-6 text-[22px] font-normal leading-normal text-[#001965]">
                           {plan.plan_name}

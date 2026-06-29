@@ -124,12 +124,12 @@ export default function ContactUs() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 bg-gray-50 pt-24 md:pt-36">
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[1400px]">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[2000px]">
           <h1 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight">
             {settings?.heading || 'Contact'}
           </h1>
 
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-[45%,55%] gap-12 items-start">
             <div className="space-y-8">
               <div className="space-y-8">
                 {hasContactDetails && (
@@ -248,7 +248,7 @@ export default function ContactUs() {
 
             {/* Right Column: Form Embed */}
             <div className="w-full">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 w-[650px] mr-8">
                 {renderFormEmbed() || (
                   <div className="w-full h-[600px] flex items-center justify-center text-gray-400">
                     <p>Form will appear here</p>

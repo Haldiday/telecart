@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearch } from '@/contexts/SearchContext';
+import type { SearchResult } from '@/contexts/SearchContext';
 
 interface PageSection {
   id: string;
@@ -104,7 +105,8 @@ export default function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stickyInputRef = useRef<HTMLInputElement>(null);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const {
     query,
@@ -122,7 +124,30 @@ export default function Header() {
     showHeaderSearch,
     showMobileStickySearch,
     searchContainerRef,
+    blurTimeoutRef,
   } = useSearch();
+  
+  // Override handleResultClick for Header to keep input focused!
+  const handleHeaderResultClick = (result: SearchResult) => {
+    handleResultClick(result);
+    // Keep focus on the appropriate input!
+    setTimeout(() => {
+      if (showMobileStickySearch) {
+        stickyInputRef.current?.focus();
+      } else if (showHeaderSearch) {
+        desktopInputRef.current?.focus();
+      }
+    }, 0);
+  };
+  
+  // When sticky search becomes visible, focus the input if it was previously focused!
+  useEffect(() => {
+    if (showMobileStickySearch && isMobile) {
+      setTimeout(() => {
+        stickyInputRef.current?.focus();
+      }, 0);
+    }
+  }, [showMobileStickySearch, isMobile]);
 
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
@@ -365,10 +390,17 @@ export default function Header() {
                 >
                   <div className="relative flex items-center">
                     <input
+                      ref={desktopInputRef}
                       type="search"
                       placeholder="Search brand or category"
                       value={query}
-                      onChange={(event) => setQuery(event.target.value)}
+                      onChange={(event) => {
+                        setQuery(event.target.value);
+                        // If user is typing, make sure isSearchActive is true!
+                        if (!isSearchActive && event.target.value.trim()) {
+                          setIsSearchActive(true);
+                        }
+                      }}
                       onFocus={() => {
                         if (blurTimeoutRef.current) {
                           clearTimeout(blurTimeoutRef.current);
@@ -429,7 +461,7 @@ export default function Header() {
                           ) : (
                             results.map((result, index) => (
                               <button
-                                key={`${result.type}-${result.id}`}
+                                key={`${result.type}-${result.id}${result.brandName ? `-${result.brandName}` : ''}`}
                                 type="button"
                                 onMouseDown={() => {
                                   if (blurTimeoutRef.current) {
@@ -438,7 +470,7 @@ export default function Header() {
                                   }
                                   setIsSearchActive(true);
                                 }}
-                                onClick={() => handleResultClick(result)}
+                                onClick={() => handleHeaderResultClick(result)}
                                 className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm ${
                                   selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'text-[#61646b] hover:bg-[#f5f5f5]'
                                 }`}
@@ -681,11 +713,26 @@ export default function Header() {
       <div className="md:hidden fixed left-0 right-0 top-16 z-40 bg-card border-b border-border px-4 py-3">
         <div className="relative" ref={searchContainerRef}>
           <input
+            ref={stickyInputRef}
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onFocus={() => setIsSearchActive(true)}
-            onBlur={() => setTimeout(() => setIsSearchActive(false), 120)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              // If user is typing, make sure isSearchActive is true!
+              if (!isSearchActive && event.target.value.trim()) {
+                setIsSearchActive(true);
+              }
+            }}
+            onFocus={() => {
+              if (blurTimeoutRef.current) {
+                clearTimeout(blurTimeoutRef.current);
+                blurTimeoutRef.current = null;
+              }
+              setIsSearchActive(true);
+            }}
+            onBlur={() => {
+              blurTimeoutRef.current = setTimeout(() => setIsSearchActive(false), 120);
+            }}
             placeholder="Search brand or category"
             className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
           />
@@ -709,13 +756,20 @@ export default function Header() {
                 <div className="px-5 py-2 text-sm text-[#61646b]">No results found.</div>
               ) : (
                 results.map((result) => (
-                  <button
-                    key={`${result.type}-${result.id}`}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => handleResultClick(result)}
-                    className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
-                  >
+                <button
+                  key={`${result.type}-${result.id}${result.brandName ? `-${result.brandName}` : ''}`}
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    if (blurTimeoutRef.current) {
+                      clearTimeout(blurTimeoutRef.current);
+                      blurTimeoutRef.current = null;
+                    }
+                    setIsSearchActive(true);
+                  }}
+                  onClick={() => handleHeaderResultClick(result)}
+                  className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
+                >
                     <span>{result.name}</span>
                     {result.type === 'brand' && result.subcategoryName && (
                       <span className="text-xs text-[#8a8f9a]">({result.subcategoryName})</span>

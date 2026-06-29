@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLayoutEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,10 @@ interface FooterSettings {
   privacy_policy_visible?: boolean;
   terms_of_service_visible?: boolean;
   refund_policy_visible?: boolean;
+  refund_policy_1_visible?: boolean;
+  refund_policy_2_visible?: boolean;
+  refund_policy_3_visible?: boolean;
+  refund_policy_4_visible?: boolean;
   faq_visible?: boolean;
   faq_heading?: string;
   whatsapp_number?: string;
@@ -129,6 +133,10 @@ const getCachedFooterSettings = (): FooterSettings => {
     get_recommendations_label: 'Get Recommendations',
     get_recommendations_url: '',
     get_recommendations_enabled: false,
+    refund_policy_1_visible: true,
+    refund_policy_2_visible: true,
+    refund_policy_3_visible: true,
+    refund_policy_4_visible: true,
   };
 
   if (typeof window === 'undefined') {
@@ -225,49 +233,53 @@ export default function Footer() {
           const footerData = data as any;
 
           const nextSettings: FooterSettings = {
-            description: footerData.description ?? '',
-            description_visible: footerData.description_visible ?? true,
-            twitter_label: footerData.twitter_label ?? 'Twitter',
-            twitter_link: footerData.twitter_link ?? '#',
-            twitter_visible: footerData.twitter_visible ?? true,
-            linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
-            linkedin_link: footerData.linkedin_link ?? '#',
-            linkedin_visible: footerData.linkedin_visible ?? true,
-            facebook_label: footerData.facebook_label ?? 'Facebook',
-            facebook_link: footerData.facebook_link ?? '#',
-            facebook_visible: footerData.facebook_visible ?? true,
-            instagram_label: footerData.instagram_label ?? 'Instagram',
-            instagram_link: footerData.instagram_link ?? '#',
-            instagram_visible: footerData.instagram_visible ?? false,
-            youtube_label: footerData.youtube_label ?? 'YouTube',
-            youtube_link: footerData.youtube_link ?? '#',
-            youtube_visible: footerData.youtube_visible ?? false,
-            social_whatsapp_visible: footerData.social_whatsapp_visible ?? false,
-            social_media_visible: footerData.social_media_visible ?? true,
-            about_us_visible: footerData.about_us_visible ?? true,
-            contact_visible: footerData.contact_visible ?? true,
-            privacy_policy_visible: footerData.privacy_policy_visible ?? true,
-            terms_of_service_visible: footerData.terms_of_service_visible ?? true,
-            refund_policy_visible: footerData.refund_policy_visible ?? true,
-            faq_visible: footerData.faq_visible ?? true,
-            faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
-            whatsapp_number: footerData.whatsapp_number ?? '',
-            whatsapp_visible: footerData.whatsapp_visible ?? false,
-            phone: footerData.phone ?? '',
-            phone_visible: footerData.phone_visible ?? false,
-            email: footerData.email ?? '',
-            email_visible: footerData.email_visible ?? false,
-            bottom_footer_email: footerData.bottom_footer_email ?? '',
-            bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
-            bottom_branding_visible: footerData.bottom_branding_visible ?? true,
-            bottom_branding_text: footerData.bottom_branding_text ?? '',
-            submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
-            submit_rft_url: footerData.submit_rft_url ?? '',
-            submit_rft_enabled: footerData.submit_rft_enabled ?? false,
-            get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
-            get_recommendations_url: footerData.get_recommendations_url ?? '',
-            get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
-          };
+                    description: footerData.description ?? '',
+                    description_visible: footerData.description_visible ?? true,
+                    twitter_label: footerData.twitter_label ?? 'Twitter',
+                    twitter_link: footerData.twitter_link ?? '#',
+                    twitter_visible: footerData.twitter_visible ?? true,
+                    linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
+                    linkedin_link: footerData.linkedin_link ?? '#',
+                    linkedin_visible: footerData.linkedin_visible ?? true,
+                    facebook_label: footerData.facebook_label ?? 'Facebook',
+                    facebook_link: footerData.facebook_link ?? '#',
+                    facebook_visible: footerData.facebook_visible ?? true,
+                    instagram_label: footerData.instagram_label ?? 'Instagram',
+                    instagram_link: footerData.instagram_link ?? '#',
+                    instagram_visible: footerData.instagram_visible ?? false,
+                    youtube_label: footerData.youtube_label ?? 'YouTube',
+                    youtube_link: footerData.youtube_link ?? '#',
+                    youtube_visible: footerData.youtube_visible ?? false,
+                    social_whatsapp_visible: footerData.social_whatsapp_visible ?? false,
+                    social_media_visible: footerData.social_media_visible ?? true,
+                    about_us_visible: footerData.about_us_visible ?? true,
+                    contact_visible: footerData.contact_visible ?? true,
+                    privacy_policy_visible: footerData.privacy_policy_visible ?? true,
+                    terms_of_service_visible: footerData.terms_of_service_visible ?? true,
+                    refund_policy_visible: footerData.refund_policy_visible ?? true,
+                    refund_policy_1_visible: footerData.refund_policy_1_visible ?? true,
+                    refund_policy_2_visible: footerData.refund_policy_2_visible ?? true,
+                    refund_policy_3_visible: footerData.refund_policy_3_visible ?? true,
+                    refund_policy_4_visible: footerData.refund_policy_4_visible ?? true,
+                    faq_visible: footerData.faq_visible ?? true,
+                    faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
+                    whatsapp_number: footerData.whatsapp_number ?? '',
+                    whatsapp_visible: footerData.whatsapp_visible ?? false,
+                    phone: footerData.phone ?? '',
+                    phone_visible: footerData.phone_visible ?? false,
+                    email: footerData.email ?? '',
+                    email_visible: footerData.email_visible ?? false,
+                    bottom_footer_email: footerData.bottom_footer_email ?? '',
+                    bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
+                    bottom_branding_visible: footerData.bottom_branding_visible ?? true,
+                    bottom_branding_text: footerData.bottom_branding_text ?? '',
+                    submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
+                    submit_rft_url: footerData.submit_rft_url ?? '',
+                    submit_rft_enabled: footerData.submit_rft_enabled ?? false,
+                    get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
+                    get_recommendations_url: footerData.get_recommendations_url ?? '',
+                    get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
+                  };
 
           setSettings(prev => ({ ...prev, ...nextSettings }));
           window.localStorage.setItem(FOOTER_SETTINGS_CACHE_KEY, JSON.stringify(nextSettings));
@@ -470,7 +482,7 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Buyers</h4>
             <ul className="space-y-3">
-              <li><Link to="/browse-all-directories" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Browse All Directories</Link></li>
+              <li><Link to="/browse-all-directories" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">View All Categories</Link></li>
               {settings.submit_rft_enabled && settings.submit_rft_label && (
                 <li>
                   {settings.submit_rft_url ? (
@@ -586,6 +598,10 @@ export default function Footer() {
                 const termsInfo = getLegalPageInfo('terms-of-service', 'Terms of Service');
                 const privacyInfo = getLegalPageInfo('privacy-policy', 'Privacy Policy');
                 const refundInfo = getLegalPageInfo('refund-policy', 'Refund Policy');
+                const refund1Info = getLegalPageInfo('refund-policy-1', 'Refund Policy 1');
+                const refund2Info = getLegalPageInfo('refund-policy-2', 'Refund Policy 2');
+                const refund3Info = getLegalPageInfo('refund-policy-3', 'Refund Policy 3');
+                const refund4Info = getLegalPageInfo('refund-policy-4', 'Refund Policy 4');
                 
                 const visibleLinks = [];
                 
@@ -606,6 +622,34 @@ export default function Footer() {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep2">|</span>);
                   visibleLinks.push(
                     <Link key="refund" to="/refund-policy" className="hover:text-[#0055DD] transition-colors">{refundInfo.title}</Link>
+                  );
+                }
+                
+                if (refund1Info.isVisible && (settings.refund_policy_1_visible ?? true)) {
+                  if (visibleLinks.length > 0) visibleLinks.push(<span key="sep3">|</span>);
+                  visibleLinks.push(
+                    <Link key="refund1" to="/refund-policy-1" className="hover:text-[#0055DD] transition-colors">{refund1Info.title}</Link>
+                  );
+                }
+                
+                if (refund2Info.isVisible && (settings.refund_policy_2_visible ?? true)) {
+                  if (visibleLinks.length > 0) visibleLinks.push(<span key="sep4">|</span>);
+                  visibleLinks.push(
+                    <Link key="refund2" to="/refund-policy-2" className="hover:text-[#0055DD] transition-colors">{refund2Info.title}</Link>
+                  );
+                }
+                
+                if (refund3Info.isVisible && (settings.refund_policy_3_visible ?? true)) {
+                  if (visibleLinks.length > 0) visibleLinks.push(<span key="sep5">|</span>);
+                  visibleLinks.push(
+                    <Link key="refund3" to="/refund-policy-3" className="hover:text-[#0055DD] transition-colors">{refund3Info.title}</Link>
+                  );
+                }
+                
+                if (refund4Info.isVisible && (settings.refund_policy_4_visible ?? true)) {
+                  if (visibleLinks.length > 0) visibleLinks.push(<span key="sep6">|</span>);
+                  visibleLinks.push(
+                    <Link key="refund4" to="/refund-policy-4" className="hover:text-[#0055DD] transition-colors">{refund4Info.title}</Link>
                   );
                 }
                 

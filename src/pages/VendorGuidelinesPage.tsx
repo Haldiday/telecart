@@ -80,19 +80,19 @@ const VendorGuidelinesPage = () => {
       <Header />
 
       <main className="flex-1">
-        <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
+        <section className="py-16 px-4 md:px-8 mt-12 md:mt-24">
           <div className="max-w-6xl mx-auto">
             {!isLoading && (
               <div className="bg-white border border-gray-200 shadow-2xl p-6 md:p-10">
                 {settings?.heading && (
-                  <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+                  <h1 className="text-3xl md:text-[32px] font-semibold text-center text-[#222222] mb-12">
                     {settings.heading}
                   </h1>
                 )}
 
                 {settings?.content && (
                   <div
-                    className="rich-html-content prose prose-lg max-w-none mb-12"
+                    className="rich-html-content max-w-none mb-12"
                     dangerouslySetInnerHTML={renderContent(settings.content)}
                   />
                 )}

@@ -178,7 +178,7 @@ interface SubcategoryAboutSection {
 }
 
 const RICH_HTML_CONTENT_CLASS =
-  'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] prose prose-sm max-w-none overflow-x-hidden break-words ' +
+  'rich-html-content font-inter font-normal text-[20px] leading-[32px] text-[#333333] max-w-none overflow-x-hidden break-words ' +
   '[&_h2]:font-inter [&_h2]:font-bold [&_h2]:text-[32px] [&_h2]:leading-[40px] [&_h2]:text-[#111111] [&_h2]:mb-3 [&_p]:whitespace-pre-wrap [&_p]:mb-[1.25rem] ' +
   '[&_>_*:last-child]:mb-0!important [&_*:last-child]:mb-0!important [&_>_*:first-child]:mt-0 ' +
   '[&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:list-inside ' +

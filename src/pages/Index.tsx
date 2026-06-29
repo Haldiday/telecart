@@ -33,6 +33,7 @@ const SECTION_MAP: Record<string, React.FC<any>> = {
 
 export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const { showMobileStickySearch } = useSearch();
 
@@ -79,7 +80,10 @@ export default function Index() {
     // Initial fetch
     const loadSections = async () => {
       const { data } = await supabase.from('page_sections').select('*').order('sort_order');
-      if (data && mounted) setSections(data as PageSection[]);
+      if (data && mounted) {
+        setSections(data as PageSection[]);
+        setIsLoading(false);
+      }
     };
     
     loadSections();
@@ -104,50 +108,61 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
+    // Only scroll after sections are loaded
+    if (isLoading) return;
+
     // When sections are loaded or hash changes, try to scroll
     if (location.hash.startsWith('#section-')) {
       const sectionId = location.hash.replace('#section-', '');
       const targetId = `section-${sectionId}`;
       console.log('[Index] Hash detected or sections loaded, targetId:', targetId);
       waitForElementAndScroll(targetId);
+    } else {
+      // If no hash, scroll to top on initial load
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
-  }, [location.hash, sections.length]);
+  }, [location.hash, isLoading]);
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className={`flex-1 ${showMobileStickySearch ? 'pt-40' : 'pt-24'} md:pt-32`}>
-        {sections.filter(s => s.is_visible).map((section) => {
-          const Component = SECTION_MAP[section.section_type];
-          if (!Component) return null;
+        {isLoading ? (
+          // Placeholder to prevent footer from showing early
+          <div className="h-screen" />
+        ) : (
+          sections.filter(s => s.is_visible).map((section) => {
+            const Component = SECTION_MAP[section.section_type];
+            if (!Component) return null;
 
-          const sectionContent = (() => {
-            // Hero section doesn't need sectionId
-            if (section.section_type === 'hero') {
-              return <Component />;
+            const sectionContent = (() => {
+              // Hero section doesn't need sectionId
+              if (section.section_type === 'hero') {
+                return <Component />;
+              }
+
+              // Hide "See All" on mobile for Featured Cards in overview
+              if (section.section_type === 'cards') {
+                return <Component sectionId={section.id} hideSeeAllOnMobile={true} />;
+              }
+
+              return <Component sectionId={section.id} />;
+            })();
+
+            // Apply background color to section container if specified
+            if (section.background_color && section.section_type !== 'hero') {
+              return (
+                <div key={section.id} style={{ backgroundColor: section.background_color }}>
+                  {sectionContent}
+                </div>
+              );
             }
 
-            // Hide "See All" on mobile for Featured Cards in overview
-            if (section.section_type === 'cards') {
-              return <Component sectionId={section.id} hideSeeAllOnMobile={true} />;
-            }
-
-            return <Component sectionId={section.id} />;
-          })();
-
-          // Apply background color to section container if specified
-          if (section.background_color && section.section_type !== 'hero') {
-            return (
-              <div key={section.id} style={{ backgroundColor: section.background_color }}>
-                {sectionContent}
-              </div>
-            );
-          }
-
-          return <div key={section.id}>{sectionContent}</div>;
-        })}
+            return <div key={section.id}>{sectionContent}</div>;
+          })
+        )}
       </main>
-      <Footer />
+      {!isLoading && <Footer />}
     </div>
   );
 }

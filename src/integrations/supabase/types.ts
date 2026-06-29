@@ -1182,9 +1182,11 @@ export type Database = {
           id: string
           plan_name: string
           price_inr: number
+          price_usd: number
           duration: string
           button_text: string | null
           button_link: string | null
+          button_link_usd: string | null
           button_visible: boolean
           popular: boolean
           visible: boolean
@@ -1197,9 +1199,11 @@ export type Database = {
           id?: string
           plan_name: string
           price_inr: number
+          price_usd: number
           duration: string
           button_text?: string | null
           button_link?: string | null
+          button_link_usd?: string | null
           button_visible?: boolean
           popular?: boolean
           visible?: boolean
@@ -1212,9 +1216,11 @@ export type Database = {
           id?: string
           plan_name?: string
           price_inr?: number
+          price_usd?: number
           duration?: string
           button_text?: string | null
           button_link?: string | null
+          button_link_usd?: string | null
           button_visible?: boolean
           popular?: boolean
           visible?: boolean

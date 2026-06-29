@@ -128,9 +128,9 @@ export default function BrowseAllDirectoriesPage() {
     <div className="min-h-screen bg-white">
       <Header />
 
-      <section className="py-16 px-4 md:px-8 mt-20 md:mt-24" style={{ backgroundColor: '#eff3f8' }}>
+      <section className="py-12 px-4 md:px-8 mt-12 md:mt-24" style={{ backgroundColor: '#eff3f8' }}>
         <div className="w-full">
-          <h1 className="font-roboto text-[30px] md:text-[36px] lg:text-[36px] font-bold leading-[48px] text-[rgb(23,49,59)] mb-12">
+          <h1 className="font-roboto text-[32px] font-semibold leading-[48px] text-[#222222] mb-4">
             {settings?.heading || 'All Directories'}
           </h1>
 
@@ -148,7 +148,7 @@ export default function BrowseAllDirectoriesPage() {
                     onClick={() => toggleSection(section.id)}
                     className="flex w-full items-center justify-between py-5 px-4 md:px-6 bg-white hover:bg-gray-50 transition-colors"
                   >
-                    <h2 className="font-roboto text-[26px] md:text-[28px] lg:text-[28px] font-bold leading-[36px] text-[rgb(23,49,59)]">
+                    <h2 className="font-roboto text-[18px] font-semibold leading-[36px] text-[rgb(23,49,59)]">
                       {section.heading || section.name}
                     </h2>
                     {isSectionExpanded ? (
@@ -159,13 +159,13 @@ export default function BrowseAllDirectoriesPage() {
                   </button>
 
                   {isSectionExpanded && (
-                    <div className="bg-gray-50 px-4 md:px-10 pt-4 pb-6">
+                    <div className="bg-gray-50 px-4 md:px-10 -pt-1 pb-6">
                       <div className="grid grid-cols-1 gap-x-8 gap-y-3">
                         {sectionCategories.map((category) => (
                           <button
                             key={category.id}
                             onClick={() => handleCategoryClick(category)}
-                            className="text-left text-[rgb(23,49,59)] hover:text-[#001965] transition-colors py-1.5 text-[22px] md:text-[26px] lg:text-[26px] font-semibold md:font-bold font-roboto"
+                            className="text-left text-[rgb(23,49,59)] hover:text-[#001965] transition-colors py-1.5 text-[16px] font-normal font-roboto"
                           >
                             {category.name}
                           </button>

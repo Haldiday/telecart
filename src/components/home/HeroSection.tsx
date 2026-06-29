@@ -1,6 +1,7 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearch } from '@/contexts/SearchContext';
+import type { SearchResult } from '@/contexts/SearchContext';
 
 export default function HeroSection() {
   const [mainTextPart1, setMainTextPart1] = useState('');
@@ -8,6 +9,7 @@ export default function HeroSection() {
   const [words, setWords] = useState<string[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const {
     query,
     setQuery,
@@ -23,8 +25,27 @@ export default function HeroSection() {
     handleKeyDown,
     showHeaderSearch,
     showMobileStickySearch,
-    searchContainerRef,
+    heroSearchContainerRef,
+    blurTimeoutRef,
   } = useSearch();
+  
+  // Override handleResultClick for Hero search to keep input focused!
+  const handleHeroResultClick = (result: SearchResult) => {
+    handleResultClick(result);
+    // Keep focus on the input!
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  };
+  
+  // When sticky search becomes hidden, focus Hero's input!
+  useEffect(() => {
+    if (!showMobileStickySearch) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+    }
+  }, [showMobileStickySearch]);
 
   useEffect(() => {
     let mounted = true;
@@ -142,15 +163,30 @@ export default function HeroSection() {
           )}
         </div>
 
-        <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? searchContainerRef : undefined}>
+        <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? heroSearchContainerRef : undefined}>
           {!showHeaderSearch && !showMobileStickySearch && (
             <div className="relative z-[100]">
               <input
+                ref={inputRef}
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onFocus={() => setIsSearchActive(true)}
-                onBlur={() => setTimeout(() => setIsSearchActive(false), 120)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  // If user is typing, make sure isSearchActive is true!
+                  if (!isSearchActive && event.target.value.trim()) {
+                    setIsSearchActive(true);
+                  }
+                }}
+                onFocus={() => {
+                  if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                    blurTimeoutRef.current = null;
+                  }
+                  setIsSearchActive(true);
+                }}
+                onBlur={() => {
+                  blurTimeoutRef.current = setTimeout(() => setIsSearchActive(false), 120);
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Search brand or category"
                 className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
@@ -176,10 +212,17 @@ export default function HeroSection() {
                   ) : (
                     results.map((result, index) => (
                       <button
-                        key={`${result.type}-${result.id}`}
+                        key={`${result.type}-${result.id}${result.brandName ? `-${result.brandName}` : ''}`}
                         type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => handleResultClick(result)}
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          if (blurTimeoutRef.current) {
+                            clearTimeout(blurTimeoutRef.current);
+                            blurTimeoutRef.current = null;
+                          }
+                          setIsSearchActive(true);
+                        }}
+                        onClick={() => handleHeroResultClick(result)}
                         className={`flex w-full items-center gap-2 px-5 py-2 text-left text-sm ${
                           selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'hover:bg-[#f5f5f5]'
                         }`}

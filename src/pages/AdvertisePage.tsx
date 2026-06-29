@@ -70,8 +70,37 @@ const AdvertisePage = () => {
       const settingsResult = await supabase.from('advertise_page_settings').select('*').limit(1).maybeSingle();
       console.log('advertise_page_settings result:', settingsResult);
       if (settingsResult.data) {
-        setSettings(settingsResult.data);
-        console.log('Set settings:', settingsResult.data);
+        const raw = settingsResult.data as any;
+        const normalized: AdvertiseSettings = {
+          id: raw.id,
+          hero_small_heading: raw.hero_small_heading ?? '',
+          hero_main_heading: raw.hero_main_heading ?? '',
+          hero_description: raw.hero_description ?? '',
+          hero_button_text: raw.hero_button_text ?? null,
+          hero_button_link: raw.hero_button_link ?? null,
+          hero_image_url: raw.hero_image_url ?? null,
+          hero_image_visible: raw.hero_image_visible ?? true,
+          hero_visible: raw.hero_visible ?? true,
+          marketing_cards_main_heading: raw.marketing_cards_main_heading ?? '',
+          marketing_cards_subheading: raw.marketing_cards_subheading ?? '',
+          section3_small_heading: raw.section3_small_heading ?? '',
+          section3_main_heading: raw.section3_main_heading ?? '',
+          section3_description: raw.section3_description ?? '',
+          section3_image_url: raw.section3_image_url ?? null,
+          section3_background_color: raw.section3_background_color ?? null,
+          section3_visible: raw.section3_visible ?? true,
+          section4_small_heading: raw.section4_small_heading ?? '',
+          section4_main_heading: raw.section4_main_heading ?? '',
+          section4_description: raw.section4_description ?? '',
+          section4_button_text: raw.section4_button_text ?? null,
+          section4_button_link: raw.section4_button_link ?? null,
+          section4_image_url: raw.section4_image_url ?? null,
+          section4_visible: raw.section4_visible ?? true,
+          dynamic_sections_heading_part1: raw.dynamic_sections_heading_part1 ?? '',
+          dynamic_sections_heading_part2: raw.dynamic_sections_heading_part2 ?? '',
+        };
+        setSettings(normalized);
+        console.log('Set settings:', normalized);
       } else {
         console.log('No settings data found');
       }
@@ -176,10 +205,10 @@ const AdvertisePage = () => {
           <section className="py-16 px-4 md:px-8 bg-gray-50">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="font-['Roboto',system-ui] text-[30px] font-medium leading-[33px] text-[#24272C] mb-2">
+                <h2 className="font-['Roboto',system-ui] text-[32px] font-semibold leading-[33px] text-[#222222] mb-2">
                   {settings.marketing_cards_main_heading}
                 </h2>
-                <p className="font-['Roboto',system-ui] text-[14px] font-medium leading-[25.2px] text-[#24272C]">{settings.marketing_cards_subheading}</p>
+                <p className="font-['Roboto',system-ui] text-[16px] font-medium leading-[25.2px] text-[#24272C]">{settings.marketing_cards_subheading}</p>
                 <div className="w-16 h-1 bg-[#1d4ed8] mx-auto mt-4 rounded-full"></div>
               </div>
 
@@ -265,7 +294,7 @@ const AdvertisePage = () => {
           <section className="py-8 pt-2 -mt-24 px-4 md:px-8 bg-white">
             <div className="max-w-7xl mx-auto">
               <div className="text-center">
-                <h2 className="font-['Roboto',system-ui] text-[30px] leading-[33px] text-[#24272C]">
+                <h2 className="font-['Roboto',system-ui] text-[32px] leading-[33px] text-[#222222]">
                   <span className="font-normal">{settings.dynamic_sections_heading_part1}</span>
                   <span className="font-medium">{settings.dynamic_sections_heading_part2}</span>
                 </h2>

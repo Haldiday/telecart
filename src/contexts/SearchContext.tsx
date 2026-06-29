@@ -12,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 type SearchResultType = 'category' | 'subcategory' | 'brand';
 
-interface SearchResult {
+export interface SearchResult {
   id: string;
   type: SearchResultType;
   name: string;
@@ -40,6 +40,8 @@ interface SearchContextType {
   showHeaderSearch: boolean;
   showMobileStickySearch: boolean;
   searchContainerRef: React.MutableRefObject<HTMLDivElement | null>;
+  heroSearchContainerRef: React.MutableRefObject<HTMLDivElement | null>;
+  blurTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>;
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
@@ -62,6 +64,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     const lastRequestRef = useRef<number>(0);
     const requestIdCounterRef = useRef<number>(0);
     const searchContainerRef = useRef<HTMLDivElement | null>(null);
+    const heroSearchContainerRef = useRef<HTMLDivElement | null>(null);
+    const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Scroll detection for header search
   useEffect(() => {
@@ -318,10 +322,10 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
-      ) {
+      const clickedHeaderSearch = searchContainerRef.current?.contains(event.target as Node);
+      const clickedHeroSearch = heroSearchContainerRef.current?.contains(event.target as Node);
+      
+      if (!clickedHeaderSearch && !clickedHeroSearch) {
         setIsSearchActive(false);
         setSelectedIndex(-1);
       }
@@ -363,6 +367,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         showHeaderSearch,
         showMobileStickySearch,
         searchContainerRef,
+        heroSearchContainerRef,
+        blurTimeoutRef,
       }}
     >
       {children}

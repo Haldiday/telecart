@@ -112,7 +112,7 @@
     }
     .tiptap-editor-content li::marker,
     .ProseMirror li::marker {
-        color: inherit !important;
+        color: black !important;
         font-weight: inherit !important;
         font-family: inherit !important;
         font-size: inherit !important;
@@ -152,7 +152,7 @@
         margin: 0 !important;
     }
     .legal-content li::marker {
-        color: inherit !important;
+        color: black !important;
         font-weight: inherit !important;
         font-family: inherit !important;
         font-size: inherit !important;
@@ -285,6 +285,12 @@
     .rich-html-content li>p {
         margin-top: 0;
         margin-bottom: 0;
+    }
+    .rich-html-content li::marker {
+        color: black !important;
+        font-weight: inherit !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
     }
     .rich-html-content p {
         margin-bottom: 0.75rem;

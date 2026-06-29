@@ -82,12 +82,12 @@ const WriteForUsPage = () => {
       <Header />
 
       <main className="flex-1">
-        <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
+        <section className="py-16 px-4 md:px-8 mt-12 md:mt-24">
           <div className="max-w-5xl mx-auto">
             {!isLoading && (
               <>
                 {settings?.heading && (
-                  <h1 className="text-3xl md:text-[26px] font-bold  text-[rgb(36,39,44)] mb-12">
+                  <h1 className="text-3xl md:text-[32px] font-semibold  text-[#222222] mb-12">
                     {settings.heading}
                   </h1>
                 )}
@@ -97,14 +97,14 @@ const WriteForUsPage = () => {
                     <img
                       src={settings.banner_image_url}
                       alt="Banner"
-                      className="w-[2000px] h-[400px] object-contain object-left"
+                      className="w-[2000px] h-[350px] object-cover object-center"
                     />
                   </div>
                 )}
 
                 {settings?.content && (
                   <div
-                    className="rich-html-content prose prose-lg max-w-none mb-12"
+                    className="rich-html-content max-w-none mb-10"
                     dangerouslySetInnerHTML={renderContent(settings.content)}
                   />
                 )}
