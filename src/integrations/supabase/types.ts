@@ -1002,6 +1002,7 @@ export type Database = {
           hero_description: string
           hero_button_text: string | null
           hero_button_link: string | null
+          hero_button_visible: boolean
           hero_image_url: string | null
           hero_image_visible: boolean
           hero_visible: boolean
@@ -1028,6 +1029,7 @@ export type Database = {
           hero_description?: string
           hero_button_text?: string | null
           hero_button_link?: string | null
+          hero_button_visible?: boolean
           hero_image_url?: string | null
           hero_image_visible?: boolean
           hero_visible?: boolean
@@ -1054,6 +1056,7 @@ export type Database = {
           hero_description?: string
           hero_button_text?: string | null
           hero_button_link?: string | null
+          hero_button_visible?: boolean
           hero_image_url?: string | null
           hero_image_visible?: boolean
           hero_visible?: boolean
@@ -1116,6 +1119,7 @@ export type Database = {
           description: string
           button_text: string | null
           button_link: string | null
+          button_visible: boolean
           image_url: string | null
           sort_order: number
           is_visible: boolean
@@ -1129,6 +1133,7 @@ export type Database = {
           description?: string
           button_text?: string | null
           button_link?: string | null
+          button_visible?: boolean
           image_url?: string | null
           sort_order?: number
           is_visible?: boolean
@@ -1142,6 +1147,7 @@ export type Database = {
           description?: string
           button_text?: string | null
           button_link?: string | null
+          button_visible?: boolean
           image_url?: string | null
           sort_order?: number
           is_visible?: boolean

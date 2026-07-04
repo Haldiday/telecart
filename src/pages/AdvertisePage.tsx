@@ -15,6 +15,7 @@ interface AdvertiseSettings {
   hero_description: string;
   hero_button_text?: string | null;
   hero_button_link?: string | null;
+  hero_button_visible: boolean;
   hero_image_url?: string | null;
   hero_image_visible: boolean;
   hero_visible: boolean;
@@ -53,6 +54,7 @@ interface AdvertiseSection {
   description: string;
   button_text?: string | null;
   button_link?: string | null;
+  button_visible: boolean;
   image_url?: string | null;
   sort_order: number;
   is_visible: boolean;
@@ -79,6 +81,7 @@ const AdvertisePage = () => {
           hero_description: raw.hero_description ?? '',
           hero_button_text: raw.hero_button_text ?? null,
           hero_button_link: raw.hero_button_link ?? null,
+          hero_button_visible: raw.hero_button_visible ?? true,
           hero_image_url: raw.hero_image_url ?? null,
           hero_image_visible: raw.hero_image_visible ?? true,
           hero_visible: raw.hero_visible ?? true,
@@ -182,11 +185,13 @@ const AdvertisePage = () => {
                     content={settings.hero_description}
                     className="text-[16px] font-normal text-[#777777] text-justify leading-relaxed"
                   />
-                  {settings.hero_button_text && settings.hero_button_link && (
-                    <Button className="bg-[#1d4ed8] hover:bg-[#1540b5] text-white text-lg px-8 py-6">
-                      <a href={settings.hero_button_link}>{settings.hero_button_text}</a>
-                    </Button>
-                  )}
+                  {settings.hero_button_visible && settings.hero_button_text && settings.hero_button_link && (
+            <Button variant="outline" className="border-2 border-black rounded-full text-lg px-12 py-3 hover:bg-black hover:text-white transition-colors">
+              <a href={settings.hero_button_link} target={settings.hero_button_link.startsWith('http') ? '_blank' : '_self'} rel={settings.hero_button_link.startsWith('http') ? 'noopener noreferrer' : ''} className="w-full h-full flex items-center justify-center">
+                {settings.hero_button_text}
+              </a>
+            </Button>
+          )}
                 </div>
                 {settings.hero_image_visible && settings.hero_image_url && (
                   <div className="relative">
@@ -341,9 +346,11 @@ const AdvertisePage = () => {
                       content={section.description}
                       className="font-['Roboto',system-ui] text-[16px] font-normal leading-[24px] text-[#24272C]"
                     />
-                    {section.button_text && section.button_link && (
-                      <Button className="bg-[#1d4ed8] hover:bg-[#1540b5] text-white text-lg px-8 py-6">
-                        <a href={section.button_link}>{section.button_text}</a>
+                    {section.button_visible && section.button_text && section.button_link && (
+                      <Button variant="outline" className="border-2 border-black rounded-full text-lg px-12 py-3 hover:bg-black hover:text-white transition-colors">
+                        <a href={section.button_link} target={section.button_link.startsWith('http') ? '_blank' : '_self'} rel={section.button_link.startsWith('http') ? 'noopener noreferrer' : ''} className="w-full h-full flex items-center justify-center">
+                          {section.button_text}
+                        </a>
                       </Button>
                     )}
                   </div>

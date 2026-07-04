@@ -173,6 +173,7 @@ interface AdvertiseSettings {
   hero_description: string;
   hero_button_text?: string | null;
   hero_button_link?: string | null;
+  hero_button_visible: boolean;
   hero_image_url?: string | null;
   hero_image_visible: boolean;
   hero_visible: boolean;
@@ -209,6 +210,7 @@ interface AdvertiseSection {
   description: string;
   button_text?: string | null;
   button_link?: string | null;
+  button_visible: boolean;
   image_url?: string | null;
   sort_order: number;
   is_visible: boolean;
@@ -782,6 +784,7 @@ export default function AdminDashboard() {
     hero_description: '',
     hero_button_text: '',
     hero_button_link: '',
+    hero_button_visible: true,
     hero_image_url: '',
     hero_image_visible: true,
     hero_visible: true,
@@ -1306,7 +1309,11 @@ export default function AdminDashboard() {
       console.log('📥 Fetched advertise settings data from Supabase:', advertiseSettingsData);
       if (advertiseSettingsData.data) {
         console.log('✅ Setting advertise settings:', advertiseSettingsData.data);
-        setAdvertiseSettings(advertiseSettingsData.data as AdvertiseSettings);
+        const raw = advertiseSettingsData.data as any;
+        setAdvertiseSettings({
+          ...raw,
+          hero_button_visible: raw.hero_button_visible ?? true,
+        });
       } else {
         console.log('⚠️ No advertise settings data found');
       }
@@ -1699,6 +1706,7 @@ export default function AdminDashboard() {
         hero_description: advertiseSettings.hero_description,
         hero_button_text: advertiseSettings.hero_button_text,
         hero_button_link: advertiseSettings.hero_button_link,
+        hero_button_visible: advertiseSettings.hero_button_visible,
         hero_image_url: advertiseSettings.hero_image_url,
         hero_image_visible: advertiseSettings.hero_image_visible,
         hero_visible: advertiseSettings.hero_visible,
@@ -2029,6 +2037,7 @@ export default function AdminDashboard() {
           description: editAdvertiseSection.description || '',
           button_text: editAdvertiseSection.button_text,
           button_link: editAdvertiseSection.button_link,
+          button_visible: editAdvertiseSection.button_visible ?? true,
           image_url: editAdvertiseSection.image_url,
           sort_order: nextSortOrder,
           is_visible: true,
@@ -7440,6 +7449,41 @@ export default function AdminDashboard() {
                       className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                     />
                   </div>
+
+                  {/* Hero Button */}
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={advertiseSettings.hero_button_visible}
+                        onCheckedChange={(v) => setAdvertiseSettings({ ...advertiseSettings, hero_button_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">Show Hero Button</span>
+                    </div>
+                    {advertiseSettings.hero_button_visible && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Label</label>
+                          <input
+                            type="text"
+                            value={advertiseSettings.hero_button_text || ''}
+                            onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_button_text: e.target.value })}
+                            placeholder="Enter button label..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                          <input
+                            type="text"
+                            value={advertiseSettings.hero_button_link || ''}
+                            onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_button_link: e.target.value })}
+                            placeholder="Enter button link..."
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="flex items-center gap-3">
                     <Switch
@@ -7577,7 +7621,7 @@ export default function AdminDashboard() {
                   <h3 className="font-semibold text-xl">Dynamic Advertise Sections</h3>
                   <button
                     onClick={() => {
-                      setEditAdvertiseSection({ small_heading: '', main_heading: '', description: '' });
+                      setEditAdvertiseSection({ small_heading: '', main_heading: '', description: '', button_visible: true });
                       setShowAddAdvertiseSectionModal(true);
                     }}
                     className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
@@ -7719,6 +7763,41 @@ export default function AdminDashboard() {
                         placeholder="Enter section description..."
                         className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       />
+                    </div>
+                    
+                    {/* Button Fields */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={editAdvertiseSection?.button_visible ?? true}
+                          onCheckedChange={(v) => setEditAdvertiseSection(prev => prev ? { ...prev, button_visible: v } : null)}
+                        />
+                        <span className="text-sm text-muted-foreground">Show Button</span>
+                      </div>
+                      {editAdvertiseSection?.button_visible !== false && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Button Label</label>
+                            <input
+                              type="text"
+                              value={editAdvertiseSection?.button_text || ''}
+                              onChange={(e) => setEditAdvertiseSection(prev => prev ? { ...prev, button_text: e.target.value } : null)}
+                              placeholder="Enter button label..."
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                            <input
+                              type="text"
+                              value={editAdvertiseSection?.button_link || ''}
+                              onChange={(e) => setEditAdvertiseSection(prev => prev ? { ...prev, button_link: e.target.value } : null)}
+                              placeholder="Enter button link..."
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <ImageUpload
