@@ -1163,6 +1163,7 @@ export type Database = {
           comparison_heading: string
           comparison_footer_content: string | null
           comparison_footer_line: string | null
+          show_currency_toggle: boolean
           created_at: string
           updated_at: string
         }
@@ -1172,6 +1173,7 @@ export type Database = {
           comparison_heading?: string
           comparison_footer_content?: string | null
           comparison_footer_line?: string | null
+          show_currency_toggle?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1181,6 +1183,7 @@ export type Database = {
           comparison_heading?: string
           comparison_footer_content?: string | null
           comparison_footer_line?: string | null
+          show_currency_toggle?: boolean
           created_at?: string
           updated_at?: string
         }

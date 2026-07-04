@@ -282,6 +282,7 @@ interface GetListedSettings {
   comparison_heading: string;
   comparison_footer_content: string;
   comparison_footer_line: string;
+  show_currency_toggle?: boolean;
 }
 interface HeaderSettings {
   id?: string;
@@ -886,6 +887,8 @@ export default function AdminDashboard() {
 
   // Inline edit view state for subcategories
   const [editingSubcategoryId, setEditingSubcategoryId] = useState<string | null>(null);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [editingBrand, setEditingBrand] = useState<Partial<SubcategoryBrand> | null>(null);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // Modal state for adding sections
@@ -2285,6 +2288,7 @@ export default function AdminDashboard() {
           comparison_heading: getListedSettings.comparison_heading,
           comparison_footer_content: getListedSettings.comparison_footer_content,
           comparison_footer_line: getListedSettings.comparison_footer_line,
+          show_currency_toggle: getListedSettings.show_currency_toggle ?? true,
         };
         const insertResult = await supabase.from('get_listed_settings').insert(newSettings).select();
         console.log('Insert result:', insertResult);
@@ -2299,6 +2303,7 @@ export default function AdminDashboard() {
             comparison_heading: getListedSettings.comparison_heading,
             comparison_footer_content: getListedSettings.comparison_footer_content,
             comparison_footer_line: getListedSettings.comparison_footer_line,
+            show_currency_toggle: getListedSettings.show_currency_toggle ?? true,
           })
           .eq('id', getListedSettings.id)
           .select();
@@ -5608,238 +5613,351 @@ export default function AdminDashboard() {
                         <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
                       </button>
 
-                      {activeAccordion === 'brands' && (
+                      {activeAccordion === 'brands' && !editingBrandId && (
                         <div className="space-y-4 pb-6 px-2">
-                          <div className="space-y-4">
-                              <div>
-                                
-                                <input
-                                  value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
-                                  onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
-                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                  placeholder="Brands"
-                                />
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Brands Tab Label</label>
+                            <input
+                              value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
+                              onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
+                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              placeholder="Brands"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <label className="text-sm font-medium">Brands List</label>
+                              <button
+                                type="button"
+                                onClick={() => setEditSubBrands([...editSubBrands, { 
+                                  id: crypto.randomUUID(), 
+                                  name: '', 
+                                  logo_url: null, 
+                                  link: null, 
+                                  description: '', 
+                                  buttons: [], 
+                                  is_visible: true,
+                                  action_link_1_text: null,
+                                  action_link_1_url: null,
+                                  action_link_1_new_tab: false,
+                                  action_link_1_enabled: false,
+                                  action_link_2_text: null,
+                                  action_link_2_url: null,
+                                  action_link_2_new_tab: false,
+                                  action_link_2_enabled: false,
+                                  action_link_3_text: null,
+                                  action_link_3_url: null,
+                                  action_link_3_new_tab: false,
+                                  action_link_3_enabled: false,
+                                  primary_cta_label: 'Submit RFP',
+                                  primary_cta_link: '',
+                                  primary_cta_visible: false,
+                                  more_actions_label: 'Contact',
+                                  more_actions_visible: false,
+                                  join_network_label: '+ Join their Network',
+                                  join_network_link: '',
+                                  join_network_visible: false
+                                }])}
+                                disabled={editSubBrands.length >= 10}
+                                className="text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                + Add Brand
+                              </button>
+                            </div>
+
+                            {editSubBrands.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                                No brands added yet.
                               </div>
+                            ) : (
                               <div className="space-y-3">
-                                {editSubBrands.map((brand, index) => (
-                                  <div key={brand.id || index} className="rounded-xl border border-border p-3">
-                                    <div className="mb-3 flex items-center justify-between">
-                                      <span className="text-sm font-medium">Brand {index + 1}</span>
+                                {editSubBrands.map((brand) => (
+                                  <div
+                                    key={brand.id}
+                                    className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between"
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="truncate font-semibold text-sm">{brand.name || 'Untitled brand'}</p>
+                                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                        {(brand.action_links || []).length > 0 && (
+                                          <span>{(brand.action_links || []).length} action link{(brand.action_links || []).length !== 1 ? 's' : ''}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                        <Switch
+                                          checked={brand.is_visible ?? true}
+                                          onCheckedChange={(checked) => {
+                                            const newBrands = editSubBrands.map(b => 
+                                              b.id === brand.id ? { ...b, is_visible: Boolean(checked) } : b
+                                            );
+                                            setEditSubBrands(newBrands);
+                                          }}
+                                        />
+                                        <span>{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                                      </label>
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const newBrands = [...editSubBrands];
-                                          newBrands.splice(index, 1);
-                                          setEditSubBrands(newBrands);
+                                          setEditingBrandId(brand.id || '');
+                                          setEditingBrand(brand);
                                         }}
-                                        className="p-1 text-destructive"
+                                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newBrands = editSubBrands.filter(b => b.id !== brand.id);
+                                          setEditSubBrands(newBrands);
+                                          if (editingBrandId === brand.id) {
+                                            setEditingBrandId(null);
+                                            setEditingBrand(null);
+                                          }
+                                        }}
+                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
                                       >
                                         <X className="w-4 h-4" />
                                       </button>
                                     </div>
-                                    {/* <div className="mb-3">
-                                      <ImageUpload
-                                        label="Logo"
-                                        value={brand.logo_url}
-                                        onChange={(url) => {
-                                          const newBrands = [...editSubBrands];
-                                          newBrands[index] = { ...newBrands[index], logo_url: url };
-                                          setEditSubBrands(newBrands);
-                                        }}
-                                        folder="brands"
-                                      />
-                                    </div> */}
-                                    <div className="flex items-center gap-3">
-                                      <input
-                                        placeholder="Brand name"
-                                        value={brand.name || ''}
-                                        onChange={(e) => {
-                                          const newBrands = [...editSubBrands];
-                                          newBrands[index] = { ...newBrands[index], name: e.target.value };
-                                          setEditSubBrands(newBrands);
-                                        }}
-                                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                      />
-                                      <div className="flex items-center gap-2">
-                                        <Switch
-                                          checked={brand.is_visible ?? true}
-                                          onCheckedChange={(checked) => {
-                                            const newBrands = [...editSubBrands];
-                                            newBrands[index] = { ...newBrands[index], is_visible: Boolean(checked) };
-                                            setEditSubBrands(newBrands);
-                                          }}
-                                        />
-                                        <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
-                                      </div>
-                                    </div>
-                                    {/* <textarea
-                                      placeholder="Description"
-                                      value={brand.description || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], description: e.target.value };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
-                                    /> */}
-                                    <input
-                                      placeholder="Primary link (optional)"
-                                      value={brand.link || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], link: e.target.value || null };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                                    <div className="mt-4 space-y-4 border-t pt-4">
+                      {editingBrandId && editingBrand && (
+                        <div className="rounded-2xl border border-border bg-card p-6 space-y-6 mt-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">Edit Brand</h3>
+                              <p className="text-sm text-muted-foreground">{editingBrand.name || 'Untitled brand'}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingBrandId(null);
+                                setEditingBrand(null);
+                              }}
+                              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted flex items-center gap-2"
+                            >
+                              <ArrowLeft className="w-4 h-4" /> Back to Brands
+                            </button>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Brand Name</label>
+                              <input
+                                type="text"
+                                placeholder="Brand name"
+                                value={editingBrand.name || ''}
+                                onChange={(e) => {
+                                  const updated = { ...editingBrand, name: e.target.value };
+                                  setEditingBrand(updated);
+                                  const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                  if (idx !== -1) {
+                                    const newBrands = [...editSubBrands];
+                                    newBrands[idx] = updated as SubcategoryBrand;
+                                    setEditSubBrands(newBrands);
+                                  }
+                                }}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Primary Link (optional)</label>
+                              <input
+                                type="text"
+                                placeholder="https://example.com"
+                                value={editingBrand.link || ''}
+                                onChange={(e) => {
+                                  const updated = { ...editingBrand, link: e.target.value || null };
+                                  setEditingBrand(updated);
+                                  const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                  if (idx !== -1) {
+                                    const newBrands = [...editSubBrands];
+                                    newBrands[idx] = updated as SubcategoryBrand;
+                                    setEditSubBrands(newBrands);
+                                  }
+                                }}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="flex items-center gap-2 text-sm font-medium">
+                                <Switch
+                                  checked={editingBrand.is_visible ?? true}
+                                  onCheckedChange={(checked) => {
+                                    const updated = { ...editingBrand, is_visible: Boolean(checked) };
+                                    setEditingBrand(updated);
+                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                    if (idx !== -1) {
+                                      const newBrands = [...editSubBrands];
+                                      newBrands[idx] = updated as SubcategoryBrand;
+                                      setEditSubBrands(newBrands);
+                                    }
+                                  }}
+                                />
+                                <span>Visible</span>
+                              </label>
+                            </div>
+
+                            <div className="border-t pt-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-semibold">Brand Action Links</h4>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = {
+                                      ...editingBrand,
+                                      action_links: [
+                                        ...(editingBrand.action_links || []),
+                                        {
+                                          id: crypto.randomUUID(),
+                                          text: '',
+                                          url: '',
+                                          new_tab: false,
+                                          enabled: true,
+                                        },
+                                      ],
+                                    };
+                                    setEditingBrand(updated);
+                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                    if (idx !== -1) {
+                                      const newBrands = [...editSubBrands];
+                                      newBrands[idx] = updated as SubcategoryBrand;
+                                      setEditSubBrands(newBrands);
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                >
+                                  <Plus className="w-4 h-4" /> Add Link
+                                </button>
+                              </div>
+
+                              {(editingBrand.action_links || []).length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No action links added yet.</p>
+                              ) : (
+                                <div className="space-y-3">
+                                  {(editingBrand.action_links || []).map((link, linkIdx) => (
+                                    <div key={link.id || linkIdx} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                                       <div className="flex items-center justify-between gap-2">
-                                        <h4 className="text-sm font-semibold text-foreground">Brand action links</h4>
+                                        <span className="text-sm font-medium">Link {linkIdx + 1}</span>
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            const newBrands = [...editSubBrands];
-                                            const currentLinks = Array.isArray(newBrands[index].action_links) ? newBrands[index].action_links! : [];
-                                            newBrands[index] = {
-                                              ...newBrands[index],
-                                              action_links: [
-                                                ...currentLinks,
-                                                {
-                                                  id: crypto.randomUUID(),
-                                                  text: '',
-                                                  url: '',
-                                                  new_tab: false,
-                                                  enabled: true,
-                                                },
-                                              ],
+                                            const updated = {
+                                              ...editingBrand,
+                                              action_links: (editingBrand.action_links || []).filter((_, i) => i !== linkIdx),
                                             };
-                                            setEditSubBrands(newBrands);
+                                            setEditingBrand(updated);
+                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                            if (idx !== -1) {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[idx] = updated as SubcategoryBrand;
+                                              setEditSubBrands(newBrands);
+                                            }
                                           }}
-                                          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                          className="p-1 text-destructive hover:bg-destructive/10 rounded"
                                         >
-                                          <Plus className="w-4 h-4" /> Add link
+                                          <Trash2 className="w-4 h-4" />
                                         </button>
                                       </div>
-                                      {(brand.action_links || []).length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">No action links added yet.</p>
-                                      ) : (
-                                        (brand.action_links || []).map((actionLink, actionIndex) => (
-                                          <div key={actionLink.id || actionIndex} className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
-                                            <div className="flex items-center justify-between gap-2">
-                                              <span className="text-sm font-medium">Link {actionIndex + 1}</span>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  const newBrands = [...editSubBrands];
-                                                  const currentLinks = [...(newBrands[index].action_links || [])];
-                                                  currentLinks.splice(actionIndex, 1);
-                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
-                                                  setEditSubBrands(newBrands);
-                                                }}
-                                                className="p-1 text-destructive"
-                                              >
-                                                <X className="w-4 h-4" />
-                                              </button>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                              <input
-                                                placeholder="Link text"
-                                                value={actionLink.text || ''}
-                                                onChange={(e) => {
-                                                  const newBrands = [...editSubBrands];
-                                                  const currentLinks = [...(newBrands[index].action_links || [])];
-                                                  currentLinks[actionIndex] = { ...currentLinks[actionIndex], text: e.target.value || null };
-                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
-                                                  setEditSubBrands(newBrands);
-                                                }}
-                                                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                              />
-                                              <div className="flex items-center gap-2">
-                                                <Switch
-                                                  checked={Boolean(actionLink.enabled ?? true)}
-                                                  onCheckedChange={(checked) => {
-                                                    const newBrands = [...editSubBrands];
-                                                    const currentLinks = [...(newBrands[index].action_links || [])];
-                                                    currentLinks[actionIndex] = { ...currentLinks[actionIndex], enabled: checked };
-                                                    newBrands[index] = { ...newBrands[index], action_links: currentLinks };
-                                                    setEditSubBrands(newBrands);
-                                                  }}
-                                                />
-                                                <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{actionLink.enabled ?? true ? 'Enabled' : 'Hidden'}</span>
-                                              </div>
-                                            </div>
+
+                                      <div className="space-y-2">
+                                        <input
+                                          type="text"
+                                          placeholder="Link text"
+                                          value={link.text || ''}
+                                          onChange={(e) => {
+                                            const updatedLinks = [...(editingBrand.action_links || [])];
+                                            updatedLinks[linkIdx] = { ...link, text: e.target.value || null };
+                                            const updated = { ...editingBrand, action_links: updatedLinks };
+                                            setEditingBrand(updated);
+                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                            if (idx !== -1) {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[idx] = updated as SubcategoryBrand;
+                                              setEditSubBrands(newBrands);
+                                            }
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                        />
+
+                                        <input
+                                          type="text"
+                                          placeholder="Link URL"
+                                          value={link.url || ''}
+                                          onChange={(e) => {
+                                            const updatedLinks = [...(editingBrand.action_links || [])];
+                                            updatedLinks[linkIdx] = { ...link, url: e.target.value || null };
+                                            const updated = { ...editingBrand, action_links: updatedLinks };
+                                            setEditingBrand(updated);
+                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                            if (idx !== -1) {
+                                              const newBrands = [...editSubBrands];
+                                              newBrands[idx] = updated as SubcategoryBrand;
+                                              setEditSubBrands(newBrands);
+                                            }
+                                          }}
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                        />
+
+                                        <div className="flex items-center gap-2">
+                                          <label className="flex items-center gap-1 text-sm text-muted-foreground flex-1">
                                             <input
-                                              placeholder="Link URL"
-                                              value={actionLink.url || ''}
+                                              type="checkbox"
+                                              checked={link.new_tab ?? false}
                                               onChange={(e) => {
-                                                const newBrands = [...editSubBrands];
-                                                const currentLinks = [...(newBrands[index].action_links || [])];
-                                                currentLinks[actionIndex] = { ...currentLinks[actionIndex], url: e.target.value || null };
-                                                newBrands[index] = { ...newBrands[index], action_links: currentLinks };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                            />
-                                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                                              <input
-                                                type="checkbox"
-                                                checked={Boolean(actionLink.new_tab)}
-                                                onChange={(e) => {
+                                                const updatedLinks = [...(editingBrand.action_links || [])];
+                                                updatedLinks[linkIdx] = { ...link, new_tab: e.target.checked };
+                                                const updated = { ...editingBrand, action_links: updatedLinks };
+                                                setEditingBrand(updated);
+                                                const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                                if (idx !== -1) {
                                                   const newBrands = [...editSubBrands];
-                                                  const currentLinks = [...(newBrands[index].action_links || [])];
-                                                  currentLinks[actionIndex] = { ...currentLinks[actionIndex], new_tab: e.target.checked };
-                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
+                                                  newBrands[idx] = updated as SubcategoryBrand;
                                                   setEditSubBrands(newBrands);
-                                                }}
-                                              />
-                                              Open in new tab
-                                            </label>
+                                                }
+                                              }}
+                                            />
+                                            Open in new tab
+                                          </label>
+
+                                          <div className="flex items-center gap-1">
+                                            <Switch
+                                              checked={link.enabled ?? true}
+                                              onCheckedChange={(checked) => {
+                                                const updatedLinks = [...(editingBrand.action_links || [])];
+                                                updatedLinks[linkIdx] = { ...link, enabled: checked };
+                                                const updated = { ...editingBrand, action_links: updatedLinks };
+                                                setEditingBrand(updated);
+                                                const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                                if (idx !== -1) {
+                                                  const newBrands = [...editSubBrands];
+                                                  newBrands[idx] = updated as SubcategoryBrand;
+                                                  setEditSubBrands(newBrands);
+                                                }
+                                              }}
+                                            />
+                                            <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{link.enabled ?? true ? 'On' : 'Off'}</span>
                                           </div>
-                                        ))
-                                      )}
+                                        </div>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
-                                {editSubBrands.length < 10 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditSubBrands([...editSubBrands, { 
-                                      id: crypto.randomUUID(), 
-                                      name: '', 
-                                      logo_url: null, 
-                                      link: null, 
-                                      description: '', 
-                                      buttons: [], 
-                                      is_visible: true,
-                                      action_link_1_text: null,
-                                      action_link_1_url: null,
-                                      action_link_1_new_tab: false,
-                                      action_link_1_enabled: false,
-                                      action_link_2_text: null,
-                                      action_link_2_url: null,
-                                      action_link_2_new_tab: false,
-                                      action_link_2_enabled: false,
-                                      action_link_3_text: null,
-                                      action_link_3_url: null,
-                                      action_link_3_new_tab: false,
-                                      action_link_3_enabled: false,
-                                      primary_cta_label: 'Submit RFP',
-                                      primary_cta_link: '',
-                                      primary_cta_visible: false,
-                                      more_actions_label: 'Contact',
-                                      more_actions_visible: false,
-                                      join_network_label: '+ Join their Network',
-                                      join_network_link: '',
-                                      join_network_visible: false
-                                    }])}
-                                    className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                  >
-                                    <Plus className="w-4 h-4" /> Add Brand
-                                  </button>
-                                )}
-                              </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -7845,6 +7963,21 @@ export default function AdminDashboard() {
                         onCheckedChange={(v) => setFooterSettings({ ...footerSettings, get_listed_visible: v })}
                       />
                       <span className="text-sm text-muted-foreground">{(footerSettings.get_listed_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+
+                  {/* Currency Toggle Visibility */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <label className="block text-sm font-medium">Show Currency Toggle (INR/USD)</label>
+                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the INR/USD currency selector on the page</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={getListedSettings?.show_currency_toggle ?? true}
+                        onCheckedChange={(v) => setGetListedSettings(prev => prev ? { ...prev, show_currency_toggle: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">{(getListedSettings?.show_currency_toggle ?? true) ? 'Visible' : 'Hidden'}</span>
                     </div>
                   </div>
                 </div>

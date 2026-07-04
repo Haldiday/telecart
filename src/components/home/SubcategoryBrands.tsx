@@ -139,63 +139,15 @@ export default function SubcategoryBrands() {
                 const actionLinks = getBrandActionLinks(brand as BrandWithActionLinks);
                 const hasActionLinks = actionLinks.length > 0;
                 const isExpanded = expandedBrandId === brand.id;
+                const hasLinkOrActions = brand.link || hasActionLinks;
                 
                 return (
                   <div key={brand.id} className="rounded-xl border border-border/50 bg-card p-4">
-                    <div
-                      onClick={() => {
-                        if (hasActionLinks) {
-                          setExpandedBrandId(isExpanded ? null : brand.id);
-                        } else if (brand.link) {
-                          window.open(brand.link, '_blank');
-                        }
-                      }}
-                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
-                        (hasActionLinks || brand.link) 
-                          ? 'hover:text-primary cursor-pointer' 
-                          : ''
-                      }`}
-                    >
-                      <span>{brand.name}</span>
-                      {hasActionLinks && (
-                        isExpanded ? (
-                          <Minus className="h-3.5 w-3.5 text-muted-foreground" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                        )
-                      )}
-                    </div>
-                    
-                    {hasActionLinks && isExpanded && (
-                      <div className="mt-3 space-y-2">
-                        <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-                          {actionLinks.map((link, index) => {
-                            if (link.isClickable) {
-                              return (
-                                <a
-                                  key={`${brand.id}-${index}`}
-                                  href={link.url}
-                                  target={link.newTab ? '_blank' : undefined}
-                                  rel={link.newTab ? 'noopener noreferrer' : undefined}
-                                  className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
-                                >
-                                  {link.text}
-                                </a>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={`${brand.id}-${index}`}
-                                className="border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground"
-                              >
-                                {link.text}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    <BrandActionLinks
+                      brand={brand}
+                      isExpanded={isExpanded}
+                      onToggle={() => setExpandedBrandId(isExpanded ? null : brand.id)}
+                    />
                   </div>
                 );
               })}

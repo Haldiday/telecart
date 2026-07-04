@@ -108,76 +108,70 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle }
   const actionLinks = getBrandActionLinks(brand);
   const hasActionLinks = actionLinks.length > 0;
   const isExpandable = hasActionLinks && typeof onToggle === 'function';
+  const hasLinkOrActions = brand.link || hasActionLinks;
 
   return (
-    <div className="border-b border-border/30 last:border-0 pb-3 pt-1">
-      <div 
-        className={`flex items-center justify-between gap-1 py-1 text-left ${isExpandable ? 'cursor-pointer' : ''}`}
+    <div className="border-b border-border/30 last:border-0">
+      <div
         onClick={() => {
           if (isExpandable) {
             onToggle?.();
+          } else if (brand.link) {
+            window.open(brand.link, '_blank');
           }
         }}
+        className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasLinkOrActions ? 'hover:text-primary cursor-pointer' : 'opacity-100'}`}
       >
-        <div className="min-w-0">
-          {brand.link && !hasActionLinks ? (
-            <a
-              href={brand.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full truncate text-sm md:text-base font-medium text-foreground hover:text-primary transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {brand.name}
-            </a>
-          ) : (
-            <div className="block w-full text-sm md:text-base font-medium text-muted-foreground">
-              {brand.name}
-            </div>
-          )}
-        </div>
-
-        {isExpandable && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggle?.();
-            }}
-            className="inline-flex h-8 w-8 items-center justify-center bg-transparent text-muted-foreground transition-colors hover:text-primary"
-            aria-label={isExpanded ? 'Collapse action links' : 'Expand action links'}
+        {brand.link && !hasActionLinks ? (
+          <a
+            href={brand.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full truncate"
+            onClick={(e) => e.stopPropagation()}
           >
-            {isExpanded ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          </button>
+            {brand.name}
+          </a>
+        ) : (
+          <span className={hasLinkOrActions ? '' : 'text-foreground'}>{brand.name}</span>
+        )}
+        {hasActionLinks && (
+          isExpanded ? (
+            <Minus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+          ) : (
+            <Plus className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+          )
         )}
       </div>
 
       {hasActionLinks && isExpanded && (
-        <div className="mt-2 space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-          {actionLinks.map((link) => {
-            if (link.isClickable) {
+        <div className="pb-3 pt-1 space-y-2">
+          <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
+            {actionLinks.map((link) => {
+              if (link.isClickable) {
+                return (
+                  <a
+                    key={`${brand.id}-${link.text}`}
+                    href={link.url}
+                    target={link.newTab ? '_blank' : undefined}
+                    rel={link.newTab ? 'noopener noreferrer' : undefined}
+                    className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                  >
+                    {link.text}
+                  </a>
+                );
+              }
+
               return (
-                <a
+                <div
                   key={`${brand.id}-${link.text}`}
-                  href={link.url}
-                  target={link.newTab ? '_blank' : undefined}
-                  rel={link.newTab ? 'noopener noreferrer' : undefined}
-                  className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                  className="border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground"
                 >
                   {link.text}
-                </a>
+                </div>
               );
-            }
-
-            return (
-              <div
-                key={`${brand.id}-${link.text}`}
-                className="border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground"
-              >
-                {link.text}
-              </div>
-            );
-          })}
+            })}
+          </div>
         </div>
       )}
     </div>

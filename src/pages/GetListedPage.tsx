@@ -52,6 +52,7 @@ interface GetListedSettings {
   comparison_heading: string;
   comparison_footer_content?: string | null;
   comparison_footer_line?: string | null;
+  show_currency_toggle?: boolean;
 }
 
 const GetListedPage = () => {
@@ -239,39 +240,41 @@ const GetListedPage = () => {
 
       <main className="flex-1">
         {/* Pricing Section */}
-        <section className="py-16 px-8 md:px-16 lg:px-24 mt-20 md:mt-24">
+        <section className="py-8 px-8 md:px-16 lg:px-24 mt-20 md:mt-24">
           <div className={pageContentContainerClassName}>
             {!isLoading && (
-              <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-semibold leading-normal text-[#222222] justify-center text-center mb-12">
+              <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-semibold leading-normal text-[#222222] text-center mb-12">
                 {settings?.main_heading || 'Choose the best plan for your business.'}
               </h1>
             )}
 
             {/* Currency Toggle */}
-            <div className="flex justify-center mb-12">
-              <div className="bg-white p-1 rounded-full shadow-sm inline-flex">
-                <button
-                  onClick={() => setCurrency('INR')}
-                  className={`px-6 py-2 rounded-full font-medium transition-all ${
-                    currency === 'INR' 
-                      ? 'bg-[#001965] text-white' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  INR
-                </button>
-                <button
-                  onClick={() => setCurrency('USD')}
-                  className={`px-6 py-2 rounded-full font-medium transition-all ${
-                    currency === 'USD' 
-                      ? 'bg-[#001965] text-white' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  USD
-                </button>
+            {(settings?.show_currency_toggle ?? true) && (
+              <div className="flex justify-center mb-12">
+                <div className="bg-white p-1 rounded-full shadow-sm inline-flex">
+                  <button
+                    onClick={() => setCurrency('INR')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all ${
+                      currency === 'INR' 
+                        ? 'bg-[#001965] text-white' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    INR
+                  </button>
+                  <button
+                    onClick={() => setCurrency('USD')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all ${
+                      currency === 'USD' 
+                        ? 'bg-[#001965] text-white' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    USD
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Pricing Cards */}
             <div className="flex flex-wrap justify-center gap-8">
@@ -296,8 +299,8 @@ const GetListedPage = () => {
                       </div>
                     )}
 
-                    <div className="p-8">
-                      <h3 className="text-[22px] font-normal leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
+                    <div className="pt-0 px-8 pb-8">
+                      <h3 className="text-[22px] font-semibold leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
                       <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan)}</p>
                       <div className="border-t border-gray-200 my-4"></div>
                       <p className="text-[16px] font-normal leading-normal text-[#606F7B] mb-6">{plan.duration}</p>
@@ -311,15 +314,7 @@ const GetListedPage = () => {
                         ))}
                       </ul>
 
-                      {plan.show_view_more && planFeatures.length > 5 && (
-                        <button
-                          onClick={() => toggleExpand(plan.id)}
-                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6 mx-auto"
-                        >
-                          {isExpanded ? 'View Less' : 'View More'}
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                      )}
+                      
 
                       {plan.button_visible && plan.button_text && (
                         getButtonLink(plan) ? (
@@ -342,10 +337,10 @@ const GetListedPage = () => {
 
         {/* Comparison Table Section */}
         {comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
-          <section className="py-16 px-8 md:px-16 lg:px-24 bg-white mt-8">
+          <section className="pt-8 pb-16 px-8 md:px-16 lg:px-24 bg-white mt-8">
             <div className={pageContentContainerClassName}>
               {!isLoading && (
-                <h2 className="text-[32px] font-semibold text-[#222222] mb-8">
+                <h2 className="text-[32px] font-semibold text-[#222222] mb-6">
                   {settings?.comparison_heading || 'Detailed pricing'}
                 </h2>
               )}
@@ -365,7 +360,7 @@ const GetListedPage = () => {
                   <tbody>
                     {/* Engagement Duration Row (Auto) */}
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-4 px-6 text-[20px] font-bold leading-[21.4286px] text-[#606F7B]">Subscription Type</td>
+                      
                       {visiblePlans.map((plan) => (
                         <td key={plan.id} className="py-4 px-6 text-center text-gray-700">
                           {plan.duration}
@@ -381,7 +376,7 @@ const GetListedPage = () => {
                           key={row.id} 
                           className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                         >
-                          <td className="py-4 px-6 text-[18px] font-normal leading-[21.4286px] text-[#606F7B]">{row.row_title}</td>
+                          <td className="py-4 px-6 text-[18px] font-normal leading-[21.4286px] text-[#001965]">{row.row_title}</td>
                           {visiblePlans.map((plan) => (
                             <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
                               {getCellContent(row.id, plan.id)}
@@ -401,7 +396,7 @@ const GetListedPage = () => {
               )}
 
               {settings?.comparison_footer_line && (
-                <div className="mt-4 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
+                <div className="mt-4 translate-x-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
                   {settings.comparison_footer_line}
                 </div>
               )}

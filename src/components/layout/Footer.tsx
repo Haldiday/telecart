@@ -644,49 +644,49 @@ export default function Footer() {
                 
                 if (termsInfo.isVisible && (settings.terms_of_service_visible ?? true)) {
                   visibleLinks.push(
-                    <Link key="terms" to="/terms-of-service" className="hover:text-[#0055DD] transition-colors">{termsInfo.title}</Link>
+                    <Link key="terms" to="/terms-of-service" className="hover:text-[#0055DD] text-sm transition-colors">{termsInfo.title}</Link>
                   );
                 }
                 
                 if (privacyInfo.isVisible && (settings.privacy_policy_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep1">|</span>);
                   visibleLinks.push(
-                    <Link key="privacy" to="/privacy-policy" className="hover:text-[#0055DD] transition-colors">{privacyInfo.title}</Link>
+                    <Link key="privacy" to="/privacy-policy" className="hover:text-[#0055DD] text-sm transition-colors">{privacyInfo.title}</Link>
                   );
                 }
                 
                 if (refundInfo.isVisible && (settings.refund_policy_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep2">|</span>);
                   visibleLinks.push(
-                    <Link key="refund" to="/refund-policy" className="hover:text-[#0055DD] transition-colors">{refundInfo.title}</Link>
+                    <Link key="refund" to="/refund-policy" className="hover:text-[#0055DD] text-sm transition-colors">{refundInfo.title}</Link>
                   );
                 }
                 
                 if (refund1Info.isVisible && (settings.refund_policy_1_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep3">|</span>);
                   visibleLinks.push(
-                    <Link key="refund1" to="/refund-policy-1" className="hover:text-[#0055DD] transition-colors">{refund1Info.title}</Link>
+                    <Link key="refund1" to="/refund-policy-1" className="hover:text-[#0055DD] text-sm transition-colors">{refund1Info.title}</Link>
                   );
                 }
                 
                 if (refund2Info.isVisible && (settings.refund_policy_2_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep4">|</span>);
                   visibleLinks.push(
-                    <Link key="refund2" to="/refund-policy-2" className="hover:text-[#0055DD] transition-colors">{refund2Info.title}</Link>
+                    <Link key="refund2" to="/refund-policy-2" className="hover:text-[#0055DD] text-sm transition-colors">{refund2Info.title}</Link>
                   );
                 }
                 
                 if (refund3Info.isVisible && (settings.refund_policy_3_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep5">|</span>);
                   visibleLinks.push(
-                    <Link key="refund3" to="/refund-policy-3" className="hover:text-[#0055DD] transition-colors">{refund3Info.title}</Link>
+                    <Link key="refund3" to="/refund-policy-3" className="hover:text-[#0055DD] text-sm transition-colors">{refund3Info.title}</Link>
                   );
                 }
                 
                 if (refund4Info.isVisible && (settings.refund_policy_4_visible ?? true)) {
                   if (visibleLinks.length > 0) visibleLinks.push(<span key="sep6">|</span>);
                   visibleLinks.push(
-                    <Link key="refund4" to="/refund-policy-4" className="hover:text-[#0055DD] transition-colors">{refund4Info.title}</Link>
+                    <Link key="refund4" to="/refund-policy-4" className="hover:text-[#0055DD] text-sm transition-colors">{refund4Info.title}</Link>
                   );
                 }
                 

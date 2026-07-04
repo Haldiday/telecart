@@ -15,11 +15,11 @@
     }
     .submit-header-button {
         font-family: 'Roboto', sans-serif;
-        font-size: 17px;
+        font-size: 16px;
         line-height: 24px;
         color: #1d4ed8;
         background-color: transparent;
-        @apply px-2 py-2 rounded-lg mr-6;
+        @apply px-2 py-2 rounded-lg mr-2;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
     .top-header-link {

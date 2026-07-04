@@ -536,9 +536,9 @@ export default function Header() {
                   className="absolute top-full right-4 md:right-8 lg:right-10 w-full max-w-[1200px] bg-white border border-gray-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-[300] overflow-hidden"
                 >
                   <div className="px-8 py-6 bg-white overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar">
-                      <div className="grid grid-cols-4 gap-6">
+                      <div className="grid grid-cols-5 gap-1">
                         {sections.map((section) => (
-                          <div key={section.id} className="border-r border-gray-100 last:border-0 pr-6">
+                          <div key={section.id} className="border-r border-gray-100 last:border-0 pr-2">
                             <button
                               onClick={(e) => {
                                 console.log('[Header] Category button clicked:', section.name);

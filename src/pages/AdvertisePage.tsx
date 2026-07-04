@@ -169,24 +169,24 @@ const AdvertisePage = () => {
       <main className="flex-1">
         {/* Hero Section */}
         {settings?.hero_visible && (
-          <section className="py-[128px] px-4 md:px-8 bg-gradient-to-br from-gray-50 to-white">
+          <section className="pt-[100px] md:pt-[140px] lg:pt-[90px] pb-[80px] px-4 md:px-8 bg-gradient-to-br from-gray-50 to-white">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                <div className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div className="space-y-5 pt-6 md:pt-8 text-center md:text-left flex flex-col items-center md:items-start">
                   {settings.hero_small_heading && (
-                    <p className="font-['Roboto',system-ui] text-[36px] font-normal leading-[39.6px] text-[#24272C]">
+                    <p className="font-['Roboto',system-ui] text-[36px]  font-normal leading-[39.6px] text-[#24272C]">
                       {settings.hero_small_heading}
                     </p>
                   )}
-                  <h1 className="text-[32px] md:text-[44px] font-medium text-[#24272C] leading-tight">
+                  <h1 className="text-5xl md:text-4xl lg:text-[50px] font-medium text-[#24272C] lg:leading-[1.2] leading-[1.2]">
                     {settings.hero_main_heading}
                   </h1>
                   <RichTextContent
                     content={settings.hero_description}
-                    className="text-[16px] font-normal text-[#777777] text-justify leading-relaxed"
+                    className="text-[18px] font-normal text-[#777777] leading-relaxed"
                   />
                   {settings.hero_button_visible && settings.hero_button_text && settings.hero_button_link && (
-            <Button variant="outline" className="border-2 border-black rounded-full text-lg px-12 py-3 hover:bg-black hover:text-white transition-colors">
+            <Button className="bg-[#1d4ed8] text-white rounded-lg text-lg px-12 py-3 mt-8">
               <a href={settings.hero_button_link} target={settings.hero_button_link.startsWith('http') ? '_blank' : '_self'} rel={settings.hero_button_link.startsWith('http') ? 'noopener noreferrer' : ''} className="w-full h-full flex items-center justify-center">
                 {settings.hero_button_text}
               </a>
@@ -194,11 +194,11 @@ const AdvertisePage = () => {
           )}
                 </div>
                 {settings.hero_image_visible && settings.hero_image_url && (
-                  <div className="relative">
+                  <div className="relative pt-6 md:pt-12">
                     <img
                       src={settings.hero_image_url}
                       alt="Hero"
-                      className="w-full"
+                      className="w-[80%] md:w-[90%] lg:w-[70%] mx-auto"
                     />
                   </div>
                 )}
@@ -217,7 +217,7 @@ const AdvertisePage = () => {
                 </h2>
                 <RichTextContent
                   content={settings.marketing_cards_subheading}
-                  className="font-['Roboto',system-ui] text-[16px] font-medium leading-[25.2px] text-[#24272C] [&_p]:mb-0"
+                  className="font-['Roboto',system-ui] text-[18px] font-medium leading-[25.2px] text-[#24272C] [&_p]:mb-0"
                 />
                 <div className="w-16 h-1 bg-[#1d4ed8] mx-auto mt-4 rounded-full"></div>
               </div>
@@ -242,7 +242,7 @@ const AdvertisePage = () => {
                       <h3 className="font-['Roboto',system-ui] text-[20px] font-medium leading-[24px] flex justify-center items-center text-[#24272C] mb-4">{card.heading}</h3>
                       <RichTextContent
                         content={card.description}
-                        className="font-['Roboto',system-ui] text-[14px] font-normal leading-[21px] text-[#24272C] text-center"
+                        className="font-['Roboto',system-ui] text-[16px] font-normal leading-[21px] text-[#24272C] text-center"
                       />
                     </div>
                   ))}
@@ -326,8 +326,8 @@ const AdvertisePage = () => {
             <section key={section.id} className="py-10 px-4 md:px-6 bg-gray-50">
               <div className="max-w-7xl mx-auto">
                 <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center ${isEven ? '' : 'md:grid-cols-2-reverse'}`}>
-                  <div className={isEven ? '' : 'md:order-2'}>
-                    <div className="relative flex items-center justify-start md:justify-center">
+                  <div className={`${isEven ? '' : 'md:order-2'} flex justify-center md:block`}>
+                    <div className="relative flex items-center justify-center">
                       <div className="absolute -z-10 w-[80%] h-[80%] md:w-[90%] md:h-[90%] bg-blue-500 rounded-full opacity-20 -left-4 top-1/2 -translate-y-1/2 md:left-auto"></div>
                       {section.image_url && (
                         <img
@@ -338,20 +338,22 @@ const AdvertisePage = () => {
                       )}
                     </div>
                   </div>
-                  <div className={`space-y-5 ${isEven ? '' : 'md:order-1 md:pl-12'} max-w-sm`}>
-                    <h2 className="font-['Roboto',system-ui] text-[24px] font-medium leading-[26.4px] text-[#24272C]">
+                  <div className={`space-y-5 ${isEven ? '' : 'md:order-1 md:pl-12'} max-w-sm text-center md:text-left mx-auto md:mx-0`}>
+                    <h2 className="font-['Roboto',system-ui] text-[24px] font-medium leading-[26.4px] text-[#24272C] ">
                       {section.main_heading}
                     </h2>
                     <RichTextContent
                       content={section.description}
-                      className="font-['Roboto',system-ui] text-[16px] font-normal leading-[24px] text-[#24272C]"
+                      className="font-['Roboto',system-ui] text-[18px] font-normal leading-[24px] text-[#24272C]"
                     />
                     {section.button_visible && section.button_text && section.button_link && (
-                      <Button variant="outline" className="border-2 border-black rounded-full text-lg px-12 py-3 hover:bg-black hover:text-white transition-colors">
-                        <a href={section.button_link} target={section.button_link.startsWith('http') ? '_blank' : '_self'} rel={section.button_link.startsWith('http') ? 'noopener noreferrer' : ''} className="w-full h-full flex items-center justify-center">
-                          {section.button_text}
-                        </a>
-                      </Button>
+                      <div className="flex justify-center md:justify-start mt-6">
+                        <Button className="bg-[#1d4ed8] text-white rounded-lg text-lg px-12 py-3">
+                          <a href={section.button_link} target={section.button_link.startsWith('http') ? '_blank' : '_self'} rel={section.button_link.startsWith('http') ? 'noopener noreferrer' : ''} className="w-full h-full flex items-center justify-center">
+                            {section.button_text}
+                          </a>
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>

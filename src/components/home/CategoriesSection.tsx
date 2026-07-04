@@ -53,7 +53,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
   const [subcategoryExpanded, setSubcategoryExpanded] = useState<Record<string, boolean>>({});
-  const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
+  const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
   const [sectionBackgroundColor, setSectionBackgroundColor] = useState<string | null>(null);
@@ -218,27 +218,27 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                             </div>
 
                             {hasBrands && isSubExpanded && (
-                              <div className="px-4 pb-4 pt-1 space-y-3">
-                                <div className="space-y-2 border-l-2 border-blue-500 pl-4 ml-1">
+                              <div className="px-4 pb-4 pt-1">
+                                <div className="border-l-2 border-blue-500 pl-4 ml-1">
                                   {displayBrands.slice(0, 5).map((brand) => (
-                                  <BrandActionLinks
-                                    key={brand.id}
-                                    brand={brand}
-                                    isExpanded={Boolean(expandedBrandIds[brand.id])}
-                                    onToggle={() => setExpandedBrandIds((prev) => ({
-                                      ...prev,
-                                      [brand.id]: !prev[brand.id],
-                                    }))}
-                                  />
-                                ))}
-                                {displayBrands.length > 5 && (
-                                  <Link
-                                    to={`/category/${category.id}/subcategory/${sub.id}/brands`}
-                                    className="text-sm font-semibold text-primary hover:underline"
-                                  >
-                                    See all →
-                                  </Link>
-                                )}
+                                    <BrandActionLinks
+                                      key={brand.id}
+                                      brand={brand}
+                                      isExpanded={Boolean(expandedBrandIds[brand.id])}
+                                      onToggle={() => setExpandedBrandIds((prev) => ({
+                                        ...prev,
+                                        [brand.id]: !prev[brand.id],
+                                      }))}
+                                    />
+                                  ))}
+                                  {displayBrands.length > 5 && (
+                                    <Link
+                                      to={`/category/${category.id}/subcategory/${sub.id}/brands`}
+                                      className="text-sm font-semibold text-primary hover:underline"
+                                    >
+                                      See all →
+                                    </Link>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -266,11 +266,11 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                 <div
                   key={category.id}
                   id={`category-${category.id}`}
-                  className="overflow-hidden rounded-xl border border-border/50 bg-card"
+                  className="overflow-hidden rounded-xl border border-[#b0b2b5] bg-card"
                 >
                   <Link
                     to={`/category/${category.id}`}
-                    className="block w-full border-b py-4 px-2 text-center transition-opacity hover:opacity-90"
+                    className="block w-full border-b border-[#b0b2b5] py-4 px-2 text-center transition-opacity hover:opacity-90"
                     style={{ backgroundColor: category.bg_color }}
                   >
                     {category.icon_url && (
@@ -319,17 +319,14 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                           </div>
 
                           {hasBrands && isSubExpanded && (
-                            <div className="pb-3 pt-1 space-y-2">
-                              <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
+                            <div className="pb-3 pt-1">
+                              <div className="border-l-2 border-[#2b7bcc] pl-4 ml-1">
                                 {displayBrands.slice(0, 5).map((brand) => (
                                   <BrandActionLinks
                                     key={brand.id}
                                     brand={brand}
-                                    isExpanded={Boolean(expandedBrandIds[brand.id])}
-                                    onToggle={() => setExpandedBrandIds((prev) => ({
-                                      ...prev,
-                                      [brand.id]: !prev[brand.id],
-                                    }))}
+                                    isExpanded={expandedBrandId === brand.id}
+                                    onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
                                   />
                                 ))}
                                 {displayBrands.length > 5 && (
