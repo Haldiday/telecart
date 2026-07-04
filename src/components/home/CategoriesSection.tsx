@@ -128,7 +128,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   };
 
   return (
-    <section id={`section-${sectionId}`} className="py-2 md:py-3" style={{ backgroundColor: propBackgroundColor || sectionBackgroundColor || undefined }}>
+    <section id={`section-${sectionId}`} className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]" style={{ backgroundColor: propBackgroundColor || sectionBackgroundColor || undefined }}>
      
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
@@ -224,11 +224,8 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                     <BrandActionLinks
                                       key={brand.id}
                                       brand={brand}
-                                      isExpanded={Boolean(expandedBrandIds[brand.id])}
-                                      onToggle={() => setExpandedBrandIds((prev) => ({
-                                        ...prev,
-                                        [brand.id]: !prev[brand.id],
-                                      }))}
+                                      isExpanded={expandedBrandId === brand.id}
+                                      onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
                                     />
                                   ))}
                                   {displayBrands.length > 5 && (
@@ -266,11 +263,11 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                 <div
                   key={category.id}
                   id={`category-${category.id}`}
-                  className="overflow-hidden rounded-xl border border-[#b0b2b5] bg-card"
+                  className="overflow-hidden rounded-xl border border-border/50 bg-card"
                 >
                   <Link
                     to={`/category/${category.id}`}
-                    className="block w-full border-b border-[#b0b2b5] py-4 px-2 text-center transition-opacity hover:opacity-90"
+                    className="block w-full border-b py-4 px-2 text-center transition-opacity hover:opacity-90"
                     style={{ backgroundColor: category.bg_color }}
                   >
                     {category.icon_url && (

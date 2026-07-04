@@ -299,7 +299,7 @@ const GetListedPage = () => {
                       </div>
                     )}
 
-                    <div className="pt-0 px-8 pb-8">
+                    <div className="pt-8 px-8 pb-8">
                       <h3 className="text-[22px] font-semibold leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
                       <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan)}</p>
                       <div className="border-t border-gray-200 my-4"></div>

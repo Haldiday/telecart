@@ -570,6 +570,7 @@ export default function Header() {
             type="button"
             className="md:hidden ml-auto relative z-[70] inline-flex h-11 w-11 items-center justify-center rounded-md border border-border/60 bg-background/95 text-foreground shadow-sm transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setMobileOpen(!mobileOpen)}
+            onMouseDown={(e) => e.stopPropagation()}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileOpen ? (
@@ -608,7 +609,7 @@ export default function Header() {
         </div>
 
         {mobileOpen && (
-          <div ref={mobileMenuRef} className="md:hidden border-t border-border bg-card px-4 py-6 space-y-6 max-h-[90vh] overflow-y-auto">
+          <div ref={mobileMenuRef} className="md:hidden border-t border-border bg-card px-4 py-6 space-y-6 max-h-[90vh] overflow-y-auto relative z-[60]">
             <div className="space-y-4">
               <Link to="/" className="block text-lg font-semibold px-4 py-2 hover:bg-muted rounded-lg" onClick={() => setMobileOpen(false)}>
                 Home

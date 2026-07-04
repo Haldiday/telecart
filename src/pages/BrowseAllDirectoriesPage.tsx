@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Plus, Minus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ChevronRight, ChevronDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Category {
   id: string;
@@ -100,11 +100,6 @@ export default function BrowseAllDirectoriesPage() {
     };
   }, []);
 
-  const handleSectionClick = (section: PageSection) => {
-    // Navigate to home page and scroll to the section
-    navigate(`/#section-${section.id}`);
-  };
-
   const handleCategoryClick = (category: Category) => {
     // Navigate to category detail page
     navigate(`/category/${category.id}`);
@@ -113,6 +108,12 @@ export default function BrowseAllDirectoriesPage() {
   const toggleSection = (sectionId: string) => {
     setExpandedSectionId(expandedSectionId === sectionId ? null : sectionId);
   };
+
+  const getSectionCategories = (sectionId: string) => {
+    return categories.filter((cat) => cat.section_id === sectionId);
+  };
+
+  const visibleSections = sections.filter(section => getSectionCategories(section.id).length > 0);
 
   if (isLoading) {
     return (
@@ -127,59 +128,277 @@ export default function BrowseAllDirectoriesPage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
+      <main className="pt-24 md:pt-28">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-10 py-6">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-[#001965] mb-4">
+            <Link to="/" className="hover:underline">Home</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="font-medium">{settings?.heading || 'All Directories'}</span>
+          </div>
 
-      <section className="py-12 px-4 md:px-8 mt-12 md:mt-24" style={{ backgroundColor: '#eff3f8' }}>
-        <div className="max-w-4xl mx-auto">
-          <h1 className="font-roboto text-[32px] font-semibold leading-[48px] text-[#222222] mb-4">
+          <h1 className="text-[32px] font-semibold text-[#343a40] mb-8">
             {settings?.heading || 'All Directories'}
           </h1>
 
-          <div className="space-y-0">
-            {sections.filter(section => categories.some(cat => cat.section_id === section.id)).map((section) => {
-              const isSectionExpanded = expandedSectionId === section.id;
-              const sectionCategories = categories.filter(
-                (cat) => cat.section_id === section.id
-              );
-
-              return (
-                <div key={section.id} className="border-b border-gray-200 last:border-0">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection(section.id)}
-                    className="flex w-full items-center justify-between py-5 px-4 md:px-6 bg-white hover:bg-gray-50 transition-colors"
-                  >
-                    <h2 className="font-roboto text-[18px] font-semibold leading-[36px] text-[rgb(23,49,59)]">
-                      {section.heading || section.name}
-                    </h2>
-                    {isSectionExpanded ? (
-                      <Minus className="h-5 w-5 text-gray-700" />
-                    ) : (
-                      <Plus className="h-5 w-5 text-gray-700" />
-                    )}
-                  </button>
-
-                  {isSectionExpanded && (
-                    <div className="bg-gray-50 px-4 md:px-10 -pt-1 pb-6">
-                      <div className="grid grid-cols-1 gap-x-8 gap-y-3">
-                        {sectionCategories.map((category) => (
-                          <button
-                            key={category.id}
-                            onClick={() => handleCategoryClick(category)}
-                            className="text-left text-[rgb(23,49,59)] hover:text-[#001965] transition-colors py-1.5 text-[16px] font-normal font-roboto"
-                          >
-                            {category.name}
-                          </button>
-                        ))}
-                      </div>
+          <div>
+            {/* Mobile: 2 columns */}
+            <div className="md:hidden grid grid-cols-2 gap-x-8">
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 2 === 0).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 2 === 1).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Tablet: 2 columns */}
+            <div className="hidden md:grid lg:hidden grid-cols-2 gap-x-8">
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 2 === 0).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 2 === 1).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Desktop: 3 columns */}
+            <div className="hidden lg:grid grid-cols-3 gap-x-8">
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 3 === 0).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 3 === 1).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-2">
+                {visibleSections.filter((_, i) => i % 3 === 2).map((section) => {
+                  const isExpanded = expandedSectionId === section.id;
+                  const sectionCategories = getSectionCategories(section.id);
+                  return (
+                    <div key={section.id} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                      >
+                        <span className="font-semibold">{section.heading || section.name}</span>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                          {sectionCategories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category)}
+                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                            >
+                              <span>{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
-
+      </main>
       <Footer />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,13 +50,12 @@ export default function CategoryDetail() {
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [brandsBySubcategory, setBrandsBySubcategory] = useState<Record<string, BrandItem[]>>({});
-  const [subcategoriesTabLabel, setSubcategoriesTabLabel] = useState('Subcategories');
   const [activeTab, setActiveTab] = useState(1);
   const [expandedSubcategoryId, setExpandedSubcategoryId] = useState<string | null>(null);
   const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
 
   const tabs = [
-    { key: 'subcategories', label: subcategoriesTabLabel, icon: <List className="h-4 w-4" /> },
+    { key: 'subcategories', label: 'Subcategories', icon: <List className="h-4 w-4" /> },
   ];
 
   useEffect(() => {
@@ -79,7 +78,6 @@ export default function CategoryDetail() {
 
       if (categoryData) {
         setCategory(categoryData);
-        setSubcategoriesTabLabel(categoryData.subcategories_tab_label || 'Subcategories');
       }
       const visibleSubcategories = (subcategoryData || []).filter((sub: any) => sub.is_visible !== false);
       if (subcategoryData) setSubcategories(visibleSubcategories);
@@ -163,17 +161,7 @@ export default function CategoryDetail() {
                 >
                   <span className="flex items-center gap-2">
                     {tab.icon}
-                    {isAdmin && tab.key === 'subcategories' ? (
-                      <input
-                        type="text"
-                        value={subcategoriesTabLabel}
-                        onChange={(e) => setSubcategoriesTabLabel(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-28 rounded-lg border border-border bg-transparent px-2 py-1 text-sm font-medium text-current outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                      />
-                    ) : (
-                      tab.label
-                    )}
+                    {tab.label}
                   </span>
                 </button>
               ))}

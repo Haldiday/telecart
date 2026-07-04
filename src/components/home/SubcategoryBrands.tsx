@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
+import BrandActionLinks, { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
 
 interface Category {
   id: string;
