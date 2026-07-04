@@ -294,6 +294,15 @@
     }
     .rich-html-content p {
         margin-bottom: 0.75rem;
+        white-space: pre-wrap;
+    }
+    .rich-html-content p:last-child {
+        margin-bottom: 0;
+    }
+    .rich-html-content p:empty::before {
+        content: "\00a0";
+        display: inline-block;
+        min-height: 1em;
     }
     .rich-html-content blockquote,
     .rich-html-content .rich-blockquote {

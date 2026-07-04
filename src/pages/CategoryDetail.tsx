@@ -212,7 +212,7 @@ export default function CategoryDetail() {
                     {hasBrands && isExpanded && (
                       <div className="mt-3 space-y-2">
                         <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-                          {brandsBySubcategory[sub.id]?.map((brand) => (
+                          {brandsBySubcategory[sub.id]?.slice(0, 5).map((brand) => (
                             <BrandActionLinks
                               key={brand.id}
                               brand={brand}
@@ -223,6 +223,14 @@ export default function CategoryDetail() {
                               }))}
                             />
                           ))}
+                          {brandsBySubcategory[sub.id]?.length > 5 && (
+                            <Link
+                              to={`/category/${category.id}/subcategory/${sub.id}/brands`}
+                              className="text-sm font-semibold text-primary hover:underline"
+                            >
+                              See All →
+                            </Link>
+                          )}
                         </div>
                       </div>
                     )}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface VendorGuidelinesSettings {
   id?: string;
@@ -71,10 +72,6 @@ const VendorGuidelinesPage = () => {
     };
   }, []);
 
-  const renderContent = (html: string) => {
-    return { __html: html };
-  };
-
   return (
     <div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <Header />
@@ -91,10 +88,7 @@ const VendorGuidelinesPage = () => {
                 )}
 
                 {settings?.content && (
-                  <div
-                    className="rich-html-content max-w-none mb-12"
-                    dangerouslySetInnerHTML={renderContent(settings.content)}
-                  />
+                  <RichTextContent content={settings.content} className="max-w-none mb-12" />
                 )}
               </div>
             )}

@@ -1,83 +1,112 @@
-import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ChevronRight, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
+
+interface Category {
+  id: string;
+  name: string;
+  icon_url: string | null;
+  bg_color: string;
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+}
 
 interface BrandItem {
   id: string;
+  subcategory_id: string;
   name: string;
-  link: string;
-  logo_url?: string | null;
-  description?: string | null;
-  sort_order: number;
+  link: string | null;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
 }
-
-const normalizeExternalUrl = (url: string) => {
-  const trimmedUrl = url.trim();
-  if (!trimmedUrl) return null;
-  return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
-};
 
 export default function SubcategoryBrands() {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
-  const [category, setCategory] = useState<any>(null);
-  const [subcategory, setSubcategory] = useState<any>(null);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [brands, setBrands] = useState<BrandItem[]>([]);
+  const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!subcategoryId) return;
+    if (!categoryId || !subcategoryId) return;
 
+    let mounted = true;
+    
     const loadData = async () => {
-      const [{ data: categoryData }, { data: subcategoryData }, { data: brandData }] = await Promise.all([
+      if (!mounted) return;
+      setLoading(true);
+
+      const [{ data: categoryData }, { data: subcategoryData }, { data: brandsData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
         supabase.from('subcategory_brands').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
       ]);
 
+      if (!mounted) return;
+
       if (categoryData) setCategory(categoryData);
       if (subcategoryData) setSubcategory(subcategoryData);
-      if (brandData) {
-        const visibleBrands = brandData.filter((brand: any) => brand.is_visible !== false);
-        setBrands(visibleBrands.map((brand: any) => ({
-          id: brand.id,
-          name: brand.name || '',
-          link: brand.link || '',
-          logo_url: brand.logo_url || null,
-          description: brand.description || null,
-          sort_order: brand.sort_order ?? 0,
-        })));
+      
+      if (brandsData) {
+        const visibleBrands = brandsData.filter((brand: any) => brand.is_visible !== false);
+        setBrands(visibleBrands);
       }
+      
+      setLoading(false);
     };
 
     loadData();
   }, [categoryId, subcategoryId]);
 
-  if (!category || !subcategory) {
+  if (loading)
     return (
-      <div className="flex flex-col bg-background min-h-screen">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-lg text-muted-foreground">Loading...</div>
-        </main>
-        <Footer />
+      <div className="flex min-h-[100dvh] items-center justify-center">
+        <div className="text-lg text-muted-foreground">Loading...</div>
       </div>
     );
-  }
+
+  if (!category || !subcategory)
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center">
+        <div className="text-lg text-muted-foreground">Page not found</div>
+      </div>
+    );
 
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-24 md:pt-28">
         <div className="border-b border-border bg-card">
           <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-              <ChevronDown className="h-3 w-3 rotate-270" style={{ transform: 'rotate(-90deg)' }} />
-              <Link to={`/category/${category.id}/subcategories`} className="hover:text-foreground transition-colors">{category.name}</Link>
-              <ChevronDown className="h-3 w-3 rotate-270" style={{ transform: 'rotate(-90deg)' }} />
+              <ChevronRight className="h-3 w-3" />
+              <Link 
+                to={`/category/${category.id}/subcategories`}
+                className="hover:text-foreground transition-colors"
+              >
+                {category.name}
+              </Link>
+              <ChevronRight className="h-3 w-3" />
               <span className="text-foreground font-medium">{subcategory.name}</span>
             </div>
 
@@ -93,7 +122,7 @@ export default function SubcategoryBrands() {
               <div>
                 <h1 className="text-xl md:text-2xl font-bold">{subcategory.name}</h1>
                 <p className="text-xs md:text-sm text-muted-foreground">
-                  Brands
+                  {brands.length} Brands
                 </p>
               </div>
             </div>
@@ -101,38 +130,72 @@ export default function SubcategoryBrands() {
         </div>
 
         {/* Brands Grid */}
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-8">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
           {brands.length === 0 ? (
             <p className="text-center text-muted-foreground">No brands available.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">
               {brands.map((brand) => {
-                const externalUrl = normalizeExternalUrl(brand.link || '');
-                const brandBoxClassName =
-                  'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';
-                const content = (
-                  <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
-                    {brand.name || 'Unnamed brand'}
-                  </span>
-                );
-
-                if (externalUrl) {
-                  return (
-                    <a
-                      key={brand.id}
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={brandBoxClassName}
-                    >
-                      {content}
-                    </a>
-                  );
-                }
-
+                const actionLinks = getBrandActionLinks(brand as BrandWithActionLinks);
+                const hasActionLinks = actionLinks.length > 0;
+                const isExpanded = expandedBrandId === brand.id;
+                
                 return (
-                  <div key={brand.id} className={brandBoxClassName}>
-                    {content}
+                  <div key={brand.id} className="rounded-xl border border-border/50 bg-card p-4">
+                    <div
+                      onClick={() => {
+                        if (hasActionLinks) {
+                          setExpandedBrandId(isExpanded ? null : brand.id);
+                        } else if (brand.link) {
+                          window.open(brand.link, '_blank');
+                        }
+                      }}
+                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
+                        (hasActionLinks || brand.link) 
+                          ? 'hover:text-primary cursor-pointer' 
+                          : ''
+                      }`}
+                    >
+                      <span>{brand.name}</span>
+                      {hasActionLinks && (
+                        isExpanded ? (
+                          <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                        )
+                      )}
+                    </div>
+                    
+                    {hasActionLinks && isExpanded && (
+                      <div className="mt-3 space-y-2">
+                        <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
+                          {actionLinks.map((link, index) => {
+                            if (link.isClickable) {
+                              return (
+                                <a
+                                  key={`${brand.id}-${index}`}
+                                  href={link.url}
+                                  target={link.newTab ? '_blank' : undefined}
+                                  rel={link.newTab ? 'noopener noreferrer' : undefined}
+                                  className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                                >
+                                  {link.text}
+                                </a>
+                              );
+                            }
+
+                            return (
+                              <div
+                                key={`${brand.id}-${index}`}
+                                className="border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground"
+                              >
+                                {link.text}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

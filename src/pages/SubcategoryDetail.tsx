@@ -8,6 +8,7 @@ import OffersSection from '@/components/home/OffersSection';
 import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
+import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
 
 import { toast } from 'sonner';
 import {
@@ -709,6 +710,8 @@ export default function SubcategoryDetail() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allBrands.map((brand) => {
               const externalUrl = normalizeExternalUrl(brand.link || '');
+              const actionLinks = getBrandActionLinks(brand);
+              const hasActionLinks = actionLinks.length > 0;
               const brandBoxClassName =
                 'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';
               const content = (
@@ -717,7 +720,7 @@ export default function SubcategoryDetail() {
                 </span>
               );
 
-              if (externalUrl) {
+              if (externalUrl && !hasActionLinks) {
                 return (
                   <a
                     key={brand.id}

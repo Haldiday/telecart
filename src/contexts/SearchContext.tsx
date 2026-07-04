@@ -9,6 +9,7 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
 
 type SearchResultType = 'category' | 'subcategory' | 'brand';
 
@@ -22,6 +23,26 @@ export interface SearchResult {
   link?: string | null;
   custom_link?: string | null;
   custom_link_type?: 'link' | 'iframe' | 'embed_code' | null;
+  // For brands
+  action_links?: Array<{
+    id?: string;
+    text?: string | null;
+    url?: string | null;
+    new_tab?: boolean;
+    enabled?: boolean;
+  }>;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean;
+  action_link_1_enabled?: boolean;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean;
+  action_link_2_enabled?: boolean;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean;
+  action_link_3_enabled?: boolean;
 }
 
 interface SearchContextType {
@@ -72,6 +93,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     const handleScroll = () => {
       const scrollThreshold = 100;
       const scrolled = window.scrollY > scrollThreshold;
+      console.log('[SearchContext] handleScroll called', { scrollY: window.scrollY, scrolled, isMobile });
       
       // Desktop: show header search when scrolled
       // Mobile: never show header search, but show sticky search when scrolled
@@ -84,10 +106,33 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
+    const handleResize = () => {
+      console.log('[SearchContext] handleResize called', { innerWidth: window.innerWidth, innerHeight: window.innerHeight });
+    };
+
+    const handleVisualViewportResize = () => {
+      if (window.visualViewport) {
+        console.log('[SearchContext] handleVisualViewportResize called', { width: window.visualViewport.width, height: window.visualViewport.height });
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleVisualViewportResize);
+    
     handleScroll(); // Call once to set initial state
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleVisualViewportResize);
+    };
   }, [isMobile]);
+
+  // Log state changes
+  useEffect(() => {
+    console.log('[SearchContext] State updated', { showHeaderSearch, showMobileStickySearch, isSearchActive, isMobile });
+  }, [showHeaderSearch, showMobileStickySearch, isSearchActive, isMobile]);
 
   // Search logic with proper request tracking and cleanup
   useEffect(() => {
@@ -141,7 +186,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             .limit(20),
           (supabase as any)
             .from('subcategory_brands')
-            .select('id, name, link, subcategory_id, subcategories(name)')
+            .select('id, name, link, subcategory_id, subcategories(name), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
             .ilike('name', `%${searchTerm}%`)
             .order('sort_order')
             .limit(20),
@@ -218,6 +263,19 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             name: brand.name,
             subcategoryName: brand.subcategories?.name || '',
             link: brand.link,
+            action_links: brand.action_links,
+            action_link_1_text: brand.action_link_1_text,
+            action_link_1_url: brand.action_link_1_url,
+            action_link_1_new_tab: brand.action_link_1_new_tab,
+            action_link_1_enabled: brand.action_link_1_enabled,
+            action_link_2_text: brand.action_link_2_text,
+            action_link_2_url: brand.action_link_2_url,
+            action_link_2_new_tab: brand.action_link_2_new_tab,
+            action_link_2_enabled: brand.action_link_2_enabled,
+            action_link_3_text: brand.action_link_3_text,
+            action_link_3_url: brand.action_link_3_url,
+            action_link_3_new_tab: brand.action_link_3_new_tab,
+            action_link_3_enabled: brand.action_link_3_enabled,
           }));
 
           categoryResults.forEach((result) => {
@@ -281,11 +339,15 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } else if (result.type === 'brand') {
         if (result.link) {
-          try {
-            const url = new URL(result.link);
-            window.open(url.toString(), '_blank');
-          } catch {
-            // Do nothing
+          // Check if there are any visible action links
+          const actionLinks = getBrandActionLinks(result);
+          if (actionLinks.length === 0) {
+            try {
+              const url = new URL(result.link);
+              window.open(url.toString(), '_blank');
+            } catch {
+              // Do nothing
+            }
           }
         }
       }

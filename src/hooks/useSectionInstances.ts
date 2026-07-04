@@ -95,9 +95,12 @@ export const useSectionInstances = () => {
         .insert({
           section_type: sectionType,
           name,
+          heading: name,
           sort_order: newSort,
           is_visible: true,
           is_locked: false,
+          show_heading: true,
+          background_color: null,
         })
         .select()
         .single();

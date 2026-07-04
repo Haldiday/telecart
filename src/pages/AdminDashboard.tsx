@@ -62,6 +62,14 @@ interface Subcategory {
   about_button_text_color?: string | null;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
+interface BrandActionLinkItem {
+  id?: string;
+  text?: string | null;
+  url?: string | null;
+  new_tab?: boolean;
+  enabled?: boolean;
+}
+
 interface SubcategoryBrand { 
   id?: string; 
   name: string; 
@@ -70,6 +78,7 @@ interface SubcategoryBrand {
   description?: string | null;
   buttons?: CategoryButton[];
   is_visible: boolean; 
+  action_links?: BrandActionLinkItem[];
   action_link_1_text?: string | null;
   action_link_1_url?: string | null;
   action_link_1_new_tab?: boolean;
@@ -96,6 +105,65 @@ interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; he
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
 interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
+
+function normalizeAdminBrandActionLinks(brand: Partial<SubcategoryBrand> & Record<string, any>): BrandActionLinkItem[] {
+  const configuredLinks = Array.isArray((brand as any).action_links)
+    ? (brand as any).action_links
+        .map((link: BrandActionLinkItem | null | undefined) => ({
+          id: link?.id,
+          text: link?.text?.trim() || null,
+          url: link?.url?.trim() || null,
+          new_tab: Boolean(link?.new_tab),
+          enabled: link?.enabled ?? true,
+        }))
+        .filter((link) => Boolean(link.text || link.url || link.enabled !== undefined))
+    : [];
+
+  if (configuredLinks.length > 0) {
+    return configuredLinks;
+  }
+
+  const legacyLinks = [
+    {
+      text: brand.action_link_1_text,
+      url: brand.action_link_1_url,
+      new_tab: brand.action_link_1_new_tab,
+      enabled: brand.action_link_1_enabled,
+    },
+    {
+      text: brand.action_link_2_text,
+      url: brand.action_link_2_url,
+      new_tab: brand.action_link_2_new_tab,
+      enabled: brand.action_link_2_enabled,
+    },
+    {
+      text: brand.action_link_3_text,
+      url: brand.action_link_3_url,
+      new_tab: brand.action_link_3_new_tab,
+      enabled: brand.action_link_3_enabled,
+    },
+  ].filter((link) => Boolean(link.text || link.url || link.enabled !== undefined));
+
+  return legacyLinks.map((link, index) => ({
+    id: `legacy-${index}`,
+    text: link.text,
+    url: link.url,
+    new_tab: Boolean(link.new_tab),
+    enabled: link.enabled ?? true,
+  }));
+}
+
+function buildBrandActionLinkPayload(actionLinks: BrandActionLinkItem[] | undefined) {
+  return (actionLinks || [])
+    .map((link) => ({
+      id: link.id,
+      text: link.text?.trim() || null,
+      url: link.url?.trim() || null,
+      new_tab: Boolean(link.new_tab),
+      enabled: link.enabled ?? true,
+    }))
+    .filter((link) => Boolean(link.text || link.url));
+}
 interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
 interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
 interface AdvertiseSettings {
@@ -279,6 +347,13 @@ interface FooterSettings {
   get_recommendations_label?: string;
   get_recommendations_url?: string;
   get_recommendations_enabled?: boolean;
+  get_listed_visible?: boolean;
+  advertise_visible?: boolean;
+  write_for_us_visible?: boolean;
+  vendor_guidelines_visible?: boolean;
+  view_all_categories_visible?: boolean;
+  vendors_visible?: boolean;
+  buyers_visible?: boolean;
 }
 
 // Product Tab Sections types and constants
@@ -369,6 +444,7 @@ interface FAQ {
 }
 
 type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
+
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
@@ -681,6 +757,13 @@ export default function AdminDashboard() {
     get_recommendations_label: 'Get Recommendations',
     get_recommendations_url: '',
     get_recommendations_enabled: false,
+    get_listed_visible: true,
+    advertise_visible: true,
+    write_for_us_visible: true,
+    vendor_guidelines_visible: true,
+    view_all_categories_visible: true,
+    vendors_visible: true,
+    buyers_visible: true,
   });
   const [footerSubscribers, setFooterSubscribers] = useState<Array<{ id: string; email: string; created_at: string }>>([]);
   const [isLoadingContactSettings, setIsLoadingContactSettings] = useState(true);
@@ -1033,6 +1116,13 @@ export default function AdminDashboard() {
               get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
               get_recommendations_url: footerData.get_recommendations_url ?? '',
               get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
+              get_listed_visible: footerData.get_listed_visible ?? true,
+              advertise_visible: footerData.advertise_visible ?? true,
+              write_for_us_visible: footerData.write_for_us_visible ?? true,
+              vendor_guidelines_visible: footerData.vendor_guidelines_visible ?? true,
+              view_all_categories_visible: footerData.view_all_categories_visible ?? true,
+              vendors_visible: footerData.vendors_visible ?? true,
+              buyers_visible: footerData.buyers_visible ?? true,
             });
           }
           if (subscribers.data) {
@@ -1128,6 +1218,7 @@ export default function AdminDashboard() {
             description: brand.description,
             buttons: brand.buttons || [],
             is_visible: brand.is_visible,
+            action_links: normalizeAdminBrandActionLinks(brand),
             action_link_1_text: brand.action_link_1_text,
             action_link_1_url: brand.action_link_1_url,
             action_link_1_new_tab: brand.action_link_1_new_tab,
@@ -1451,6 +1542,7 @@ export default function AdminDashboard() {
           description: brand.description,
           buttons: brand.buttons || [],
           is_visible: brand.is_visible,
+          action_links: normalizeAdminBrandActionLinks(brand),
           action_link_1_text: brand.action_link_1_text,
           action_link_1_url: brand.action_link_1_url,
           action_link_1_new_tab: brand.action_link_1_new_tab,
@@ -1578,6 +1670,23 @@ export default function AdminDashboard() {
     }
   }
 
+  const updateFooterVisibilitySetting = async (updates: Record<string, unknown>) => {
+    const { data: footerData } = await supabase
+      .from('footer_settings')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (!footerData?.id) return;
+
+    const { error } = await supabase
+      .from('footer_settings')
+      .update(updates as any)
+      .eq('id', footerData.id);
+
+    if (error) throw error;
+  };
+
   // Advertise Page Functions
   const handleSaveAdvertiseSettings = async () => {
     try {
@@ -1649,6 +1758,11 @@ export default function AdminDashboard() {
       const { error } = result;
       if (error) throw error;
       
+      // Also save footer setting for Advertise
+      await updateFooterVisibilitySetting({
+        advertise_visible: footerSettings.advertise_visible ?? true,
+      });
+      
       console.log('Advertise settings saved successfully!');
       toast.success('Advertise settings saved successfully!');
       loadAll(); // Reload data to confirm save
@@ -1705,6 +1819,11 @@ export default function AdminDashboard() {
       const { error } = result;
       if (error) throw error;
 
+      // Also save footer setting for Write For Us
+      await updateFooterVisibilitySetting({
+        write_for_us_visible: footerSettings.write_for_us_visible ?? true,
+      });
+
       console.log('Write For Us settings saved successfully!');
       toast.success('Write For Us settings saved successfully!');
       loadAll();
@@ -1760,6 +1879,11 @@ export default function AdminDashboard() {
       const { error } = result;
       if (error) throw error;
 
+      // Also save footer setting for Vendor Guidelines
+      await updateFooterVisibilitySetting({
+        vendor_guidelines_visible: footerSettings.vendor_guidelines_visible ?? true,
+      });
+
       console.log('Vendor Guidelines settings saved successfully!');
       toast.success('Vendor Guidelines settings saved successfully!');
       loadAll();
@@ -1811,6 +1935,11 @@ export default function AdminDashboard() {
       console.log('Supabase result:', result);
       const { error } = result;
       if (error) throw error;
+
+      // Also save footer setting for Browse All Directories
+      await updateFooterVisibilitySetting({
+        view_all_categories_visible: footerSettings.view_all_categories_visible ?? true,
+      });
 
       console.log('Browse All Directories settings saved successfully!');
       toast.success('Browse All Directories settings saved successfully!');
@@ -2169,6 +2298,11 @@ export default function AdminDashboard() {
           setGetListedSettings(updateResult.data[0] as any);
         }
       }
+
+      // Also save footer setting for Get Listed
+      await updateFooterVisibilitySetting({
+        get_listed_visible: footerSettings.get_listed_visible ?? true,
+      });
 
       const latestSettingsResult = await supabase
         .from('get_listed_settings')
@@ -3502,7 +3636,7 @@ export default function AdminDashboard() {
       if (categoryId) {
         // Upsert subcategories (handles both insert and update)
         const subsToUpsert = editSubs.map((sub, index) => ({
-          id: sub.id,
+          id: sub.id, 
           category_id: categoryId,
           name: sub.name,
           link: sub.link || null,
@@ -3628,18 +3762,19 @@ export default function AdminDashboard() {
                 buttons: brand.buttons || [],
                 is_visible: brand.is_visible ?? true,
                 sort_order: index,
-                action_link_1_text: brand.action_link_1_text,
-                action_link_1_url: brand.action_link_1_url,
-                action_link_1_new_tab: brand.action_link_1_new_tab,
-                action_link_1_enabled: brand.action_link_1_enabled,
-                action_link_2_text: brand.action_link_2_text,
-                action_link_2_url: brand.action_link_2_url,
-                action_link_2_new_tab: brand.action_link_2_new_tab,
-                action_link_2_enabled: brand.action_link_2_enabled,
-                action_link_3_text: brand.action_link_3_text,
-                action_link_3_url: brand.action_link_3_url,
-                action_link_3_new_tab: brand.action_link_3_new_tab,
-                action_link_3_enabled: brand.action_link_3_enabled,
+                action_links: buildBrandActionLinkPayload(brand.action_links),
+                action_link_1_text: brand.action_links?.[0]?.text ?? brand.action_link_1_text,
+                action_link_1_url: brand.action_links?.[0]?.url ?? brand.action_link_1_url,
+                action_link_1_new_tab: brand.action_links?.[0]?.new_tab ?? brand.action_link_1_new_tab,
+                action_link_1_enabled: brand.action_links?.[0]?.enabled ?? brand.action_link_1_enabled,
+                action_link_2_text: brand.action_links?.[1]?.text ?? brand.action_link_2_text,
+                action_link_2_url: brand.action_links?.[1]?.url ?? brand.action_link_2_url,
+                action_link_2_new_tab: brand.action_links?.[1]?.new_tab ?? brand.action_link_2_new_tab,
+                action_link_2_enabled: brand.action_links?.[1]?.enabled ?? brand.action_link_2_enabled,
+                action_link_3_text: brand.action_links?.[2]?.text ?? brand.action_link_3_text,
+                action_link_3_url: brand.action_links?.[2]?.url ?? brand.action_link_3_url,
+                action_link_3_new_tab: brand.action_links?.[2]?.new_tab ?? brand.action_link_3_new_tab,
+                action_link_3_enabled: brand.action_links?.[2]?.enabled ?? brand.action_link_3_enabled,
                 primary_cta_label: brand.primary_cta_label,
                 primary_cta_link: brand.primary_cta_link,
                 primary_cta_visible: brand.primary_cta_visible,
@@ -3667,18 +3802,19 @@ export default function AdminDashboard() {
                   buttons: brand.buttons || [],
                   is_visible: brand.is_visible ?? true,
                   sort_order: index,
-                  action_link_1_text: brand.action_link_1_text,
-                  action_link_1_url: brand.action_link_1_url,
-                  action_link_1_new_tab: brand.action_link_1_new_tab,
-                  action_link_1_enabled: brand.action_link_1_enabled,
-                  action_link_2_text: brand.action_link_2_text,
-                  action_link_2_url: brand.action_link_2_url,
-                  action_link_2_new_tab: brand.action_link_2_new_tab,
-                  action_link_2_enabled: brand.action_link_2_enabled,
-                  action_link_3_text: brand.action_link_3_text,
-                  action_link_3_url: brand.action_link_3_url,
-                  action_link_3_new_tab: brand.action_link_3_new_tab,
-                  action_link_3_enabled: brand.action_link_3_enabled,
+                  action_links: buildBrandActionLinkPayload(brand.action_links),
+                  action_link_1_text: brand.action_links?.[0]?.text ?? brand.action_link_1_text,
+                  action_link_1_url: brand.action_links?.[0]?.url ?? brand.action_link_1_url,
+                  action_link_1_new_tab: brand.action_links?.[0]?.new_tab ?? brand.action_link_1_new_tab,
+                  action_link_1_enabled: brand.action_links?.[0]?.enabled ?? brand.action_link_1_enabled,
+                  action_link_2_text: brand.action_links?.[1]?.text ?? brand.action_link_2_text,
+                  action_link_2_url: brand.action_links?.[1]?.url ?? brand.action_link_2_url,
+                  action_link_2_new_tab: brand.action_links?.[1]?.new_tab ?? brand.action_link_2_new_tab,
+                  action_link_2_enabled: brand.action_links?.[1]?.enabled ?? brand.action_link_2_enabled,
+                  action_link_3_text: brand.action_links?.[2]?.text ?? brand.action_link_3_text,
+                  action_link_3_url: brand.action_links?.[2]?.url ?? brand.action_link_3_url,
+                  action_link_3_new_tab: brand.action_links?.[2]?.new_tab ?? brand.action_link_3_new_tab,
+                  action_link_3_enabled: brand.action_links?.[2]?.enabled ?? brand.action_link_3_enabled,
                   primary_cta_label: brand.primary_cta_label,
                   primary_cta_link: brand.primary_cta_link,
                   primary_cta_visible: brand.primary_cta_visible,
@@ -3989,6 +4125,13 @@ export default function AdminDashboard() {
         get_recommendations_label: footerSettings.get_recommendations_label ?? 'Get Recommendations',
         get_recommendations_url: footerSettings.get_recommendations_url ?? '',
         get_recommendations_enabled: footerSettings.get_recommendations_enabled ?? false,
+        get_listed_visible: footerSettings.get_listed_visible ?? true,
+        advertise_visible: footerSettings.advertise_visible ?? true,
+        write_for_us_visible: footerSettings.write_for_us_visible ?? true,
+        vendor_guidelines_visible: footerSettings.vendor_guidelines_visible ?? true,
+        view_all_categories_visible: footerSettings.view_all_categories_visible ?? true,
+        vendors_visible: footerSettings.vendors_visible ?? true,
+        buyers_visible: footerSettings.buyers_visible ?? true,
         updated_at: new Date().toISOString(),
       };
 
@@ -5374,7 +5517,7 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   {/* Inline Edit Subcategory View */}
-                  {(() => {
+                                    {(() => {
                     const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
                     if (!editingSub) return null;
                     return (
@@ -5432,8 +5575,8 @@ export default function AdminDashboard() {
 
                     
 
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
+                      <div className="space-y-3 border-t pt-4">
+                       <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
                       <textarea
                         value={editingSub.custom_link || ''}
                         onChange={(e) => {
@@ -5443,6 +5586,7 @@ export default function AdminDashboard() {
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
                       />
                     </div>
+                  
 
                  
                     <div className="border-t">
@@ -5496,18 +5640,17 @@ export default function AdminDashboard() {
                                         folder="brands"
                                       />
                                     </div> */}
-                                    <input
-                                      placeholder="Brand name"
-                                      value={brand.name || ''}
-                                      onChange={(e) => {
-                                        const newBrands = [...editSubBrands];
-                                        newBrands[index] = { ...newBrands[index], name: e.target.value };
-                                        setEditSubBrands(newBrands);
-                                      }}
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
-                                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Brand Visibility</span>
+                                    <div className="flex items-center gap-3">
+                                      <input
+                                        placeholder="Brand name"
+                                        value={brand.name || ''}
+                                        onChange={(e) => {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands[index] = { ...newBrands[index], name: e.target.value };
+                                          setEditSubBrands(newBrands);
+                                        }}
+                                        className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                      />
                                       <div className="flex items-center gap-2">
                                         <Switch
                                           checked={brand.is_visible ?? true}
@@ -5517,7 +5660,7 @@ export default function AdminDashboard() {
                                             setEditSubBrands(newBrands);
                                           }}
                                         />
-                                        <span className="text-[10px] font-medium uppercase text-muted-foreground">{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                                        <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
                                       </div>
                                     </div>
                                     {/* <textarea
@@ -5542,66 +5685,110 @@ export default function AdminDashboard() {
                                     />
 
                                     <div className="mt-4 space-y-4 border-t pt-4">
-                                      <h4 className="text-sm font-semibold text-foreground">Brand action links</h4>
-                                      {['action_link_1', 'action_link_2', 'action_link_3'].map((field, actionIndex) => {
-                                        const textKey = `${field}_text` as 'action_link_1_text' | 'action_link_2_text' | 'action_link_3_text';
-                                        const urlKey = `${field}_url` as 'action_link_1_url' | 'action_link_2_url' | 'action_link_3_url';
-                                        const newTabKey = `${field}_new_tab` as 'action_link_1_new_tab' | 'action_link_2_new_tab' | 'action_link_3_new_tab';
-                                        const enabledKey = `${field}_enabled` as 'action_link_1_enabled' | 'action_link_2_enabled' | 'action_link_3_enabled';
-                                        return (
-                                          <div key={field} className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
-                                            <div className="flex items-center justify-between gap-3">
-                                              <div>
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Link {actionIndex + 1}</p>
-                                                <p className="text-[11px] text-muted-foreground">Visible only if enabled and text/url are set.</p>
-                                              </div>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <h4 className="text-sm font-semibold text-foreground">Brand action links</h4>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newBrands = [...editSubBrands];
+                                            const currentLinks = Array.isArray(newBrands[index].action_links) ? newBrands[index].action_links! : [];
+                                            newBrands[index] = {
+                                              ...newBrands[index],
+                                              action_links: [
+                                                ...currentLinks,
+                                                {
+                                                  id: crypto.randomUUID(),
+                                                  text: '',
+                                                  url: '',
+                                                  new_tab: false,
+                                                  enabled: true,
+                                                },
+                                              ],
+                                            };
+                                            setEditSubBrands(newBrands);
+                                          }}
+                                          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                        >
+                                          <Plus className="w-4 h-4" /> Add link
+                                        </button>
+                                      </div>
+                                      {(brand.action_links || []).length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">No action links added yet.</p>
+                                      ) : (
+                                        (brand.action_links || []).map((actionLink, actionIndex) => (
+                                          <div key={actionLink.id || actionIndex} className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-sm font-medium">Link {actionIndex + 1}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const newBrands = [...editSubBrands];
+                                                  const currentLinks = [...(newBrands[index].action_links || [])];
+                                                  currentLinks.splice(actionIndex, 1);
+                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
+                                                  setEditSubBrands(newBrands);
+                                                }}
+                                                className="p-1 text-destructive"
+                                              >
+                                                <X className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                              <input
+                                                placeholder="Link text"
+                                                value={actionLink.text || ''}
+                                                onChange={(e) => {
+                                                  const newBrands = [...editSubBrands];
+                                                  const currentLinks = [...(newBrands[index].action_links || [])];
+                                                  currentLinks[actionIndex] = { ...currentLinks[actionIndex], text: e.target.value || null };
+                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
+                                                  setEditSubBrands(newBrands);
+                                                }}
+                                                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                              />
                                               <div className="flex items-center gap-2">
                                                 <Switch
-                                                  checked={Boolean(brand[enabledKey])}
+                                                  checked={Boolean(actionLink.enabled ?? true)}
                                                   onCheckedChange={(checked) => {
                                                     const newBrands = [...editSubBrands];
-                                                    newBrands[index] = { ...newBrands[index], [enabledKey]: checked };
+                                                    const currentLinks = [...(newBrands[index].action_links || [])];
+                                                    currentLinks[actionIndex] = { ...currentLinks[actionIndex], enabled: checked };
+                                                    newBrands[index] = { ...newBrands[index], action_links: currentLinks };
                                                     setEditSubBrands(newBrands);
                                                   }}
                                                 />
-                                                <span className="text-[10px] font-medium uppercase text-muted-foreground">{brand[enabledKey] ? 'Enabled' : 'Hidden'}</span>
+                                                <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{actionLink.enabled ?? true ? 'Enabled' : 'Hidden'}</span>
                                               </div>
                                             </div>
-
-                                            <input
-                                              placeholder="Link text"
-                                              value={brand[textKey] || ''}
-                                              onChange={(e) => {
-                                                const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], [textKey]: e.target.value || null };
-                                                setEditSubBrands(newBrands);
-                                              }}
-                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                            />
                                             <input
                                               placeholder="Link URL"
-                                              value={brand[urlKey] || ''}
+                                              value={actionLink.url || ''}
                                               onChange={(e) => {
                                                 const newBrands = [...editSubBrands];
-                                                newBrands[index] = { ...newBrands[index], [urlKey]: e.target.value || null };
+                                                const currentLinks = [...(newBrands[index].action_links || [])];
+                                                currentLinks[actionIndex] = { ...currentLinks[actionIndex], url: e.target.value || null };
+                                                newBrands[index] = { ...newBrands[index], action_links: currentLinks };
                                                 setEditSubBrands(newBrands);
                                               }}
                                               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                             />
-                                            <div className="flex items-center gap-2">
-                                              <Switch
-                                                checked={Boolean(brand[newTabKey])}
-                                                onCheckedChange={(checked) => {
+                                            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                              <input
+                                                type="checkbox"
+                                                checked={Boolean(actionLink.new_tab)}
+                                                onChange={(e) => {
                                                   const newBrands = [...editSubBrands];
-                                                  newBrands[index] = { ...newBrands[index], [newTabKey]: checked };
+                                                  const currentLinks = [...(newBrands[index].action_links || [])];
+                                                  currentLinks[actionIndex] = { ...currentLinks[actionIndex], new_tab: e.target.checked };
+                                                  newBrands[index] = { ...newBrands[index], action_links: currentLinks };
                                                   setEditSubBrands(newBrands);
                                                 }}
                                               />
-                                              <span className="text-[12px] text-muted-foreground">Open in new tab</span>
-                                            </div>
+                                              Open in new tab
+                                            </label>
                                           </div>
-                                        );
-                                      })}
+                                        ))
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -7195,6 +7382,22 @@ export default function AdminDashboard() {
           {/* ADVERTISE PAGE */}
           {tab === 'advertise' && (
             <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
+              {/* Footer Visibility Toggle */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base">Show "Advertise" in Footer</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={footerSettings.advertise_visible ?? true}
+                      onCheckedChange={(v) => setFooterSettings({ ...footerSettings, advertise_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">{(footerSettings.advertise_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                  </div>
+                </div>
+              </div>
               {/* Hero Section */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -7551,8 +7754,20 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 gap-6">
-                  
-                  
+                  {/* Footer Visibility Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <label className="block text-sm font-medium">Show "Get Listed" in Footer</label>
+                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={footerSettings.get_listed_visible ?? true}
+                        onCheckedChange={(v) => setFooterSettings({ ...footerSettings, get_listed_visible: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">{(footerSettings.get_listed_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -8112,6 +8327,38 @@ export default function AdminDashboard() {
                     className="min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   />
                 </div>
+                
+                <div className="space-y-4 border-t pt-6">
+                  <h3 className="font-semibold text-base mb-4">Footer Column Visibility</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium">Vendors Column</label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={footerSettings.vendors_visible ?? true}
+                          onCheckedChange={(v) => setFooterSettings({ ...footerSettings, vendors_visible: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">{(footerSettings.vendors_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium">Buyers Column</label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={footerSettings.buyers_visible ?? true}
+                          onCheckedChange={(v) => setFooterSettings({ ...footerSettings, buyers_visible: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">{(footerSettings.buyers_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="space-y-6 border-t pt-6">
                   <h3 className="font-semibold text-base mb-4">Contact Information</h3>
@@ -8256,6 +8503,22 @@ export default function AdminDashboard() {
           {/* WRITE FOR US TAB */}
           {tab === 'write-for-us' && (
             <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Footer Visibility Toggle */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base">Show "Write For Us" in Footer</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={footerSettings.write_for_us_visible ?? true}
+                      onCheckedChange={(v) => setFooterSettings({ ...footerSettings, write_for_us_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">{(footerSettings.write_for_us_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                  </div>
+                </div>
+              </div>
               {/* Write For Us Settings */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -8326,6 +8589,22 @@ export default function AdminDashboard() {
           {/* VENDOR GUIDELINES TAB */}
           {tab === 'vendor-guidelines' && (
             <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Footer Visibility Toggle */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base">Show "Vendor Guidelines" in Footer</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={footerSettings.vendor_guidelines_visible ?? true}
+                      onCheckedChange={(v) => setFooterSettings({ ...footerSettings, vendor_guidelines_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">{(footerSettings.vendor_guidelines_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                  </div>
+                </div>
+              </div>
               {/* Vendor Guidelines Settings */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -8388,8 +8667,25 @@ export default function AdminDashboard() {
           )}
 
           {/* BROWSE ALL DIRECTORIES TAB */}
+          {/* BROWSE ALL DIRECTORIES PAGE */}
           {tab === 'browse-all-directories' && (
             <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+              {/* Footer Visibility Toggle */}
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base">Show "View All Categories" in Footer</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={footerSettings.view_all_categories_visible ?? true}
+                      onCheckedChange={(v) => setFooterSettings({ ...footerSettings, view_all_categories_visible: v })}
+                    />
+                    <span className="text-sm text-muted-foreground">{(footerSettings.view_all_categories_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                  </div>
+                </div>
+              </div>
               {/* Browse All Directories Settings */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">

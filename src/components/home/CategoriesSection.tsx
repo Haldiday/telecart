@@ -45,9 +45,10 @@ interface Category {
 
 interface CategoriesSectionProps {
   sectionId: string;
+  backgroundColor?: string | null;
 }
 
-export default function CategoriesSection({ sectionId }: CategoriesSectionProps) {
+export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor }: CategoriesSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
@@ -55,6 +56,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
   const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
   const [heading, setHeading] = useState('Explore companies by category');
   const [showHeading, setShowHeading] = useState(true);
+  const [sectionBackgroundColor, setSectionBackgroundColor] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -84,13 +86,14 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
     async function loadSection() {
       const { data } = await supabase
         .from('page_sections')
-        .select('heading, name, show_heading')
+        .select('heading, name, show_heading, background_color')
         .eq('id', sectionId)
         .single();
       
       if (data && mounted) {
         setHeading(data.heading || data.name || 'Explore companies by category');
         setShowHeading(data.show_heading !== false);
+        setSectionBackgroundColor(data.background_color);
       }
     }
 
@@ -118,9 +121,15 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
   if (categories.length === 0) return null;
 
+  const toggleSubcategory = (subcategoryId: string) => {
+    setSubcategoryExpanded((prev) => (
+      prev[subcategoryId] ? {} : { [subcategoryId]: true }
+    ));
+  };
+
   return (
-    <section id={`section-${sectionId}`} className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]">
-  
+    <section id={`section-${sectionId}`} className="py-2 md:py-3" style={{ backgroundColor: propBackgroundColor || sectionBackgroundColor || undefined }}>
+     
 
       <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
@@ -181,7 +190,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
                         const handleSubcategoryClick = () => {
                           if (hasBrands) {
-                            setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                            toggleSubcategory(sub.id);
                           } else if (sub.custom_link) {
                             window.open(sub.custom_link, '_blank');
                           }
@@ -211,7 +220,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                             {hasBrands && isSubExpanded && (
                               <div className="px-4 pb-4 pt-1 space-y-3">
                                 <div className="space-y-2 border-l-2 border-blue-500 pl-4 ml-1">
-                                  {displayBrands.map((brand) => (
+                                  {displayBrands.slice(0, 5).map((brand) => (
                                   <BrandActionLinks
                                     key={brand.id}
                                     brand={brand}
@@ -222,6 +231,14 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                     }))}
                                   />
                                 ))}
+                                {displayBrands.length > 5 && (
+                                  <Link
+                                    to={`/category/${category.id}/subcategory/${sub.id}/brands`}
+                                    className="text-sm font-semibold text-primary hover:underline"
+                                  >
+                                    See all →
+                                  </Link>
+                                )}
                                 </div>
                               </div>
                             )}
@@ -276,7 +293,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
 
                       const handleSubcategoryClick = () => {
                         if (hasBrands) {
-                          setSubcategoryExpanded(prev => ({ ...prev, [sub.id]: !prev[sub.id] }));
+                          toggleSubcategory(sub.id);
                         } else if (sub.custom_link) {
                           window.open(sub.custom_link, '_blank');
                         }
@@ -304,7 +321,7 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                           {hasBrands && isSubExpanded && (
                             <div className="pb-3 pt-1 space-y-2">
                               <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-                                {displayBrands.map((brand) => (
+                                {displayBrands.slice(0, 5).map((brand) => (
                                   <BrandActionLinks
                                     key={brand.id}
                                     brand={brand}
@@ -315,6 +332,14 @@ export default function CategoriesSection({ sectionId }: CategoriesSectionProps)
                                     }))}
                                   />
                                 ))}
+                                {displayBrands.length > 5 && (
+                                  <Link
+                                    to={`/category/${category.id}/subcategory/${sub.id}/brands`}
+                                    className="text-sm font-semibold text-primary hover:underline"
+                                  >
+                                    See all →
+                                  </Link>
+                                )}
                               </div>
                             </div>
                           )}

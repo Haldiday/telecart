@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface LegalPage {
   id: string;
@@ -45,9 +46,9 @@ export default function RefundPolicy3() {
       <main className="flex-1 bg-white pt-24 md:pt-36 pb-12">
         <div className="container mx-auto px-4 md:px-8 max-w-[1400px]">
           <h1 className="text-3xl md:text-[32px] font-semibold mb-8 text-[#222222]">{page?.title || 'Refund Policy 3'}</h1>
-          <div 
+          <RichTextContent
+            content={page?.content || '<p>No content available.</p>'}
             className="text-[#333333] legal-content tiptap-editor-content"
-            dangerouslySetInnerHTML={{ __html: page?.content || '<p>No content available.</p>' }}
           />
         </div>
       </main>

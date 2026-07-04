@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface FooterSettings {
   description: string;
@@ -52,6 +53,13 @@ interface FooterSettings {
   get_recommendations_label?: string;
   get_recommendations_url?: string;
   get_recommendations_enabled?: boolean;
+  get_listed_visible?: boolean;
+  advertise_visible?: boolean;
+  write_for_us_visible?: boolean;
+  vendor_guidelines_visible?: boolean;
+  view_all_categories_visible?: boolean;
+  vendors_visible?: boolean;
+  buyers_visible?: boolean;
 }
 
 interface LegalPage {
@@ -137,6 +145,13 @@ const getCachedFooterSettings = (): FooterSettings => {
     refund_policy_2_visible: true,
     refund_policy_3_visible: true,
     refund_policy_4_visible: true,
+    get_listed_visible: true,
+    advertise_visible: true,
+    write_for_us_visible: true,
+    vendor_guidelines_visible: true,
+    view_all_categories_visible: true,
+    vendors_visible: true,
+    buyers_visible: true,
   };
 
   if (typeof window === 'undefined') {
@@ -279,6 +294,13 @@ export default function Footer() {
                     get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
                     get_recommendations_url: footerData.get_recommendations_url ?? '',
                     get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
+                    get_listed_visible: footerData.get_listed_visible ?? true,
+                    advertise_visible: footerData.advertise_visible ?? true,
+                    write_for_us_visible: footerData.write_for_us_visible ?? true,
+                    vendor_guidelines_visible: footerData.vendor_guidelines_visible ?? true,
+                    view_all_categories_visible: footerData.view_all_categories_visible ?? true,
+                    vendors_visible: footerData.vendors_visible ?? true,
+                    buyers_visible: footerData.buyers_visible ?? true,
                   };
 
           setSettings(prev => ({ ...prev, ...nextSettings }));
@@ -425,10 +447,11 @@ export default function Footer() {
             <div className="flex items-center gap-3 pt-0.5">
               <span className="text-2xl md:text-3xl font-bold text-black">Biz<span className="text-[#1d4ed8]">Req</span></span>
             </div>
-            {settings.description && (
-              <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-xs">
-                {settings.description}
-              </p>
+            {settings.description && settings.description_visible !== false && (
+              <RichTextContent
+                content={settings.description}
+                className="text-sm md:text-[17px] text-gray-600 leading-relaxed max-w-xs [&_p]:mb-2"
+              />
             )}
           </div>
 
@@ -468,49 +491,63 @@ export default function Footer() {
           </div>
 
           {/* Column 3: Vendors */}
-          <div>
-            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Vendors</h4>
-            <ul className="space-y-3">
-              <li><Link to="/get-listed" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Get Listed</Link></li>
-              <li><Link to="/advertise" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Advertise</Link></li>
-              <li><Link to="/write-for-us" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Write for Us</Link></li>
-              <li><Link to="/vendor-guidelines" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Vendor Guidelines</Link></li>
-            </ul>
-          </div>
+          {settings.vendors_visible && (
+            <div>
+              <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Vendors</h4>
+              <ul className="space-y-3">
+                {settings.get_listed_visible && (
+                  <li><Link to="/get-listed" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Get Listed</Link></li>
+                )}
+                {settings.advertise_visible && (
+                  <li><Link to="/advertise" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Advertise</Link></li>
+                )}
+                {settings.write_for_us_visible && (
+                  <li><Link to="/write-for-us" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Write for Us</Link></li>
+                )}
+                {settings.vendor_guidelines_visible && (
+                  <li><Link to="/vendor-guidelines" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">Vendor Guidelines</Link></li>
+                )}
+              </ul>
+            </div>
+          )}
 
           {/* Column 4: Buyers */}
-          <div>
-            <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Buyers</h4>
-            <ul className="space-y-3">
-              <li><Link to="/browse-all-directories" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">View All Categories</Link></li>
-              {settings.submit_rft_enabled && settings.submit_rft_label && (
-                <li>
-                  {settings.submit_rft_url ? (
-                    settings.submit_rft_url.startsWith('/') ? (
-                      <Link to={settings.submit_rft_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</Link>
+          {settings.buyers_visible && (
+            <div>
+              <h4 className="font-semibold mb-6 text-[16px] text-[#222222]">Buyers</h4>
+              <ul className="space-y-3">
+                {settings.view_all_categories_visible && (
+                  <li><Link to="/browse-all-directories" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">View All Categories</Link></li>
+                )}
+                {settings.submit_rft_enabled && settings.submit_rft_label && (
+                  <li>
+                    {settings.submit_rft_url ? (
+                      settings.submit_rft_url.startsWith('/') ? (
+                        <Link to={settings.submit_rft_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</Link>
+                      ) : (
+                        <a href={settings.submit_rft_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</a>
+                      )
                     ) : (
-                      <a href={settings.submit_rft_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.submit_rft_label}</a>
-                    )
-                  ) : (
-                    <span className="font-regular text-[16px] text-[#666666]">{settings.submit_rft_label}</span>
-                  )}
-                </li>
-              )}
-              {settings.get_recommendations_enabled && settings.get_recommendations_label && (
-                <li>
-                  {settings.get_recommendations_url ? (
-                    settings.get_recommendations_url.startsWith('/') ? (
-                      <Link to={settings.get_recommendations_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</Link>
+                      <span className="font-regular text-[16px] text-[#666666]">{settings.submit_rft_label}</span>
+                    )}
+                  </li>
+                )}
+                {settings.get_recommendations_enabled && settings.get_recommendations_label && (
+                  <li>
+                    {settings.get_recommendations_url ? (
+                      settings.get_recommendations_url.startsWith('/') ? (
+                        <Link to={settings.get_recommendations_url} className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</Link>
+                      ) : (
+                        <a href={settings.get_recommendations_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</a>
+                      )
                     ) : (
-                      <a href={settings.get_recommendations_url} target="_blank" rel="noopener noreferrer" className="font-regular text-[16px] text-[#666666] hover:text-[#0055DD] transition-colors">{settings.get_recommendations_label}</a>
-                    )
-                  ) : (
-                    <span className="font-regular text-[16px] text-[#666666]">{settings.get_recommendations_label}</span>
-                  )}
-                </li>
-              )}
-            </ul>
-          </div>
+                      <span className="font-regular text-[16px] text-[#666666]">{settings.get_recommendations_label}</span>
+                    )}
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
 
           {/* Column 5: Reach Us */}
           <div>

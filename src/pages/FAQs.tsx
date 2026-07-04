@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface FAQ {
   id: string;
@@ -83,13 +84,16 @@ export default function FAQs() {
                     onClick={() => toggleAccordion(faq.id)}
                     className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
                   >
-                    <span className="text-lg font-semibold text-[#111111]" dangerouslySetInnerHTML={{ __html: faq.question }} />
+                    <RichTextContent
+                      content={faq.question}
+                      className="text-lg font-semibold text-[#111111] [&_p]:m-0"
+                    />
                     <span className={`text-2xl transition-transform duration-300 ${openId === faq.id ? 'rotate-45' : ''}`}>
                       +
                     </span>
                   </button>
                   {openId === faq.id && (
-                    <div className="mt-2 text-[#333333]" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                    <RichTextContent content={faq.answer} className="mt-2 text-[#333333]" />
                   )}
                 </div>
               ))}

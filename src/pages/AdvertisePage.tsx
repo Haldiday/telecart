@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface AdvertiseSettings {
   id?: string;
@@ -177,9 +178,10 @@ const AdvertisePage = () => {
                   <h1 className="text-[32px] md:text-[44px] font-medium text-[#24272C] leading-tight">
                     {settings.hero_main_heading}
                   </h1>
-                  <p className="text-[16px] font-normal text-[#777777] text-justify leading-relaxed">
-                    {settings.hero_description}
-                  </p>
+                  <RichTextContent
+                    content={settings.hero_description}
+                    className="text-[16px] font-normal text-[#777777] text-justify leading-relaxed"
+                  />
                   {settings.hero_button_text && settings.hero_button_link && (
                     <Button className="bg-[#1d4ed8] hover:bg-[#1540b5] text-white text-lg px-8 py-6">
                       <a href={settings.hero_button_link}>{settings.hero_button_text}</a>
@@ -208,7 +210,10 @@ const AdvertisePage = () => {
                 <h2 className="font-['Roboto',system-ui] text-[32px] font-semibold leading-[33px] text-[#222222] mb-2">
                   {settings.marketing_cards_main_heading}
                 </h2>
-                <p className="font-['Roboto',system-ui] text-[16px] font-medium leading-[25.2px] text-[#24272C]">{settings.marketing_cards_subheading}</p>
+                <RichTextContent
+                  content={settings.marketing_cards_subheading}
+                  className="font-['Roboto',system-ui] text-[16px] font-medium leading-[25.2px] text-[#24272C] [&_p]:mb-0"
+                />
                 <div className="w-16 h-1 bg-[#1d4ed8] mx-auto mt-4 rounded-full"></div>
               </div>
 
@@ -230,7 +235,10 @@ const AdvertisePage = () => {
                         </div>
                       )}
                       <h3 className="font-['Roboto',system-ui] text-[20px] font-medium leading-[24px] flex justify-center items-center text-[#24272C] mb-4">{card.heading}</h3>
-                      <p className="font-['Roboto',system-ui] text-[14px] font-normal leading-[21px] text-[#24272C] text-center">{card.description}</p>
+                      <RichTextContent
+                        content={card.description}
+                        className="font-['Roboto',system-ui] text-[14px] font-normal leading-[21px] text-[#24272C] text-center"
+                      />
                     </div>
                   ))}
               </div>
@@ -252,9 +260,10 @@ const AdvertisePage = () => {
                   <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
                     {settings.section3_main_heading}
                   </h2>
-                  <p className="text-xl text-gray-600 leading-relaxed">
-                    {settings.section3_description}
-                  </p>
+                  <RichTextContent
+                    content={settings.section3_description}
+                    className="text-xl text-gray-600 leading-relaxed"
+                  />
                 </div>
               </div>
             </div>
@@ -275,9 +284,10 @@ const AdvertisePage = () => {
                   <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
                     {settings.section4_main_heading}
                   </h2>
-                  <p className="text-xl text-gray-600 leading-relaxed">
-                    {settings.section4_description}
-                  </p>
+                  <RichTextContent
+                    content={settings.section4_description}
+                    className="text-xl text-gray-600 leading-relaxed"
+                  />
                   {settings.section4_button_text && settings.section4_button_link && (
                     <Button className="bg-[#1d4ed8] hover:bg-[#1540b5] text-white text-lg px-8 py-6">
                       <a href={settings.section4_button_link}>{settings.section4_button_text}</a>
@@ -327,9 +337,10 @@ const AdvertisePage = () => {
                     <h2 className="font-['Roboto',system-ui] text-[24px] font-medium leading-[26.4px] text-[#24272C]">
                       {section.main_heading}
                     </h2>
-                    <p className="font-['Roboto',system-ui] text-[16px] font-normal leading-[24px] text-[#24272C]">
-                      {section.description}
-                    </p>
+                    <RichTextContent
+                      content={section.description}
+                      className="font-['Roboto',system-ui] text-[16px] font-normal leading-[24px] text-[#24272C]"
+                    />
                     {section.button_text && section.button_link && (
                       <Button className="bg-[#1d4ed8] hover:bg-[#1540b5] text-white text-lg px-8 py-6">
                         <a href={section.button_link}>{section.button_text}</a>

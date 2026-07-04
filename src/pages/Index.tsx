@@ -143,10 +143,10 @@ export default function Index() {
 
               // Hide "See All" on mobile for Featured Cards in overview
               if (section.section_type === 'cards') {
-                return <Component sectionId={section.id} hideSeeAllOnMobile={true} />;
+                return <Component sectionId={section.id} hideSeeAllOnMobile={true} backgroundColor={section.background_color} />;
               }
 
-              return <Component sectionId={section.id} />;
+              return <Component sectionId={section.id} backgroundColor={section.background_color} />;
             })();
 
             // Apply background color to section container if specified

@@ -129,7 +129,7 @@ export default function BrowseAllDirectoriesPage() {
       <Header />
 
       <section className="py-12 px-4 md:px-8 mt-12 md:mt-24" style={{ backgroundColor: '#eff3f8' }}>
-        <div className="w-full">
+        <div className="max-w-4xl mx-auto">
           <h1 className="font-roboto text-[32px] font-semibold leading-[48px] text-[#222222] mb-4">
             {settings?.heading || 'All Directories'}
           </h1>

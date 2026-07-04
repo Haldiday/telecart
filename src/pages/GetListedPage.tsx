@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, ChevronDown, ChevronUp, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface GetListedPlan {
   id: string;
@@ -184,9 +185,17 @@ const GetListedPage = () => {
 
   const getPrice = (plan: GetListedPlan) => {
     if (currency === 'INR') {
-      return `₹${plan.price_inr.toLocaleString('en-IN')}`;
+      return (
+        <>
+          <span className="font-sans">₹</span>{plan.price_inr.toLocaleString('en-IN')}
+        </>
+      );
     }
-    return `$${plan.price_usd.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+    return (
+      <>
+        <span className="font-sans">$</span>{plan.price_usd.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+      </>
+    );
   };
 
   const getButtonLink = (plan: GetListedPlan) => {
@@ -214,16 +223,12 @@ const GetListedPage = () => {
       return <Minus className="w-4 h-4 text-gray-400 mx-auto" />;
     }
     if (cell.tick_enabled) {
-      return <CheckCircle2 className="w-6 h-6 text-green-500 mx-auto" />;
+      return <CheckCircle2 className="w-6 h-6 text-[#1d4ed8] mx-auto" />;
     }
     if (cell.custom_text) {
       return <span className="text-gray-700 font-medium">{cell.custom_text}</span>;
     }
     return <Minus className="w-4 h-4 text-gray-400 mx-auto" />;
-  };
-
-  const renderContent = (html: string) => {
-    return { __html: html };
   };
 
   const visiblePlans = plans.filter(p => p.visible);
@@ -234,7 +239,7 @@ const GetListedPage = () => {
 
       <main className="flex-1">
         {/* Pricing Section */}
-        <section className="py-16 px-4 md:px-8 mt-20 md:mt-24">
+        <section className="py-16 px-8 md:px-16 lg:px-24 mt-20 md:mt-24">
           <div className={pageContentContainerClassName}>
             {!isLoading && (
               <h1 className="font-['Golos Text',sans-serif'] text-[32px] font-semibold leading-normal text-[#222222] justify-center text-center mb-12">
@@ -269,7 +274,7 @@ const GetListedPage = () => {
             </div>
 
             {/* Pricing Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               {visiblePlans.map((plan) => {
                 const planFeatures = getPlanFeatures(plan.id);
                 const isExpanded = expandedPlans.includes(plan.id);
@@ -283,7 +288,7 @@ const GetListedPage = () => {
                 return (
                   <div 
                     key={plan.id} 
-                    className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-[#001965] hover:scale-105 hover:shadow-xl"
+                    className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-[#001965] hover:scale-105 hover:shadow-xl w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
                   >
                     {plan.popular && (
                       <div className="absolute top-4 right-0 bg-orange-500 text-white text-[10px] font-semibold px-7 py-2 rotate-45 translate-x-8 shadow-xl">
@@ -300,7 +305,7 @@ const GetListedPage = () => {
                       <ul className="space-y-3 mb-8">
                         {visibleFeatures.map((feature) => (
                           <li key={feature.id} className="flex items-start gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 text-[#1d4ed8] mt-0.5 flex-shrink-0" />
                             <span className="text-gray-700">{feature.feature_text}</span>
                           </li>
                         ))}
@@ -337,7 +342,7 @@ const GetListedPage = () => {
 
         {/* Comparison Table Section */}
         {comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
-          <section className="py-16 px-4 md:px-8 bg-white mt-8">
+          <section className="py-16 px-8 md:px-16 lg:px-24 bg-white mt-8">
             <div className={pageContentContainerClassName}>
               {!isLoading && (
                 <h2 className="text-[32px] font-semibold text-[#222222] mb-8">
@@ -360,7 +365,7 @@ const GetListedPage = () => {
                   <tbody>
                     {/* Engagement Duration Row (Auto) */}
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-4 px-6 text-[15px] font-bold leading-[21.4286px] text-[#606F7B]">Engagement Duration</td>
+                      <td className="py-4 px-6 text-[20px] font-bold leading-[21.4286px] text-[#606F7B]">Subscription Type</td>
                       {visiblePlans.map((plan) => (
                         <td key={plan.id} className="py-4 px-6 text-center text-gray-700">
                           {plan.duration}
@@ -376,7 +381,7 @@ const GetListedPage = () => {
                           key={row.id} 
                           className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                         >
-                          <td className="py-4 px-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">{row.row_title}</td>
+                          <td className="py-4 px-6 text-[18px] font-normal leading-[21.4286px] text-[#606F7B]">{row.row_title}</td>
                           {visiblePlans.map((plan) => (
                             <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
                               {getCellContent(row.id, plan.id)}
@@ -389,9 +394,10 @@ const GetListedPage = () => {
               </div>
 
               {settings?.comparison_footer_content && (
-                <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_p]:m-0 [&_p+p]:mt-2 [&_ul]:m-0 [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1">
-                  <div dangerouslySetInnerHTML={renderContent(settings.comparison_footer_content)} />
-                </div>
+                <RichTextContent
+                  content={settings.comparison_footer_content}
+                  className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1"
+                />
               )}
 
               {settings?.comparison_footer_line && (

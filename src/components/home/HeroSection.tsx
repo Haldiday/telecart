@@ -40,8 +40,10 @@ export default function HeroSection() {
   
   // When sticky search becomes hidden, focus Hero's input!
   useEffect(() => {
+    console.log('[HeroSection] showMobileStickySearch changed:', showMobileStickySearch);
     if (!showMobileStickySearch) {
       setTimeout(() => {
+        console.log('[HeroSection] Focusing hero input');
         inputRef.current?.focus();
       }, 0);
     }
@@ -165,12 +167,13 @@ export default function HeroSection() {
 
         <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? heroSearchContainerRef : undefined}>
           {!showHeaderSearch && !showMobileStickySearch && (
-            <div className="relative z-[100]">
+            <div className="relative">
               <input
                 ref={inputRef}
                 type="search"
                 value={query}
                 onChange={(event) => {
+                  console.log('[HeroSection] Input changed');
                   setQuery(event.target.value);
                   // If user is typing, make sure isSearchActive is true!
                   if (!isSearchActive && event.target.value.trim()) {
@@ -178,6 +181,7 @@ export default function HeroSection() {
                   }
                 }}
                 onFocus={() => {
+                  console.log('[HeroSection] Input focused');
                   if (blurTimeoutRef.current) {
                     clearTimeout(blurTimeoutRef.current);
                     blurTimeoutRef.current = null;
@@ -185,6 +189,7 @@ export default function HeroSection() {
                   setIsSearchActive(true);
                 }}
                 onBlur={() => {
+                  console.log('[HeroSection] Input blurred');
                   blurTimeoutRef.current = setTimeout(() => setIsSearchActive(false), 120);
                 }}
                 onKeyDown={handleKeyDown}

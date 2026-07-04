@@ -450,6 +450,7 @@ export type Database = {
           section_type: string
           show_heading: boolean
           sort_order: number
+          background_color: string | null
         }
         Insert: {
           created_at?: string
@@ -462,6 +463,7 @@ export type Database = {
           section_type: string
           show_heading?: boolean
           sort_order?: number
+          background_color?: string | null
         }
         Update: {
           created_at?: string
@@ -474,6 +476,7 @@ export type Database = {
           section_type?: string
           show_heading?: boolean
           sort_order?: number
+          background_color?: string | null
         }
         Relationships: []
       }
