@@ -118,7 +118,12 @@ export default function HeroSection() {
           }}
         >
           {mainTextPart1}
-          {mainTextPart1 && mainTextPart2 && ' '}
+          {mainTextPart1 && mainTextPart2 && (
+            <>
+              <span className="hidden sm:inline"> </span>
+              <br className="sm:hidden" />
+            </>
+          )}
           <span style={{ color: '#1d4ed8' }}>{mainTextPart2}</span>
         </h1>
 
