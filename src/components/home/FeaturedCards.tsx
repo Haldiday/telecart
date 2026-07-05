@@ -251,7 +251,7 @@ export default function FeaturedCards({
                             {card.title}
                             {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                           </h3>
-                          <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                          <p className="text-base leading-relaxed text-black line-clamp-2">
                             {card.description}
                           </p>
                         </div>
@@ -310,7 +310,7 @@ export default function FeaturedCards({
                           {card.title}
                           {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                         </h3>
-                        <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                        <p className="text-base leading-relaxed text-black line-clamp-2">
                           {card.description}
                         </p>
                       </div>
@@ -348,7 +348,7 @@ export default function FeaturedCards({
                       {card.title}
                       {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
                     </h3>
-                    <p className="text-base leading-relaxed text-muted-foreground line-clamp-2">
+                    <p className="text-base leading-relaxed text-black line-clamp-2">
                       {card.description}
                     </p>
                   </div>

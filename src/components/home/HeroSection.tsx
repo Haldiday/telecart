@@ -113,7 +113,8 @@ export default function HeroSection() {
             fontWeight: 800,
             wordWrap: 'break-word',
             overflowWrap: 'break-word',
-            hyphens: 'auto',
+            hyphens: 'none',
+            wordBreak: 'normal',
           }}
         >
           {mainTextPart1}

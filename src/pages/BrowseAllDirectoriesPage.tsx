@@ -129,7 +129,7 @@ export default function BrowseAllDirectoriesPage() {
     <div className="min-h-screen bg-white">
       <Header />
       <main className="pt-24 md:pt-28">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-10 py-6">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 lg:px-10 py-6">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-[#001965] mb-4">
             <Link to="/" className="hover:underline">Home</Link>
@@ -143,7 +143,7 @@ export default function BrowseAllDirectoriesPage() {
 
           <div>
             {/* Mobile: 2 columns */}
-            <div className="md:hidden grid grid-cols-2 gap-x-8">
+            <div className="md:hidden grid grid-cols-1 gap-x-8 pl-8 pr-16">
               <div className="space-y-2">
                 {visibleSections.filter((_, i) => i % 2 === 0).map((section) => {
                   const isExpanded = expandedSectionId === section.id;
@@ -153,25 +153,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -188,25 +189,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -226,25 +228,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -261,25 +264,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -299,25 +303,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -334,25 +339,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -369,25 +375,26 @@ export default function BrowseAllDirectoriesPage() {
                       <button
                         type="button"
                         onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                        className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2 pr-6"
                       >
                         <span className="font-semibold">{section.heading || section.name}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronDown className="h-4 w-4 text-[#1d2129] mr-2" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-[#1d2129]" />
+                          <ChevronRight className="h-4 w-4 text-[#1d2129] mr-2" />
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="pl-4 space-y-2 border-l-2 border-gray-300">
-                          {sectionCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category)}
-                              className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
-                            >
-                              <span>{category.name}</span>
-                            </button>
+                        <div className="pl-4 space-y-0">
+                          {sectionCategories.map((category, index) => (
+                            <div key={category.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                              <button
+                                onClick={() => handleCategoryClick(category)}
+                                className="w-full flex items-center justify-between text-left text-[#1d2129] hover:text-[#001965] transition-colors py-2"
+                              >
+                                <span>{category.name}</span>
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
