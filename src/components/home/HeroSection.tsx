@@ -124,7 +124,7 @@ export default function HeroSection() {
               <br className="sm:hidden" />
             </>
           )}
-          <span style={{ color: '#1d4ed8' }}>{mainTextPart2}</span>
+          <span style={{ color: '#d8581d' }}>{mainTextPart2}</span>
         </h1>
 
 
