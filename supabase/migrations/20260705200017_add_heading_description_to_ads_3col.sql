@@ -1,0 +1,3 @@
+ALTER TABLE public.ads_3col
+ADD COLUMN IF NOT EXISTS heading TEXT,
+ADD COLUMN IF NOT EXISTS description TEXT;
