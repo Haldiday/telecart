@@ -66,56 +66,118 @@
     .section-subtext {
         @apply font-inter font-normal text-[20px] leading-[32px] text-[#333333];
     }
-    /* TipTap Editor Styles */
-    .tiptap-editor-content,
-    .ProseMirror {
-        @apply overflow-x-hidden break-words;
+    /* CKEditor Styles */
+    .ck-editor__editable {
+        min-height: 200px;
+        overflow-x: hidden;
         word-break: break-word;
         overflow-wrap: break-word;
-        outline: none !important;
     }
-    .tiptap-editor-content p,
-    .ProseMirror p {
+    .ck-editor__editable p {
         margin-bottom: 1.25rem !important;
     }
-    .tiptap-editor-content p:empty::before,
-    .ProseMirror p:empty::before {
+    .ck-editor__editable p:empty::before {
         content: "\00a0";
         display: inline-block;
         min-height: 1em;
     }
-    .tiptap-editor-content ul,
-    .tiptap-editor-content ol,
-    .ProseMirror ul,
-    .ProseMirror ol {
+    .ck-editor__editable ul,
+    .ck-editor__editable ol {
         padding-left: 1.5em !important;
         margin: 1rem 0 !important;
         list-style-position: inside !important;
     }
-    .tiptap-editor-content ul,
-    .ProseMirror ul {
+    .ck-editor__editable ul {
         list-style-type: disc !important;
     }
-    .tiptap-editor-content ol,
-    .ProseMirror ol {
+    .ck-editor__editable ol {
         list-style-type: decimal !important;
     }
-    .tiptap-editor-content li,
-    .ProseMirror li {
+    .ck-editor__editable li {
         margin: 0.25em 0 !important;
         padding-left: 0 !important;
     }
-    .tiptap-editor-content li p,
-    .ProseMirror li p {
+    .ck-editor__editable li p {
         display: inline !important;
         margin: 0 !important;
     }
-    .tiptap-editor-content li::marker,
-    .ProseMirror li::marker {
+    .ck-editor__editable li::marker {
         color: black !important;
         font-weight: inherit !important;
         font-family: inherit !important;
         font-size: inherit !important;
+    }
+    /* CKEditor heading styles to match existing design */
+    .ck-editor__editable h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+    .ck-editor__editable h2 {
+        font-size: 1.875rem;
+        font-weight: 600;
+        margin-bottom: 0.875rem;
+        line-height: 1.3;
+    }
+    .ck-editor__editable h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+    .ck-editor__editable h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.625rem;
+        line-height: 1.5;
+    }
+    .ck-editor__editable h5 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+    .ck-editor__editable h6 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+    /* CKEditor table styles */
+    .ck-editor__editable table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+    }
+    .ck-editor__editable table th,
+    .ck-editor__editable table td {
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem;
+        text-align: left;
+    }
+    .ck-editor__editable table th {
+        background-color: #f8fafc;
+        font-weight: 600;
+    }
+    /* CKEditor code block styles */
+    .ck-editor__editable pre {
+        background-color: #1e293b;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    .ck-editor__editable code {
+        background-color: #f1f5f9;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+    }
+    .ck-editor__editable pre code {
+        background-color: transparent;
+        padding: 0;
     }
     /* Legal Content Styles */
     .legal-content {
@@ -240,12 +302,10 @@
 }
 
 
-/* TipTap admin editor — blockquotes must stay visible while editing */
+/* CKEditor admin editor — blockquotes must stay visible while editing */
 
-.tiptap-editor-root .tiptap blockquote,
-.tiptap-editor-root .tiptap .rich-blockquote,
-.tiptap-editor-content blockquote,
-.tiptap-editor-content .rich-blockquote {
+.ck-editor__editable blockquote,
+.ck-editor__editable .rich-blockquote {
     border-left: 4px solid hsl(var(--primary)) !important;
     background-color: hsl(213 60% 94%) !important;
     padding: 0.75rem 1rem !important;
@@ -254,13 +314,12 @@
     display: block !important;
 }
 
-.tiptap-editor-root .tiptap blockquote p,
-.tiptap-editor-content blockquote p {
+.ck-editor__editable blockquote p {
     margin: 0 !important;
 }
 
 
-/* Rich text from TipTap / admin editor (lists, quotes, etc.) on public pages */
+/* Rich text from CKEditor / admin editor (lists, quotes, etc.) on public pages */
 
 @layer components {
     .rich-html-content ul {

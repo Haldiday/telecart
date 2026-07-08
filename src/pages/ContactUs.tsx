@@ -1,3 +1,5 @@
+
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
@@ -41,6 +43,19 @@ export default function ContactUs() {
   const [settings, setSettings] = useState<ContactSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fadeUpAnimation = `
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -80,10 +95,6 @@ export default function ContactUs() {
     };
   }, []);
 
-  if (loading) {
-    return <div className="flex min-h-[100dvh] items-center justify-center">Loading...</div>;
-  }
-
   // Function to render form embed (handles both iframe URLs and full embed code)
   const renderFormEmbed = () => {
     if (!settings?.form_embed) return null;
@@ -122,245 +133,272 @@ export default function ContactUs() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1 bg-gray-50 pt-24 md:pt-36">
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[2000px]">
-          <h1 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight">
-            {settings?.heading || 'Contact'}
-          </h1>
+      <style>{fadeUpAnimation}</style>
+      
+      {!loading ? (
+        <>
+          <Header />
+          <main className="flex-1 bg-gray-50 pt-24 md:pt-36">
+            <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[2000px]">
+              <h1 
+                className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight"
+                style={{
+                  opacity: 0,
+                  animation: 'fadeUp 0.6s ease-out forwards',
+                  animationDelay: '0.1s'
+                }}
+              >
+                {settings?.heading || 'Contact'}
+              </h1>
 
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-[45%,55%] gap-12 items-start">
-            <div className="space-y-8">
-              <div className="space-y-8">
-                {hasContactDetails && (
-                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <div className="space-y-4">
-                      {settings?.address && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Address</p>
-                            <p
-                              className="text-sm text-gray-900 leading-[1.4]"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.address}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {settings?.phone && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                            <Phone className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Call</p>
-                            <a
-                              href={`tel:${settings.phone}`}
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.phone}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {settings?.whatsapp && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                            <img src="/videos/whatsapp.png" alt="WhatsApp" className="w-4 h-4" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">WhatsApp</p>
-                            <a
-                              href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.whatsapp}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {settings?.email && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                            <Mail className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">{settings?.email_label || 'Email Us'}</p>
-                            <a
-                              href={`mailto:${settings.email}`}
-                              className="text-sm text-gray-900 hover:underline break-all"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.email}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {settings?.contact_emails &&
-                        settings.contact_emails.length > 0 &&
-                        settings.contact_emails.map((item, idx) => (
-                          <div key={`${item.email}-${idx}`} className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
-                              <Mail className="w-4 h-4 text-gray-600" />
+              <div 
+                className="mt-10 grid grid-cols-1 md:grid-cols-[45%,55%] gap-12 items-start"
+                style={{
+                  opacity: 0,
+                  animation: 'fadeUp 0.6s ease-out forwards',
+                  animationDelay: '0.2s'
+                }}
+              >
+                <div className="space-y-8">
+                  <div className="space-y-8">
+                    {hasContactDetails && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <div className="space-y-4">
+                          {settings?.address && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                <MapPin className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Address</p>
+                                <p
+                                  className="text-sm text-gray-900 leading-[1.4]"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.address}
+                                </p>
+                              </div>
                             </div>
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-gray-500">{item.label || 'Email Us'}</p>
-                              <a
-                                href={`mailto:${item.email}`}
-                                className="text-sm text-gray-900 hover:underline break-all"
-                                style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                              >
-                                {item.email}
-                              </a>
+                          )}
+
+                          {settings?.phone && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                <Phone className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Call</p>
+                                <a
+                                  href={`tel:${settings.phone}`}
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.phone}
+                                </a>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )}
+
+                          {settings?.whatsapp && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                <img src="/videos/whatsapp.png" alt="WhatsApp" className="w-4 h-4" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">WhatsApp</p>
+                                <a
+                                  href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.whatsapp}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {settings?.email && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                <Mail className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">{settings?.email_label || 'Email Us'}</p>
+                                <a
+                                  href={`mailto:${settings.email}`}
+                                  className="text-sm text-gray-900 hover:underline break-all"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.email}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {settings?.contact_emails &&
+                            settings.contact_emails.length > 0 &&
+                            settings.contact_emails.map((item, idx) => (
+                              <div key={`${item.email}-${idx}`} className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <Mail className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-gray-500">{item.label || 'Email Us'}</p>
+                                  <a
+                                    href={`mailto:${item.email}`}
+                                    className="text-sm text-gray-900 hover:underline break-all"
+                                    style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                  >
+                                    {item.email}
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4 max-w-[500px] pt-4">
+                      {settings?.description_1 && (
+                        <p className="text-[17px] leading-[1.6] text-[#111111]">
+                          {settings.description_1}
+                        </p>
+                      )}
+                      {settings?.description_2 && (
+                        <p className="text-[17px] leading-[1.6] text-[#111111]">
+                          {settings.description_2}
+                        </p>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
 
-                <div className="space-y-4 max-w-[500px] pt-4">
-                  {settings?.description_1 && (
-                    <p className="text-[17px] leading-[1.6] text-[#111111]">
-                      {settings.description_1}
-                    </p>
-                  )}
-                  {settings?.description_2 && (
-                    <p className="text-[17px] leading-[1.6] text-[#111111]">
-                      {settings.description_2}
-                    </p>
-                  )}
+                {/* Right Column: Form Embed */}
+                <div className="w-full">
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 w-full">
+                    {renderFormEmbed() || (
+                      <div className="w-full h-[600px] flex items-center justify-center text-gray-400">
+                        <p>Form will appear here</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Form Embed */}
-            <div className="w-full">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 w-[650px] mr-8">
-                {renderFormEmbed() || (
-                  <div className="w-full h-[600px] flex items-center justify-center text-gray-400">
-                    <p>Form will appear here</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Nodal Officer & Appellate Authority Section */}
-        {((settings?.nodal_officer_title && settings?.nodal_officer_visible !== false) || (settings?.appellate_authority_title && settings?.appellate_authority_visible !== false)) && (
-          <div className="bg-gray-50 py-12">
-            <div className="container mx-auto px-4 md:px-8 lg:px-10 max-w-[1200px]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Nodal Officer Card */}
-                {settings.nodal_officer_title && settings.nodal_officer_visible !== false && (
-                  <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.nodal_officer_title}</h3>
-                    {settings.nodal_officer_name && (
-                      <p className="text-sm text-gray-600 mb-4">{settings.nodal_officer_name}</p>
+            {/* Nodal Officer & Appellate Authority Section */}
+            {((settings?.nodal_officer_title && settings?.nodal_officer_visible !== false) || (settings?.appellate_authority_title && settings?.appellate_authority_visible !== false)) && (
+              <div 
+                className="bg-gray-50 py-12"
+                style={{
+                  opacity: 0,
+                  animation: 'fadeUp 0.6s ease-out forwards',
+                  animationDelay: '0.3s'
+                }}
+              >
+                <div className="container mx-auto px-4 md:px-8 lg:px-10 max-w-[1200px]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Nodal Officer Card */}
+                    {settings.nodal_officer_title && settings.nodal_officer_visible !== false && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.nodal_officer_title}</h3>
+                        {settings.nodal_officer_name && (
+                          <p className="text-sm text-gray-600 mb-4">{settings.nodal_officer_name}</p>
+                        )}
+                        <div className="space-y-3">
+                          {settings.nodal_officer_phone && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                <Phone className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Call</p>
+                                <a
+                                  href={`tel:${settings.nodal_officer_phone}`}
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.nodal_officer_phone}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                          {settings.nodal_officer_email && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                <Mail className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Email Us</p>
+                                <a
+                                  href={`mailto:${settings.nodal_officer_email}`}
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.nodal_officer_email}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    <div className="space-y-3">
-                      {settings.nodal_officer_phone && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                            <Phone className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Call</p>
-                            <a
-                              href={`tel:${settings.nodal_officer_phone}`}
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.nodal_officer_phone}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                      {settings.nodal_officer_email && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                            <Mail className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Email Us</p>
-                            <a
-                              href={`mailto:${settings.nodal_officer_email}`}
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.nodal_officer_email}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
-                {/* Appellate Authority Card */}
-                {settings.appellate_authority_title && settings.appellate_authority_visible !== false && (
-                  <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.appellate_authority_title}</h3>
-                    {settings.appellate_authority_name && (
-                      <p className="text-sm text-gray-600 mb-4">{settings.appellate_authority_name}</p>
+                    {/* Appellate Authority Card */}
+                    {settings.appellate_authority_title && settings.appellate_authority_visible !== false && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.appellate_authority_title}</h3>
+                        {settings.appellate_authority_name && (
+                          <p className="text-sm text-gray-600 mb-4">{settings.appellate_authority_name}</p>
+                        )}
+                        <div className="space-y-3">
+                          {settings.appellate_authority_phone && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                <Phone className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Call</p>
+                                <a
+                                  href={`tel:${settings.appellate_authority_phone}`}
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.appellate_authority_phone}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                          {settings.appellate_authority_email && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                <Mail className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-xs text-gray-500">Email Us</p>
+                                <a
+                                  href={`mailto:${settings.appellate_authority_email}`}
+                                  className="text-sm text-gray-900 hover:underline"
+                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                >
+                                  {settings.appellate_authority_email}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    <div className="space-y-3">
-                      {settings.appellate_authority_phone && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                            <Phone className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Call</p>
-                            <a
-                              href={`tel:${settings.appellate_authority_phone}`}
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.appellate_authority_phone}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                      {settings.appellate_authority_email && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                            <Mail className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-gray-500">Email Us</p>
-                            <a
-                              href={`mailto:${settings.appellate_authority_email}`}
-                              className="text-sm text-gray-900 hover:underline"
-                              style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                            >
-                              {settings.appellate_authority_email}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
-      </main>
-      <Footer />
+            )}
+          </main>
+          <Footer />
+        </>
+      ) : null}
     </div>
   );
 }

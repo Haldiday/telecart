@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -49,6 +49,7 @@ interface CategoriesSectionProps {
 }
 
 export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor }: CategoriesSectionProps) {
+  const location = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
@@ -58,6 +59,14 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   const [showHeading, setShowHeading] = useState(true);
   const [sectionBackgroundColor, setSectionBackgroundColor] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  // Reset all accordion states when location changes
+  useEffect(() => {
+    setExpanded({});
+    setMobileExpanded({});
+    setSubcategoryExpanded({});
+    setExpandedBrandId(null);
+  }, [location.pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -122,6 +131,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   if (categories.length === 0) return null;
 
   const toggleSubcategory = (subcategoryId: string) => {
+    setExpandedBrandId(null); // Reset brand expansion when changing subcategory
     setSubcategoryExpanded((prev) => (
       prev[subcategoryId] ? {} : { [subcategoryId]: true }
     ));

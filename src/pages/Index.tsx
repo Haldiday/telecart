@@ -21,6 +21,11 @@ interface PageSection {
   background_color?: string | null;
 }
 
+interface HeroSettings {
+  main_text?: string;
+  animated_words?: string[];
+}
+
 const SECTION_MAP: Record<string, React.FC<any>> = {
   hero: HeroSection as any,
   cards: FeaturedCards,
@@ -34,6 +39,7 @@ const SECTION_MAP: Record<string, React.FC<any>> = {
 export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [heroSettings, setHeroSettings] = useState<HeroSettings | null>(null);
   const location = useLocation();
   const { showMobileStickySearch } = useSearch();
 
@@ -78,15 +84,25 @@ export default function Index() {
     let mounted = true;
     
     // Initial fetch
-    const loadSections = async () => {
-      const { data } = await supabase.from('page_sections').select('*').order('sort_order');
-      if (data && mounted) {
-        setSections(data as PageSection[]);
+    const loadData = async () => {
+      // Fetch both sections and hero settings in parallel
+      const [sectionsResult, heroResult] = await Promise.all([
+        supabase.from('page_sections').select('*').order('sort_order'),
+        supabase.from('hero_settings').select('*').limit(1).single()
+      ]);
+      
+      if (mounted) {
+        if (sectionsResult.data) {
+          setSections(sectionsResult.data as PageSection[]);
+        }
+        if (heroResult.data) {
+          setHeroSettings(heroResult.data as HeroSettings);
+        }
         setIsLoading(false);
       }
     };
     
-    loadSections();
+    loadData();
 
     // Subscribe to real-time changes
     const subscription = supabase
@@ -96,7 +112,15 @@ export default function Index() {
         { event: '*', schema: 'public', table: 'page_sections' },
         () => {
           // Refetch sections when any change happens
-          loadSections();
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hero_settings' },
+        () => {
+          // Refetch hero settings when any change happens
+          loadData();
         }
       )
       .subscribe();
@@ -131,35 +155,38 @@ export default function Index() {
           // Placeholder to prevent footer from showing early
           <div className="h-screen" />
         ) : (
-          sections.filter(s => s.is_visible).map((section) => {
-            const Component = SECTION_MAP[section.section_type];
-            if (!Component) return null;
+          <>
+            {/* Always render Hero Section first */}
+            <HeroSection heroSettings={heroSettings} />
 
-            const sectionContent = (() => {
-              // Hero section doesn't need sectionId
-              if (section.section_type === 'hero') {
-                return <Component />;
-              }
+            {/* Render other sections from database */}
+            {sections
+              .filter(s => s.is_visible && s.section_type !== 'hero')
+              .map((section) => {
+                const Component = SECTION_MAP[section.section_type];
+                if (!Component) return null;
 
-              // Hide "See All" on mobile for Featured Cards in overview
-              if (section.section_type === 'cards') {
-                return <Component sectionId={section.id} hideSeeAllOnMobile={true} backgroundColor={section.background_color} />;
-              }
+                const sectionContent = (() => {
+                  // Hide "See All" on mobile for Featured Cards in overview
+                  if (section.section_type === 'cards') {
+                    return <Component sectionId={section.id} hideSeeAllOnMobile={true} backgroundColor={section.background_color} />;
+                  }
 
-              return <Component sectionId={section.id} backgroundColor={section.background_color} />;
-            })();
+                  return <Component sectionId={section.id} backgroundColor={section.background_color} />;
+                })();
 
-            // Apply background color to section container if specified
-            if (section.background_color && section.section_type !== 'hero') {
-              return (
-                <div key={section.id} style={{ backgroundColor: section.background_color }}>
-                  {sectionContent}
-                </div>
-              );
-            }
+                // Apply background color to section container if specified
+                if (section.background_color) {
+                  return (
+                    <div key={section.id} style={{ backgroundColor: section.background_color }}>
+                      {sectionContent}
+                    </div>
+                  );
+                }
 
-            return <div key={section.id}>{sectionContent}</div>;
-          })
+                return <div key={section.id}>{sectionContent}</div>;
+              })}
+          </>
         )}
       </main>
       {!isLoading && <Footer />}

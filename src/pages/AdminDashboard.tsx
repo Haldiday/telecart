@@ -6,7 +6,7 @@ import { useSectionInstances } from '@/hooks/useSectionInstances';
 import { useScopedSectionInstances, type ScopedPageSection } from '@/hooks/useScopedSectionInstances';
 import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
-import TipTapEditor from '@/components/admin/TipTapEditor';
+import CKEditor from '@/components/admin/CKEditor';
 import { Switch } from '@/components/ui/switch';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
@@ -283,6 +283,9 @@ interface GetListedSettings {
   comparison_footer_content: string;
   comparison_footer_line: string;
   show_currency_toggle?: boolean;
+  show_pricing_section?: boolean;
+  show_comparison_section?: boolean;
+  show_comparison_footer?: boolean;
 }
 interface HeaderSettings {
   id?: string;
@@ -824,7 +827,11 @@ export default function AdminDashboard() {
     main_heading: 'Choose the best plan for your business.',
     comparison_heading: 'Detailed pricing',
     comparison_footer_content: '',
-    comparison_footer_line: ''
+    comparison_footer_line: '',
+    show_currency_toggle: true,
+    show_pricing_section: true,
+    show_comparison_section: true,
+    show_comparison_footer: true
   });
   const [writeForUsSettings, setWriteForUsSettings] = useState<WriteForUsSettings>({
     id: '',
@@ -2289,6 +2296,9 @@ export default function AdminDashboard() {
           comparison_footer_content: getListedSettings.comparison_footer_content,
           comparison_footer_line: getListedSettings.comparison_footer_line,
           show_currency_toggle: getListedSettings.show_currency_toggle ?? true,
+          show_pricing_section: getListedSettings.show_pricing_section ?? true,
+          show_comparison_section: getListedSettings.show_comparison_section ?? true,
+          show_comparison_footer: getListedSettings.show_comparison_footer ?? true,
         };
         const insertResult = await supabase.from('get_listed_settings').insert(newSettings).select();
         console.log('Insert result:', insertResult);
@@ -2304,6 +2314,9 @@ export default function AdminDashboard() {
             comparison_footer_content: getListedSettings.comparison_footer_content,
             comparison_footer_line: getListedSettings.comparison_footer_line,
             show_currency_toggle: getListedSettings.show_currency_toggle ?? true,
+            show_pricing_section: getListedSettings.show_pricing_section ?? true,
+            show_comparison_section: getListedSettings.show_comparison_section ?? true,
+            show_comparison_footer: getListedSettings.show_comparison_footer ?? true,
           })
           .eq('id', getListedSettings.id)
           .select();
@@ -5070,7 +5083,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Description</label>
-                      <textarea value={editCard.description || ''} onChange={(e) => setEditCard({ ...editCard, description: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" rows={3} />
+                      <CKEditor value={editCard.description || ''} onChange={(value) => setEditCard({ ...editCard, description: value })} className="min-h-[100px]" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Link (optional)</label>
@@ -5591,13 +5604,12 @@ export default function AdminDashboard() {
 
                       <div className="space-y-3 border-t pt-4">
                        <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
-                      <textarea
+                      <CKEditor
                         value={editingSub.custom_link || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: val || undefined } : s));
+                        onChange={(value) => {
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: value || undefined } : s));
                         }}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                        className="min-h-[80px]"
                       />
                     </div>
                   
@@ -6036,7 +6048,7 @@ export default function AdminDashboard() {
                                               className="w-10 h-10 rounded cursor-pointer border border-input"
                                             />
                                           </div>
-                                          <TipTapEditor
+                                          <CKEditor
                                             key={section.id}
                                             value={section.content || ''}
                                             onChange={createAboutSectionChangeHandler(editingSub.id, section.id)}
@@ -6339,7 +6351,7 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           <ImageUpload label="Logo" value={productEditCard.logo_url || null} onChange={(url) => setProductEditCard({ ...productEditCard, logo_url: url })} folder="cards" />
                           <input value={productEditCard.title || ''} onChange={(e) => setProductEditCard({ ...productEditCard, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <textarea value={productEditCard.description || ''} onChange={(e) => setProductEditCard({ ...productEditCard, description: e.target.value })} placeholder="Description" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
+                          <CKEditor value={productEditCard.description || ''} onChange={(value) => setProductEditCard({ ...productEditCard, description: value })} placeholder="Description" className="min-h-[100px]" />
                           <input value={productEditCard.link || ''} onChange={(e) => setProductEditCard({ ...productEditCard, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditCard.show_border ?? false} onCheckedChange={(checked) => setProductEditCard({ ...productEditCard, show_border: Boolean(checked) })} />
@@ -6392,7 +6404,7 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" />
                           <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <textarea value={productEditOffer.description || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
+                          <CKEditor value={productEditOffer.description || ''} onChange={(value) => setProductEditOffer({ ...productEditOffer, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
                           <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditOffer.show_border ?? false} onCheckedChange={(checked) => setProductEditOffer({ ...productEditOffer, show_border: Boolean(checked) })} />
@@ -6547,7 +6559,7 @@ export default function AdminDashboard() {
                         <div className="space-y-3">
                           <ImageUpload label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" />
                           <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <textarea value={productEditAd3.description || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, description: e.target.value || null })} placeholder="Description (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" rows={3} />
+                          <CKEditor value={productEditAd3.description || ''} onChange={(value) => setProductEditAd3({ ...productEditAd3, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
                           <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Switch checked={productEditAd3.show_border ?? false} onCheckedChange={(checked) => setProductEditAd3({ ...productEditAd3, show_border: Boolean(checked) })} />
@@ -6754,7 +6766,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Description</label>
-                      <textarea value={editOffer.description || ''} onChange={(e) => setEditOffer({ ...editOffer, description: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" rows={3} />
+                      <CKEditor value={editOffer.description || ''} onChange={(value) => setEditOffer({ ...editOffer, description: value })} className="min-h-[100px]" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Link (optional)</label>
@@ -7300,7 +7312,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Description (optional)</label>
-                      <textarea value={editAd3.description || ''} onChange={(e) => setEditAd3({ ...editAd3, description: e.target.value || null })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" rows={3} />
+                      <CKEditor value={editAd3.description || ''} onChange={(value) => setEditAd3({ ...editAd3, description: value || null })} className="min-h-[100px]" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Link (optional)</label>
@@ -7482,7 +7494,7 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Question</label>
-                        <TipTapEditor
+                        <CKEditor
                           value={editFaq?.question || ''}
                           onChange={(value) => setEditFaq({ ...editFaq!, question: value })}
                           placeholder="Enter question..."
@@ -7490,7 +7502,7 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Answer</label>
-                        <TipTapEditor
+                        <CKEditor
                           value={editFaq?.answer || ''}
                           onChange={(value) => setEditFaq({ ...editFaq!, answer: value })}
                           placeholder="Enter answer..."
@@ -7560,11 +7572,11 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Description</label>
-                    <textarea
+                    <CKEditor
                       value={advertiseSettings.hero_description}
-                      onChange={(e) => setAdvertiseSettings({ ...advertiseSettings, hero_description: e.target.value })}
+                      onChange={(value) => setAdvertiseSettings({ ...advertiseSettings, hero_description: value })}
                       placeholder="Enter description..."
-                      className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      className="min-h-[100px]"
                     />
                   </div>
 
@@ -7835,11 +7847,11 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Description</label>
-                      <textarea
+                      <CKEditor
                         value={editAdvertiseCard?.description || ''}
-                        onChange={(e) => setEditAdvertiseCard(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={(value) => setEditAdvertiseCard(prev => prev ? { ...prev, description: value } : null)}
                         placeholder="Enter card description..."
-                        className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        className="min-h-[100px]"
                       />
                     </div>
                     <button
@@ -7875,11 +7887,11 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Description</label>
-                      <textarea
+                      <CKEditor
                         value={editAdvertiseSection?.description || ''}
-                        onChange={(e) => setEditAdvertiseSection(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={(value) => setEditAdvertiseSection(prev => prev ? { ...prev, description: value } : null)}
                         placeholder="Enter section description..."
-                        className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                        className="min-h-[100px]"
                       />
                     </div>
                     
@@ -7938,7 +7950,7 @@ export default function AdminDashboard() {
 
           {/* GET LISTED TAB */}
           {tab === 'get-listed' && (
-            <div className="mx-auto flex w-full max-w-7xl flex-col px-3 md:px-6 space-y-6">
+            <div className="mx-auto flex w-full max-w-5xl flex-col px-3 md:px-6 space-y-6">
               {/* Page Settings */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -7985,36 +7997,51 @@ export default function AdminDashboard() {
 
               {/* Pricing Plans */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Main Heading</label>
-                    <input
-                      type="text"
-                      value={getListedSettings?.main_heading || 'Choose the best plan for your business.'}
-                      onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, main_heading: e.target.value } : null)}
-                      placeholder="Enter main heading..."
-                      className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    />
+                <div className="flex flex-col gap-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Main Heading</label>
+                      <input
+                        type="text"
+                        value={getListedSettings?.main_heading || 'Choose the best plan for your business.'}
+                        onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, main_heading: e.target.value } : null)}
+                        placeholder="Enter main heading..."
+                        className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditGetListedPlan({
+                          plan_name: '',
+                          price_inr: 0,
+                          duration: '',
+                          button_text: '',
+                          button_link: '',
+                          button_visible: true,
+                          popular: false,
+                          visible: true,
+                          show_view_more: true,
+                        });
+                        setShowAddGetListedPlanModal(true);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                    >
+                      <Plus className="w-4 h-4" /> Add Plan
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditGetListedPlan({
-                        plan_name: '',
-                        price_inr: 0,
-                        duration: '',
-                        button_text: '',
-                        button_link: '',
-                        button_visible: true,
-                        popular: false,
-                        visible: true,
-                        show_view_more: true,
-                      });
-                      setShowAddGetListedPlanModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add Plan
-                  </button>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <label className="block text-sm font-medium">Show Pricing Section</label>
+                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the entire pricing plans section</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={getListedSettings?.show_pricing_section ?? true}
+                        onCheckedChange={(v) => setGetListedSettings(prev => prev ? { ...prev, show_pricing_section: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">{(getListedSettings?.show_pricing_section ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -8179,29 +8206,44 @@ export default function AdminDashboard() {
 
               {/* Comparison Table */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Comparison Heading</label>
-                    <input
-                      type="text"
-                      value={getListedSettings?.comparison_heading || 'Detailed pricing'}
-                      onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, comparison_heading: e.target.value } : null)}
-                      placeholder="Enter comparison heading..."
-                      className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                    />
+                <div className="flex flex-col gap-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Comparison Heading</label>
+                      <input
+                        type="text"
+                        value={getListedSettings?.comparison_heading || 'Detailed pricing'}
+                        onChange={(e) => setGetListedSettings(prev => prev ? { ...prev, comparison_heading: e.target.value } : null)}
+                        placeholder="Enter comparison heading..."
+                        className="w-[650px] rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditGetListedComparisonRow({
+                          row_title: '',
+                          visible: true,
+                        });
+                        setShowAddGetListedComparisonRowModal(true);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                    >
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditGetListedComparisonRow({
-                        row_title: '',
-                        visible: true,
-                      });
-                      setShowAddGetListedComparisonRowModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add Row
-                  </button>
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <label className="block text-sm font-medium">Show Comparison Table</label>
+                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the comparison table section</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={getListedSettings?.show_comparison_section ?? true}
+                        onCheckedChange={(v) => setGetListedSettings(prev => prev ? { ...prev, show_comparison_section: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">{(getListedSettings?.show_comparison_section ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {getListedPlans.length === 0 ? (
@@ -8342,8 +8384,22 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="mt-6">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl mb-4">
+                    <div>
+                      <label className="block text-sm font-medium">Show Comparison Footer</label>
+                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the comparison footer content/line</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={getListedSettings?.show_comparison_footer ?? true}
+                        onCheckedChange={(v) => setGetListedSettings(prev => prev ? { ...prev, show_comparison_footer: v } : null)}
+                      />
+                      <span className="text-sm text-muted-foreground">{(getListedSettings?.show_comparison_footer ?? true) ? 'Visible' : 'Hidden'}</span>
+                    </div>
+                  </div>
+
                   <label className="block text-sm font-medium mb-1.5">Comparison Footer Content</label>
-                  <TipTapEditor
+                  <CKEditor
                     value={getListedSettings?.comparison_footer_content || ''}
                     onChange={(value) => setGetListedSettings(prev => prev ? { ...prev, comparison_footer_content: value } : null)}
                     placeholder="Enter footer notes/content..."
@@ -8532,11 +8588,11 @@ export default function AdminDashboard() {
                 <div>
                   <h3 className="font-semibold text-base mb-4">Footer Description</h3>
                   
-                  <textarea
+                  <CKEditor
                     value={footerSettings.description}
-                    onChange={(e) => setFooterSettings({ ...footerSettings, description: e.target.value })}
+                    onChange={(value) => setFooterSettings({ ...footerSettings, description: value })}
                     placeholder="Enter footer description..."
-                    className="min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    className="min-h-[120px]"
                   />
                 </div>
                 
@@ -8768,7 +8824,7 @@ export default function AdminDashboard() {
                   {/* Content Editor */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium mb-1.5">Page Content</label>
-                    <TipTapEditor
+                    <CKEditor
                       value={writeForUsSettings.content}
                       onChange={(content) => setWriteForUsSettings({ ...writeForUsSettings, content })}
                     />
@@ -8844,7 +8900,7 @@ export default function AdminDashboard() {
                   {/* Content Editor */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium mb-1.5">Page Content</label>
-                    <TipTapEditor
+                    <CKEditor
                       value={vendorGuidelinesSettings.content}
                       onChange={(content) => setVendorGuidelinesSettings({ ...vendorGuidelinesSettings, content })}
                     />
@@ -9289,21 +9345,21 @@ export default function AdminDashboard() {
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Address</label>
-                    <textarea
+                    <CKEditor
                       value={contactSettings.address}
-                      onChange={(e) => setContactSettings({ ...contactSettings, address: e.target.value })}
+                      onChange={(value) => setContactSettings({ ...contactSettings, address: value })}
                       placeholder="Enter your address"
-                      className="min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      className="min-h-[80px]"
                     />
                   </div>
 
                   <div className="border-t pt-4">
                     <label className="block text-sm font-medium mb-1.5">Form Embed (URL or HTML code)</label>
-                    <textarea
+                    <CKEditor
                       value={contactSettings.form_embed}
-                      onChange={(e) => setContactSettings({ ...contactSettings, form_embed: e.target.value })}
+                      onChange={(value) => setContactSettings({ ...contactSettings, form_embed: value })}
                       placeholder="Enter form URL or full HTML embed code"
-                      className="min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      className="min-h-[120px]"
                     />
                   </div>
 
@@ -9417,20 +9473,20 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
-                        <textarea
+                        <CKEditor
                           value={contactSettings.description_1}
-                          onChange={(e) => setContactSettings({ ...contactSettings, description_1: e.target.value })}
+                          onChange={(value) => setContactSettings({ ...contactSettings, description_1: value })}
                           placeholder="Enter the first paragraph of description"
-                          className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          className="min-h-[100px]"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
-                        <textarea
+                        <CKEditor
                           value={contactSettings.description_2}
-                          onChange={(e) => setContactSettings({ ...contactSettings, description_2: e.target.value })}
+                          onChange={(value) => setContactSettings({ ...contactSettings, description_2: value })}
                           placeholder="Enter the second paragraph of description"
-                          className="min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          className="min-h-[100px]"
                         />
                       </div>
                     </div>
@@ -9568,7 +9624,7 @@ export default function AdminDashboard() {
                         <div className="prose prose-sm max-w-none mb-4">
                           <p className="text-muted-foreground">Use the editor below to format your {currentTitle}. You can add headings, lists, and more.</p>
                         </div>
-                        <TipTapEditor
+                        <CKEditor
                           value={page?.content || ''}
                           onChange={(newContent) => {
                             setLegalPages(prev => prev.map(p => p.slug === slug ? { ...p, content: newContent } : p));

@@ -3,12 +3,42 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearch } from '@/contexts/SearchContext';
 import type { SearchResult } from '@/contexts/SearchContext';
 
-export default function HeroSection() {
-  const [mainTextPart1, setMainTextPart1] = useState('');
-  const [mainTextPart2, setMainTextPart2] = useState('');
-  const [words, setWords] = useState<string[]>([]);
+interface HeroSectionProps {
+  heroSettings?: {
+    main_text?: string;
+    animated_words?: string[];
+  } | null;
+}
+
+export default function HeroSection({ heroSettings }: HeroSectionProps) {
+  // Parse the hero settings
+  const parseHeroSettings = (settings: HeroSectionProps['heroSettings']) => {
+    let part1 = '';
+    let part2 = '';
+    let words: string[] = [];
+
+    if (settings) {
+      const mainText = settings.main_text || '';
+      if (mainText.includes('|||')) {
+        const split = mainText.split('|||');
+        part1 = split[0] || '';
+        part2 = split[1] || '';
+      } else {
+        part1 = mainText;
+      }
+      words = settings.animated_words || [];
+    }
+
+    return { part1, part2, words };
+  };
+
+  const initialParsed = parseHeroSettings(heroSettings);
+  const [mainTextPart1, setMainTextPart1] = useState(initialParsed.part1);
+  const [mainTextPart2, setMainTextPart2] = useState(initialParsed.part2);
+  const [words, setWords] = useState<string[]>(initialParsed.words);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false); // Start as false, then animate in
   const inputRef = useRef<HTMLInputElement>(null);
   const {
     query,
@@ -28,6 +58,18 @@ export default function HeroSection() {
     heroSearchContainerRef,
     blurTimeoutRef,
   } = useSearch();
+  
+  // Update state when heroSettings props change and trigger animation
+  useEffect(() => {
+    if (heroSettings) {
+      const parsed = parseHeroSettings(heroSettings);
+      setMainTextPart1(parsed.part1);
+      setMainTextPart2(parsed.part2);
+      setWords(parsed.words);
+      // Start the fade-in animation once we have data
+      setIsAnimatingIn(true);
+    }
+  }, [heroSettings]);
   
   // Override handleResultClick for Hero search to keep input focused!
   const handleHeroResultClick = (result: SearchResult) => {
@@ -50,40 +92,6 @@ export default function HeroSection() {
   }, [showMobileStickySearch]);
 
   useEffect(() => {
-    let mounted = true;
-    
-    import('@/integrations/supabase/client').then(({ supabase }) => {
-      supabase
-        .from('hero_settings')
-        .select('*')
-        .limit(1)
-        .single()
-        .then(({ data }) => {
-          if (data && mounted) {
-            const heroData = data as any;
-            const mainText = heroData.main_text || '';
-            let part1 = '';
-            let part2 = '';
-            if (mainText.includes('|||')) {
-              const split = mainText.split('|||');
-              part1 = split[0] || '';
-              part2 = split[1] || '';
-            } else {
-              part1 = mainText;
-            }
-            setMainTextPart1(part1);
-            setMainTextPart2(part2);
-            setWords(heroData.animated_words);
-          }
-        });
-    });
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (words.length <= 1) return;
 
     const stayTimeout = setTimeout(() => {
@@ -101,42 +109,51 @@ export default function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative py-20 md:py-32 overflow-visible"
+      className="relative pt-2 pb-4 md:py-32 overflow-visible"
     >
 
       <div className="container mx-auto px-4 md:px-8 lg:px-12 text-center">
 
-        <h1
-          className="mb-4 text-[#1c1c1c] text-[30px] sm:text-[34px] md:text-[44px] leading-[1.3]"
-          style={{
-            fontFamily: 'Trustpilot Display, Inter, sans-serif',
-            fontWeight: 800,
-            wordWrap: 'break-word',
-            overflowWrap: 'break-word',
-            hyphens: 'none',
-            wordBreak: 'normal',
-          }}
-        >
-          {mainTextPart1}
-          {mainTextPart1 && mainTextPart2 && (
-            <>
-              <span className="hidden sm:inline"> </span>
-              <br className="sm:hidden" />
-            </>
-          )}
-          <span style={{ color: '#1d4ed8' }}>{mainTextPart2}</span>
-        </h1>
+        {(mainTextPart1 || mainTextPart2) && (
+          <h1
+            className="mb-4 pt-20 md:pt-0 text-[#1c1c1c] text-[30px] sm:text-[34px] md:text-[44px] leading-[1.3]"
+            style={{
+              fontFamily: 'Trustpilot Display, Inter, sans-serif',
+              fontWeight: 800,
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              hyphens: 'none',
+              wordBreak: 'normal',
+              opacity: isAnimatingIn ? 1 : 0,
+              transform: isAnimatingIn ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'opacity 600ms ease-out, transform 600ms ease-out',
+            }}
+          >
+            {mainTextPart1}
+            {mainTextPart1 && mainTextPart2 && (
+              <>
+                <span className="hidden sm:inline"> </span>
+                <br className="sm:hidden" />
+              </>
+            )}
+            <span style={{ color: '#1d4ed8' }}>{mainTextPart2}</span>
+          </h1>
+        )}
 
 
-        <div
-          className="min-h-[50px] flex items-center justify-center relative"
-          style={{
-            fontFamily: 'Trustpilot Display, Arial, sans-serif',
-            fontSize: '24px',
-            fontWeight: 600,
-            lineHeight: '1.4',
-          }}
-        >
+        {words.length > 0 && (
+          <div
+            className="min-h-[50px] flex items-center justify-center relative"
+            style={{
+              fontFamily: 'Trustpilot Display, Arial, sans-serif',
+              fontSize: '24px',
+              fontWeight: 600,
+              lineHeight: '1.4',
+              opacity: isAnimatingIn ? 1 : 0,
+              transform: isAnimatingIn ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'opacity 600ms ease-out 200ms, transform 600ms ease-out 200ms',
+            }}
+          >
           {words.length > 1 ? (
             <>
               <div 
@@ -170,6 +187,7 @@ export default function HeroSection() {
             </div>
           )}
         </div>
+        )}
 
         <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? heroSearchContainerRef : undefined}>
           {!showHeaderSearch && !showMobileStickySearch && (
@@ -250,7 +268,6 @@ export default function HeroSection() {
             </div>
           )}
         </div>
-
       </div>
     </section>
   );

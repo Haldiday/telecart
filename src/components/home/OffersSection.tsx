@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,6 +47,8 @@ export default function OffersSection({
   const [showHeading, setShowHeading] = useState(true);
   const isMobile = useIsMobile();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const location = useLocation();
+  const isSeeAllPage = location.pathname === '/see-all';
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -173,8 +176,6 @@ export default function OffersSection({
     [visibleOffers, duplicatedCount, fixedMode, needsCarousel],
   );
 
-  if (visibleOffers.length === 0) return null;
-
   return (
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
@@ -184,6 +185,16 @@ export default function OffersSection({
             <h2 className={headingClassName || "section-heading !mb-0"}>
               {heading}
             </h2>
+            {!isSeeAllPage && (
+              <Link to="/see-all" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
+                See All
+              </Link>
+            )}
+          </div>
+        )}
+        {visibleOffers.length === 0 && (
+          <div className="py-8 text-center text-muted-foreground">
+            No offers to display
           </div>
         )}
 

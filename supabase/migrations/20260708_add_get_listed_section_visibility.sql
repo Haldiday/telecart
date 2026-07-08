@@ -1,0 +1,7 @@
+
+
+ALTER TABLE public.get_listed_settings
+ADD COLUMN IF NOT EXISTS show_pricing_section BOOLEAN NOT NULL DEFAULT TRUE,
+ADD COLUMN IF NOT EXISTS show_comparison_section BOOLEAN NOT NULL DEFAULT TRUE,
+ADD COLUMN IF NOT EXISTS show_comparison_footer BOOLEAN NOT NULL DEFAULT TRUE;
+

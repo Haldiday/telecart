@@ -1,0 +1,36 @@
+-- Comprehensive migration to ensure all required columns exist in subcategories table
+ALTER TABLE public.subcategories
+ADD COLUMN IF NOT EXISTS about_heading TEXT,
+ADD COLUMN IF NOT EXISTS about_subheading TEXT,
+ADD COLUMN IF NOT EXISTS about_content TEXT,
+ADD COLUMN IF NOT EXISTS show_about_section BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_header_points_section BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_pricing_plans BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_downloads BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_brands BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_resources BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS resources_tab_label TEXT,
+ADD COLUMN IF NOT EXISTS downloads_tab_label TEXT,
+ADD COLUMN IF NOT EXISTS brands_tab_label TEXT,
+ADD COLUMN IF NOT EXISTS pricing_plans_tab_label TEXT,
+ADD COLUMN IF NOT EXISTS key_features_tab_label TEXT,
+ADD COLUMN IF NOT EXISTS form_link TEXT,
+ADD COLUMN IF NOT EXISTS show_form_in_separate_tab BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS about_bg_color TEXT,
+ADD COLUMN IF NOT EXISTS about_heading_color TEXT,
+ADD COLUMN IF NOT EXISTS about_subheading_color TEXT,
+ADD COLUMN IF NOT EXISTS about_description_color TEXT,
+ADD COLUMN IF NOT EXISTS about_button_bg_color TEXT,
+ADD COLUMN IF NOT EXISTS about_button_text_color TEXT,
+ADD COLUMN IF NOT EXISTS video_url_2 TEXT[],
+ADD COLUMN IF NOT EXISTS schedule_link_2 TEXT,
+ADD COLUMN IF NOT EXISTS show_schedule_in_separate_tab BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS show_schedule_2_in_separate_tab BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS overview_points_heading TEXT,
+ADD COLUMN IF NOT EXISTS detail_heading TEXT,
+ADD COLUMN IF NOT EXISTS detail_description TEXT;
+
+-- Ensure contact settings have nodal and appellate visibility columns
+ALTER TABLE public.contact_settings
+ADD COLUMN IF NOT EXISTS nodal_officer_visible BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS appellate_authority_visible BOOLEAN DEFAULT true;

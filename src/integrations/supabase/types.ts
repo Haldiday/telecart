@@ -1164,6 +1164,9 @@ export type Database = {
           comparison_footer_content: string | null
           comparison_footer_line: string | null
           show_currency_toggle: boolean
+          show_pricing_section: boolean
+          show_comparison_section: boolean
+          show_comparison_footer: boolean
           created_at: string
           updated_at: string
         }
@@ -1174,6 +1177,9 @@ export type Database = {
           comparison_footer_content?: string | null
           comparison_footer_line?: string | null
           show_currency_toggle?: boolean
+          show_pricing_section?: boolean
+          show_comparison_section?: boolean
+          show_comparison_footer?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -1184,6 +1190,9 @@ export type Database = {
           comparison_footer_content?: string | null
           comparison_footer_line?: string | null
           show_currency_toggle?: boolean
+          show_pricing_section?: boolean
+          show_comparison_section?: boolean
+          show_comparison_footer?: boolean
           created_at?: string
           updated_at?: string
         }

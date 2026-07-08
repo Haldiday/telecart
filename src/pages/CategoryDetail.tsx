@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, List, Plus, Minus } from 'lucide-react';
@@ -45,6 +45,7 @@ interface BrandItem {
 }
 
 export default function CategoryDetail() {
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { isAdmin } = useAuth();
   const [category, setCategory] = useState<Category | null>(null);
@@ -53,6 +54,12 @@ export default function CategoryDetail() {
   const [activeTab, setActiveTab] = useState(1);
   const [expandedSubcategoryId, setExpandedSubcategoryId] = useState<string | null>(null);
   const [expandedBrandIds, setExpandedBrandIds] = useState<Record<string, boolean>>({});
+
+  // Reset all accordion states when location changes
+  useEffect(() => {
+    setExpandedSubcategoryId(null);
+    setExpandedBrandIds({});
+  }, [location.pathname]);
 
   const tabs = [
     { key: 'subcategories', label: 'Subcategories', icon: <List className="h-4 w-4" /> },
@@ -113,6 +120,7 @@ export default function CategoryDetail() {
   }, [id]);
 
   const handleSubcategoryClick = (sub: Subcategory) => {
+    setExpandedBrandIds({}); // Reset brand expansions when changing subcategory
     if (brandsBySubcategory[sub.id]?.length > 0) {
       setExpandedSubcategoryId(expandedSubcategoryId === sub.id ? null : sub.id);
     } else if (sub.custom_link) {
