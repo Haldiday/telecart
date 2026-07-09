@@ -1202,6 +1202,7 @@ export type Database = {
         Row: {
           id: string
           plan_name: string
+          comparison_header: string | null
           price_inr: number
           price_usd: number
           duration: string
@@ -1219,6 +1220,7 @@ export type Database = {
         Insert: {
           id?: string
           plan_name: string
+          comparison_header?: string | null
           price_inr: number
           price_usd: number
           duration: string
@@ -1236,6 +1238,7 @@ export type Database = {
         Update: {
           id?: string
           plan_name?: string
+          comparison_header?: string | null
           price_inr?: number
           price_usd?: number
           duration?: string

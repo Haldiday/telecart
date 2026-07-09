@@ -139,7 +139,7 @@ export default function ContactUs() {
         <>
           <Header />
           <main className="flex-1 bg-gray-50 pt-24 md:pt-36">
-            <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[2000px]">
+            <div className="container mx-auto px-4 md:px-8 lg:px-10 pb-16 md:pb-24 max-w-[1250px]">
               <h1 
                 className="text-4xl md:text-[32px] font-semibold text-[#222222] leading-tight"
                 style={{
@@ -170,9 +170,9 @@ export default function ContactUs() {
                                 <MapPin className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Address</p>
+                                <p className="text-sm text-[#333333]">Address</p>
                                 <p
-                                  className="text-sm text-gray-900 leading-[1.4]"
+                                  className="text-base text-gray-700 leading-[1.4]"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.address}
@@ -187,10 +187,10 @@ export default function ContactUs() {
                                 <Phone className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Call</p>
+                                <p className="text-sm text-[#333333]">Call</p>
                                 <a
                                   href={`tel:${settings.phone}`}
-                                  className="text-sm text-gray-900 hover:underline"
+                                  className="text-base text-gray-700 hover:underline"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.phone}
@@ -205,12 +205,12 @@ export default function ContactUs() {
                                 <img src="/videos/whatsapp.png" alt="WhatsApp" className="w-4 h-4" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">WhatsApp</p>
+                                <p className="text-sm text-[#333333]">WhatsApp</p>
                                 <a
                                   href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-sm text-gray-900 hover:underline"
+                                  className="text-base text-gray-700 hover:underline"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.whatsapp}
@@ -225,10 +225,10 @@ export default function ContactUs() {
                                 <Mail className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">{settings?.email_label || 'Email Us'}</p>
+                                <p className="text-sm text-[#333333]">{settings?.email_label || 'Email Us'}</p>
                                 <a
                                   href={`mailto:${settings.email}`}
-                                  className="text-sm text-gray-900 hover:underline break-all"
+                                  className="text-base text-gray-700 hover:underline break-all"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.email}
@@ -245,10 +245,10 @@ export default function ContactUs() {
                                   <Mail className="w-4 h-4 text-gray-600" />
                                 </div>
                                 <div className="space-y-0.5">
-                                  <p className="text-xs text-gray-500">{item.label || 'Email Us'}</p>
+                                  <p className="text-sm text-[#333333]">{item.label || 'Email Us'}</p>
                                   <a
                                     href={`mailto:${item.email}`}
-                                    className="text-sm text-gray-900 hover:underline break-all"
+                                    className="text-base text-gray-700 hover:underline break-all"
                                     style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                   >
                                     {item.email}
@@ -314,7 +314,7 @@ export default function ContactUs() {
                                 <Phone className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Call</p>
+                                <p className="text-sm text-gray-500">Call</p>
                                 <a
                                   href={`tel:${settings.nodal_officer_phone}`}
                                   className="text-sm text-gray-900 hover:underline"
@@ -331,10 +331,10 @@ export default function ContactUs() {
                                 <Mail className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Email Us</p>
+                                <p className="text-sm text-[#333333]">Email Us</p>
                                 <a
                                   href={`mailto:${settings.nodal_officer_email}`}
-                                  className="text-sm text-gray-900 hover:underline"
+                                  className="text-base text-gray-700 hover:underline"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.nodal_officer_email}
@@ -360,7 +360,7 @@ export default function ContactUs() {
                                 <Phone className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Call</p>
+                                <p className="text-sm text-gray-500">Call</p>
                                 <a
                                   href={`tel:${settings.appellate_authority_phone}`}
                                   className="text-sm text-gray-900 hover:underline"
@@ -377,10 +377,10 @@ export default function ContactUs() {
                                 <Mail className="w-4 h-4 text-gray-600" />
                               </div>
                               <div className="space-y-0.5">
-                                <p className="text-xs text-gray-500">Email Us</p>
+                                <p className="text-sm text-[#333333]">Email Us</p>
                                 <a
                                   href={`mailto:${settings.appellate_authority_email}`}
-                                  className="text-sm text-gray-900 hover:underline"
+                                  className="text-base text-gray-700 hover:underline"
                                   style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
                                 >
                                   {settings.appellate_authority_email}

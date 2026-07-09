@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronRight, Plus, Minus, ArrowUpRight } from 'lucide-react';
+import { ChevronRight, ArrowLeft } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import BrandActionLinks, { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
+import { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
 
 interface Category {
   id: string;
@@ -35,18 +35,24 @@ interface BrandItem {
   action_link_3_url?: string | null;
   action_link_3_new_tab?: boolean;
   action_link_3_enabled?: boolean;
+  action_links?: Array<{
+    id?: string;
+    text?: string | null;
+    url?: string | null;
+    new_tab?: boolean;
+    enabled?: boolean;
+  }>;
 }
 
-export default function SubcategoryBrands() {
-  const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
+export default function BrandActionLinksSeeAllPage() {
+  const { categoryId, subcategoryId, brandId } = useParams<{ categoryId: string; subcategoryId: string; brandId: string }>();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
-  const [brands, setBrands] = useState<BrandItem[]>([]);
-  const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
+  const [brand, setBrand] = useState<BrandItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!categoryId || !subcategoryId) return;
+    if (!categoryId || !subcategoryId || !brandId) return;
 
     let mounted = true;
     
@@ -54,27 +60,23 @@ export default function SubcategoryBrands() {
       if (!mounted) return;
       setLoading(true);
 
-      const [{ data: categoryData }, { data: subcategoryData }, { data: brandsData }] = await Promise.all([
+      const [{ data: categoryData }, { data: subcategoryData }, { data: brandData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
         supabase.from('subcategories').select('*').eq('id', subcategoryId).single(),
-        supabase.from('subcategory_brands').select('*').eq('subcategory_id', subcategoryId).order('sort_order'),
+        supabase.from('subcategory_brands').select('*').eq('id', brandId).single(),
       ]);
 
       if (!mounted) return;
 
       if (categoryData) setCategory(categoryData);
       if (subcategoryData) setSubcategory(subcategoryData);
-      
-      if (brandsData) {
-        const visibleBrands = brandsData.filter((brand: any) => brand.is_visible !== false);
-        setBrands(visibleBrands);
-      }
+      if (brandData) setBrand(brandData);
       
       setLoading(false);
     };
 
     loadData();
-  }, [categoryId, subcategoryId]);
+  }, [categoryId, subcategoryId, brandId]);
 
   if (loading)
     return (
@@ -83,12 +85,15 @@ export default function SubcategoryBrands() {
       </div>
     );
 
-  if (!category || !subcategory)
+  if (!category || !subcategory || !brand)
     return (
       <div className="flex min-h-[100dvh] items-center justify-center">
         <div className="text-lg text-muted-foreground">Page not found</div>
       </div>
     );
+
+  const actionLinks = getBrandActionLinks(brand as BrandWithActionLinks);
+  const hasActionLinks = actionLinks.length > 0;
 
   return (
     <div className="flex flex-col bg-background min-h-screen">
@@ -107,10 +112,28 @@ export default function SubcategoryBrands() {
                 {category.name}
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-foreground font-medium">{subcategory.name}</span>
+              <Link 
+                to={`/category/${category.id}/subcategory/${subcategory.id}/brands`}
+                className="hover:text-foreground transition-colors"
+              >
+                {subcategory.name}
+              </Link>
+              <ChevronRight className="h-3 w-3" />
+              <Link 
+                to={`/category/${category.id}/subcategory/${subcategory.id}/brand/${brand.id}/action-links`}
+                className="hover:text-foreground transition-colors"
+              >
+                {brand.name}
+              </Link>
             </div>
 
             <div className="flex items-center gap-4">
+              <Link
+                to={`/category/${category.id}/subcategory/${subcategory.id}/brand/${brand.id}/action-links`}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
               {category.icon_url && (
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-lg"
@@ -120,39 +143,39 @@ export default function SubcategoryBrands() {
                 </div>
               )}
               <div>
-                <h1 className="text-xl md:text-2xl font-bold">{subcategory.name}</h1>
+                <h1 className="text-xl md:text-2xl font-bold">All Action Links for {brand.name}</h1>
                 <p className="text-xs md:text-sm text-muted-foreground">
-                  {brands.length} Brands
+                  {actionLinks.length} Action Links
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Brands Grid */}
+        {/* Action Links Grid */}
         <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
-          {brands.length === 0 ? (
-            <p className="text-center text-muted-foreground">No brands available.</p>
+          {!hasActionLinks ? (
+            <p className="text-center text-muted-foreground">No action links available.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">
-              {brands.map((brand) => {
-                const actionLinks = getBrandActionLinks(brand as BrandWithActionLinks);
-                const hasActionLinks = actionLinks.length > 0;
-                const isExpanded = expandedBrandId === brand.id;
-                const hasLinkOrActions = brand.link || hasActionLinks;
-                
-                return (
-                  <div key={brand.id} className="rounded-xl border border-border/50 bg-card p-4">
-                    <BrandActionLinks
-                      brand={brand}
-                      isExpanded={isExpanded}
-                      onToggle={() => setExpandedBrandId(isExpanded ? null : brand.id)}
-                      categoryId={categoryId}
-                      subcategoryId={subcategoryId}
-                    />
-                  </div>
-                );
-              })}
+              {actionLinks.map((link, index) => (
+                <div key={index} className="rounded-xl border border-border/50 bg-card p-4">
+                  {link.isClickable ? (
+                    <a
+                      href={link.url}
+                      target={link.newTab ? '_blank' : undefined}
+                      rel={link.newTab ? 'noopener noreferrer' : undefined}
+                      className="flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground hover:text-primary cursor-pointer"
+                    >
+                      <span>{link.text}</span>
+                    </a>
+                  ) : (
+                    <span className="flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground">
+                      {link.text}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

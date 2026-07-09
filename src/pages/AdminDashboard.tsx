@@ -241,6 +241,7 @@ interface BrowseAllDirectoriesSettings {
 interface GetListedPlan {
   id?: string;
   plan_name: string;
+  comparison_header?: string | null;
   price_inr: number;
   price_usd: number;
   duration: string;
@@ -860,6 +861,8 @@ export default function AdminDashboard() {
   const [cellInputValues, setCellInputValues] = useState<Record<string, string>>({}); // key: `${rowId}-${planId}`
   const [editingGetListedFeatureId, setEditingGetListedFeatureId] = useState<string | null>(null);
   const [editingGetListedFeatureText, setEditingGetListedFeatureText] = useState<string>('');
+  const [editingComparisonHeaderPlanId, setEditingComparisonHeaderPlanId] = useState<string | null>(null);
+  const [editingComparisonHeaderText, setEditingComparisonHeaderText] = useState<string>('');
 
   const [editCard, setEditCard] = useState<Partial<FeaturedCard> | null>(null);
   const [editCategory, setEditCategory] = useState<Partial<Category> | null>(null);
@@ -2105,6 +2108,7 @@ export default function AdminDashboard() {
         const nextSortOrder = lastPlan && lastPlan.length > 0 ? lastPlan[0].sort_order + 1 : 0;
         const newPlan = {
           plan_name: editGetListedPlan.plan_name || '',
+          comparison_header: editGetListedPlan.comparison_header || '',
           price_inr: editGetListedPlan.price_inr || 0,
           price_usd: editGetListedPlan.price_usd || 0,
           duration: editGetListedPlan.duration || '',
@@ -2131,6 +2135,30 @@ export default function AdminDashboard() {
     } catch (error: any) {
       console.error('Error saving get listed plan:', error);
       toast.error(`Failed to save get listed plan: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSaveComparisonHeader = async (planId: string) => {
+    try {
+      const result = await supabase
+        .from('get_listed_plans')
+        .update({ comparison_header: editingComparisonHeaderText })
+        .eq('id', planId);
+      
+      const { error } = result;
+      if (error) throw error;
+      
+      // Update local state to reflect change immediately
+      setGetListedPlans(prev => prev.map(p => 
+        p.id === planId ? { ...p, comparison_header: editingComparisonHeaderText } : p
+      ));
+      
+      setEditingComparisonHeaderPlanId(null);
+      setEditingComparisonHeaderText('');
+      toast.success('Comparison header saved!');
+    } catch (error: any) {
+      console.error('Error saving comparison header:', error);
+      toast.error(`Failed to save comparison header: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -5033,7 +5061,7 @@ export default function AdminDashboard() {
                           {card.logo_url && <img src={card.logo_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-muted p-1" />}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-sm">{card.title}</h3>
-                            <p className="text-xs text-muted-foreground truncate">{card.description}</p>
+                            <div className="text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description || '' }} />
                           </div>
                           <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
                             <Switch
@@ -5058,7 +5086,7 @@ export default function AdminDashboard() {
                       {card.logo_url && <img src={card.logo_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-muted p-1" />}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm">{card.title}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{card.description}</p>
+                        <div className="text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description || '' }} />
                       </div>
                       <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
                         <Switch
@@ -5604,12 +5632,14 @@ export default function AdminDashboard() {
 
                       <div className="space-y-3 border-t pt-4">
                        <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
-                      <CKEditor
+                      <input
+                        type="url"
                         value={editingSub.custom_link || ''}
-                        onChange={(value) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: value || undefined } : s));
+                        onChange={(e) => {
+                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: e.target.value || undefined } : s));
                         }}
-                        className="min-h-[80px]"
+                        placeholder="https://example.com"
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                       />
                     </div>
                   
@@ -8258,7 +8288,55 @@ export default function AdminDashboard() {
                           <th className="text-left py-3 px-4 font-semibold bg-gray-50 w-1/4">Feature</th>
                           {getListedPlans.map((plan) => (
                             <th key={plan.id} className="text-center py-3 px-4 font-semibold bg-gray-50">
-                              {plan.plan_name}
+                              {editingComparisonHeaderPlanId === plan.id ? (
+                                <div className="flex items-center gap-2 justify-center">
+                                  <input
+                                    type="text"
+                                    value={editingComparisonHeaderText}
+                                    onChange={(e) => setEditingComparisonHeaderText(e.target.value)}
+                                    onBlur={() => handleSaveComparisonHeader(plan.id)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveComparisonHeader(plan.id);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingComparisonHeaderPlanId(null);
+                                        setEditingComparisonHeaderText('');
+                                      }
+                                    }}
+                                    autoFocus
+                                    placeholder="Enter custom header..."
+                                    className="w-full px-2 py-1 text-sm rounded border border-input bg-background"
+                                  />
+                                  <button
+                                    onClick={() => handleSaveComparisonHeader(plan.id)}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingComparisonHeaderPlanId(null);
+                                      setEditingComparisonHeaderText('');
+                                    }}
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 justify-center">
+                                  <span>{plan.comparison_header || plan.plan_name}</span>
+                                  <button
+                                    onClick={() => {
+                                      setEditingComparisonHeaderPlanId(plan.id);
+                                      setEditingComparisonHeaderText(plan.comparison_header || plan.plan_name);
+                                    }}
+                                    className="p-1 rounded hover:bg-accent text-muted-foreground"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
                             </th>
                           ))}
                         </tr>
@@ -8435,6 +8513,16 @@ export default function AdminDashboard() {
                         value={editGetListedPlan?.plan_name || ''}
                         onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, plan_name: e.target.value } : null)}
                         placeholder="Enter plan name..."
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Comparison Table Header (Optional)</label>
+                      <input
+                        type="text"
+                        value={editGetListedPlan?.comparison_header || ''}
+                        onChange={(e) => setEditGetListedPlan(prev => prev ? { ...prev, comparison_header: e.target.value } : null)}
+                        placeholder="Enter custom header for comparison table (defaults to plan name)..."
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                       />
                     </div>

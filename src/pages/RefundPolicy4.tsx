@@ -44,7 +44,7 @@ export default function RefundPolicy4() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 bg-white pt-24 md:pt-36 pb-12">
-        <div className="container mx-auto px-4 md:px-8 max-w-[1400px]">
+        <div className="container mx-auto px-4 md:px-8 max-w-[1250px]">
           <h1 className="text-3xl md:text-[32px] font-semibold mb-8 text-[#222222]">{page?.title || 'Refund Policy 4'}</h1>
           <RichTextContent
             content={page?.content || '<p>No content available.</p>'}

@@ -30,6 +30,11 @@ import WriteForUsPage from "./pages/WriteForUsPage";
 import VendorGuidelinesPage from "./pages/VendorGuidelinesPage";
 import BrowseAllDirectoriesPage from "./pages/BrowseAllDirectoriesPage";
 import SeeAllPage from "./pages/SeeAllPage";
+import FeaturedCardsSeeAllPage from "./pages/FeaturedCardsSeeAllPage";
+import OffersSeeAllPage from "./pages/OffersSeeAllPage";
+import Ads3ColSeeAllPage from "./pages/Ads3ColSeeAllPage";
+import BrandActionLinksPage from "./pages/BrandActionLinksPage";
+import BrandActionLinksSeeAllPage from "./pages/BrandActionLinksSeeAllPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
 
 const queryClient = new QueryClient();
@@ -54,10 +59,15 @@ const router = createBrowserRouter(
         { path: "/get-listed", element: <GetListedPage /> },
         { path: "/write-for-us", element: <WriteForUsPage /> },
                   { path: "/vendor-guidelines", element: <VendorGuidelinesPage /> },
-                  { path: "/browse-all-directories", element: <BrowseAllDirectoriesPage /> },
+        { path: "/browse-all-directories", element: <BrowseAllDirectoriesPage /> },
         { path: "/see-all", element: <SeeAllPage /> },
+        { path: "/see-all/featured-cards", element: <FeaturedCardsSeeAllPage /> },
+        { path: "/see-all/offers", element: <OffersSeeAllPage /> },
+        { path: "/see-all/3-ads", element: <Ads3ColSeeAllPage /> },
         { path: "/category/:id", element: <CategoryDetail /> },
         { path: "/category/:categoryId/subcategory/:subcategoryId/brands", element: <SubcategoryBrands /> },
+        { path: "/category/:categoryId/subcategory/:subcategoryId/brand/:brandId/action-links", element: <BrandActionLinksPage /> },
+        { path: "/category/:categoryId/subcategory/:subcategoryId/brand/:brandId/action-links/see-all", element: <BrandActionLinksSeeAllPage /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
         { path: "/admin/login", element: <AdminLogin /> },

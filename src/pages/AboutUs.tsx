@@ -58,7 +58,7 @@ export default function AboutUs() {
         <>
           <Header />
           <main className="flex-1 bg-white pt-24 md:pt-36 pb-12">
-            <div className="container mx-auto px-4 md:px-8 max-w-[1400px]">
+            <div className="container mx-auto px-4 md:px-8 max-w-[1250px]">
               <h1 
                 className="text-3xl md:text-[32px] font-semibold mb-8 text-[#222222]"
                 style={{

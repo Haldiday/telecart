@@ -47,7 +47,7 @@ export default function Ads3ColSection({
   const isMobile = useIsMobile();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
-  const isSeeAllPage = location.pathname === '/see-all';
+  const isSeeAllPage = location.pathname.startsWith("/see-all/3-ads");
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -178,49 +178,20 @@ export default function Ads3ColSection({
     [adsToDisplay, duplicatedCount, fixedMode, needsCarousel],
   );
 
-  return (
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-    <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        {showHeading && (
-          <div className="flex items-center justify-between mb-8">
-            <h2 className={headingClassName || "section-heading !mb-0"}>
-              {heading}
-            </h2>
-            {!isSeeAllPage && (
-              <Link to="/see-all" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
-                See All
-              </Link>
-            )}
-          </div>
-        )}
-        {adsToDisplay.length === 0 && (
-          <div className="py-8 text-center text-muted-foreground">
-            No ads to display
-          </div>
-        )}
-        <div className="relative group/fixed">
-          {!isMobile && (showFixedControls || needsCarousel) && (
-            <>
-              <button
-                onClick={fixedMode ? handleFixedPrev : goPrev}
-                className={`absolute left-0 md:-left-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
-                disabled={fixedMode ? fixedPageIndex === 0 : false}
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-              <button
-                onClick={fixedMode ? handleFixedNext : goNext}
-                className={`absolute right-0 md:-right-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
-                disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
-                aria-label="Next slide"
-              >
-                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-            </>
-          )}
+  // Render logic for See All page
+  const renderSeeAllPage = () => {
+    if (adsToDisplay.length === 0) {
+      return (
+        <div className="py-8 text-center text-muted-foreground">
+          No ads to display
+        </div>
+      );
+    }
 
+    if (isMobile) {
+      // Keep existing carousel behavior on mobile
+      return (
+        <div className="relative group/fixed">
           {needsCarousel ? (
             <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
               <div 
@@ -369,6 +340,251 @@ export default function Ads3ColSection({
             </div>
           )}
         </div>
+      );
+    }
+
+    // Desktop/Tablet: Show all ads in grid, no carousel (exact same as home page)
+    return (
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {adsToDisplay.map((ad) => (
+          <div key={ad.id} className="w-full">
+            <div
+                onClick={() => {
+                  if (ad.link) {
+                    window.location.href = ad.link;
+                  }
+                }}
+                className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                style={{
+                  ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                  backgroundColor: ad.background_color || undefined
+                }}
+              >
+                <div
+                  className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
+                >
+                {ad.show_image !== false && ad.image_url && (
+                  <img
+                    src={ad.image_url}
+                    alt={ad.heading || 'Ad'}
+                    className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+              </div>
+              {(ad.heading || ad.description) && (
+                <div className="p-3">
+                  {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                  {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                </div>
+              )}
+              </div>
+            </div>
+          ))}
+      </div>
+    );
+  };
+
+  // Render logic for Home page
+  const renderHomePage = () => {
+    if (adsToDisplay.length === 0) {
+      return (
+        <div className="py-8 text-center text-muted-foreground">
+          No ads to display
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative group/fixed">
+        {!isMobile && (showFixedControls || needsCarousel) && (
+          <>
+            <button
+              onClick={fixedMode ? handleFixedPrev : goPrev}
+              className={`absolute left-0 md:-left-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+              disabled={fixedMode ? fixedPageIndex === 0 : false}
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+            </button>
+            <button
+              onClick={fixedMode ? handleFixedNext : goNext}
+              className={`absolute right-0 md:-right-12 ${visibleCount === 3 ? 'top-[100px] md:top-[125px]' : 'top-[80px] md:top-[110px] lg:top-[150px]'} -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30`}
+              disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
+              aria-label="Next slide"
+            >
+              <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+            </button>
+          </>
+        )}
+
+        {needsCarousel ? (
+          <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+            <div 
+              className="overflow-hidden overflow-x-hidden touch-pan-y"
+              style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+              ref={containerRef}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
+              <div
+                className="flex flex-row flex-nowrap"
+                onTransitionEnd={handleTransitionEnd}
+                style={{
+                  transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
+                  transition: animate ? 'transform 650ms ease' : 'none',
+                }}
+              >
+                {displayAds.map((ad, displayIndex) => (
+                  <div
+                    key={`${ad.id}-${displayIndex}`}
+                    className="flex-none px-1.5"
+                    style={{ width: `${slideWidth}%` }}
+                  >
+                    <div
+                        onClick={() => {
+                          if (ad.link) {
+                            window.location.href = ad.link;
+                          }
+                        }}
+                        className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        style={{
+                          ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                          backgroundColor: ad.background_color || undefined
+                        }}
+                      >
+                        <div
+                          className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
+                        >
+                        {ad.show_image !== false && ad.image_url && (
+                          <img
+                            src={ad.image_url}
+                            alt={ad.heading || 'Ad'}
+                            className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                          />
+                        )}
+                      </div>
+                      {(ad.heading || ad.description) && (
+                        <div className={`p-3 ${ad.show_image !== false && ad.image_url ? '' : ''}`}>
+                          {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                          {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
+          <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+            <div 
+              className="flex flex-row flex-nowrap"
+              style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
+            >
+              {fixedPages.map((page, pageIdx) => (
+                <div key={pageIdx} className={`w-full flex-none grid grid-cols-1 gap-3 ${visibleCount === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                  {page.map((ad) => (
+                    <div key={ad.id} className="flex h-full">
+                      <div
+                        onClick={() => {
+                          if (ad.link) {
+                            window.location.href = ad.link;
+                          }
+                        }}
+                        className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        style={{
+                          ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                          backgroundColor: ad.background_color || undefined
+                        }}
+                      >
+                        <div
+                          className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
+                        >
+                          {ad.show_image !== false && ad.image_url && (
+                            <img
+                              src={ad.image_url}
+                              alt={ad.heading || 'Ad'}
+                              className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            />
+                          )}
+                        </div>
+                        {(ad.heading || ad.description) && (
+                          <div className="p-3">
+                            {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                            {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
+                  {Array.from({ length: visibleCount - page.length }).map((_, i) => (
+                    <div key={`empty-${i}`} className="hidden md:flex h-full" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {adsToDisplay.map((ad) => (
+              <div key={ad.id} className="w-full">
+                <div
+                    onClick={() => {
+                      if (ad.link) {
+                        window.location.href = ad.link;
+                      }
+                    }}
+                    className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                    style={{
+                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                      backgroundColor: ad.background_color || undefined
+                    }}
+                  >
+                    <div
+                      className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
+                    >
+                    {ad.show_image !== false && ad.image_url && (
+                      <img
+                        src={ad.image_url}
+                        alt={ad.heading || 'Ad'}
+                        className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  {(ad.heading || ad.description) && (
+                    <div className="p-3">
+                      {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
+                      {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                    </div>
+                  )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+    <div className={compact ? '' : 'py-4 md:py-6'}>
+      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+        {showHeading && (
+          <div className="flex items-center justify-between mb-8">
+            <h2 className={headingClassName || "section-heading !mb-0"}>
+              {heading}
+            </h2>
+            {!isSeeAllPage && (
+              <Link to="/see-all/3-ads" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
+                See All
+              </Link>
+            )}
+          </div>
+        )}
+        {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
       </div>
     </div>
     </SubcategorySectionShell>

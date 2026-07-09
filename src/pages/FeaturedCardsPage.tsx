@@ -138,9 +138,7 @@ export default function FeaturedCardsPage() {
                         <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       )}
                     </h3>
-                    <p className="mb-4 flex-1 text-sm text-muted-foreground leading-relaxed">
-                      {card.description}
-                    </p>
+                    <div className="mb-4 flex-1 text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: card.description }} />
                     {card.link && (
                       <a
                         href={card.link}

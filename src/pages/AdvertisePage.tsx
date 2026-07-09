@@ -250,7 +250,7 @@ const AdvertisePage = () => {
                       </h1>
                       <RichTextContent
                         content={settings.hero_description}
-                        className="text-[18px] font-normal text-[#777777] leading-relaxed"
+                        className="text-[18px] font-normal text-[#24272C] leading-relaxed"
                       />
                       {settings.hero_button_visible && settings.hero_button_text && settings.hero_button_link && (
                 <Button className="bg-[#1d4ed8] text-white rounded-lg text-lg px-12 py-3 mt-8">

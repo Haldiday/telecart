@@ -217,6 +217,8 @@ export default function CategoryDetail() {
                                 ...prev,
                                 [brand.id]: !prev[brand.id],
                               }))}
+                              categoryId={category.id}
+                              subcategoryId={sub.id}
                             />
                           ))}
                           {brandsBySubcategory[sub.id]?.length > 5 && (

@@ -9,6 +9,7 @@ import RichTextContent from '@/components/shared/RichTextContent';
 interface GetListedPlan {
   id: string;
   plan_name: string;
+  comparison_header?: string | null;
   price_inr: number;
   price_usd: number;
   duration: string;
@@ -217,6 +218,10 @@ const GetListedPage = () => {
   }, []);
 
   const getPrice = useCallback((plan: GetListedPlan) => {
+    const price = currency === 'INR' ? plan.price_inr : plan.price_usd;
+    if (price === 0) {
+      return null;
+    }
     if (currency === 'INR') {
       return (
         <>
@@ -343,18 +348,12 @@ const GetListedPage = () => {
                 <div className="flex flex-wrap justify-center gap-8">
                   {visiblePlans.map((plan, index) => {
                     const planFeatures = getPlanFeatures(plan.id);
-                    const isExpanded = expandedPlans.includes(plan.id);
-                    const showAllFeatures = !plan.show_view_more;
-                    const visibleFeatures = showAllFeatures 
-                      ? planFeatures 
-                      : isExpanded 
-                        ? planFeatures 
-                        : planFeatures.slice(0, 5);
+                    const visibleFeatures = planFeatures;
 
                     return (
                       <div 
                         key={plan.id} 
-                        className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-[#001965] hover:scale-105 hover:shadow-xl w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
+                        className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300  hover:scale-105 hover:shadow-2xl w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
                         style={{
                           opacity: 0,
                           animation: 'fadeUp 0.6s ease-out forwards',
@@ -369,9 +368,13 @@ const GetListedPage = () => {
 
                         <div className="pt-8 px-8 pb-8">
                           <h3 className="text-[22px] font-semibold leading-normal text-[#222222] mb-2">{plan.plan_name}</h3>
-                          <p className="text-[28px] font-semibold leading-normal text-[#000000] mb-4">{getPrice(plan)}</p>
+                          <div className="flex items-center gap-2 mb-4">
+                            {getPrice(plan) && (
+                              <p className="text-[28px] font-semibold leading-normal text-[#000000]">{getPrice(plan)}</p>
+                            )}
+                            <p className="text-[16px] font-normal leading-normal text-[#606F7B]">{plan.duration}</p>
+                          </div>
                           <div className="border-t border-gray-200 my-4"></div>
-                          <p className="text-[16px] font-normal leading-normal text-[#606F7B] mb-6">{plan.duration}</p>
 
                           <ul className="space-y-3 mb-8">
                             {visibleFeatures.map((feature) => (
@@ -405,7 +408,7 @@ const GetListedPage = () => {
             {/* Comparison Table Section */}
             {(settings?.show_comparison_section ?? true) && comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
               <section 
-                className="pt-8 pb-16 px-8 md:px-16 lg:px-24 bg-white mt-8"
+                className="pt-8 pb-8 px-8 md:px-16 lg:px-24 bg-white mt-8"
                 style={{
                   opacity: 0,
                   animation: 'fadeUp 0.6s ease-out forwards',
@@ -424,7 +427,7 @@ const GetListedPage = () => {
                           <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/3"></th>
                           {visiblePlans.map((plan) => (
                             <th key={plan.id} className="text-center py-4 px-6 text-[22px] font-normal leading-normal text-[#001965]">
-                              {plan.plan_name}
+                              {plan.comparison_header || plan.plan_name}
                             </th>
                           ))}
                         </tr>
@@ -451,22 +454,25 @@ const GetListedPage = () => {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </section>
+            )}
 
-                  {(settings?.show_comparison_footer ?? true) && (
-                    <>
-                      {settings?.comparison_footer_content && (
-                        <RichTextContent
-                          content={settings.comparison_footer_content}
-                          className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1"
-                        />
-                      )}
+            {/* Comparison Footer Section */}
+            {(settings?.show_comparison_footer ?? true) && (
+              <section className="pt-0 pb-16 px-8 md:px-16 lg:px-24 bg-white">
+                <div className={pageContentContainerClassName}>
+                  {settings?.comparison_footer_content && (
+                    <RichTextContent
+                      content={settings.comparison_footer_content}
+                      className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1"
+                    />
+                  )}
 
-                      {settings?.comparison_footer_line && (
-                        <div className="mt-4 translate-x-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
-                          {settings.comparison_footer_line}
-                        </div>
-                      )}
-                    </>
+                  {settings?.comparison_footer_line && (
+                    <div className="mt-4 translate-x-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
+                      {settings.comparison_footer_line}
+                    </div>
                   )}
                 </div>
               </section>

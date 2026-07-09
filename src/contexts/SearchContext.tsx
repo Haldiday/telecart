@@ -18,6 +18,7 @@ export interface SearchResult {
   type: SearchResultType;
   name: string;
   categoryId?: string;
+  subcategoryId?: string;
   subcategoryName?: string;
   brandName?: string; // For subcategory results that show a brand
   link?: string | null;
@@ -168,29 +169,29 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         const [
-          { data: categories, error: categoriesError },
-          { data: subcategories, error: subcategoriesError },
-          { data: brandMatches, error: brandMatchesError },
-        ] = await Promise.all([
-          supabase
-            .from('categories')
-            .select('id, name')
-            .ilike('name', `%${searchTerm}%`)
-            .order('sort_order')
-            .limit(20),
-          (supabase as any)
-            .from('subcategories')
-            .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
-            .ilike('name', `%${searchTerm}%`)
-            .order('sort_order')
-            .limit(20),
-          (supabase as any)
-            .from('subcategory_brands')
-            .select('id, name, link, subcategory_id, subcategories(name), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
-            .ilike('name', `%${searchTerm}%`)
-            .order('sort_order')
-            .limit(20),
-        ]);
+        { data: categories, error: categoriesError },
+        { data: subcategories, error: subcategoriesError },
+        { data: brandMatches, error: brandMatchesError },
+      ] = await Promise.all([
+        supabase
+          .from('categories')
+          .select('id, name')
+          .ilike('name', `%${searchTerm}%`)
+          .order('sort_order')
+          .limit(20),
+        (supabase as any)
+          .from('subcategories')
+          .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
+          .ilike('name', `%${searchTerm}%`)
+          .order('sort_order')
+          .limit(20),
+        (supabase as any)
+          .from('subcategory_brands')
+          .select('id, name, link, subcategory_id, subcategories(id, name, category_id), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
+          .ilike('name', `%${searchTerm}%`)
+          .order('sort_order')
+          .limit(20),
+      ]);
 
         if (!mountedRef.current || lastRequestRef.current !== requestId) {
           return;
@@ -261,6 +262,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             id: brand.id,
             type: 'brand' as const,
             name: brand.name,
+            subcategoryId: brand.subcategory_id,
+            categoryId: brand.subcategories?.category_id,
             subcategoryName: brand.subcategories?.name || '',
             link: brand.link,
             action_links: brand.action_links,
@@ -338,9 +341,11 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           navigate(`/category/${result.categoryId}`);
         }
       } else if (result.type === 'brand') {
+        const actionLinks = getBrandActionLinks(result);
+        const hasActionLinks = actionLinks.length > 0;
+        
         if (result.link) {
-          // Check if there are any visible action links
-          const actionLinks = getBrandActionLinks(result);
+          // If brand has a link, keep current behavior
           if (actionLinks.length === 0) {
             try {
               const url = new URL(result.link);
@@ -349,6 +354,9 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
               // Do nothing
             }
           }
+        } else if (hasActionLinks && result.categoryId && result.subcategoryId) {
+          // If brand has no link but has action links, navigate to action links page
+          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
         }
       }
     },

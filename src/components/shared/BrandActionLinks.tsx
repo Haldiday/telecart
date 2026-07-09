@@ -1,4 +1,5 @@
 import { Plus, Minus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export interface BrandActionLinkItem {
   id?: string;
@@ -40,6 +41,8 @@ interface BrandActionLinksProps {
   brand: BrandWithActionLinks;
   isExpanded?: boolean;
   onToggle?: () => void;
+  categoryId?: string;
+  subcategoryId?: string;
 }
 
 function normalizeActionLinkValue(value?: string | null) {
@@ -104,11 +107,13 @@ export function getBrandActionLinks(brand: BrandWithActionLinks): BrandActionLin
   }).filter((link) => link.isVisible);
 }
 
-export default function BrandActionLinks({ brand, isExpanded = false, onToggle }: BrandActionLinksProps) {
+export default function BrandActionLinks({ brand, isExpanded = false, onToggle, categoryId, subcategoryId }: BrandActionLinksProps) {
   const actionLinks = getBrandActionLinks(brand);
   const hasActionLinks = actionLinks.length > 0;
   const isExpandable = hasActionLinks && typeof onToggle === 'function';
   const hasLinkOrActions = brand.link || hasActionLinks;
+  const hasSeeAllLinks = actionLinks.length > 5;
+  const displayedLinks = hasSeeAllLinks ? actionLinks.slice(0, 5) : actionLinks;
 
   return (
     <div className="border-b border-border/30 last:border-0">
@@ -147,7 +152,7 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle }
       {hasActionLinks && isExpanded && (
         <div className="pb-3 pt-1 space-y-2">
           <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-            {actionLinks.map((link) => {
+            {displayedLinks.map((link) => {
               if (link.isClickable) {
                 return (
                   <a
@@ -171,6 +176,15 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle }
                 </div>
               );
             })}
+            {hasSeeAllLinks && categoryId && subcategoryId && (
+              <Link
+                to={`/category/${categoryId}/subcategory/${subcategoryId}/brand/${brand.id}/action-links`}
+                className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                See all →
+              </Link>
+            )}
           </div>
         </div>
       )}

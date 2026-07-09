@@ -232,11 +232,13 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                 <div className="border-l-2 border-blue-500 pl-4 ml-1">
                                   {displayBrands.slice(0, 5).map((brand) => (
                                     <BrandActionLinks
-                                      key={brand.id}
-                                      brand={brand}
-                                      isExpanded={expandedBrandId === brand.id}
-                                      onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
-                                    />
+                                    key={brand.id}
+                                    brand={brand}
+                                    isExpanded={expandedBrandId === brand.id}
+                                    onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
+                                    categoryId={category.id}
+                                    subcategoryId={sub.id}
+                                  />
                                   ))}
                                   {displayBrands.length > 5 && (
                                     <Link
@@ -334,6 +336,8 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                     brand={brand}
                                     isExpanded={expandedBrandId === brand.id}
                                     onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
+                                    categoryId={category.id}
+                                    subcategoryId={sub.id}
                                   />
                                 ))}
                                 {displayBrands.length > 5 && (
