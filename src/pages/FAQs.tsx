@@ -4,21 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import RichTextContent from '@/components/shared/RichTextContent';
+import { buildFaqTree, type FAQRecord } from '@/lib/faqUtils';
 
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  sort_order: number;
-  is_visible: boolean;
-  created_at: string;
-  updated_at: string;
-}
+interface FAQ extends FAQRecord {}
 
 export default function FAQs() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openMainId, setOpenMainId] = useState<string | null>(null);
+  const [openSubId, setOpenSubId] = useState<string | null>(null);
   const [faqHeading, setFaqHeading] = useState('Frequently Asked Questions');
 
   const fadeUpAnimation = `
@@ -67,9 +61,17 @@ export default function FAQs() {
     loadAllData();
   }, []);
 
-  const toggleAccordion = (id: string) => {
-    setOpenId(openId === id ? null : id);
+  const toggleMainAccordion = (id: string) => {
+    setOpenMainId((currentId) => (currentId === id ? null : id));
+    setOpenSubId(null);
   };
+
+  const toggleSubAccordion = (parentId: string, childId: string) => {
+    setOpenMainId(parentId);
+    setOpenSubId((currentId) => (currentId === childId ? null : childId));
+  };
+
+  const faqTree = buildFaqTree(faqs);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -96,29 +98,61 @@ export default function FAQs() {
                   animationDelay: '0.2s'
                 }}
               >
-                {faqs.length === 0 ? (
+                {faqTree.length === 0 ? (
                   <p className="text-[#333333]">No FAQs available yet.</p>
                 ) : (
                   <div className="space-y-4">
-                    {faqs.map((faq) => (
-                      <div key={faq.id} className="border-b border-gray-200 pb-4">
-                        <button
-                          onClick={() => toggleAccordion(faq.id)}
-                          className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
-                        >
-                          <RichTextContent
-                            content={faq.question}
-                            className="text-lg font-semibold text-[#111111] [&_p]:m-0"
-                          />
-                          <span className={`text-2xl transition-transform duration-300 ${openId === faq.id ? 'rotate-45' : ''}`}>
-                            +
-                          </span>
-                        </button>
-                        {openId === faq.id && (
-                          <RichTextContent content={faq.answer} className="mt-2 text-[#333333]" />
-                        )}
-                      </div>
-                    ))}
+                    {faqTree.map((faq) => {
+                      const isMainOpen = openMainId === faq.id;
+
+                      return (
+                        <div key={faq.id} className="border-b border-gray-200 pb-4">
+                          <button
+                            onClick={() => toggleMainAccordion(faq.id)}
+                            className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
+                          >
+                            <RichTextContent
+                              content={faq.question}
+                              className="text-lg font-semibold text-[#111111] [&_p]:m-0"
+                            />
+                            <span className={`text-2xl transition-transform duration-300 ${isMainOpen ? 'rotate-45' : ''}`}>
+                              +
+                            </span>
+                          </button>
+                          {isMainOpen && (
+                            <div className="mt-2 space-y-2">
+                              {faq.children.length > 0 ? (
+                                faq.children.map((child) => {
+                                  const isChildOpen = openSubId === child.id;
+
+                                  return (
+                                    <div key={child.id} className="ml-4 border-l border-gray-200 pl-4">
+                                      <button
+                                        onClick={() => toggleSubAccordion(faq.id, child.id)}
+                                        className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
+                                      >
+                                        <RichTextContent
+                                          content={child.question}
+                                          className="text-base font-medium text-[#111111] [&_p]:m-0"
+                                        />
+                                        <span className={`text-xl transition-transform duration-300 ${isChildOpen ? 'rotate-45' : ''}`}>
+                                          +
+                                        </span>
+                                      </button>
+                                      {isChildOpen && (
+                                        <RichTextContent content={child.answer} className="mt-1 text-[#333333]" />
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <RichTextContent content={faq.answer} className="mt-2 text-[#333333]" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

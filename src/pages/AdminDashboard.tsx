@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/admin/ImageUpload';
 import CKEditor from '@/components/admin/CKEditor';
 import { Switch } from '@/components/ui/switch';
+import { buildFaqTree, type FAQRecord } from '@/lib/faqUtils';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
 } from '@dnd-kit/core';
@@ -440,15 +441,7 @@ interface Ad3Item extends Ad2Item {
   background_color: string | null;
 }
 
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  sort_order: number;
-  is_visible: boolean;
-  created_at: string;
-  updated_at: string;
-}
+interface FAQ extends FAQRecord {}
 
 type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
@@ -667,6 +660,7 @@ export default function AdminDashboard() {
   const [ads2, setAds2] = useState<Ad2[]>([]);
   const [ads3, setAds3] = useState<Ad3[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const faqTree = buildFaqTree(faqs, { includeHidden: true });
   const [buttons, setButtons] = useState<CategoryButton[]>([]);
   const [subcategoriesMap, setSubcategoriesMap] = useState<Record<string, string>>({});
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
@@ -2916,30 +2910,56 @@ export default function AdminDashboard() {
     }
   }
 
+  function startNewFaq(parentId: string | null = null) {
+    setEditFaq({
+      question: '',
+      answer: '',
+      parent_id: parentId,
+      is_visible: true,
+      sort_order: 0,
+    });
+    setShowAddFaqModal(true);
+  }
+
+  function startEditFaq(faq: FAQ) {
+    setEditFaq({ ...faq, answer: faq.answer ?? '' });
+    setShowAddFaqModal(true);
+  }
+
   async function saveFaq() {
     if (!editFaq) return;
-    if (!editFaq.question?.trim() || !editFaq.answer?.trim()) {
-      toast.error('Question and answer are required.');
+    if (!editFaq.question?.trim()) {
+      toast.error('Question is required.');
       return;
     }
+
+    const isSubFaq = Boolean(editFaq.parent_id);
+    if (isSubFaq && !editFaq.answer?.trim()) {
+      toast.error('Answer is required for sub FAQs.');
+      return;
+    }
+
     try {
+      const payload = {
+        question: editFaq.question.trim(),
+        answer: editFaq.answer?.trim() || null,
+        is_visible: editFaq.is_visible ?? true,
+        updated_at: new Date().toISOString(),
+      };
+
       if (editFaq.id) {
         const { error } = await supabase
           .from('faqs')
-          .update({
-            question: editFaq.question.trim(),
-            answer: editFaq.answer.trim(),
-            is_visible: editFaq.is_visible ?? true,
-            updated_at: new Date().toISOString(),
-          })
+          .update(payload)
           .eq('id', editFaq.id);
         if (error) throw error;
       } else {
+        const baseFaqs = faqs.filter((item) => (editFaq.parent_id ? item.parent_id === editFaq.parent_id : item.parent_id == null));
+        const nextOrder = baseFaqs.length;
         const { error } = await supabase.from('faqs').insert({
-          question: editFaq.question.trim(),
-          answer: editFaq.answer.trim(),
-          sort_order: faqs.length,
-          is_visible: true,
+          ...payload,
+          parent_id: editFaq.parent_id ?? null,
+          sort_order: nextOrder,
         });
         if (error) throw error;
       }
@@ -2955,6 +2975,8 @@ export default function AdminDashboard() {
 
   async function deleteFaq(id: string) {
     try {
+      const { error: deleteChildrenError } = await supabase.from('faqs').delete().eq('parent_id', id);
+      if (deleteChildrenError) throw deleteChildrenError;
       const { error } = await supabase.from('faqs').delete().eq('id', id);
       if (error) throw error;
       toast.success('FAQ deleted!');
@@ -2977,7 +2999,8 @@ export default function AdminDashboard() {
     }
   }
 
-  function stripHtml(html: string): string {
+  function stripHtml(html: string | null | undefined): string {
+    if (!html) return '';
     const temp = document.createElement('div');
     temp.innerHTML = html;
     return temp.textContent || temp.innerText || '';
@@ -7438,17 +7461,14 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-bold">FAQs</h2>
                       <button
-                        onClick={() => {
-                          setEditFaq({ question: '', answer: '' });
-                          setShowAddFaqModal(true);
-                        }}
+                        onClick={() => startNewFaq()}
                         className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
                       >
                         <Plus className="w-4 h-4" /> Add FAQ
                       </button>
                     </div>
 
-                  {faqs.length === 0 ? (
+                  {faqTree.length === 0 ? (
                     <div className="text-center py-12 bg-card rounded-xl border border-border">
                       <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
                     </div>
@@ -7456,12 +7476,17 @@ export default function AdminDashboard() {
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
                       const { active, over } = event;
                       if (!over) return;
-                      const oldIndex = faqs.findIndex((faq) => faq.id === active.id);
-                      const newIndex = faqs.findIndex((faq) => faq.id === over.id);
+                      const topLevelFaqs = faqTree.filter((faq) => faq.parent_id == null);
+                      const oldIndex = topLevelFaqs.findIndex((faq) => faq.id === active.id);
+                      const newIndex = topLevelFaqs.findIndex((faq) => faq.id === over.id);
                       if (oldIndex === -1 || newIndex === -1) return;
 
-                      const newOrder = arrayMove(faqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
-                      setFaqs(newOrder);
+                      const newOrder = arrayMove(topLevelFaqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
+                      const updatedFaqs = faqs.map((item) => {
+                        const updated = newOrder.find((entry) => entry.id === item.id);
+                        return updated ? { ...item, sort_order: updated.sort_order } : item;
+                      });
+                      setFaqs(updatedFaqs);
 
                       for (const faq of newOrder) {
                         await updateFaqSortOrder(faq.id, faq.sort_order);
@@ -7469,34 +7494,94 @@ export default function AdminDashboard() {
 
                       toast.success('FAQ order saved!');
                     }}>
-                      <SortableContext items={faqs.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
-                        <div className="rounded-xl border border-border bg-card overflow-hidden">
-                          {faqs.map((faq, index) => (
-                            <div key={faq.id}>
+                      <SortableContext items={faqTree.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-4">
+                          {faqTree.map((faq, index) => (
+                            <div key={faq.id} className="rounded-xl border border-border bg-card overflow-hidden">
                               <SortableAdminItem
                                 id={faq.id}
                                 className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
                               >
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <h3 className="font-semibold text-sm md:text-base truncate">{stripHtml(faq.question)}</h3>
-                                  <div className="flex items-center gap-1">
-                                    <Switch
-                                      checked={faq.is_visible}
-                                      onCheckedChange={async (checked) => {
-                                        await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
-                                        setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
-                                        toast.success('FAQ visibility updated!');
-                                      }}
-                                    />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <h3 className="font-semibold text-sm md:text-base truncate">{stripHtml(faq.question)}</h3>
+                                    <div className="flex items-center gap-1">
+                                      <Switch
+                                        checked={faq.is_visible}
+                                        onCheckedChange={async (checked) => {
+                                          await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
+                                          setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
+                                          toast.success('FAQ visibility updated!');
+                                        }}
+                                      />
+                                    </div>
                                   </div>
+                                  <p className="text-xs md:text-sm text-muted-foreground">
+                                    {faq.children.length > 0 ? `${faq.children.length} sub FAQ${faq.children.length > 1 ? 's' : ''}` : 'No sub FAQs yet'}
+                                  </p>
                                 </div>
-                                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{stripHtml(faq.answer)}</p>
-                              </div>
-                                <button onClick={() => setEditFaq(faq)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                                <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => startEditFaq(faq as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                  <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                </div>
                               </SortableAdminItem>
-                              {index < faqs.length - 1 && <div className="border-t border-border" />}
+                              <div className="space-y-3 bg-background/40 px-4 py-4">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-semibold">Sub FAQs</h4>
+                                  <button onClick={() => startNewFaq(faq.id)} className="text-sm font-medium text-primary hover:underline">+ Add Sub FAQ</button>
+                                </div>
+                                {faq.children.length === 0 ? (
+                                  <p className="text-xs md:text-sm text-muted-foreground">No sub FAQs yet.</p>
+                                ) : (
+                                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
+                                    const { active, over } = event;
+                                    if (!over) return;
+                                    const children = faq.children;
+                                    const oldIndex = children.findIndex((c) => c.id === active.id);
+                                    const newIndex = children.findIndex((c) => c.id === over.id);
+                                    if (oldIndex === -1 || newIndex === -1) return;
+
+                                    const newOrder = arrayMove(children, oldIndex, newIndex).map((c, idx) => ({ ...c, sort_order: idx }));
+
+                                    // Update global faqs state with new child orders
+                                    setFaqs((prev) => prev.map((item) => {
+                                      const updated = newOrder.find((n) => n.id === item.id);
+                                      return updated ? { ...item, sort_order: updated.sort_order } : item;
+                                    }));
+
+                                    // Persist changes
+                                    for (const c of newOrder) {
+                                      await updateFaqSortOrder(c.id, c.sort_order);
+                                    }
+                                  }}>
+                                    <SortableContext items={faq.children.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                                      <div className="space-y-3">
+                                        {faq.children.map((child) => (
+                                          <SortableAdminItem id={child.id} key={child.id} className="rounded-lg border border-border bg-background p-3">
+                                            <div className="min-w-0">
+                                              <p className="font-medium text-sm truncate">{stripHtml(child.question)}</p>
+                                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(child.answer)}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <Switch
+                                                checked={child.is_visible}
+                                                onCheckedChange={async (checked) => {
+                                                  await supabase.from('faqs').update({ is_visible: checked }).eq('id', child.id);
+                                                  setFaqs((prev) => prev.map((item) => item.id === child.id ? { ...item, is_visible: checked } : item));
+                                                  toast.success('Sub FAQ visibility updated!');
+                                                }}
+                                              />
+                                              <button onClick={() => startEditFaq(child as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                              <button onClick={() => deleteFaq(child.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                          </SortableAdminItem>
+                                        ))}
+                                      </div>
+                                    </SortableContext>
+                                  </DndContext>
+                                )}
+                              </div>
+                              {index < faqTree.length - 1 && <div className="border-t border-border" />}
                             </div>
                           ))}
                         </div>
@@ -7520,7 +7605,7 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="text-2xl font-bold mb-6">{editFaq?.id ? 'Edit FAQ' : 'Add FAQ'}</h2>
+                    <h2 className="text-2xl font-bold mb-6">{editFaq?.id ? (editFaq.parent_id ? 'Edit Sub FAQ' : 'Edit FAQ') : (editFaq?.parent_id ? 'Add Sub FAQ' : 'Add FAQ')}</h2>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Question</label>
@@ -7535,7 +7620,7 @@ export default function AdminDashboard() {
                         <CKEditor
                           value={editFaq?.answer || ''}
                           onChange={(value) => setEditFaq({ ...editFaq!, answer: value })}
-                          placeholder="Enter answer..."
+                          placeholder={editFaq?.parent_id ? 'Enter answer for this sub FAQ...' : 'Enter answer...'}
                         />
                       </div>
                       <button onClick={saveFaq} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold w-full">

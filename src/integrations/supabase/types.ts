@@ -949,8 +949,9 @@ export type Database = {
       faqs: {
         Row: {
           id: string
+          parent_id: string | null
           question: string
-          answer: string
+          answer: string | null
           sort_order: number
           is_visible: boolean
           created_at: string
@@ -958,8 +959,9 @@ export type Database = {
         }
         Insert: {
           id?: string
+          parent_id?: string | null
           question: string
-          answer: string
+          answer?: string | null
           sort_order?: number
           is_visible?: boolean
           created_at?: string
@@ -967,8 +969,9 @@ export type Database = {
         }
         Update: {
           id?: string
+          parent_id?: string | null
           question?: string
-          answer?: string
+          answer?: string | null
           sort_order?: number
           is_visible?: boolean
           created_at?: string
