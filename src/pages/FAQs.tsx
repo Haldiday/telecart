@@ -120,16 +120,16 @@ export default function FAQs() {
                             </span>
                           </button>
                           {isMainOpen && (
-                            <div className="mt-2 space-y-2">
+                            <div className="mt-2">
                               {faq.children.length > 0 ? (
                                 faq.children.map((child) => {
                                   const isChildOpen = openSubId === child.id;
 
                                   return (
-                                    <div key={child.id} className="ml-4 border-l border-gray-200 pl-4">
+                                    <div key={child.id} className="border-b border-gray-200 last:border-b-0 pl-4 py-2">
                                       <button
                                         onClick={() => toggleSubAccordion(faq.id, child.id)}
-                                        className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
+                                        className="w-full flex items-center justify-between text-left -py-2 focus:outline-none"
                                       >
                                         <RichTextContent
                                           content={child.question}
@@ -140,7 +140,7 @@ export default function FAQs() {
                                         </span>
                                       </button>
                                       {isChildOpen && (
-                                        <RichTextContent content={child.answer} className="mt-1 text-[#333333]" />
+                                        <RichTextContent content={child.answer} className="mt-2 text-[#333333]" />
                                       )}
                                     </div>
                                   );
