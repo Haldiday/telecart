@@ -98,7 +98,7 @@ export default function FeaturedCardsPage() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1 pt-24 md:pt-36">
+      <main className="flex-1 pt-20 md:pt-28">
         <div className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
             <Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">

@@ -10,6 +10,10 @@ import CKEditor from '@/components/admin/CKEditor';
 import { Switch } from '@/components/ui/switch';
 import { buildFaqTree, type FAQRecord } from '@/lib/faqUtils';
 import {
+  getComparisonPlanVisibilityMap,
+  setComparisonPlanVisibility,
+} from '@/lib/getListedComparisonVisibility';
+import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
 } from '@dnd-kit/core';
 import {
@@ -297,6 +301,7 @@ interface HeaderSettings {
   for_providers_text: string;
   for_providers_link: string;
   for_providers_visible: boolean;
+  sign_in_link: string;
   sign_in_text: string;
   sign_in_visible: boolean;
   join_text: string;
@@ -703,6 +708,7 @@ export default function AdminDashboard() {
     for_providers_link: '#',
     for_providers_visible: true,
     sign_in_text: 'Sign In',
+    sign_in_link: '#',
     sign_in_visible: true,
     join_text: 'Join',
     join_link: '#',
@@ -2255,6 +2261,12 @@ export default function AdminDashboard() {
       }
       console.error(error);
     }
+  };
+
+  const handleToggleComparisonPlanColumnVisibility = async (planId: string, visible: boolean) => {
+    setComparisonPlanVisibility(planId, visible);
+    setGetListedPlans(prev => prev.map(plan => plan.id === planId ? { ...plan } : plan));
+    toast.success('Comparison column visibility updated!');
   };
 
   const handleSaveGetListedComparisonRow = async () => {
@@ -4105,6 +4117,7 @@ export default function AdminDashboard() {
         for_providers_link: headerSettings.for_providers_link,
         for_providers_visible: headerSettings.for_providers_visible,
         sign_in_text: headerSettings.sign_in_text,
+        sign_in_link: headerSettings.sign_in_link,
         sign_in_visible: headerSettings.sign_in_visible,
         join_text: headerSettings.join_text,
         join_link: headerSettings.join_link,
@@ -4693,25 +4706,36 @@ export default function AdminDashboard() {
           {tab === 'hero' && (
             <div className="max-w-lg space-y-4">
               <h2 className="text-xl font-bold mb-4">Edit Hero Section</h2>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">Text Part 1</label>
-                <input value={heroTextPart1} onChange={(e) => setHeroTextPart1(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                <input
+                  value={heroTextPart1}
+                  onChange={(e) => setHeroTextPart1(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">Text Part 2</label>
-                <input value={heroTextPart2} onChange={(e) => setHeroTextPart2(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                <input
+                  value={heroTextPart2}
+                  onChange={(e) => setHeroTextPart2(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium">Animated Words</label>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setHeroWords([...heroWords, ''])}
-                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                    onClick={() => setHeroWords((prev) => [...prev, ''])}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold"
                   >
                     <Plus className="w-4 h-4" /> Add Word
                   </button>
                 </div>
+
                 <div className="space-y-2">
                   {heroWords.map((word, index) => (
                     <div key={`hero-word-${index}`} className="flex items-center gap-2 w-full p-3 bg-card rounded-lg border border-border">
@@ -4727,10 +4751,7 @@ export default function AdminDashboard() {
                       />
                       <button
                         type="button"
-                        onClick={() => {
-                          const newWords = heroWords.filter((_, idx) => idx !== index);
-                          setHeroWords(newWords);
-                        }}
+                        onClick={() => setHeroWords((prev) => prev.filter((_, i) => i !== index))}
                         className="p-2 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -4739,6 +4760,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
+
               <button onClick={saveHero} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2">
                 <Save className="w-4 h-4" /> Save Hero
               </button>
@@ -4830,13 +4852,24 @@ export default function AdminDashboard() {
                       <span className="text-sm font-medium">{headerSettings.sign_in_visible ? 'Visible' : 'Hidden'}</span>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Text</label>
-                    <input
-                      value={headerSettings.sign_in_text}
-                      onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_text: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Text</label>
+                      <input
+                        value={headerSettings.sign_in_text}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_text: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Link (WhatsApp or any URL)</label>
+                      <input
+                        value={headerSettings.sign_in_link}
+                        onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_link: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                        placeholder="https://example.com/sign-in"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -7641,7 +7674,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-base">Show "Advertise" in Footer</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+            
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -8082,7 +8115,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
                       <label className="block text-sm font-medium">Show "Get Listed" in Footer</label>
-                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of this link in the website footer</p>
+                      
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8097,7 +8130,6 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
                       <label className="block text-sm font-medium">Show Currency Toggle (INR/USD)</label>
-                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the INR/USD currency selector on the page</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8144,10 +8176,9 @@ export default function AdminDashboard() {
                       <Plus className="w-4 h-4" /> Add Plan
                     </button>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-muted/100 rounded-xl">
                     <div>
                       <label className="block text-sm font-medium">Show Pricing Section</label>
-                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the entire pricing plans section</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8215,10 +8246,7 @@ export default function AdminDashboard() {
                           <label className="block text-xs text-muted-foreground mb-1">Button Visible</label>
                           <span className="text-sm">{plan.button_visible ? 'Yes' : 'No'}</span>
                         </div>
-                        <div>
-                          <label className="block text-xs text-muted-foreground mb-1">Show View More</label>
-                          <span className="text-sm">{plan.show_view_more ? 'Yes' : 'No'}</span>
-                        </div>
+                        
                       </div>
 
                       {/* Features */}
@@ -8255,10 +8283,6 @@ export default function AdminDashboard() {
                                 className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50"
                               >
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <Switch
-                                    checked={feature.visible ?? true}
-                                    onCheckedChange={(v) => feature.id && handleToggleGetListedPlanFeatureVisibility(feature.id, v)}
-                                  />
                                   {editingGetListedFeatureId === feature.id ? (
                                     <input
                                       type="text"
@@ -8274,6 +8298,10 @@ export default function AdminDashboard() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={feature.visible ?? true}
+                                    onCheckedChange={(v) => feature.id && handleToggleGetListedPlanFeatureVisibility(feature.id, v)}
+                                  />
                                   {editingGetListedFeatureId === feature.id ? (
                                     <>
                                       <button
@@ -8324,7 +8352,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col gap-4 mb-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">Comparison Heading</label>
+                      <label className="block text-base font-medium mb-1.5">Comparison Heading</label>
                       <input
                         type="text"
                         value={getListedSettings?.comparison_heading || 'Detailed pricing'}
@@ -8346,10 +8374,9 @@ export default function AdminDashboard() {
                       <Plus className="w-4 h-4" /> Add Row
                     </button>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-muted/100 rounded-xl">
                     <div>
-                      <label className="block text-sm font-medium">Show Comparison Table</label>
-                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the comparison table section</p>
+                      <label className="block text-base font-medium">Show Comparison Table</label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8375,6 +8402,10 @@ export default function AdminDashboard() {
                             <th key={plan.id} className="text-center py-3 px-4 font-semibold bg-gray-50">
                               {editingComparisonHeaderPlanId === plan.id ? (
                                 <div className="flex items-center gap-2 justify-center">
+                                  <Switch
+                                    checked={getComparisonPlanVisibilityMap()[plan.id] ?? true}
+                                    onCheckedChange={(v) => handleToggleComparisonPlanColumnVisibility(plan.id, v)}
+                                  />
                                   <input
                                     type="text"
                                     value={editingComparisonHeaderText}
@@ -8410,6 +8441,10 @@ export default function AdminDashboard() {
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2 justify-center">
+                                  <Switch
+                                    checked={getComparisonPlanVisibilityMap()[plan.id] ?? true}
+                                    onCheckedChange={(v) => handleToggleComparisonPlanColumnVisibility(plan.id, v)}
+                                  />
                                   <span>{plan.comparison_header || plan.plan_name}</span>
                                   <button
                                     onClick={() => {
@@ -8547,10 +8582,9 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="mt-6">
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl mb-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/100 rounded-xl mb-4">
                     <div>
-                      <label className="block text-sm font-medium">Show Comparison Footer</label>
-                      <p className="text-xs text-muted-foreground mt-1">Toggle visibility of the comparison footer content/line</p>
+                      <label className="block text-base font-medium">Comparison Footer Content</label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8561,7 +8595,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <label className="block text-sm font-medium mb-1.5">Comparison Footer Content</label>
                   <CKEditor
                     value={getListedSettings?.comparison_footer_content || ''}
                     onChange={(value) => setGetListedSettings(prev => prev ? { ...prev, comparison_footer_content: value } : null)}
@@ -8570,7 +8603,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium mb-1.5">Comparison Footer Line</label>
+                  <label className="block text-base font-medium mb-1.5">Comparison Footer Line</label>
                   <input
                     type="text"
                     value={getListedSettings?.comparison_footer_line || ''}

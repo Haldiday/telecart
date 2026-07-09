@@ -733,6 +733,7 @@ export type Database = {
           for_providers_text: string
           for_providers_link: string
           for_providers_visible: boolean
+          sign_in_link: string
           sign_in_text: string
           sign_in_visible: boolean
           join_text: string
@@ -752,6 +753,7 @@ export type Database = {
           for_providers_text?: string
           for_providers_link?: string
           for_providers_visible?: boolean
+          sign_in_link?: string
           sign_in_text?: string
           sign_in_visible?: boolean
           join_text?: string
@@ -771,6 +773,7 @@ export type Database = {
           for_providers_text?: string
           for_providers_link?: string
           for_providers_visible?: boolean
+          sign_in_link?: string
           sign_in_text?: string
           sign_in_visible?: boolean
           join_text?: string

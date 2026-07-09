@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface Ad {
   description: string | null;
@@ -242,7 +243,12 @@ export default function Ads3ColSection({
                         {(ad.heading || ad.description) && (
                           <div className={`p-3 ${ad.show_image !== false && ad.image_url ? '' : ''}`}>
                             {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                            {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                            {ad.description && (
+                              <RichTextContent
+                                content={ad.description}
+                                className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                              />
+                            )}
                           </div>
                         )}
                       </div>
@@ -287,7 +293,12 @@ export default function Ads3ColSection({
                           {(ad.heading || ad.description) && (
                             <div className="p-3">
                               {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                              {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                              {ad.description && (
+                                <RichTextContent
+                                  content={ad.description}
+                                  className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                                />
+                              )}
                             </div>
                           )}
                         </div>
@@ -331,7 +342,12 @@ export default function Ads3ColSection({
                     {(ad.heading || ad.description) && (
                       <div className="p-3">
                         {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                        {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                        {ad.description && (
+                          <RichTextContent
+                            content={ad.description}
+                            className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                          />
+                        )}
                       </div>
                     )}
                     </div>
@@ -374,7 +390,12 @@ export default function Ads3ColSection({
               {(ad.heading || ad.description) && (
                 <div className="p-3">
                   {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                  {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                  {ad.description && (
+                    <RichTextContent
+                      content={ad.description}
+                      className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                    />
+                  )}
                 </div>
               )}
               </div>
@@ -467,7 +488,12 @@ export default function Ads3ColSection({
                       {(ad.heading || ad.description) && (
                         <div className={`p-3 ${ad.show_image !== false && ad.image_url ? '' : ''}`}>
                           {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                          {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                          {ad.description && (
+                            <RichTextContent
+                              content={ad.description}
+                              className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
@@ -512,7 +538,12 @@ export default function Ads3ColSection({
                         {(ad.heading || ad.description) && (
                           <div className="p-3">
                             {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                            {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                            {ad.description && (
+                              <RichTextContent
+                                content={ad.description}
+                                className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                              />
+                            )}
                           </div>
                         )}
                       </div>
@@ -556,7 +587,12 @@ export default function Ads3ColSection({
                   {(ad.heading || ad.description) && (
                     <div className="p-3">
                       {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                      {ad.description && <p className="mt-2 text-base leading-relaxed text-muted-foreground">{ad.description}</p>}
+                      {ad.description && (
+                        <RichTextContent
+                          content={ad.description}
+                          className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                        />
+                      )}
                     </div>
                   )}
                   </div>
@@ -578,7 +614,7 @@ export default function Ads3ColSection({
               {heading}
             </h2>
             {!isSeeAllPage && (
-              <Link to="/see-all/3-ads" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
+              <Link to={`/see-all/3-ads/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-3 py-1">
                 See All
               </Link>
             )}

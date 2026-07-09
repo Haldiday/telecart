@@ -5,6 +5,7 @@ import { CheckCircle2, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import RichTextContent from '@/components/shared/RichTextContent';
+import { getVisibleComparisonPlans } from '@/lib/getListedComparisonVisibility';
 
 interface GetListedPlan {
   id: string;
@@ -269,7 +270,8 @@ const GetListedPage = () => {
     return <Minus className="w-4 h-4 text-gray-400 mx-auto" />;
   }, [comparisonCells]);
 
-  const visiblePlans = useMemo(() => plans.filter(p => p.visible), [plans]);
+  const visiblePricingPlans = useMemo(() => plans.filter(p => p.visible), [plans]);
+  const visibleComparisonPlans = useMemo(() => getVisibleComparisonPlans(visiblePricingPlans), [visiblePricingPlans]);
 
   // Fade-up animation keyframes and classes
   const fadeUpAnimation = `
@@ -346,7 +348,7 @@ const GetListedPage = () => {
 
                 {/* Pricing Cards */}
                 <div className="flex flex-wrap justify-center gap-8">
-                  {visiblePlans.map((plan, index) => {
+                  {visiblePricingPlans.map((plan, index) => {
                     const planFeatures = getPlanFeatures(plan.id);
                     const visibleFeatures = planFeatures;
 
@@ -406,13 +408,13 @@ const GetListedPage = () => {
             )}
 
             {/* Comparison Table Section */}
-            {(settings?.show_comparison_section ?? true) && comparisonRows.filter(r => r.visible).length > 0 && visiblePlans.length > 0 && (
+            {(settings?.show_comparison_section ?? true) && comparisonRows.filter(r => r.visible).length > 0 && visibleComparisonPlans.length > 0 && (
               <section 
                 className="pt-8 pb-8 px-8 md:px-16 lg:px-24 bg-white mt-8"
                 style={{
                   opacity: 0,
                   animation: 'fadeUp 0.6s ease-out forwards',
-                  animationDelay: `${0.5 + visiblePlans.length * 0.1}s`
+                  animationDelay: `${0.5 + visibleComparisonPlans.length * 0.1}s`
                 }}
               >
                 <div className={pageContentContainerClassName}>
@@ -425,7 +427,7 @@ const GetListedPage = () => {
                       <thead>
                         <tr className="border-b-2 border-blue-800">
                           <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/3"></th>
-                          {visiblePlans.map((plan) => (
+                          {visibleComparisonPlans.map((plan) => (
                             <th key={plan.id} className="text-center py-4 px-6 text-[22px] font-normal leading-normal text-[#001965]">
                               {plan.comparison_header || plan.plan_name}
                             </th>
@@ -444,7 +446,7 @@ const GetListedPage = () => {
                               className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                             >
                               <td className="py-4 px-6 text-[18px] font-normal leading-[21.4286px] text-[#001965]">{row.row_title}</td>
-                              {visiblePlans.map((plan) => (
+                              {visibleComparisonPlans.map((plan) => (
                                 <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
                                   {getCellContent(row.id, plan.id)}
                                 </td>

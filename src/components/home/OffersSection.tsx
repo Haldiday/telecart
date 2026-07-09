@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import RichTextContent from '@/components/shared/RichTextContent';
 
 interface Offer {
   id: string;
@@ -263,9 +264,10 @@ export default function OffersSection({
                               </h3>
                             )}
                             {offer.description && (
-                              <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                                {offer.description}
-                              </p>
+                              <RichTextContent
+                                content={offer.description}
+                                className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                              />
                             )}
                           </div>
                         )}
@@ -326,9 +328,10 @@ export default function OffersSection({
                                 </h3>
                               )}
                               {offer.description && (
-                                <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                                  {offer.description}
-                                </p>
+                                <RichTextContent
+                                  content={offer.description}
+                                  className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                                />
                               )}
                             </div>
                           )}
@@ -382,9 +385,10 @@ export default function OffersSection({
                     </h3>
                   )}
                   {offer.description && (
-                    <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                      {offer.description}
-                    </p>
+                    <RichTextContent
+                      content={offer.description}
+                      className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                    />
                   )}
                 </div>
               )}
@@ -481,9 +485,10 @@ export default function OffersSection({
                             </h3>
                           )}
                           {offer.description && (
-                            <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                              {offer.description}
-                            </p>
+                            <RichTextContent
+                              content={offer.description}
+                              className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                            />
                           )}
                         </div>
                       )}
@@ -544,9 +549,10 @@ export default function OffersSection({
                               </h3>
                             )}
                             {offer.description && (
-                              <p className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2">
-                                {offer.description}
-                              </p>
+                              <RichTextContent
+                                content={offer.description}
+                                className="text-center text-sm md:text-base leading-relaxed text-muted-foreground line-clamp-2 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
+                              />
                             )}
                           </div>
                         )}
@@ -576,7 +582,7 @@ export default function OffersSection({
                 {heading}
               </h2>
               {!isSeeAllPage && (
-                <Link to="/see-all/offers" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
+                <Link to={`/see-all/offers/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-3 py-1">
                   See All
                 </Link>
               )}

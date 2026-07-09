@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.header_settings (
     for_providers_link TEXT DEFAULT '#',
     for_providers_visible BOOLEAN DEFAULT true,
     sign_in_text TEXT DEFAULT 'Sign In',
+    sign_in_link TEXT DEFAULT '#',
     sign_in_visible BOOLEAN DEFAULT true,
     join_text TEXT DEFAULT 'Join',
     join_link TEXT DEFAULT '#',
@@ -39,13 +40,13 @@ END $$;
 INSERT INTO public.header_settings (
     leave_review_text, leave_review_link, leave_review_visible,
     for_providers_text, for_providers_link, for_providers_visible,
-    sign_in_text, sign_in_visible,
+    sign_in_text, sign_in_link, sign_in_visible,
     join_text, join_link, join_visible
 )
 SELECT
     'Leave a Review', '#', true,
     'For Providers', '#', true,
-    'Sign In', true,
+    'Sign In', '#', true,
     'Join', '#', true
 WHERE NOT EXISTS (SELECT 1 FROM public.header_settings);
 

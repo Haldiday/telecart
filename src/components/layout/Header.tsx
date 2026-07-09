@@ -20,6 +20,7 @@ interface HeaderSettings {
   for_providers_text: string;
   for_providers_link: string;
   for_providers_visible: boolean;
+  sign_in_link: string;
   sign_in_text: string;
   sign_in_visible: boolean;
   join_text: string;
@@ -73,6 +74,7 @@ const getDefaultHeaderSettings = (): HeaderSettings => ({
   for_providers_text: 'For Providers',
   for_providers_link: '#',
   for_providers_visible: false,
+  sign_in_link: '#',
   sign_in_text: 'Sign In',
   sign_in_visible: true,
   join_text: 'Join',
@@ -261,6 +263,7 @@ export default function Header() {
             ...headerData,
             leave_review_visible: Boolean(headerData.leave_review_visible ?? false),
             for_providers_visible: Boolean(headerData.for_providers_visible ?? false),
+            sign_in_visible: Boolean(headerData.sign_in_visible ?? false),
           } as HeaderSettings;
 
           setHeaderSettings(nextSettings);
@@ -355,13 +358,13 @@ export default function Header() {
             </a>
           )}
           {headerSettings.sign_in_visible && (
-            <button
+            <a
+              href={headerSettings.sign_in_link}
               className="top-header-link"
-              onClick={() => {/* Sign in logic later */}}
               aria-label={headerSettings.sign_in_text}
             >
               {headerSettings.sign_in_text}
-            </button>
+            </a>
           )}
           {headerSettings.join_visible && (
             <a 
@@ -676,11 +679,10 @@ export default function Header() {
                       </a>
                     )}
                     {headerSettings.sign_in_visible && (
-                      <button 
+                      <a
+                        href={headerSettings.sign_in_link}
                         className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                        onClick={() => {
-                          setMobileOpen(false);
-                        }}
+                        onClick={() => { setMobileOpen(false); }}
                       >
                         <PublicIcon
                           src={getPublicVideoIconPath(HEADER_ICON_FILES.user)}
@@ -688,7 +690,7 @@ export default function Header() {
                           className="w-5 h-5"
                         />
                         {headerSettings.sign_in_text}
-                      </button>
+                      </a>
                     )}
 
                     {headerSettings.submit_button_visible && (

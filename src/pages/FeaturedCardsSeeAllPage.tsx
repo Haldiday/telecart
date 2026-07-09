@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
@@ -16,28 +16,46 @@ interface PageSection {
 }
 
 export default function FeaturedCardsSeeAllPage() {
-  const [sections, setSections] = useState<PageSection[]>([]);
+  const { sectionId } = useParams<{ sectionId: string }>();
+  const [selectedSection, setSelectedSection] = useState<PageSection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    
-    const loadSections = async () => {
-      const { data } = await supabase.from('page_sections').select('*').order('sort_order');
+
+    const loadSelectedSection = async () => {
+      setIsLoading(true);
+
+      const targetSectionId = sectionId;
+      if (!targetSectionId) {
+        if (mounted) {
+          setSelectedSection(null);
+          setIsLoading(false);
+          setIsAnimatingIn(true);
+        }
+        return;
+      }
+
+      const { data } = await supabase
+        .from('page_sections')
+        .select('*')
+        .eq('id', targetSectionId)
+        .maybeSingle();
+
       if (data && mounted) {
-        // Filter only cards sections
-        const filteredSections = data.filter(
-          (section) => section.section_type === 'cards' && section.is_visible
-        );
-        setSections(filteredSections as PageSection[]);
+        setSelectedSection(data as PageSection);
+      } else if (mounted) {
+        setSelectedSection(null);
+      }
+
+      if (mounted) {
         setIsLoading(false);
-        // Start the fade-in animation once we have data
         setIsAnimatingIn(true);
       }
     };
-    
-    loadSections();
+
+    loadSelectedSection();
 
     const subscription = supabase
       .channel('page_sections_see_all_featured_cards')
@@ -45,7 +63,7 @@ export default function FeaturedCardsSeeAllPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'page_sections' },
         () => {
-          loadSections();
+          loadSelectedSection();
         }
       )
       .subscribe();
@@ -54,7 +72,7 @@ export default function FeaturedCardsSeeAllPage() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [sectionId]);
 
   if (isLoading) {
     return (
@@ -88,41 +106,17 @@ export default function FeaturedCardsSeeAllPage() {
         </div>
 
         <div className="py-4">
-          {sections.length > 0 ? (
-            sections.map((section, index) => {
-              const sectionContent = <FeaturedCards sectionId={section.id} backgroundColor={section.background_color} />;
-
-              const animationDelay = `${index * 200}ms`;
-
-              if (section.background_color) {
-                return (
-                  <div 
-                    key={section.id} 
-                    style={{ 
-                      backgroundColor: section.background_color,
-                      opacity: isAnimatingIn ? 1 : 0,
-                      transform: isAnimatingIn ? 'translateY(0)' : 'translateY(30px)',
-                      transition: `opacity 600ms ease-out ${animationDelay}, transform 600ms ease-out ${animationDelay}`,
-                    }}
-                  >
-                    {sectionContent}
-                  </div>
-                );
-              }
-
-              return (
-                <div 
-                  key={section.id}
-                  style={{
-                    opacity: isAnimatingIn ? 1 : 0,
-                    transform: isAnimatingIn ? 'translateY(0)' : 'translateY(30px)',
-                    transition: `opacity 600ms ease-out ${animationDelay}, transform 600ms ease-out ${animationDelay}`,
-                  }}
-                >
-                  {sectionContent}
-                </div>
-              );
-            })
+          {selectedSection ? (
+            <div
+              style={{
+                backgroundColor: selectedSection.background_color || undefined,
+                opacity: isAnimatingIn ? 1 : 0,
+                transform: isAnimatingIn ? 'translateY(0)' : 'translateY(30px)',
+                transition: 'opacity 600ms ease-out 0ms, transform 600ms ease-out 0ms',
+              }}
+            >
+              <FeaturedCards sectionId={selectedSection.id} backgroundColor={selectedSection.background_color} />
+            </div>
           ) : (
             <div 
               className="mx-auto max-w-[1580px] px-6 md:px-12 py-12 text-center"

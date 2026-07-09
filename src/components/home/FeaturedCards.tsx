@@ -578,7 +578,7 @@ export default function FeaturedCards({
               {heading}
             </h2>
             {!isSeeAllPage && (
-              <Link to="/see-all/featured-cards" style={{ color: '#1d4ed8' }} className="text-sm font-medium hover:underline">
+              <Link to={`/see-all/featured-cards/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-3 py-1">
                 See All
               </Link>
             )}
