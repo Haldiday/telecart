@@ -116,7 +116,7 @@ export default function FeaturedCardsPage() {
               {cards.map((card) => (
                 <div
                   key={card.id}
-                  className={`group relative overflow-hidden rounded-xl p-6 transition-all hover:shadow-md ${card.show_border ? 'border' : 'border border-transparent'}`}
+                  className={`group relative overflow-hidden rounded-xl p-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} hover:shadow-md ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'}`}
                   style={{
                     backgroundColor: card.background_color || 'var(--card)',
                     borderColor: (card.show_border && card.border_color) ? card.border_color : undefined

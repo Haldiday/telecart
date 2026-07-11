@@ -441,7 +441,7 @@ export default function OffersSection({
                 {heading}
               </h2>
               {!isSeeAllPage && (
-                <Link to={`/see-all/offers/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-3 py-1">
+                <Link to={`/see-all/offers/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
                   See All
                 </Link>
               )}

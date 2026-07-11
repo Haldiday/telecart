@@ -11,6 +11,7 @@ interface PageSection {
   id: string;
   section_type: string;
   name: string;
+  heading?: string | null;
   sort_order: number;
   is_visible: boolean;
   background_color?: string | null;
@@ -101,7 +102,8 @@ export default function Ads3ColSeeAllPage() {
         >
           <div className="mx-auto max-w-[1580px] px-6 md:px-12 py-6">
             <Link to={getSeeAllBackPath(selectedSection?.id)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" /> Back to section
+              
+              <span className="whitespace-nowrap">Home &gt; {selectedSection?.heading || selectedSection?.name || 'Section'}</span>
             </Link>
           </div>
         </div>

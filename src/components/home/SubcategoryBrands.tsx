@@ -158,7 +158,7 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_1_link || '#'}
                     target={subcategory.button_1_link ? '_blank' : undefined}
                     rel={subcategory.button_1_link ? 'noopener noreferrer' : undefined}
-                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-3 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_1_text}
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_2_link || '#'}
                     target={subcategory.button_2_link ? '_blank' : undefined}
                     rel={subcategory.button_2_link ? 'noopener noreferrer' : undefined}
-                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_2_text}
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_3_link || '#'}
                     target={subcategory.button_3_link ? '_blank' : undefined}
                     rel={subcategory.button_3_link ? 'noopener noreferrer' : undefined}
-                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_3_text}
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -192,7 +192,7 @@ export default function SubcategoryBrands() {
         </div>
 
         {/* Brands Grid */}
-        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-6">
+        <div className="container mx-auto px-4 md:px-8 lg:px-10 py-8">
           {brands.length === 0 ? (
             <p className="text-center text-muted-foreground">No brands available.</p>
           ) : (
@@ -204,7 +204,7 @@ export default function SubcategoryBrands() {
                 const hasLinkOrActions = brand.link || hasActionLinks;
                 
                 return (
-                  <div key={brand.id} className="rounded-xl border border-gray-400 bg-card p-4">
+                  <div key={brand.id} className="rounded-xl border border-gray-300 bg-card p-2">
                     <BrandActionLinks
                       brand={brand}
                       isExpanded={isExpanded}

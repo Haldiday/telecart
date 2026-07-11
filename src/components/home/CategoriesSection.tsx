@@ -239,7 +239,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                               onClick={() => hasBrandsOrLink && handleSubcategoryClick()}
                               className={`flex items-center justify-between px-4 py-3 text-left ${hasBrandsOrLink ? 'cursor-pointer' : 'opacity-100'}`}
                             >
-                              <span className={`text-[14px] font-medium ${hasBrandsOrLink ? 'text-black hover:text-primary' : 'text-black'}`}>
+                              <span className={`text-[14px] font-medium ${hasBrandsOrLink ? 'text-black hover:text-[#1d4ed8]' : 'text-black'}`}>
                                 {sub.name}
                               </span>
                               {hasBrands && (
@@ -254,7 +254,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                             {hasBrands && isSubExpanded && (
                               <div className="px-4 pb-4 pt-1">
                                 <div className="border-l-2 border-blue-500 pl-4 ml-1">
-                                  {displayBrands.slice(0, 5).map((brand) => (
+                                  {displayBrands.slice(0, 6).map((brand) => (
                                     <BrandActionLinks
                                     key={brand.id}
                                     brand={brand}
@@ -264,7 +264,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                     subcategoryId={sub.id}
                                   />
                                   ))}
-                                  {displayBrands.length > 5 && (
+                                  {displayBrands.length > 6 && (
                                     <Link
                                       to={`/category/${category.id}/subcategory/${sub.id}/brands`}
                                       className="text-sm font-semibold text-primary hover:underline"
@@ -293,7 +293,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
               const showAll = expanded[category.id];
               const visibleSubs = showAll
                 ? category.subcategories
-                : category.subcategories.slice(0, 5);
+                : category.subcategories.slice(0, 6);
 
               return (
                 <div
@@ -339,7 +339,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                         <div key={sub.id} className="border-b border-border/30 last:border-0">
                           <div
                             onClick={() => hasBrandsOrLink && handleSubcategoryClick()}
-                            className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasBrandsOrLink ? 'hover:text-primary cursor-pointer' : 'opacity-100'}`}
+                            className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasBrandsOrLink ? 'hover:text-[#1d4ed8] cursor-pointer' : 'opacity-100'}`}
                           >
                             <span className={hasBrandsOrLink ? '' : 'text-foreground'}>{sub.name}</span>
                             {hasBrands && (
@@ -354,7 +354,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                           {hasBrands && isSubExpanded && (
                             <div className="pb-3 pt-1">
                               <div className="border-l-2 border-[#2b7bcc] pl-4 ml-1">
-                                {displayBrands.slice(0, 5).map((brand) => (
+                                {displayBrands.slice(0, 6).map((brand) => (
                                   <BrandActionLinks
                                     key={brand.id}
                                     brand={brand}
@@ -364,7 +364,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                     subcategoryId={sub.id}
                                   />
                                 ))}
-                                {displayBrands.length > 5 && (
+                                {displayBrands.length > 6 && (
                                   <Link
                                     to={`/category/${category.id}/subcategory/${sub.id}/brands`}
                                     className="text-sm font-semibold text-primary hover:underline"
@@ -379,7 +379,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                       );
                     })}
 
-                    {category.subcategories.length > 5 && !showAll && (
+                    {category.subcategories.length > 6 && !showAll && (
                       <Link
                         to={`/category/${category.id}/subcategories`}
                         className="mt-3 text-sm md:text-base font-semibold text-primary hover:underline text-left"
@@ -388,7 +388,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                       </Link>
                     )}
 
-                    {category.subcategories.length > 5 && showAll && (
+                    {category.subcategories.length > 6 && showAll && (
                       <button
                         type="button"
                         onClick={() => {

@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import RichTextContent from '@/components/shared/RichTextContent';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Minus, Plus } from 'lucide-react';
 import { buildFaqTree, type FAQRecord } from '@/lib/faqUtils';
 
 interface FAQ extends FAQRecord {}
@@ -127,7 +128,7 @@ export default function FAQs() {
                     onValueChange={handleMainChange}
                   >
                     {faqTree.map((faq) => (
-                      <AccordionItem key={faq.id} value={faq.id} className=" bg-slate-50 shadow-sm overflow-hidden">
+                      <AccordionItem key={faq.id} value={faq.id} className=" bg-gray-50 shadow-sm overflow-hidden">
                         <AccordionTrigger className="px-4 md:px-6 py-4 text-center text-lg font-semibold text-slate-900">
                           <RichTextContent content={faq.question} className="m-0" />
                         </AccordionTrigger>
@@ -146,8 +147,16 @@ export default function FAQs() {
                                   value={child.id}
                                   className="border-b border-slate-200 last:border-b-0"
                                 >
-                                  <AccordionTrigger className="px-4 py-3 text-left text-base font-medium text-slate-800">
+                                  <AccordionTrigger
+                                    showChevron={false}
+                                    className="flex items-center justify-between gap-4 px-4 py-3 text-left text-base font-medium text-slate-800 hover:no-underline"
+                                  >
                                     <RichTextContent content={child.question} className="m-0" />
+                                    {openSubId === child.id ? (
+                                      <Minus className="h-4 w-4 text-slate-500" />
+                                    ) : (
+                                      <Plus className="h-4 w-4 text-slate-500" />
+                                    )}
                                   </AccordionTrigger>
                                   <AccordionContent className="px-4 pb-4 pt-2 text-sm leading-7 text-slate-700">
                                     <RichTextContent content={child.answer} className="m-0" />

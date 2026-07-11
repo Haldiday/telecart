@@ -189,7 +189,7 @@ export default function CategoryDetail() {
                 const isExpanded = expandedSubcategoryId === sub.id;
                 
                 return (
-                  <div key={sub.id} className="rounded-xl border border-gray-400 bg-card p-4">
+                  <div key={sub.id} className="rounded-xl border border-gray-300 bg-card p-4">
                     <div
                       onClick={() => isClickable && handleSubcategoryClick(sub)}
                       className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${

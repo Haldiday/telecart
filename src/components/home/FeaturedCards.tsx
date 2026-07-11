@@ -222,7 +222,7 @@ export default function FeaturedCards({
           <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'w-full md:w-[calc(33.333%-10px)]'} px-2.5 mb-6`}>
             <div
               onClick={() => handleCardClick(card)}
-              className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+              className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
               style={{ 
                 backgroundColor: card.background_color || '#fcf9f5',
                 borderColor: card.show_border && card.border_color ? card.border_color : undefined 
@@ -294,7 +294,7 @@ export default function FeaturedCards({
                     <div key={card.id}>
                       <div
                         onClick={() => handleCardClick(card)}
-                        className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                        className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
                         style={{ 
                           backgroundColor: card.background_color || '#fcf9f5',
                           borderColor: card.show_border && card.border_color ? card.border_color : undefined 
@@ -347,7 +347,7 @@ export default function FeaturedCards({
                   >
                     <div
                       onClick={() => handleCardClick(card)}
-                      className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                      className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
                       style={{ 
                         backgroundColor: card.background_color || '#fcf9f5',
                         borderColor: card.show_border && card.border_color ? card.border_color : undefined 
@@ -379,7 +379,7 @@ export default function FeaturedCards({
               <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
                 <div
                   onClick={() => handleCardClick(card)}
-                  className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
+                  className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
                   style={{ 
                     backgroundColor: card.background_color || '#fcf9f5',
                     borderColor: card.show_border && card.border_color ? card.border_color : undefined 
@@ -414,12 +414,12 @@ export default function FeaturedCards({
     <div className={compact ? '' : 'py-6 md:py-8'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
         {showHeading && (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-5">
             <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>
               {heading}
             </h2>
             {!isSeeAllPage && (
-              <Link to={`/see-all/featured-cards/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-3 py-1">
+              <Link to={`/see-all/featured-cards/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
                 See All
               </Link>
             )}

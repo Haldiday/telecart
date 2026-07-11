@@ -425,7 +425,7 @@ const GetListedPage = () => {
                     {settings?.comparison_heading || 'Detailed pricing'}
                   </h2>
                   
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.15)]">
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b-2 border-blue-800">
@@ -465,12 +465,12 @@ const GetListedPage = () => {
 
             {/* Comparison Footer Section */}
             {(settings?.show_comparison_footer ?? true) && (
-              <section className="pt-0 pb-16 px-8 md:px-16 lg:px-24 bg-white">
+              <section className="pt-0 pb-16 px-8 md:px-16 lg:px-24 bg-gray-50">
                 <div className={pageContentContainerClassName}>
                   {settings?.comparison_footer_content && (
                     <RichTextContent
                       content={settings.comparison_footer_content}
-                      className="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-[0_0_20px_rgba(0,0,0,0.15)] text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1"
+                      className="mt-6 bg-white rounded-lg border-2 border-transparent shadow-lg p-6 text-[15px] font-normal leading-[21.4286px] text-[#606F7B] [&_ul]:pl-5 [&_ul]:list-disc [&_li]:my-1"
                     />
                   )}
 

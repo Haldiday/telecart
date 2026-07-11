@@ -125,7 +125,7 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
             window.open(brand.link, '_blank');
           }
         }}
-        className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasLinkOrActions ? 'hover:text-primary cursor-pointer' : 'opacity-100'}`}
+        className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasLinkOrActions ? 'hover:text-[#1d4ed8] cursor-pointer' : 'opacity-100'}`}
       >
         {brand.link && !hasActionLinks ? (
           <a

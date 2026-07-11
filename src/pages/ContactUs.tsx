@@ -106,7 +106,7 @@ export default function ContactUs() {
       return (
         <iframe
           src={embed}
-          className="w-full h-[950px] md:h-[800px] lg:h-[850px] rounded-xl border border-gray-200 background:#f3f4f6"
+          className="w-full h-[800px] md:h-[800px] lg:h-[750px] rounded-xl border border-gray-200 background:#f3f4f6"
           title="Contact Form"
           frameBorder="0"
           allowFullScreen
@@ -162,7 +162,7 @@ export default function ContactUs() {
                 <div className="space-y-8">
                   <div className="space-y-8">
                     {hasContactDetails && (
-                      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                      <div className="bg-white rounded-xl p-7 shadow-sm border border-gray-200">
                         <div className="space-y-4">
                           {settings?.address && (
                             <div className="flex items-center gap-3">
@@ -263,7 +263,7 @@ export default function ContactUs() {
                     {settings?.nodal_officer_title && settings?.nodal_officer_visible !== false && (
                       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                         <div className="space-y-4">
-                          <h3 className="text-xl font-bold text-gray-900">{settings.nodal_officer_title}</h3>
+                          <h3 className="text-2xl font-semibold text-gray-900">{settings.nodal_officer_title}</h3>
                           {settings.nodal_officer_name && (
                             <p className="text-sm text-gray-600">{settings.nodal_officer_name}</p>
                           )}
@@ -310,7 +310,7 @@ export default function ContactUs() {
                     {settings?.appellate_authority_title && settings?.appellate_authority_visible !== false && (
                       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                         <div className="space-y-4">
-                          <h3 className="text-xl font-bold text-gray-900">{settings.appellate_authority_title}</h3>
+                          <h3 className="text-2xl font-semibold text-gray-900">{settings.appellate_authority_title}</h3>
                           {settings.appellate_authority_name && (
                             <p className="text-sm text-gray-600">{settings.appellate_authority_name}</p>
                           )}
