@@ -1,9 +1,10 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import RichTextContent from '@/components/shared/RichTextContent';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { buildFaqTree, type FAQRecord } from '@/lib/faqUtils';
 
 interface FAQ extends FAQRecord {}
@@ -14,6 +15,7 @@ export default function FAQs() {
   const [openMainId, setOpenMainId] = useState<string | null>(null);
   const [openSubId, setOpenSubId] = useState<string | null>(null);
   const [faqHeading, setFaqHeading] = useState('Frequently Asked Questions');
+  const faqSectionRef = useRef<HTMLDivElement | null>(null);
 
   const fadeUpAnimation = `
     @keyframes fadeUp {
@@ -61,14 +63,29 @@ export default function FAQs() {
     loadAllData();
   }, []);
 
-  const toggleMainAccordion = (id: string) => {
-    setOpenMainId((currentId) => (currentId === id ? null : id));
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (!faqSectionRef.current) return;
+      const target = event.target as Node | null;
+      if (target && !faqSectionRef.current.contains(target)) {
+        setOpenMainId(null);
+        setOpenSubId(null);
+      }
+    };
+
+    document.addEventListener('click', onClickOutside);
+    return () => document.removeEventListener('click', onClickOutside);
+  }, []);
+
+  const handleMainChange = (value: string | string[] | null) => {
+    const nextValue = Array.isArray(value) ? value[0] : value;
+    setOpenMainId(nextValue ?? null);
     setOpenSubId(null);
   };
 
-  const toggleSubAccordion = (parentId: string, childId: string) => {
-    setOpenMainId(parentId);
-    setOpenSubId((currentId) => (currentId === childId ? null : childId));
+  const handleSubChange = (value: string | string[] | null) => {
+    const nextValue = Array.isArray(value) ? value[0] : value;
+    setOpenSubId(nextValue ?? null);
   };
 
   const faqTree = buildFaqTree(faqs);
@@ -92,6 +109,7 @@ export default function FAQs() {
               >{faqHeading}</h1>
               
               <div
+                ref={faqSectionRef}
                 style={{
                   opacity: 0,
                   animation: 'fadeUp 0.6s ease-out forwards',
@@ -101,59 +119,51 @@ export default function FAQs() {
                 {faqTree.length === 0 ? (
                   <p className="text-[#333333]">No FAQs available yet.</p>
                 ) : (
-                  <div className="space-y-4">
-                    {faqTree.map((faq) => {
-                      const isMainOpen = openMainId === faq.id;
-
-                      return (
-                        <div key={faq.id} className="border-b border-gray-200 pb-4">
-                          <button
-                            onClick={() => toggleMainAccordion(faq.id)}
-                            className="w-full flex items-center justify-between text-left py-2 focus:outline-none"
-                          >
-                            <RichTextContent
-                              content={faq.question}
-                              className="text-lg font-semibold text-[#111111] [&_p]:m-0"
-                            />
-                            <span className={`text-2xl transition-transform duration-300 ${isMainOpen ? 'rotate-45' : ''}`}>
-                              +
-                            </span>
-                          </button>
-                          {isMainOpen && (
-                            <div className="mt-2">
-                              {faq.children.length > 0 ? (
-                                faq.children.map((child) => {
-                                  const isChildOpen = openSubId === child.id;
-
-                                  return (
-                                    <div key={child.id} className="border-b border-gray-200 last:border-b-0 pl-4 py-2">
-                                      <button
-                                        onClick={() => toggleSubAccordion(faq.id, child.id)}
-                                        className="w-full flex items-center justify-between text-left -py-2 focus:outline-none"
-                                      >
-                                        <RichTextContent
-                                          content={child.question}
-                                          className="text-base font-medium text-[#111111] [&_p]:m-0"
-                                        />
-                                        <span className={`text-xl transition-transform duration-300 ${isChildOpen ? 'rotate-45' : ''}`}>
-                                          +
-                                        </span>
-                                      </button>
-                                      {isChildOpen && (
-                                        <RichTextContent content={child.answer} className="mt-2 text-[#333333]" />
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <RichTextContent content={faq.answer} className="mt-2 text-[#333333]" />
-                              )}
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="space-y-4"
+                    value={openMainId}
+                    onValueChange={handleMainChange}
+                  >
+                    {faqTree.map((faq) => (
+                      <AccordionItem key={faq.id} value={faq.id} className=" bg-slate-50 shadow-sm overflow-hidden">
+                        <AccordionTrigger className="px-4 md:px-6 py-4 text-center text-lg font-semibold text-slate-900">
+                          <RichTextContent content={faq.question} className="m-0" />
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 md:px-6 pb-4 pt-2 bg-white">
+                          {faq.children.length > 0 ? (
+                            <Accordion
+                              type="single"
+                              collapsible
+                              className="border-t border-slate-200 space-y-3"
+                              value={openSubId}
+                              onValueChange={handleSubChange}
+                            >
+                              {faq.children.map((child) => (
+                                <AccordionItem
+                                  key={child.id}
+                                  value={child.id}
+                                  className="border-b border-slate-200 last:border-b-0"
+                                >
+                                  <AccordionTrigger className="px-4 py-3 text-left text-base font-medium text-slate-800">
+                                    <RichTextContent content={child.question} className="m-0" />
+                                  </AccordionTrigger>
+                                  <AccordionContent className="px-4 pb-4 pt-2 text-sm leading-7 text-slate-700">
+                                    <RichTextContent content={child.answer} className="m-0" />
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          ) : (
+                            <div className="text-sm leading-7 text-slate-700">
+                              <RichTextContent content={faq.answer} className="m-0" />
                             </div>
                           )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 )}
               </div>
             </div>

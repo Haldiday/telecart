@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
@@ -59,6 +59,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   const [showHeading, setShowHeading] = useState(true);
   const [sectionBackgroundColor, setSectionBackgroundColor] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const accordionRef = useRef<HTMLDivElement | null>(null);
 
   // Reset all accordion states when location changes
   useEffect(() => {
@@ -67,6 +68,27 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
     setSubcategoryExpanded({});
     setExpandedBrandId(null);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const targetNode = event.target as Node | null;
+      if (!targetNode) return;
+      if (!accordionRef.current) return;
+      if (accordionRef.current.contains(targetNode)) return;
+      setExpanded({});
+      setMobileExpanded({});
+      setSubcategoryExpanded({});
+      setExpandedBrandId(null);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -141,7 +163,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
     <section id={`section-${sectionId}`} className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]" style={{ backgroundColor: propBackgroundColor || sectionBackgroundColor || undefined }}>
      
 
-      <div className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
+      <div ref={accordionRef} className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
           <h2 className="section-heading mt-1 md:mt-4 mb-4 md:mb-6">
             {heading}
@@ -163,12 +185,14 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                   {/* Category Header */}
                   <button
                     type="button"
-                    onClick={() =>
-                      setMobileExpanded((prev) => ({
-                        ...prev,
-                        [category.id]: !prev[category.id],
-                      }))
-                    }
+                    onClick={() => {
+                      const isCurrentlyOpen = !!mobileExpanded[category.id];
+
+                      setSubcategoryExpanded({});
+                      setExpandedBrandId(null);
+
+                      setMobileExpanded(isCurrentlyOpen ? {} : { [category.id]: true });
+                    }}
                     className="flex w-full items-center justify-between px-4 py-3 transition-colors bg-white hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-4 text-left">
@@ -367,12 +391,21 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                     {category.subcategories.length > 5 && showAll && (
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
+                          const expandedSubId = Object.keys(subcategoryExpanded)[0];
+                          const expandedSubBelongsToCategory = !!expandedSubId
+                            && category.subcategories.some((s) => s.id === expandedSubId);
+
+                          if (expandedSubBelongsToCategory) {
+                            setSubcategoryExpanded({});
+                            setExpandedBrandId(null);
+                          }
+
                           setExpanded((prev) => ({
                             ...prev,
                             [category.id]: false,
-                          }))
-                        }
+                          }));
+                        }}
                         className="mt-3 text-sm md:text-base font-semibold text-primary hover:underline"
                       >
                         Show less

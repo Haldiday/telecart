@@ -106,7 +106,7 @@ export default function ContactUs() {
       return (
         <iframe
           src={embed}
-          className="w-full h-[600px] rounded-xl border border-gray-200"
+          className="w-full h-[950px] md:h-[800px] lg:h-[850px] rounded-xl border border-gray-200 background:#f3f4f6"
           title="Contact Form"
           frameBorder="0"
           allowFullScreen
@@ -260,6 +260,100 @@ export default function ContactUs() {
                       </div>
                     )}
 
+                    {settings?.nodal_officer_title && settings?.nodal_officer_visible !== false && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <div className="space-y-4">
+                          <h3 className="text-xl font-bold text-gray-900">{settings.nodal_officer_title}</h3>
+                          {settings.nodal_officer_name && (
+                            <p className="text-sm text-gray-600">{settings.nodal_officer_name}</p>
+                          )}
+                          <div className="space-y-3">
+                            {settings.nodal_officer_phone && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                  <Phone className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-sm text-gray-500">Call</p>
+                                  <a
+                                    href={`tel:${settings.nodal_officer_phone}`}
+                                    className="text-sm text-gray-900 hover:underline"
+                                    style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                  >
+                                    {settings.nodal_officer_phone}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                            {settings.nodal_officer_email && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                  <Mail className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-sm text-[#333333]">Email Us</p>
+                                  <a
+                                    href={`mailto:${settings.nodal_officer_email}`}
+                                    className="text-base text-gray-700 hover:underline"
+                                    style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                  >
+                                    {settings.nodal_officer_email}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {settings?.appellate_authority_title && settings?.appellate_authority_visible !== false && (
+                      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <div className="space-y-4">
+                          <h3 className="text-xl font-bold text-gray-900">{settings.appellate_authority_title}</h3>
+                          {settings.appellate_authority_name && (
+                            <p className="text-sm text-gray-600">{settings.appellate_authority_name}</p>
+                          )}
+                          <div className="space-y-3">
+                            {settings.appellate_authority_phone && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                  <Phone className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-sm text-gray-500">Call</p>
+                                  <a
+                                    href={`tel:${settings.appellate_authority_phone}`}
+                                    className="text-sm text-gray-900 hover:underline"
+                                    style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                  >
+                                    {settings.appellate_authority_phone}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                            {settings.appellate_authority_email && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
+                                  <Mail className="w-4 h-4 text-gray-600" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <p className="text-sm text-[#333333]">Email Us</p>
+                                  <a
+                                    href={`mailto:${settings.appellate_authority_email}`}
+                                    className="text-base text-gray-700 hover:underline"
+                                    style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
+                                  >
+                                    {settings.appellate_authority_email}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-4 max-w-[500px] pt-4">
                       {settings?.description_1 && (
                         <p className="text-[17px] leading-[1.6] text-[#111111]">
@@ -277,7 +371,7 @@ export default function ContactUs() {
 
                 {/* Right Column: Form Embed */}
                 <div className="w-full">
-                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 w-full">
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm ">
                     {renderFormEmbed() || (
                       <div className="w-full h-[600px] flex items-center justify-center text-gray-400">
                         <p>Form will appear here</p>
@@ -288,113 +382,6 @@ export default function ContactUs() {
               </div>
             </div>
 
-            {/* Nodal Officer & Appellate Authority Section */}
-            {((settings?.nodal_officer_title && settings?.nodal_officer_visible !== false) || (settings?.appellate_authority_title && settings?.appellate_authority_visible !== false)) && (
-              <div 
-                className="bg-gray-50 py-12"
-                style={{
-                  opacity: 0,
-                  animation: 'fadeUp 0.6s ease-out forwards',
-                  animationDelay: '0.3s'
-                }}
-              >
-                <div className="container mx-auto px-4 md:px-8 lg:px-10 max-w-[1200px]">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Nodal Officer Card */}
-                    {settings.nodal_officer_title && settings.nodal_officer_visible !== false && (
-                      <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.nodal_officer_title}</h3>
-                        {settings.nodal_officer_name && (
-                          <p className="text-sm text-gray-600 mb-4">{settings.nodal_officer_name}</p>
-                        )}
-                        <div className="space-y-3">
-                          {settings.nodal_officer_phone && (
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                                <Phone className="w-4 h-4 text-gray-600" />
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-sm text-gray-500">Call</p>
-                                <a
-                                  href={`tel:${settings.nodal_officer_phone}`}
-                                  className="text-sm text-gray-900 hover:underline"
-                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                                >
-                                  {settings.nodal_officer_phone}
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                          {settings.nodal_officer_email && (
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                                <Mail className="w-4 h-4 text-gray-600" />
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-sm text-[#333333]">Email Us</p>
-                                <a
-                                  href={`mailto:${settings.nodal_officer_email}`}
-                                  className="text-base text-gray-700 hover:underline"
-                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                                >
-                                  {settings.nodal_officer_email}
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Appellate Authority Card */}
-                    {settings.appellate_authority_title && settings.appellate_authority_visible !== false && (
-                      <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{settings.appellate_authority_title}</h3>
-                        {settings.appellate_authority_name && (
-                          <p className="text-sm text-gray-600 mb-4">{settings.appellate_authority_name}</p>
-                        )}
-                        <div className="space-y-3">
-                          {settings.appellate_authority_phone && (
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                                <Phone className="w-4 h-4 text-gray-600" />
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-sm text-gray-500">Call</p>
-                                <a
-                                  href={`tel:${settings.appellate_authority_phone}`}
-                                  className="text-sm text-gray-900 hover:underline"
-                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                                >
-                                  {settings.appellate_authority_phone}
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                          {settings.appellate_authority_email && (
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">
-                                <Mail className="w-4 h-4 text-gray-600" />
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-sm text-[#333333]">Email Us</p>
-                                <a
-                                  href={`mailto:${settings.appellate_authority_email}`}
-                                  className="text-base text-gray-700 hover:underline"
-                                  style={{ fontFamily: 'Poppins, system-ui, -apple-system, sans-serif' }}
-                                >
-                                  {settings.appellate_authority_email}
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </main>
           <Footer />
         </>

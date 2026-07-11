@@ -182,7 +182,7 @@ export default function AllSubcategoriesPage() {
                   const isExpanded = expandedSubcategoryId === sub.id;
                   
                   return (
-                    <div key={sub.id} className="rounded-xl border border-border/50 bg-card p-4">
+                    <div key={sub.id} className="rounded-xl border border-gray-400 bg-card p-4">
                       <div
                         onClick={() => isClickable && handleSubcategoryClick(sub)}
                         className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
@@ -194,9 +194,9 @@ export default function AllSubcategoriesPage() {
                         <span>{sub.name}</span>
                         {hasBrands && (
                           isExpanded ? (
-                            <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Minus className="h-3.5 w-3.5 text-gray/400" />
                           ) : (
-                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Plus className="h-3.5 w-3.5 text-gray/400" />
                           )
                         )}
                       </div>

@@ -7,10 +7,17 @@ interface HeroSectionProps {
   heroSettings?: {
     main_text?: string;
     animated_words?: string[];
+    animated_word_visibility?: boolean[];
+    hero_visible?: boolean;
+    hero_text_part1_visible?: boolean;
+    hero_text_part2_visible?: boolean;
+    hero_animated_words_visible?: boolean;
+    hero_search_visible?: boolean;
   } | null;
 }
 
 export default function HeroSection({ heroSettings }: HeroSectionProps) {
+  const isHeroSearchVisible = (heroSettings?.hero_visible ?? true) && (heroSettings?.hero_search_visible ?? true);
   // Parse the hero settings
   const parseHeroSettings = (settings: HeroSectionProps['heroSettings']) => {
     let part1 = '';
@@ -18,6 +25,11 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
     let words: string[] = [];
 
     if (settings) {
+      const heroVisible = settings.hero_visible ?? true;
+      const part1Visible = settings.hero_text_part1_visible ?? true;
+      const part2Visible = settings.hero_text_part2_visible ?? true;
+      const animatedWordsVisible = settings.hero_animated_words_visible ?? true;
+
       const mainText = settings.main_text || '';
       if (mainText.includes('|||')) {
         const split = mainText.split('|||');
@@ -26,7 +38,19 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
       } else {
         part1 = mainText;
       }
-      words = settings.animated_words || [];
+      const rawWords = settings.animated_words || [];
+      const rawVisibility = Array.isArray(settings.animated_word_visibility) ? settings.animated_word_visibility : [];
+      words = rawWords.filter((_, index) => rawVisibility[index] ?? true);
+
+      if (!heroVisible) {
+        part1 = '';
+        part2 = '';
+        words = [];
+      } else {
+        if (!part1Visible) part1 = '';
+        if (!part2Visible) part2 = '';
+        if (!animatedWordsVisible) words = [];
+      }
     }
 
     return { part1, part2, words };
@@ -66,6 +90,7 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
       setMainTextPart1(parsed.part1);
       setMainTextPart2(parsed.part2);
       setWords(parsed.words);
+      setCurrentWordIndex(0);
       // Start the fade-in animation once we have data
       setIsAnimatingIn(true);
     }
@@ -189,6 +214,7 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
         </div>
         )}
 
+        {isHeroSearchVisible && (
         <div className="mx-auto mt-8 max-w-2xl" ref={!showHeaderSearch && !showMobileStickySearch ? heroSearchContainerRef : undefined}>
           {!showHeaderSearch && !showMobileStickySearch && (
             <div className="relative">
@@ -256,9 +282,28 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
                           selectedIndex === index ? 'bg-[#e8e8e8] text-[#1c1c1c]' : 'hover:bg-[#f5f5f5]'
                         }`}
                       >
-                        <span>{result.name}</span>
-                        {result.type === 'brand' && result.subcategoryName && (
-                          <span className="text-xs text-[#8a8f9a]">({result.subcategoryName})</span>
+                        {result.type === 'brand' && !result.name.includes('(') ? (
+                          <>
+                            <span className="text-[#1c1c1c]">{result.name}</span>
+                            {result.subcategoryName && (
+                              <span className="ml-2 text-[#1d4ed8]">({result.subcategoryName})</span>
+                            )}
+                          </>
+                        ) : (
+                          (() => {
+                            const match = result.name.match(/^(.+?)(\s*\([^)]+\))?$/);
+                            if (match) {
+                              const mainText = match[1] || '';
+                              const parenthetical = match[2] || '';
+                              return (
+                                <>
+                                  <span className="text-[#1c1c1c]">{mainText}</span>
+                                  {parenthetical && <span className="text-[#1d4ed8]">{parenthetical}</span>}
+                                </>
+                              );
+                            }
+                            return <span>{result.name}</span>;
+                          })()
                         )}
                       </button>
                     ))
@@ -268,6 +313,7 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
             </div>
           )}
         </div>
+        )}
       </div>
     </section>
   );

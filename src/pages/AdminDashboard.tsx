@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
-interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; is_visible: boolean; }
+interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; is_visible: boolean; open_in_new_tab: boolean; }
 interface Category { id: string; name: string; icon_url?: string | null; video_url?: string; image_url?: string; bg_color: string; sort_order: number; section_id: string; show_brands_tab?: boolean; is_visible?: boolean; }
 interface Subcategory {
   id: string;
@@ -65,6 +65,15 @@ interface Subcategory {
   about_description_color?: string | null;
   about_button_bg_color?: string | null;
   about_button_text_color?: string | null;
+  button_1_text?: string | null;
+  button_1_link?: string | null;
+  button_1_visible?: boolean;
+  button_2_text?: string | null;
+  button_2_link?: string | null;
+  button_2_visible?: boolean;
+  button_3_text?: string | null;
+  button_3_link?: string | null;
+  button_3_visible?: boolean;
 }
 interface CategoryButton { id?: string; subcategory_id?: string; label: string; link: string | null; is_visible: boolean; sort_order?: number; }
 interface BrandActionLinkItem {
@@ -108,8 +117,9 @@ interface SubcategoryBrand {
 interface SubcategoryOverviewPoint { id?: string; subcategory_id: string; section_id?: string; text: string; is_highlighted: boolean; highlight_color?: 'green' | 'blue'; sort_order: number; }
 interface SubcategoryKeyFeaturesSection { id: string; subcategory_id: string; heading: string; is_visible: boolean; sort_order: number; }
 interface SubcategoryAboutSection { id: string; subcategory_id: string; heading: string; content: string | null; background_color?: string; heading_color?: string; sort_order: number; created_at: string; updated_at: string; }
-interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
-interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
+interface Offer { id: string; image_url: string | null; heading: string; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; open_in_new_tab: boolean; }
+interface Ad2 { id: string; image_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; open_in_new_tab: boolean; }
+interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; open_in_new_tab: boolean; }
 
 function normalizeAdminBrandActionLinks(brand: Partial<SubcategoryBrand> & Record<string, any>): BrandActionLinkItem[] {
   const configuredLinks = Array.isArray((brand as any).action_links)
@@ -169,7 +179,7 @@ function buildBrandActionLinkPayload(actionLinks: BrandActionLinkItem[] | undefi
     }))
     .filter((link) => Boolean(link.text || link.url));
 }
-interface Ad3 { id: string; image_url: string | null; heading: string | null; description: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color: string | null; show_image: boolean; is_visible: boolean; }
+
 interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
 interface AdvertiseSettings {
   id?: string;
@@ -408,6 +418,7 @@ interface FeaturedCardItem {
   border_color: string | null;
   background_color?: string | null;
   is_visible: boolean;
+  open_in_new_tab: boolean;
 }
 
 interface OfferItem {
@@ -424,6 +435,7 @@ interface OfferItem {
   background_color: string | null;
   show_image: boolean;
   is_visible: boolean;
+  open_in_new_tab: boolean;
 }
 
 interface Ad2Item {
@@ -438,6 +450,7 @@ interface Ad2Item {
   background_color: string | null;
   show_image: boolean;
   is_visible: boolean;
+  open_in_new_tab: boolean;
 }
 
 interface Ad3Item extends Ad2Item {
@@ -658,6 +671,12 @@ export default function AdminDashboard() {
   const [heroTextPart1, setHeroTextPart1] = useState('');
   const [heroTextPart2, setHeroTextPart2] = useState('');
   const [heroWords, setHeroWords] = useState<string[]>([]);
+  const [heroVisible, setHeroVisible] = useState(true);
+  const [heroTextPart1Visible, setHeroTextPart1Visible] = useState(true);
+  const [heroTextPart2Visible, setHeroTextPart2Visible] = useState(true);
+  const [heroAnimatedWordsVisible, setHeroAnimatedWordsVisible] = useState(true);
+  const [heroSearchVisible, setHeroSearchVisible] = useState(true);
+  const [heroAnimatedWordVisibility, setHeroAnimatedWordVisibility] = useState<boolean[]>([]);
   const [cards, setCards] = useState<FeaturedCard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -1180,7 +1199,17 @@ export default function AdminDashboard() {
       setHeroTextPart1(part1); 
       setHeroTextPart2(part2); 
       console.log('Loading hero words:', heroData.animated_words);
-      setHeroWords(heroData.animated_words || []); 
+      const loadedWords: string[] = heroData.animated_words || [];
+      const loadedVisibilityRaw: boolean[] = Array.isArray(heroData.animated_word_visibility)
+        ? heroData.animated_word_visibility
+        : [];
+      setHeroWords(loadedWords);
+      setHeroAnimatedWordVisibility(loadedWords.map((_, index) => loadedVisibilityRaw[index] ?? true));
+      setHeroVisible(heroData.hero_visible ?? true);
+      setHeroTextPart1Visible(heroData.hero_text_part1_visible ?? true);
+      setHeroTextPart2Visible(heroData.hero_text_part2_visible ?? true);
+      setHeroAnimatedWordsVisible(heroData.hero_animated_words_visible ?? true);
+      setHeroSearchVisible(heroData.hero_search_visible ?? true);
     }
           if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
           if (cat.data) setCategories(cat.data);
@@ -2777,6 +2806,38 @@ export default function AdminDashboard() {
     toast.success('Ad order saved!');
   }
 
+  function handleSubcategoryDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = editSubs.findIndex((sub) => sub.id === active.id);
+    const newIndex = editSubs.findIndex((sub) => sub.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(editSubs, oldIndex, newIndex).map((sub, index) => ({
+      ...sub,
+      sort_order: index,
+    }));
+
+    setEditSubs(newOrder);
+  }
+
+  function handleBrandDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = editSubBrands.findIndex((brand) => brand.id === active.id);
+    const newIndex = editSubBrands.findIndex((brand) => brand.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(editSubBrands, oldIndex, newIndex).map((brand, index) => ({
+      ...brand,
+      sort_order: index,
+    }));
+
+    setEditSubBrands(newOrder);
+  }
+
   async function handleCategoryDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -2803,7 +2864,14 @@ export default function AdminDashboard() {
   }
 
   async function saveHero() {
-    const words = heroWords.filter(Boolean);
+    const wordItems = heroWords
+      .map((word, index) => ({
+        word: word.trim(),
+        visible: heroAnimatedWordVisibility[index] ?? true,
+      }))
+      .filter((item) => Boolean(item.word));
+    const words = wordItems.map((item) => item.word);
+    const animatedWordVisibility = wordItems.map((item) => item.visible);
     console.log('Saving hero with words:', words);
     const { data } = await supabase.from('hero_settings').select('id').limit(1).single();
     // Store parts using ||| as delimiter, or original main_text for backward compatibility
@@ -2813,7 +2881,13 @@ export default function AdminDashboard() {
     if (data) {
       const { error } = await supabase.from('hero_settings').update({ 
         main_text: mainTextValue,
-        animated_words: words 
+        animated_words: words,
+        animated_word_visibility: animatedWordVisibility,
+        hero_visible: heroVisible,
+        hero_text_part1_visible: heroTextPart1Visible,
+        hero_text_part2_visible: heroTextPart2Visible,
+        hero_animated_words_visible: heroAnimatedWordsVisible,
+        hero_search_visible: heroSearchVisible,
       }).eq('id', data.id);
       if (error) {
         console.error('Error saving hero:', error);
@@ -2840,7 +2914,8 @@ export default function AdminDashboard() {
           link: editCard.link || null, 
           show_border: editCard.show_border ?? false, 
           border_color: editCard.border_color ?? null,
-          background_color: editCard.background_color ?? null 
+          background_color: editCard.background_color ?? null,
+          open_in_new_tab: editCard.open_in_new_tab ?? false
         };
         if (cardsFixedModeEnabled !== undefined) {
           updateData.is_fixed = cardsFixedModeEnabled;
@@ -2856,6 +2931,7 @@ export default function AdminDashboard() {
           show_border: editCard.show_border ?? false, 
           border_color: editCard.border_color ?? null, 
           background_color: editCard.background_color ?? null,
+          open_in_new_tab: editCard.open_in_new_tab ?? false,
           sort_order: cards.length, 
           section_id: selectedCardsSectionId 
         };
@@ -3759,6 +3835,15 @@ export default function AdminDashboard() {
           about_description_color: sub.about_description_color || null,
           about_button_bg_color: sub.about_button_bg_color || null,
           about_button_text_color: sub.about_button_text_color || null,
+          button_1_text: sub.button_1_text || null,
+          button_1_link: sub.button_1_link || null,
+          button_1_visible: sub.button_1_visible ?? false,
+          button_2_text: sub.button_2_text || null,
+          button_2_link: sub.button_2_link || null,
+          button_2_visible: sub.button_2_visible ?? false,
+          button_3_text: sub.button_3_text || null,
+          button_3_link: sub.button_3_link || null,
+          button_3_visible: sub.button_3_visible ?? false,
           sort_order: index,
         }));
         
@@ -4280,7 +4365,7 @@ export default function AdminDashboard() {
       const selectedOffersCount = selectedOffers.length;
 
       if (editOffer.id) {
-        const updateData: any = { heading: editOffer.heading?.trim() || '', description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false, border_color: editOffer.border_color ?? null, background_color: editOffer.background_color ?? null, show_image: editOffer.show_image ?? true };
+        const updateData: any = { heading: editOffer.heading?.trim() || '', description: editOffer.description, image_url: editOffer.image_url, link: editOffer.link, show_border: editOffer.show_border ?? false, border_color: editOffer.border_color ?? null, background_color: editOffer.background_color ?? null, show_image: editOffer.show_image ?? true, open_in_new_tab: editOffer.open_in_new_tab ?? false };
         if (offersFixedModeEnabled !== undefined) {
           updateData.is_fixed = offersFixedModeEnabled;
         }
@@ -4296,6 +4381,7 @@ export default function AdminDashboard() {
           border_color: editOffer.border_color ?? null,
           background_color: editOffer.background_color ?? null,
           show_image: editOffer.show_image ?? true,
+          open_in_new_tab: editOffer.open_in_new_tab ?? false,
           sort_order: selectedOffersCount,
           section_id: selectedOffersSectionId,
         };
@@ -4399,6 +4485,7 @@ export default function AdminDashboard() {
           border_color: editAd3.border_color ?? null,
           background_color: editAd3.background_color ?? null,
           show_image: editAd3.show_image ?? true,
+          open_in_new_tab: editAd3.open_in_new_tab ?? false,
         };
         if (ads3FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads3FixedModeEnabled;
@@ -4415,6 +4502,7 @@ export default function AdminDashboard() {
           border_color: editAd3.border_color ?? null,
           background_color: editAd3.background_color ?? null,
           show_image: editAd3.show_image ?? true,
+          open_in_new_tab: editAd3.open_in_new_tab ?? false,
           sort_order: ads3.length,
           section_id: selectedAds3SectionId,
         };
@@ -4705,10 +4793,30 @@ export default function AdminDashboard() {
           {/* HERO */}
           {tab === 'hero' && (
             <div className="max-w-lg space-y-4">
-              <h2 className="text-xl font-bold mb-4">Edit Hero Section</h2>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="text-xl font-bold">Edit Hero Section</h2>
+                <label className="flex items-center gap-2 text-xs md:text-sm cursor-pointer">
+                  <Switch checked={heroVisible} onCheckedChange={(checked) => setHeroVisible(Boolean(checked))} />
+                  <span className="text-xs whitespace-nowrap">{heroVisible ? 'ON' : 'OFF'}</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium">Search Bar</label>
+                <label className="flex items-center gap-2 text-xs md:text-sm cursor-pointer">
+                  <Switch checked={heroSearchVisible} onCheckedChange={(checked) => setHeroSearchVisible(Boolean(checked))} />
+                  <span className="text-xs whitespace-nowrap">{heroSearchVisible ? 'ON' : 'OFF'}</span>
+                </label>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5">Text Part 1</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium">Text Part 1</label>
+                  <label className="flex items-center gap-2 text-xs md:text-sm cursor-pointer">
+                    <Switch checked={heroTextPart1Visible} onCheckedChange={(checked) => setHeroTextPart1Visible(Boolean(checked))} />
+                    <span className="text-xs whitespace-nowrap">{heroTextPart1Visible ? 'ON' : 'OFF'}</span>
+                  </label>
+                </div>
                 <input
                   value={heroTextPart1}
                   onChange={(e) => setHeroTextPart1(e.target.value)}
@@ -4717,7 +4825,13 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5">Text Part 2</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium">Text Part 2</label>
+                  <label className="flex items-center gap-2 text-xs md:text-sm cursor-pointer">
+                    <Switch checked={heroTextPart2Visible} onCheckedChange={(checked) => setHeroTextPart2Visible(Boolean(checked))} />
+                    <span className="text-xs whitespace-nowrap">{heroTextPart2Visible ? 'ON' : 'OFF'}</span>
+                  </label>
+                </div>
                 <input
                   value={heroTextPart2}
                   onChange={(e) => setHeroTextPart2(e.target.value)}
@@ -4726,14 +4840,21 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => setHeroWords((prev) => [...prev, ''])}
+                    onClick={() => {
+                      setHeroWords((prev) => [...prev, '']);
+                      setHeroAnimatedWordVisibility((prev) => [...prev, true]);
+                    }}
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold"
                   >
                     <Plus className="w-4 h-4" /> Add Word
                   </button>
+                  <label className="flex items-center gap-2 text-xs md:text-sm cursor-pointer">
+                    <Switch checked={heroAnimatedWordsVisible} onCheckedChange={(checked) => setHeroAnimatedWordsVisible(Boolean(checked))} />
+                    <span className="text-xs whitespace-nowrap">{heroAnimatedWordsVisible ? 'ON' : 'OFF'}</span>
+                  </label>
                 </div>
 
                 <div className="space-y-2">
@@ -4749,9 +4870,23 @@ export default function AdminDashboard() {
                         className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
                         placeholder="Enter animated word"
                       />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={heroAnimatedWordVisibility[index] ?? true}
+                          onCheckedChange={(checked) =>
+                            setHeroAnimatedWordVisibility((prev) =>
+                              prev.map((value, i) => (i === index ? Boolean(checked) : value))
+                            )
+                          }
+                        />
+                        <span className="text-xs whitespace-nowrap">{(heroAnimatedWordVisibility[index] ?? true) ? 'ON' : 'OFF'}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setHeroWords((prev) => prev.filter((_, i) => i !== index))}
+                        onClick={() => {
+                          setHeroWords((prev) => prev.filter((_, i) => i !== index));
+                          setHeroAnimatedWordVisibility((prev) => prev.filter((_, i) => i !== index));
+                        }}
                         className="p-2 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -5097,7 +5232,7 @@ export default function AdminDashboard() {
                       <span className="md:hidden">Delete</span>
                     </button>
                     <button
-                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, border_color: null, background_color: null })}
+                      onClick={() => setEditCard({ title: '', description: '', logo_url: null, link: null, show_border: false, border_color: null, background_color: null, open_in_new_tab: false })}
                       className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
@@ -5176,6 +5311,10 @@ export default function AdminDashboard() {
                     <label className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Switch checked={editCard.show_border ?? false} onCheckedChange={(checked) => setEditCard({ ...editCard, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Switch checked={editCard.open_in_new_tab ?? false} onCheckedChange={(checked) => setEditCard({ ...editCard, open_in_new_tab: Boolean(checked) })} />
+                      <span>Open in new tab</span>
                     </label>
                     {editCard.show_border && (
                       <div>
@@ -5383,61 +5522,74 @@ export default function AdminDashboard() {
                                     No subcategories added yet.
                                   </div>
                                 ) : (
-                                  <div className="space-y-3">
-                                    {editSubs.map((sub) => (
-                                      <div key={sub.id} className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between">
-                                        <div className="min-w-0">
-                                          <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
-                                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                            <Switch
-                                              checked={(sub as any).is_visible ?? true}
-                                              onCheckedChange={(checked) => {
-                                                setEditSubs((prev) => prev.map((item) => item.id === sub.id ? { ...item, is_visible: Boolean(checked) } : item));
-                                              }}
-                                            />
-                                            <span>{(sub as any).is_visible ?? true ? 'Visible' : 'Hidden'}</span>
-                                          </label>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingSubcategoryId(sub.id);
-                                              setEditButtons(editButtonsState[sub.id] || []);
-                                              setEditSubBrands(editSubBrandsState[sub.id] || []);
-                                              setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                              setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
-                                              setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                              setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                              setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
-                                              setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
-                                              setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
-                                              setEditKeyFeaturesSections(prev => ({
-                                                ...prev,
-                                                [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
-                                              }));
-                                              setEditAboutSections(prev => ({
-                                                ...prev,
-                                                [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
-                                              }));
-                                            }}
-                                            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                          >
-                                            Edit
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
-                                            className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                          >
-                                            <X className="w-4 h-4" />
-                                          </button>
-                                        </div>
+                                  <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleSubcategoryDragEnd}
+                                  >
+                                    <SortableContext
+                                      items={editSubs.map(s => s.id)}
+                                      strategy={verticalListSortingStrategy}
+                                    >
+                                      <div className="space-y-3">
+                                        {editSubs.map((sub) => (
+                                          <SortableAdminItem key={sub.id} id={sub.id}>
+                                            <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                              <div className="min-w-0">
+                                                <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                                  <Switch
+                                                    checked={(sub as any).is_visible ?? true}
+                                                    onCheckedChange={(checked) => {
+                                                      setEditSubs((prev) => prev.map((item) => item.id === sub.id ? { ...item, is_visible: Boolean(checked) } : item));
+                                                    }}
+                                                  />
+                                                  <span>{(sub as any).is_visible ?? true ? 'Visible' : 'Hidden'}</span>
+                                                </label>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setEditingSubcategoryId(sub.id);
+                                                    setEditButtons(editButtonsState[sub.id] || []);
+                                                    setEditSubBrands(editSubBrandsState[sub.id] || []);
+                                                    setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
+                                                    setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                                    setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
+                                                    setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                                    setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
+                                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
+                                                    setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                                    setEditKeyFeaturesSections(prev => ({
+                                                      ...prev,
+                                                      [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                                    }));
+                                                    setEditAboutSections(prev => ({
+                                                      ...prev,
+                                                      [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                                    }));
+                                                  }}
+                                                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                                >
+                                                  Edit
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                                  className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </SortableAdminItem>
+                                        ))}
                                       </div>
-                                    ))}
-                                  </div>
+                                    </SortableContext>
+                                  </DndContext>
                                 )}
                               </div>
                             </div>
@@ -5509,51 +5661,64 @@ export default function AdminDashboard() {
                           No subcategories added yet.
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          {editSubs.map((sub) => (
-                            <div key={sub.id} className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between">
-                              <div className="min-w-0">
-                                <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingSubcategoryId(sub.id);
-                                    setEditButtons(editButtonsState[sub.id] || []);
-                                    setEditSubBrands(editSubBrandsState[sub.id] || []);
-                                    setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                    setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
-                                    setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                    setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
-                                    setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
-                                    setEditKeyFeaturesSections(prev => ({
-                                      ...prev,
-                                      [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
-                                    }));
-                                    setEditAboutSections(prev => ({
-                                      ...prev,
-                                      [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
-                                    }));
-                                  }}
-                                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
-                                  className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleSubcategoryDragEnd}
+                        >
+                          <SortableContext
+                            items={editSubs.map(s => s.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-3">
+                              {editSubs.map((sub) => (
+                                <SortableAdminItem key={sub.id} id={sub.id}>
+                                  <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                    <div className="min-w-0">
+                                      <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingSubcategoryId(sub.id);
+                                          setEditButtons(editButtonsState[sub.id] || []);
+                                          setEditSubBrands(editSubBrandsState[sub.id] || []);
+                                          setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
+                                          setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                          setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
+                                          setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                          setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
+                                          setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                          setEditKeyFeaturesSections(prev => ({
+                                            ...prev,
+                                            [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                          }));
+                                          setEditAboutSections(prev => ({
+                                            ...prev,
+                                            [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                          }));
+                                        }}
+                                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </SortableAdminItem>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </SortableContext>
+                        </DndContext>
                       )}
                     </div>
                   </div>
@@ -5698,6 +5863,131 @@ export default function AdminDashboard() {
                         className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                       />
                     </div>
+
+                    {/* Buttons Section */}
+                    <div className="space-y-4 border-t pt-4">
+                      <h3 className="text-sm font-semibold text-foreground">Buttons</h3>
+                      
+                      {/* Button 1 */}
+                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                        <div className="flex items-center justify-between gap-4">
+                          <h4 className="text-sm font-medium">Button 1</h4>
+                          <label className="flex items-center gap-2">
+                            <Switch
+                              checked={editingSub.button_1_visible ?? false}
+                              onCheckedChange={(checked) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_visible: Boolean(checked) } : s));
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">Visible</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingSub.button_1_text || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_text: e.target.value || null } : s));
+                            }}
+                            placeholder="Button text"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                          <input
+                            type="url"
+                            value={editingSub.button_1_link || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_link: e.target.value || null } : s));
+                            }}
+                            placeholder="https://example.com"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Button 2 */}
+                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                        <div className="flex items-center justify-between gap-4">
+                          <h4 className="text-sm font-medium">Button 2</h4>
+                          <label className="flex items-center gap-2">
+                            <Switch
+                              checked={editingSub.button_2_visible ?? false}
+                              onCheckedChange={(checked) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_visible: Boolean(checked) } : s));
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">Visible</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingSub.button_2_text || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_text: e.target.value || null } : s));
+                            }}
+                            placeholder="Button text"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                          <input
+                            type="url"
+                            value={editingSub.button_2_link || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_link: e.target.value || null } : s));
+                            }}
+                            placeholder="https://example.com"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Button 3 */}
+                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                        <div className="flex items-center justify-between gap-4">
+                          <h4 className="text-sm font-medium">Button 3</h4>
+                          <label className="flex items-center gap-2">
+                            <Switch
+                              checked={editingSub.button_3_visible ?? false}
+                              onCheckedChange={(checked) => {
+                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_visible: Boolean(checked) } : s));
+                              }}
+                            />
+                            <span className="text-sm text-muted-foreground">Visible</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                          <input
+                            type="text"
+                            value={editingSub.button_3_text || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_text: e.target.value || null } : s));
+                            }}
+                            placeholder="Button text"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                          <input
+                            type="url"
+                            value={editingSub.button_3_link || ''}
+                            onChange={(e) => {
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_link: e.target.value || null } : s));
+                            }}
+                            placeholder="https://example.com"
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   
 
                  
@@ -5769,61 +6059,71 @@ export default function AdminDashboard() {
                                 No brands added yet.
                               </div>
                             ) : (
-                              <div className="space-y-3">
-                                {editSubBrands.map((brand) => (
-                                  <div
-                                    key={brand.id}
-                                    className="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between"
-                                  >
-                                    <div className="min-w-0">
-                                      <p className="truncate font-semibold text-sm">{brand.name || 'Untitled brand'}</p>
-                                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                        {(brand.action_links || []).length > 0 && (
-                                          <span>{(brand.action_links || []).length} action link{(brand.action_links || []).length !== 1 ? 's' : ''}</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                        <Switch
-                                          checked={brand.is_visible ?? true}
-                                          onCheckedChange={(checked) => {
-                                            const newBrands = editSubBrands.map(b => 
-                                              b.id === brand.id ? { ...b, is_visible: Boolean(checked) } : b
-                                            );
-                                            setEditSubBrands(newBrands);
-                                          }}
-                                        />
-                                        <span>{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
-                                      </label>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingBrandId(brand.id || '');
-                                          setEditingBrand(brand);
-                                        }}
-                                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newBrands = editSubBrands.filter(b => b.id !== brand.id);
-                                          setEditSubBrands(newBrands);
-                                          if (editingBrandId === brand.id) {
-                                            setEditingBrandId(null);
-                                            setEditingBrand(null);
-                                          }
-                                        }}
-                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
+                              <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleBrandDragEnd}
+                              >
+                                <SortableContext
+                                  items={editSubBrands.map(b => b.id!)}
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  <div className="space-y-3">
+                                    {editSubBrands.map((brand) => (
+                                      <SortableAdminItem key={brand.id} id={brand.id!}>
+                                        <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                          <div className="min-w-0">
+                                            <p className="truncate font-semibold text-sm">{brand.name || 'Untitled brand'}</p>
+                                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                              {(brand.action_links || []).length > 0 && (
+                                                <span>{(brand.action_links || []).length} action link{(brand.action_links || []).length !== 1 ? 's' : ''}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                              <Switch
+                                                checked={brand.is_visible ?? true}
+                                                onCheckedChange={(checked) => {
+                                                  const newBrands = editSubBrands.map(b => 
+                                                    b.id === brand.id ? { ...b, is_visible: Boolean(checked) } : b
+                                                  );
+                                                  setEditSubBrands(newBrands);
+                                                }}
+                                              />
+                                              <span>{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                                            </label>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingBrandId(brand.id || '');
+                                                setEditingBrand(brand);
+                                              }}
+                                              className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                            >
+                                              Edit
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const newBrands = editSubBrands.filter(b => b.id !== brand.id);
+                                                setEditSubBrands(newBrands);
+                                                if (editingBrandId === brand.id) {
+                                                  setEditingBrandId(null);
+                                                  setEditingBrand(null);
+                                                }
+                                              }}
+                                              className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                            >
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </SortableAdminItem>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
+                                </SortableContext>
+                              </DndContext>
                             )}
                           </div>
                         </div>
@@ -6786,7 +7086,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_image: true, show_border: false, border_color: null, background_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditOffer({ heading: '', description: '', image_url: null, link: null, show_image: true, show_border: false, border_color: null, background_color: null, open_in_new_tab: false })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Offer</span>
                       <span className="md:hidden">Add</span>
@@ -6861,6 +7161,10 @@ export default function AdminDashboard() {
                     <label className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Switch checked={editOffer.show_border ?? false} onCheckedChange={(checked) => setEditOffer({ ...editOffer, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Switch checked={editOffer.open_in_new_tab ?? false} onCheckedChange={(checked) => setEditOffer({ ...editOffer, open_in_new_tab: Boolean(checked) })} />
+                      <span>Open in new tab</span>
                     </label>
                     {editOffer.show_border && (
                       <div>
@@ -7333,7 +7637,7 @@ export default function AdminDashboard() {
                       <span className="hidden md:inline">Delete Section</span>
                       <span className="md:hidden">Delete</span>
                     </button>
-                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_image: true, show_border: false, border_color: null, background_color: null })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
+                    <button onClick={() => setEditAd3({ image_url: null, heading: '', description: '', link: null, show_image: true, show_border: false, border_color: null, background_color: null, open_in_new_tab: false })} className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5">
                       <Plus className="w-4 h-4" />
                       <span className="hidden md:inline">Add Item</span>
                       <span className="md:hidden">Add</span>
@@ -7407,6 +7711,10 @@ export default function AdminDashboard() {
                     <label className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Switch checked={editAd3.show_border ?? false} onCheckedChange={(checked) => setEditAd3({ ...editAd3, show_border: Boolean(checked) })} />
                       <span>Enable Border</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Switch checked={editAd3.open_in_new_tab ?? false} onCheckedChange={(checked) => setEditAd3({ ...editAd3, open_in_new_tab: Boolean(checked) })} />
+                      <span>Open in new tab</span>
                     </label>
                     {editAd3.show_border && (
                       <div>

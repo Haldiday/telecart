@@ -372,21 +372,39 @@ export type Database = {
       hero_settings: {
         Row: {
           animated_words: string[]
+          animated_word_visibility: boolean[]
           created_at: string
+          hero_animated_words_visible: boolean
+          hero_search_visible: boolean
+          hero_text_part1_visible: boolean
+          hero_text_part2_visible: boolean
+          hero_visible: boolean
           id: string
           main_text: string
           updated_at: string
         }
         Insert: {
           animated_words?: string[]
+          animated_word_visibility?: boolean[]
           created_at?: string
+          hero_animated_words_visible?: boolean
+          hero_search_visible?: boolean
+          hero_text_part1_visible?: boolean
+          hero_text_part2_visible?: boolean
+          hero_visible?: boolean
           id?: string
           main_text?: string
           updated_at?: string
         }
         Update: {
           animated_words?: string[]
+          animated_word_visibility?: boolean[]
           created_at?: string
+          hero_animated_words_visible?: boolean
+          hero_search_visible?: boolean
+          hero_text_part1_visible?: boolean
+          hero_text_part2_visible?: boolean
+          hero_visible?: boolean
           id?: string
           main_text?: string
           updated_at?: string

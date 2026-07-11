@@ -271,7 +271,10 @@ const GetListedPage = () => {
   }, [comparisonCells]);
 
   const visiblePricingPlans = useMemo(() => plans.filter(p => p.visible), [plans]);
-  const visibleComparisonPlans = useMemo(() => getVisibleComparisonPlans(visiblePricingPlans), [visiblePricingPlans]);
+  const visibleComparisonPlans = useMemo(
+    () => getVisibleComparisonPlans(plans),
+    [plans]
+  );
 
   // Fade-up animation keyframes and classes
   const fadeUpAnimation = `
@@ -355,7 +358,7 @@ const GetListedPage = () => {
                     return (
                       <div 
                         key={plan.id} 
-                        className="bg-white rounded-lg shadow-lg relative overflow-hidden border-2 border-transparent transition-all duration-300  hover:scale-105 hover:shadow-2xl w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
+                        className="bg-white rounded-lg shadow-lg relative overflow-visible border-2 border-transparent transition-all duration-300  hover:scale-105 hover:shadow-2xl w-full md:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
                         style={{
                           opacity: 0,
                           animation: 'fadeUp 0.6s ease-out forwards',
@@ -363,7 +366,7 @@ const GetListedPage = () => {
                         }}
                       >
                         {plan.popular && (
-                          <div className="absolute top-4 right-0 bg-orange-500 text-white text-[10px] font-semibold px-7 py-2 rotate-45 translate-x-8 shadow-xl">
+                          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 bg-orange-500 text-white text-[13px] font-semibold px-7 py-2 shadow-xl z-10">
                             MOST POPULAR
                           </div>
                         )}
@@ -426,9 +429,9 @@ const GetListedPage = () => {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b-2 border-blue-800">
-                          <th className="text-left py-4 px-6 font-bold text-gray-700 w-1/3"></th>
+                          <th className="text-left py-4 px-4 font-bold text-gray-700 w-1/4"></th>
                           {visibleComparisonPlans.map((plan) => (
-                            <th key={plan.id} className="text-center py-4 px-6 text-[22px] font-normal leading-normal text-[#001965]">
+                            <th key={plan.id} className="text-center py-4 px-4 text-[22px] font-normal leading-normal text-[#001965]">
                               {plan.comparison_header || plan.plan_name}
                             </th>
                           ))}
@@ -445,9 +448,9 @@ const GetListedPage = () => {
                               key={row.id} 
                               className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                             >
-                              <td className="py-4 px-6 text-[18px] font-normal leading-[21.4286px] text-[#001965]">{row.row_title}</td>
+                              <td className="py-4 px-4 text-[18px] font-normal leading-[21.4286px] text-[#001965]">{row.row_title}</td>
                               {visibleComparisonPlans.map((plan) => (
-                                <td key={`${row.id}-${plan.id}`} className="py-4 px-6 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
+                                <td key={`${row.id}-${plan.id}`} className="py-4 px-4 text-center text-[15px] font-normal leading-[21.4286px] text-[#606F7B]">
                                   {getCellContent(row.id, plan.id)}
                                 </td>
                               ))}

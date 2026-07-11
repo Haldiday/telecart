@@ -7,6 +7,8 @@ import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import RichTextContent from '@/components/shared/RichTextContent';
+import { VideoModal } from '@/components/shared/VideoModal';
+import { isVideoUrl } from '@/lib/utils';
 
 interface Ad {
   description: string | null;
@@ -20,6 +22,7 @@ interface Ad {
   border_color: string | null;
   background_color: string | null;
   show_image: boolean;
+  open_in_new_tab: boolean;
 }
 
 interface Ads3ColSectionProps {
@@ -49,6 +52,21 @@ export default function Ads3ColSection({
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
   const isSeeAllPage = location.pathname.startsWith("/see-all/3-ads");
+  const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
+
+  const handleAdClick = (ad: Ad) => {
+    if (!ad.link) return;
+
+    if (isVideoUrl(ad.link)) {
+      setVideoModal({ isOpen: true, url: ad.link });
+    } else {
+      if (ad.open_in_new_tab) {
+        window.open(ad.link, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = ad.link;
+      }
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -128,16 +146,17 @@ export default function Ads3ColSection({
     const loadAds = () => {
       db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Ad[] | null }) => {
         if (data && mounted) setAds((data as any[])
-          .filter(ad => ad.is_visible !== false)
-          .map((ad) => ({
-            ...ad,
-            is_fixed: ad.is_fixed ?? false,
-            show_border: ad.show_border ?? false,
-            border_color: ad.border_color ?? null,
-            background_color: ad.background_color ?? null,
-            show_image: ad.show_image ?? true,
-            is_visible: ad.is_visible ?? true,
-          })));
+            .filter(ad => ad.is_visible !== false)
+            .map((ad) => ({
+              ...ad,
+              is_fixed: ad.is_fixed ?? false,
+              show_border: ad.show_border ?? false,
+              border_color: ad.border_color ?? null,
+              background_color: ad.background_color ?? null,
+              show_image: ad.show_image ?? true,
+              is_visible: ad.is_visible ?? true,
+              open_in_new_tab: ad.open_in_new_tab ?? false,
+            })));
       });
     };
 
@@ -189,187 +208,13 @@ export default function Ads3ColSection({
       );
     }
 
-    if (isMobile) {
-      // Keep existing carousel behavior on mobile
-      return (
-        <div className="relative group/fixed">
-          {needsCarousel ? (
-            <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-              <div 
-                className="overflow-hidden overflow-x-hidden touch-pan-y"
-                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-                ref={containerRef}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-              >
-                <div
-                  className="flex flex-row flex-nowrap"
-                  onTransitionEnd={handleTransitionEnd}
-                  style={{
-                    transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
-                    transition: animate ? 'transform 650ms ease' : 'none',
-                  }}
-                >
-                  {displayAds.map((ad, displayIndex) => (
-                    <div
-                      key={`${ad.id}-${displayIndex}`}
-                      className="flex-none px-1.5"
-                      style={{ width: `${slideWidth}%` }}
-                    >
-                      <div
-                          onClick={() => {
-                            if (ad.link) {
-                              window.location.href = ad.link;
-                            }
-                          }}
-                          className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                          style={{
-                            ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                            backgroundColor: ad.background_color || undefined
-                          }}
-                        >
-                          <div
-                            className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                          >
-                          {ad.show_image !== false && ad.image_url && (
-                            <img
-                              src={ad.image_url}
-                              alt={ad.heading || 'Ad'}
-                              className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                            />
-                          )}
-                        </div>
-                        {(ad.heading || ad.description) && (
-                          <div className={`p-3 ${ad.show_image !== false && ad.image_url ? '' : ''}`}>
-                            {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                            {ad.description && (
-                              <RichTextContent
-                                content={ad.description}
-                                className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
-                              />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
-              <div 
-                className="flex flex-row flex-nowrap"
-                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
-              >
-                {fixedPages.map((page, pageIdx) => (
-                  <div key={pageIdx} className={`w-full flex-none grid grid-cols-1 gap-3 ${visibleCount === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                    {page.map((ad) => (
-                      <div key={ad.id} className="flex h-full">
-                        <div
-                          onClick={() => {
-                            if (ad.link) {
-                              window.location.href = ad.link;
-                            }
-                          }}
-                          className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                          style={{
-                            ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                            backgroundColor: ad.background_color || undefined
-                          }}
-                        >
-                          <div
-                            className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                          >
-                            {ad.show_image !== false && ad.image_url && (
-                              <img
-                                src={ad.image_url}
-                                alt={ad.heading || 'Ad'}
-                                className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                              />
-                            )}
-                          </div>
-                          {(ad.heading || ad.description) && (
-                            <div className="p-3">
-                              {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                              {ad.description && (
-                                <RichTextContent
-                                  content={ad.description}
-                                  className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
-                                />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
-                    {Array.from({ length: visibleCount - page.length }).map((_, i) => (
-                      <div key={`empty-${i}`} className="hidden md:flex h-full" />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {adsToDisplay.map((ad) => (
-                <div key={ad.id} className="w-full">
-                  <div
-                      onClick={() => {
-                        if (ad.link) {
-                          window.location.href = ad.link;
-                        }
-                      }}
-                      className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                      style={{
-                        ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                        backgroundColor: ad.background_color || undefined
-                      }}
-                    >
-                      <div
-                        className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                      >
-                      {ad.show_image !== false && ad.image_url && (
-                        <img
-                          src={ad.image_url}
-                          alt={ad.heading || 'Ad'}
-                          className="h-full w-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        />
-                      )}
-                    </div>
-                    {(ad.heading || ad.description) && (
-                      <div className="p-3">
-                        {ad.heading && <h3 className="text-xl font-semibold leading-tight text-foreground">{ad.heading}</h3>}
-                        {ad.description && (
-                          <RichTextContent
-                            content={ad.description}
-                            className="mt-2 text-base leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-600 [&_a]:underline"
-                          />
-                        )}
-                      </div>
-                    )}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Desktop/Tablet: Show all ads in grid, no carousel (exact same as home page)
+    // Always show static grid layout (no carousel) on See All page, even on mobile
     return (
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {adsToDisplay.map((ad) => (
           <div key={ad.id} className="w-full">
             <div
-                onClick={() => {
-                  if (ad.link) {
-                    window.location.href = ad.link;
-                  }
-                }}
+                onClick={() => handleAdClick(ad)}
                 className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
                 style={{
                   ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
@@ -463,11 +308,7 @@ export default function Ads3ColSection({
                     style={{ width: `${slideWidth}%` }}
                   >
                     <div
-                        onClick={() => {
-                          if (ad.link) {
-                            window.location.href = ad.link;
-                          }
-                        }}
+                        onClick={() => handleAdClick(ad)}
                         className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
                         style={{
                           ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
@@ -513,11 +354,7 @@ export default function Ads3ColSection({
                   {page.map((ad) => (
                     <div key={ad.id} className="flex h-full">
                       <div
-                        onClick={() => {
-                          if (ad.link) {
-                            window.location.href = ad.link;
-                          }
-                        }}
+                        onClick={() => handleAdClick(ad)}
                         className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
                         style={{
                           ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
@@ -562,11 +399,7 @@ export default function Ads3ColSection({
             {adsToDisplay.map((ad) => (
               <div key={ad.id} className="w-full">
                 <div
-                    onClick={() => {
-                      if (ad.link) {
-                        window.location.href = ad.link;
-                      }
-                    }}
+                    onClick={() => handleAdClick(ad)}
                     className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
                     style={{
                       ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
@@ -605,6 +438,7 @@ export default function Ads3ColSection({
   };
 
   return (
+    <section id={`section-${sectionId}`}>
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
@@ -623,6 +457,12 @@ export default function Ads3ColSection({
         {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
       </div>
     </div>
+    <VideoModal
+      isOpen={videoModal.isOpen}
+      onClose={() => setVideoModal({ isOpen: false, url: '' })}
+      videoUrl={videoModal.url}
+    />
     </SubcategorySectionShell>
+    </section>
   );
 }

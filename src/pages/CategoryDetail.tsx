@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, List, Plus, Minus } from 'lucide-react';
+import { ChevronRight, List, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks from '@/components/shared/BrandActionLinks';
@@ -134,12 +134,15 @@ export default function CategoryDetail() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1 pt-24 md:pt-36">
+      <main className="flex-1 pt-20 md:pt-32">
         <div className="border-b border-border bg-card">
           <div className="container mx-auto px-4 py-6">
-            <Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" /> Back to Home
-            </Link>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-foreground font-medium">{category.name}</span>
+            </div>
             <div className="flex items-center gap-4">
               {category.icon_url && (
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl" style={{ backgroundColor: category.bg_color }}>
@@ -186,7 +189,7 @@ export default function CategoryDetail() {
                 const isExpanded = expandedSubcategoryId === sub.id;
                 
                 return (
-                  <div key={sub.id} className="rounded-xl border border-border bg-card p-4">
+                  <div key={sub.id} className="rounded-xl border border-gray-400 bg-card p-4">
                     <div
                       onClick={() => isClickable && handleSubcategoryClick(sub)}
                       className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
@@ -198,9 +201,9 @@ export default function CategoryDetail() {
                       <span>{sub.name}</span>
                       {hasBrands && (
                         isExpanded ? (
-                          <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Minus className="h-3.5 w-3.5 text-gray/400" />
                         ) : (
-                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Plus className="h-3.5 w-3.5 text-gray/400" />
                         )
                       )}
                     </div>

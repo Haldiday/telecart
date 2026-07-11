@@ -491,17 +491,28 @@ export default function Header() {
                                 </svg>
 
                                 <span className="flex-1">
-                                  {result.type === 'brand' ? (
+                                  {result.type === 'brand' && !result.name.includes('(') ? (
                                     <>
-                                      {result.name}
+                                      <span className="text-[#1c1c1c]">{result.name}</span>
                                       {result.subcategoryName && (
-                                        <span className="ml-2 text-xs text-[#8a8f9a]">
-                                          ({result.subcategoryName})
-                                        </span>
+                                        <span className="ml-2 text-[#1d4ed8]">({result.subcategoryName})</span>
                                       )}
                                     </>
                                   ) : (
-                                    <>{result.name}</>
+                                    (() => {
+                                      const match = result.name.match(/^(.+?)(\s*\([^)]+\))?$/);
+                                      if (match) {
+                                        const mainText = match[1] || '';
+                                        const parenthetical = match[2] || '';
+                                        return (
+                                          <>
+                                            <span className="text-[#1c1c1c]">{mainText}</span>
+                                            {parenthetical && <span className="text-[#1d4ed8]">{parenthetical}</span>}
+                                          </>
+                                        );
+                                      }
+                                      return <span>{result.name}</span>;
+                                    })()
                                   )}
                                 </span>
                               </button>
@@ -773,9 +784,28 @@ export default function Header() {
                   onClick={() => handleHeaderResultClick(result)}
                   className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
                 >
-                    <span>{result.name}</span>
-                    {result.type === 'brand' && result.subcategoryName && (
-                      <span className="text-xs text-[#8a8f9a]">({result.subcategoryName})</span>
+                    {result.type === 'brand' && !result.name.includes('(') ? (
+                      <>
+                        <span className="text-[#1c1c1c]">{result.name}</span>
+                        {result.subcategoryName && (
+                          <span className="ml-2 text-[#1d4ed8]">({result.subcategoryName})</span>
+                        )}
+                      </>
+                    ) : (
+                      (() => {
+                        const match = result.name.match(/^(.+?)(\s*\([^)]+\))?$/);
+                        if (match) {
+                          const mainText = match[1] || '';
+                          const parenthetical = match[2] || '';
+                          return (
+                            <>
+                              <span className="text-[#1c1c1c]">{mainText}</span>
+                              {parenthetical && <span className="text-[#1d4ed8]">{parenthetical}</span>}
+                            </>
+                          );
+                        }
+                        return <span>{result.name}</span>;
+                      })()
                     )}
                   </button>
                 ))

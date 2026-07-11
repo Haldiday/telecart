@@ -6,6 +6,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import { VideoModal } from '@/components/shared/VideoModal';
+import { isVideoUrl } from '@/lib/utils';
 
 interface Card {
   id: string;
@@ -19,6 +21,7 @@ interface Card {
   show_border: boolean;
   border_color: string | null;
   background_color: string | null;
+  open_in_new_tab: boolean;
 }
 
 interface FeaturedCardsProps {
@@ -48,6 +51,7 @@ export default function FeaturedCards({
   const [isTablet, setIsTablet] = useState(false);
   const location = useLocation();
   const isSeeAllPage = location.pathname.startsWith("/see-all/featured-cards");
+  const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
 
   useEffect(() => {
     const checkTablet = () => {
@@ -66,6 +70,20 @@ export default function FeaturedCards({
   const fixedMode = cards.some((card) => card.is_fixed);
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
   const totalFixedPages = Math.ceil(cardsToDisplay.length / visibleCount);
+
+  const handleCardClick = (card: Card) => {
+    if (!card.link) return;
+
+    if (isVideoUrl(card.link)) {
+      setVideoModal({ isOpen: true, url: card.link });
+    } else {
+      if (card.open_in_new_tab) {
+        window.open(card.link, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = card.link;
+      }
+    }
+  };
 
   // Group cards into pages for fixed mode sliding
   const fixedPages = useMemo(() => {
@@ -135,6 +153,7 @@ export default function FeaturedCards({
               border_color: card.border_color ?? null,
               background_color: card.background_color ?? null,
               is_visible: card.is_visible ?? true,
+              open_in_new_tab: card.open_in_new_tab ?? false,
             })));
         }
       });
@@ -196,180 +215,13 @@ export default function FeaturedCards({
       );
     }
 
-    if (isMobile) {
-      // Keep existing carousel behavior on mobile
-      return (
-        <div className="relative group/fixed">
-          {!isMobile && (showFixedControls || needsCarousel) && (
-            <>
-              <button
-                onClick={showFixedControls ? handleFixedPrev : goPrev}
-                className="absolute left-0 md:-left-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={showFixedControls ? fixedPageIndex === 0 : false}
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-              <button
-                onClick={showFixedControls ? handleFixedNext : goNext}
-                className="absolute right-0 md:-right-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={showFixedControls ? fixedPageIndex === totalFixedPages - 1 : false}
-                aria-label="Next slide"
-              >
-                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-            </>
-          )}
-
-          {(fixedMode && cardsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
-              <div 
-                className="flex"
-                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
-              >
-                {fixedPages.map((page, pageIdx) => (
-                  <div key={pageIdx} className="w-full flex-none grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {page.map((card) => (
-                      <div key={card.id}>
-                        <div
-                          onClick={() => {
-                            if (card.link) {
-                              window.open(card.link, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
-                          className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                          style={{ 
-                            backgroundColor: card.background_color || '#fcf9f5',
-                            borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                          }}
-                        >
-                          {card.logo_url && (
-                            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                              <img
-                                src={card.logo_url}
-                                alt={card.title}
-                                className="h-full w-full object-contain"
-                              />
-                            </div>
-                          )}
-                          <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                            {card.title}
-                            {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                          </h3>
-                          <div className="text-base leading-relaxed text-black line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description }} />
-                        </div>
-                      </div>
-                    ))}
-                    {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
-                    {Array.from({ length: visibleCount - page.length }).map((_, i) => (
-                      <div key={`empty-${i}`} className="hidden md:flex lg:flex h-full" />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : needsCarousel ? (
-            <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-              <div 
-                className="overflow-hidden overflow-x-hidden touch-pan-y py-6"
-                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-                ref={containerRef}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-              >
-                <div className="flex" onTransitionEnd={handleTransitionEnd} style={{
-                    transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
-                    transition: animate ? 'transform 650ms ease' : 'none',
-                  }}>
-                  {displayCards.map((card, displayIndex) => (
-                    <div
-                      key={`${card.id}-${displayIndex}`}
-                      className="flex-none px-2.5"
-                      style={{ width: `${slideWidth}%` }}
-                    >
-                      <div
-                        onClick={() => {
-                          if (card.link) {
-                            window.open(card.link, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                        style={{ 
-                          backgroundColor: card.background_color || '#fcf9f5',
-                          borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                        }}
-                      >
-                        {card.logo_url && (
-                          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                            <img
-                              src={card.logo_url}
-                              alt={card.title}
-                              className="h-full w-full object-contain"
-                            />
-                          </div>
-                        )}
-                        <h3 className="mb-2 text-xl md:text-2xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                          {card.title}
-                          {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                        </h3>
-                        <div className="text-base leading-relaxed text-black line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className={`flex ${cardsToDisplay.length < 3 ? 'justify-center' : ''}`}>
-              {cardsToDisplay.map((card) => (
-                <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
-                  <div
-                    onClick={() => {
-                      if (card.link) {
-                        window.open(card.link, '_blank', 'noopener,noreferrer');
-                      }
-                    }}
-                    className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
-                    style={{ 
-                      backgroundColor: card.background_color || '#fcf9f5',
-                      borderColor: card.show_border && card.border_color ? card.border_color : undefined 
-                    }}
-                  >
-                    {card.logo_url && (
-                      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl flex-shrink-0 bg-white">
-                        <img
-                          src={card.logo_url}
-                          alt={card.title}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    )}
-                    <h3 className="mb-2 text-xl font-semibold leading-tight flex items-center gap-2 line-clamp-1">
-                      {card.title}
-                      {card.link && <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />}
-                    </h3>
-                    <div className="text-base leading-relaxed text-black line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Desktop/Tablet: Show all cards in grid, no carousel (exact same as home page)
+    // Always show static grid layout (no carousel) on See All page, even on mobile
     return (
       <div className={`flex flex-wrap ${cardsToDisplay.length < 3 ? 'justify-center' : ''}`}>
         {cardsToDisplay.map((card) => (
           <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'w-full md:w-[calc(33.333%-10px)]'} px-2.5 mb-6`}>
             <div
-              onClick={() => {
-                if (card.link) {
-                  window.open(card.link, '_blank', 'noopener,noreferrer');
-                }
-              }}
+              onClick={() => handleCardClick(card)}
               className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
               style={{ 
                 backgroundColor: card.background_color || '#fcf9f5',
@@ -441,11 +293,7 @@ export default function FeaturedCards({
                   {page.map((card) => (
                     <div key={card.id}>
                       <div
-                        onClick={() => {
-                          if (card.link) {
-                            window.open(card.link, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
+                        onClick={() => handleCardClick(card)}
                         className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                         style={{ 
                           backgroundColor: card.background_color || '#fcf9f5',
@@ -498,11 +346,7 @@ export default function FeaturedCards({
                     style={{ width: `${slideWidth}%` }}
                   >
                     <div
-                      onClick={() => {
-                        if (card.link) {
-                          window.open(card.link, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
+                      onClick={() => handleCardClick(card)}
                       className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                       style={{ 
                         backgroundColor: card.background_color || '#fcf9f5',
@@ -534,11 +378,7 @@ export default function FeaturedCards({
             {cardsToDisplay.map((card) => (
               <div key={card.id} className={`${cardsToDisplay.length < 3 ? 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-10px)]' : 'flex-1'} px-2.5`}>
                 <div
-                  onClick={() => {
-                    if (card.link) {
-                      window.open(card.link, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
+                  onClick={() => handleCardClick(card)}
                   className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border' : ''} ${card.link ? 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.25)]' : ''}`}
                   style={{ 
                     backgroundColor: card.background_color || '#fcf9f5',
@@ -569,6 +409,7 @@ export default function FeaturedCards({
   };
 
   return (
+    <section id={`section-${sectionId}`}>
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-6 md:py-8'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
@@ -592,6 +433,12 @@ export default function FeaturedCards({
         )}
       </div>
     </div>
+    <VideoModal
+      isOpen={videoModal.isOpen}
+      onClose={() => setVideoModal({ isOpen: false, url: '' })}
+      videoUrl={videoModal.url}
+    />
     </SubcategorySectionShell>
+    </section>
   );
 }

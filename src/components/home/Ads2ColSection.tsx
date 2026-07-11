@@ -163,6 +163,7 @@ export default function Ads2ColSection({
   if (adsToDisplay.length === 0) return null;
 
   return (
+    <section id={`section-${sectionId}`}>
     <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
     <div className={compact ? '' : 'py-4 md:py-6'}>
       <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
@@ -346,5 +347,6 @@ export default function Ads2ColSection({
       </div>
     </div>
     </SubcategorySectionShell>
+    </section>
   );
 }

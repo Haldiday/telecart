@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearch } from '@/contexts/SearchContext';
+import { ChevronUp } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeroSection from '@/components/home/HeroSection';
@@ -24,6 +25,12 @@ interface PageSection {
 interface HeroSettings {
   main_text?: string;
   animated_words?: string[];
+  animated_word_visibility?: boolean[];
+  hero_visible?: boolean;
+  hero_text_part1_visible?: boolean;
+  hero_text_part2_visible?: boolean;
+  hero_animated_words_visible?: boolean;
+  hero_search_visible?: boolean;
 }
 
 const SECTION_MAP: Record<string, React.FC<any>> = {
@@ -40,6 +47,8 @@ export default function Index() {
   const [sections, setSections] = useState<PageSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [heroSettings, setHeroSettings] = useState<HeroSettings | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const heroSectionRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const { showMobileStickySearch } = useSearch();
 
@@ -147,6 +156,23 @@ export default function Index() {
     }
   }, [location.hash, isLoading]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroElement = heroSectionRef.current;
+      if (!heroElement) {
+        setShowScrollTop(false);
+        return;
+      }
+
+      const heroBottom = heroElement.getBoundingClientRect().bottom;
+      setShowScrollTop(heroBottom <= 0);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -157,7 +183,9 @@ export default function Index() {
         ) : (
           <>
             {/* Always render Hero Section first */}
-            <HeroSection heroSettings={heroSettings} />
+            <div ref={heroSectionRef}>
+              <HeroSection heroSettings={heroSettings} />
+            </div>
 
             {/* Render other sections from database */}
             {sections
@@ -189,7 +217,21 @@ export default function Index() {
           </>
         )}
       </main>
-      {!isLoading && <Footer />}
+      {!isLoading && (
+        <>
+          <Footer />
+          {showScrollTop && (
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="fixed bottom-6 right-6 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-xl transition-opacity duration-300 hover:bg-slate-800"
+              aria-label="Scroll to top"
+            >
+              <ChevronUp className="h-6 w-6" />
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }

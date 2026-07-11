@@ -16,6 +16,15 @@ interface Category {
 interface Subcategory {
   id: string;
   name: string;
+  button_1_text?: string | null;
+  button_1_link?: string | null;
+  button_1_visible?: boolean;
+  button_2_text?: string | null;
+  button_2_link?: string | null;
+  button_2_visible?: boolean;
+  button_3_text?: string | null;
+  button_3_link?: string | null;
+  button_3_visible?: boolean;
 }
 
 interface BrandItem {
@@ -70,6 +79,21 @@ export default function SubcategoryBrands() {
         setBrands(visibleBrands);
       }
       
+      if (subcategoryData) {
+        setSubcategory({
+          ...(subcategoryData as Subcategory),
+          button_1_text: (subcategoryData as any).button_1_text,
+          button_1_link: (subcategoryData as any).button_1_link,
+          button_1_visible: (subcategoryData as any).button_1_visible ?? false,
+          button_2_text: (subcategoryData as any).button_2_text,
+          button_2_link: (subcategoryData as any).button_2_link,
+          button_2_visible: (subcategoryData as any).button_2_visible ?? false,
+          button_3_text: (subcategoryData as any).button_3_text,
+          button_3_link: (subcategoryData as any).button_3_link,
+          button_3_visible: (subcategoryData as any).button_3_visible ?? false,
+        });
+      }
+      
       setLoading(false);
     };
 
@@ -110,20 +134,58 @@ export default function SubcategoryBrands() {
               <span className="text-foreground font-medium">{subcategory.name}</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              {category.icon_url && (
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: category.bg_color }}
-                >
-                  <img src={category.icon_url} alt={category.name} className="h-7 w-7 object-contain" />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                {category.icon_url && (
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: category.bg_color }}
+                  >
+                    <img src={category.icon_url} alt={category.name} className="h-7 w-7 object-contain" />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-xl md:text-2xl font-bold">{subcategory.name}</h1>
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    {brands.length} Brands
+                  </p>
                 </div>
-              )}
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold">{subcategory.name}</h1>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {brands.length} Brands
-                </p>
+              </div>
+
+              <div className="flex flex-wrap justify-end gap-4 pr-60 md:pr-14">
+                {subcategory.button_1_visible && subcategory.button_1_text && (
+                  <a
+                    href={subcategory.button_1_link || '#'}
+                    target={subcategory.button_1_link ? '_blank' : undefined}
+                    rel={subcategory.button_1_link ? 'noopener noreferrer' : undefined}
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                  >
+                    {subcategory.button_1_text}
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                )}
+                {subcategory.button_2_visible && subcategory.button_2_text && (
+                  <a
+                    href={subcategory.button_2_link || '#'}
+                    target={subcategory.button_2_link ? '_blank' : undefined}
+                    rel={subcategory.button_2_link ? 'noopener noreferrer' : undefined}
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                  >
+                    {subcategory.button_2_text}
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                )}
+                {subcategory.button_3_visible && subcategory.button_3_text && (
+                  <a
+                    href={subcategory.button_3_link || '#'}
+                    target={subcategory.button_3_link ? '_blank' : undefined}
+                    rel={subcategory.button_3_link ? 'noopener noreferrer' : undefined}
+                    className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#111111] transition-all duration-200 hover:border-[#111111] hover:bg-gray-50"
+                  >
+                    {subcategory.button_3_text}
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -142,7 +204,7 @@ export default function SubcategoryBrands() {
                 const hasLinkOrActions = brand.link || hasActionLinks;
                 
                 return (
-                  <div key={brand.id} className="rounded-xl border border-border/50 bg-card p-4">
+                  <div key={brand.id} className="rounded-xl border border-gray-400 bg-card p-4">
                     <BrandActionLinks
                       brand={brand}
                       isExpanded={isExpanded}

@@ -78,6 +78,15 @@ interface Subcategory {
   about_description_color?: string | null;
   about_button_bg_color?: string | null;
   about_button_text_color?: string | null;
+  button_1_text?: string | null;
+  button_1_link?: string | null;
+  button_1_visible?: boolean;
+  button_2_text?: string | null;
+  button_2_link?: string | null;
+  button_2_visible?: boolean;
+  button_3_text?: string | null;
+  button_3_link?: string | null;
+  button_3_visible?: boolean;
 }
 
 interface Category {
@@ -713,8 +722,7 @@ export default function SubcategoryDetail() {
               const actionLinks = getBrandActionLinks(brand);
               const hasActionLinks = actionLinks.length > 0;
               const brandBoxClassName =
-                'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';
-              const content = (
+                'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';             const content = (
                 <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
                   {brand.name || 'Unnamed brand'}
                 </span>
@@ -893,6 +901,52 @@ export default function SubcategoryDetail() {
                     })}
                   </div>
                 )}
+
+                {/* New Buttons */}
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {subcategory.button_1_visible && subcategory.button_1_text && (
+                    <a
+                      href={normalizeExternalUrl(subcategory.button_1_link || '') || '#'}
+                      target={subcategory.button_1_link ? '_blank' : undefined}
+                      rel={subcategory.button_1_link ? 'noopener noreferrer' : undefined}
+                      className={`
+                        inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm
+                        bg-[#E62415] text-white border border-[#E62415] hover:bg-white hover:text-[#E62415]
+                      `}
+                    >
+                      {subcategory.button_1_text}
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                  {subcategory.button_2_visible && subcategory.button_2_text && (
+                    <a
+                      href={normalizeExternalUrl(subcategory.button_2_link || '') || '#'}
+                      target={subcategory.button_2_link ? '_blank' : undefined}
+                      rel={subcategory.button_2_link ? 'noopener noreferrer' : undefined}
+                      className={`
+                        inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm
+                        bg-white text-[#111111] border border-[#E5E7EB] hover:border-[#111111] hover:bg-gray-50
+                      `}
+                    >
+                      {subcategory.button_2_text}
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                  {subcategory.button_3_visible && subcategory.button_3_text && (
+                    <a
+                      href={normalizeExternalUrl(subcategory.button_3_link || '') || '#'}
+                      target={subcategory.button_3_link ? '_blank' : undefined}
+                      rel={subcategory.button_3_link ? 'noopener noreferrer' : undefined}
+                      className={`
+                        inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 shadow-sm
+                        bg-[#17313B] text-white border border-[#17313B] hover:bg-white hover:text-[#17313B]
+                      `}
+                    >
+                      {subcategory.button_3_text}
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>

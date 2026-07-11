@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import FeaturedCards from '@/components/home/FeaturedCards';
+import { getSeeAllBackPath } from '@/lib/seeAllNavigation';
 
 interface PageSection {
   id: string;
@@ -99,8 +100,8 @@ export default function FeaturedCardsSeeAllPage() {
           }}
         >
           <div className="mx-auto max-w-[1580px] px-6 md:px-12 py-6">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" /> Back to Home
+            <Link to={getSeeAllBackPath(selectedSection?.id)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" /> Back to section
             </Link>
           </div>
         </div>
