@@ -72,54 +72,43 @@ export function VideoModal({ isOpen, onClose, videoUrl }: VideoModalProps) {
           <X className="h-5 w-5" />
         </button>
         
-        {/* Monitor Frame */}
-        <div className="bg-gray-900 rounded-t-xl p-3 border-x-4 border-t-4 border-gray-800">
-          {/* Monitor Top Bar */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          </div>
-          {/* Monitor Screen */}
-          <div className="bg-black rounded-lg overflow-hidden">
-            <div className="relative w-full pt-[56.25%]">
-              {videoType === 'youtube' && videoId && (
-                <iframe
-                  ref={iframeRef}
-                  className="absolute inset-0 w-full h-full"
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              )}
-              {videoType === 'vimeo' && videoId && (
-                <iframe
-                  ref={iframeRef}
-                  className="absolute inset-0 w-full h-full"
-                  src={`https://player.vimeo.com/video/${videoId}?autoplay=1`}
-                  title="Vimeo video player"
-                  frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                />
-              )}
-              {videoType === 'html5' && videoId && (
-                <video
-                  ref={videoRef}
-                  className="absolute inset-0 w-full h-full"
-                  src={videoId}
-                  controls
-                  autoPlay
-                />
-              )}
-            </div>
+        <div className="bg-black rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative w-full pt-[56.25%]">
+            {videoType === 'youtube' && videoId && (
+              <iframe
+                ref={iframeRef}
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+            )}
+            {videoType === 'vimeo' && videoId && (
+              <iframe
+                ref={iframeRef}
+                className="absolute inset-0 w-full h-full"
+                src={`https://player.vimeo.com/video/${videoId}?autoplay=1&playsinline=1`}
+                title="Vimeo video player"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            )}
+            {videoType === 'html5' && videoId && (
+              <video
+                ref={videoRef}
+                className="absolute inset-0 w-full h-full"
+                src={videoId}
+                controls
+                autoPlay
+                playsInline
+                muted
+              />
+            )}
           </div>
         </div>
-        {/* Monitor Stand */}
-        <div className="bg-gray-800 w-1/4 mx-auto h-4 rounded-b-xl"></div>
-        <div className="bg-gray-700 w-1/2 mx-auto h-3 rounded-b-2xl mt-1"></div>
       </DialogContent>
     </Dialog>
   );

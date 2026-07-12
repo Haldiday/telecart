@@ -101,6 +101,7 @@ export default function Header() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
+  const [mobileCategorySearchQuery, setMobileCategorySearchQuery] = useState('');
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [sections, setSections] = useState<PageSection[]>([]);
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>(() => getCachedHeaderSettings());
@@ -643,17 +644,40 @@ export default function Header() {
                 </button>
                 
                 {mobileCategoriesOpen && (
-                  <div className="pl-4 space-y-1 border-l-2 border-border ml-6 mt-1">
-                    {sections.map(section => (
-                      <div key={section.id}>
-                        <button
-                          onClick={() => scrollToSection(section.id)}
-                          className="text-base font-medium text-muted-foreground hover:text-primary hover:bg-muted block w-full text-left py-2.5 px-4 rounded-lg transition-all"
-                        >
-                          {section.name}
-                        </button>
-                      </div>
-                    ))}
+                  <div className="pl-4 space-y-3 ml-6 mt-1">
+                    <div>
+                      <label htmlFor="mobile-category-search" className="sr-only">
+                        Search categories
+                      </label>
+                      <input
+                        id="mobile-category-search"
+                        type="search"
+                        value={mobileCategorySearchQuery}
+                        onChange={(event) => setMobileCategorySearchQuery(event.target.value)}
+                        placeholder="Search categories"
+                        className="w-full rounded-xl border border-[#d1d5db] bg-white px-4 py-2 text-sm text-[#111827] outline-none focus:border-[#3b82f6] focus:ring-2 focus:ring-[#bfdbfe]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      {sections
+                        .filter((section) => {
+                          if (!mobileCategorySearchQuery.trim()) return true;
+                          return section.name.toLowerCase().includes(mobileCategorySearchQuery.trim().toLowerCase());
+                        })
+                        .map((section) => (
+                          <div key={section.id}>
+                            <button
+                              onClick={() => {
+                                scrollToSection(section.id);
+                              }}
+                              className="mobile-mega-menu-link block w-full text-left"
+                            >
+                              {section.name}
+                            </button>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>

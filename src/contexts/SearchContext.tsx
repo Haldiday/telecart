@@ -6,12 +6,12 @@ import React, {
   useRef,
   useCallback,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
 
-type SearchResultType = 'category' | 'subcategory' | 'brand';
+type SearchResultType = 'category' | 'subcategory' | 'brand' | 'section';
 
 export interface SearchResult {
   id: string;
@@ -72,6 +72,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
   }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const isMobile = useIsMobile();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
@@ -172,6 +173,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         { data: categories, error: categoriesError },
         { data: subcategories, error: subcategoriesError },
         { data: brandMatches, error: brandMatchesError },
+        { data: sections, error: sectionsError },
       ] = await Promise.all([
         supabase
           .from('categories')
@@ -187,8 +189,16 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           .limit(20),
         (supabase as any)
           .from('subcategory_brands')
-          .select('id, name, link, subcategory_id, subcategories(id, name, category_id), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
+          .select('id, name, link, subcategory_id, subcategories(id, name, category_id, custom_link, custom_link_type), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
           .ilike('name', `%${searchTerm}%`)
+          .order('sort_order')
+          .limit(20),
+        supabase
+          .from('page_sections')
+          .select('id, section_type, heading, name')
+          .eq('is_visible', true)
+          .in('section_type', ['cards', 'offers', 'ads_3col'])
+          .or(`heading.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`)
           .order('sort_order')
           .limit(20),
       ]);
@@ -265,6 +275,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             subcategoryId: brand.subcategory_id,
             categoryId: brand.subcategories?.category_id,
             subcategoryName: brand.subcategories?.name || '',
+            custom_link: brand.subcategories?.custom_link,
+            custom_link_type: brand.subcategories?.custom_link_type,
             link: brand.link,
             action_links: brand.action_links,
             action_link_1_text: brand.action_link_1_text,
@@ -281,6 +293,12 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             action_link_3_enabled: brand.action_link_3_enabled,
           }));
 
+          const sectionResults: SearchResult[] = (sections || []).map((section: any) => ({
+            id: section.id,
+            type: 'section' as const,
+            name: section.heading || section.name || 'Section',
+          }));
+
           categoryResults.forEach((result) => {
             addUniqueResult(result);
           });
@@ -289,7 +307,33 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
             addUniqueResult(result);
           });
 
-          const finalResults = [...processedResults];
+          sectionResults.forEach((result) => {
+            addUniqueResult(result);
+          });
+
+          const getBracketText = (result: SearchResult) => {
+            if (result.brandName) {
+              return result.brandName;
+            }
+            if (result.subcategoryName) {
+              return result.subcategoryName;
+            }
+            const match = result.name.match(/^(.+?)\s*\((.*)\)\s*$/);
+            return match ? match[2] : '';
+          };
+
+          const finalResults = [...processedResults].sort((a, b) => {
+            const bracketA = getBracketText(a).toLowerCase().trim();
+            const bracketB = getBracketText(b).toLowerCase().trim();
+            const bracketCompare = bracketA.localeCompare(bracketB);
+            if (bracketCompare !== 0) {
+              return bracketCompare;
+            }
+
+            const nameA = a.name.toLowerCase().trim();
+            const nameB = b.name.toLowerCase().trim();
+            return nameA.localeCompare(nameB);
+          });
           console.log('[SearchContext] finalResults:', finalResults);
           setResults(finalResults);
         }
@@ -312,12 +356,39 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [query]);
 
+  // Reset search state on route change
+  useEffect(() => {
+    setQuery('');
+    setResults([]);
+    setIsSearchActive(false);
+    setSelectedIndex(-1);
+    setSearchError(null);
+  }, [location.pathname]);
+
   // Cleanup effect for mountedRef
   useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
   }, []);
+
+  const navigateSubcategoryResult = useCallback(
+    (result: SearchResult) => {
+      if (result.custom_link) {
+        try {
+          const url = new URL(result.custom_link);
+          window.open(url.toString(), '_blank');
+        } catch {
+          if (result.categoryId) {
+            navigate(`/category/${result.categoryId}`);
+          }
+        }
+      } else if (result.categoryId) {
+        navigate(`/category/${result.categoryId}`);
+      }
+    },
+    [navigate]
+  );
 
   const handleResultClick = useCallback(
     (result: SearchResult) => {
@@ -327,40 +398,14 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       if (result.type === 'category') {
         navigate(`/category/${result.id}`);
       } else if (result.type === 'subcategory') {
-        if (result.custom_link) {
-          try {
-            const url = new URL(result.custom_link);
-            window.open(url.toString(), '_blank');
-          } catch {
-            // If custom_link is invalid, navigate to category page
-            if (result.categoryId) {
-              navigate(`/category/${result.categoryId}`);
-            }
-          }
-        } else if (result.categoryId) {
-          navigate(`/category/${result.categoryId}`);
-        }
+        navigateSubcategoryResult(result);
       } else if (result.type === 'brand') {
-        const actionLinks = getBrandActionLinks(result);
-        const hasActionLinks = actionLinks.length > 0;
-        
-        if (result.link) {
-          // If brand has a link, keep current behavior
-          if (actionLinks.length === 0) {
-            try {
-              const url = new URL(result.link);
-              window.open(url.toString(), '_blank');
-            } catch {
-              // Do nothing
-            }
-          }
-        } else if (hasActionLinks && result.categoryId && result.subcategoryId) {
-          // If brand has no link but has action links, navigate to action links page
-          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
-        }
+        navigateSubcategoryResult(result);
+      } else if (result.type === 'section') {
+        navigate(`/#section-${result.id}`);
       }
     },
-    [navigate]
+    [navigate, navigateSubcategoryResult]
   );
 
   const handleSearchButton = useCallback(() => {
