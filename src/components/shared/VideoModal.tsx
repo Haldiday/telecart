@@ -64,7 +64,7 @@ export function VideoModal({ isOpen, onClose, videoUrl }: VideoModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogOverlay className="bg-black/10" />
-      <DialogContent className="max-w-2xl w-[50vw] p-0 sm:p-0 overflow-visible bg-transparent border-none">
+      <DialogContent className="w-[90vw] max-w-[90vw] sm:w-[50vw] sm:max-w-2xl p-0 overflow-visible bg-transparent border-none">
         <button
           onClick={onClose}
           className="absolute -right-2 -top-2 z-20 rounded-full bg-red-600 p-3 text-white hover:bg-red-700 transition-colors shadow-lg"
