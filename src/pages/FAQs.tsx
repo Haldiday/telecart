@@ -150,6 +150,12 @@ export default function FAQs() {
                                   <AccordionTrigger
                                     showChevron={false}
                                     className="flex items-center justify-between gap-4 px-4 py-3 text-left text-base font-medium text-slate-800 hover:no-underline"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onKeyDownCapture={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.stopPropagation();
+                                      }
+                                    }}
                                   >
                                     <RichTextContent content={child.question} className="m-0" />
                                     {openSubId === child.id ? (
