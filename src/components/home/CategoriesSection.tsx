@@ -123,6 +123,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
     const channel = supabase
       .channel(`categories_live_${sectionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
@@ -134,6 +135,58 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.categorySection.bySectionId(sectionId) });
       })
+=======
+    let mounted = true;
+    
+    async function load() {
+      const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
+      if (!cats) return;
+      const categoryIds = cats.map((cat: any) => cat.id).filter(Boolean);
+      const { data: subs } = categoryIds.length > 0
+        ? await supabase.from('subcategories').select('*').in('category_id', categoryIds).order('sort_order')
+        : { data: [] };
+
+      const subcategoryIds = (subs || []).map((sub: any) => sub.id).filter(Boolean);
+      const { data: brands } = subcategoryIds.length > 0
+        ? await supabase.from('subcategory_brands' as any).select('*').in('subcategory_id', subcategoryIds).order('sort_order')
+        : { data: [] };
+      
+      const merged = cats
+        .filter((cat: any) => cat.is_visible !== false)
+        .map((category) => ({
+          ...category,
+          subcategories: (subs || [])
+            .filter((sub: any) => sub.category_id === category.id && sub.is_visible !== false)
+            .map((sub: any) => ({
+              ...sub,
+              brands: (brands || [])
+                .filter((b: any) => b.subcategory_id === sub.id && b.is_visible !== false)
+            })),
+        }));
+      if (mounted) setCategories(merged as unknown as Category[]);
+    }
+
+    async function loadSection() {
+      const { data } = await supabase
+        .from('page_sections')
+        .select('heading, name, show_heading, background_color')
+        .eq('id', sectionId)
+        .single();
+      
+      if (data && mounted) {
+        setHeading(data.heading || data.name || 'Explore companies by category');
+        setShowHeading(data.show_heading !== false);
+        setSectionBackgroundColor(data.background_color);
+      }
+    }
+
+    load();
+    loadSection();
+
+    const channel = supabase
+      .channel(`categories_live_${sectionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => load())
+>>>>>>> a30613a28d5280ea07e0b3f8552f0c12c06b833d
       .subscribe();
 
     const sectionsChannel = supabase

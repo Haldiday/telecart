@@ -114,7 +114,10 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
   const hasLinkOrActions = brand.link || hasActionLinks;
   const hasSeeAllLinks = actionLinks.length > 0;
   const displayedLinks = actionLinks;
+<<<<<<< HEAD
 
+=======
+>>>>>>> a30613a28d5280ea07e0b3f8552f0c12c06b833d
   return (
     <div className="border-b border-border/30 last:border-0">
       <div
