@@ -74,19 +74,21 @@ export default function CategoryDetail() {
       const [
         { data: categoryData },
         { data: subcategoryData },
-        { data: brandsData },
       ] = await Promise.all([
         supabase.from('categories').select('*').eq('id', id).single(),
         supabase.from('subcategories').select('*').eq('category_id', id).order('sort_order'),
-        supabase.from('subcategory_brands').select('*'),
       ]);
+
+      const visibleSubcategories = (subcategoryData || []).filter((sub: any) => sub.is_visible !== false);
+      const { data: brandsData } = visibleSubcategories.length > 0
+        ? await supabase.from('subcategory_brands').select('*').in('subcategory_id', visibleSubcategories.map((sub: any) => sub.id)).order('sort_order')
+        : { data: [] };
 
       if (!mounted) return;
 
       if (categoryData) {
         setCategory(categoryData);
       }
-      const visibleSubcategories = (subcategoryData || []).filter((sub: any) => sub.is_visible !== false);
       if (subcategoryData) setSubcategories(visibleSubcategories);
       
       // Group brands by subcategory
@@ -110,7 +112,6 @@ export default function CategoryDetail() {
       .channel(`category_detail_${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `id=eq.${id}` }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories', filter: `category_id=eq.${id}` }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, loadData)
       .subscribe();
 
     return () => {

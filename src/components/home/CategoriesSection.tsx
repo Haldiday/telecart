@@ -96,8 +96,15 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
     async function load() {
       const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
       if (!cats) return;
-      const { data: subs } = await supabase.from('subcategories').select('*').order('sort_order');
-      const { data: brands } = await supabase.from('subcategory_brands' as any).select('*').order('sort_order');
+      const categoryIds = cats.map((cat: any) => cat.id).filter(Boolean);
+      const { data: subs } = categoryIds.length > 0
+        ? await supabase.from('subcategories').select('*').in('category_id', categoryIds).order('sort_order')
+        : { data: [] };
+
+      const subcategoryIds = (subs || []).map((sub: any) => sub.id).filter(Boolean);
+      const { data: brands } = subcategoryIds.length > 0
+        ? await supabase.from('subcategory_brands' as any).select('*').in('subcategory_id', subcategoryIds).order('sort_order')
+        : { data: [] };
       
       const merged = cats
         .filter((cat: any) => cat.is_visible !== false)
@@ -134,8 +141,6 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
     const channel = supabase
       .channel(`categories_live_${sectionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => load())
       .subscribe();
 
     const sectionsChannel = supabase
