@@ -12,6 +12,8 @@ import OffersSection from '@/components/home/OffersSection';
 import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface PageSection {
   id: string;
@@ -43,14 +45,34 @@ const SECTION_MAP: Record<string, React.FC<any>> = {
   ads_3col: Ads3ColSection,
 };
 
+async function fetchHomePageSections() {
+  const { data, error } = await supabase.from('page_sections').select('*').order('sort_order');
+  if (error) throw error;
+  return data as PageSection[];
+}
+
+async function fetchHeroSettings() {
+  const { data, error } = await supabase.from('hero_settings').select('*').limit(1).single();
+  if (error) throw error;
+  return data as HeroSettings;
+}
+
 export default function Index() {
-  const [sections, setSections] = useState<PageSection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [heroSettings, setHeroSettings] = useState<HeroSettings | null>(null);
+  const queryClient = useQueryClient();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const heroSectionRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const { showMobileStickySearch } = useSearch();
+
+  const sectionsQuery = useQuery({
+    queryKey: queryKeys.pageSections.home,
+    queryFn: fetchHomePageSections,
+  });
+
+  const heroSettingsQuery = useQuery({
+    queryKey: queryKeys.heroSettings.all,
+    queryFn: fetchHeroSettings,
+  });
 
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
@@ -90,29 +112,6 @@ export default function Index() {
   };
 
   useEffect(() => {
-    let mounted = true;
-    
-    // Initial fetch
-    const loadData = async () => {
-      // Fetch both sections and hero settings in parallel
-      const [sectionsResult, heroResult] = await Promise.all([
-        supabase.from('page_sections').select('*').order('sort_order'),
-        supabase.from('hero_settings').select('*').limit(1).single()
-      ]);
-      
-      if (mounted) {
-        if (sectionsResult.data) {
-          setSections(sectionsResult.data as PageSection[]);
-        }
-        if (heroResult.data) {
-          setHeroSettings(heroResult.data as HeroSettings);
-        }
-        setIsLoading(false);
-      }
-    };
-    
-    loadData();
-
     // Subscribe to real-time changes
     const subscription = supabase
       .channel('page_sections_homepage')
@@ -121,7 +120,7 @@ export default function Index() {
         { event: '*', schema: 'public', table: 'page_sections' },
         () => {
           // Refetch sections when any change happens
-          loadData();
+          queryClient.invalidateQueries({ queryKey: queryKeys.pageSections.home });
         }
       )
       .on(
@@ -129,16 +128,19 @@ export default function Index() {
         { event: '*', schema: 'public', table: 'hero_settings' },
         () => {
           // Refetch hero settings when any change happens
-          loadData();
+          queryClient.invalidateQueries({ queryKey: queryKeys.heroSettings.all });
         }
       )
       .subscribe();
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
+
+  const isLoading = sectionsQuery.isLoading || heroSettingsQuery.isLoading;
+  const sections = sectionsQuery.data || [];
+  const heroSettings = heroSettingsQuery.data || null;
 
   useEffect(() => {
     // Only scroll after sections are loaded

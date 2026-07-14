@@ -4,6 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import BrandActionLinks from '@/components/shared/BrandActionLinks';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCategorySection } from '@/hooks/useCategorySection';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Brand {
   id: string;
@@ -48,18 +51,47 @@ interface CategoriesSectionProps {
   backgroundColor?: string | null;
 }
 
+interface PageSectionData {
+  heading?: string | null;
+  name?: string | null;
+  show_heading?: boolean | null;
+  background_color?: string | null;
+}
+
+async function fetchPageSectionById(sectionId: string): Promise<PageSectionData | null> {
+  const { data, error } = await supabase
+    .from('page_sections')
+    .select('heading, name, show_heading, background_color')
+    .eq('id', sectionId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching page section:', error);
+    return null;
+  }
+  
+  return data;
+}
+
 export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor }: CategoriesSectionProps) {
+  const queryClient = useQueryClient();
   const location = useLocation();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { data: categories = [] } = useCategorySection(sectionId);
+  const { data: sectionData } = useQuery({
+    queryKey: queryKeys.pageSection.byId(sectionId),
+    queryFn: () => fetchPageSectionById(sectionId),
+    enabled: !!sectionId,
+  });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
   const [subcategoryExpanded, setSubcategoryExpanded] = useState<Record<string, boolean>>({});
   const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
-  const [heading, setHeading] = useState('Explore companies by category');
-  const [showHeading, setShowHeading] = useState(true);
-  const [sectionBackgroundColor, setSectionBackgroundColor] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const accordionRef = useRef<HTMLDivElement | null>(null);
+
+  const heading = sectionData?.heading || sectionData?.name || 'Explore companies by category';
+  const showHeading = sectionData?.show_heading !== false;
+  const sectionBackgroundColor = sectionData?.background_color || null;
 
   // Reset all accordion states when location changes
   useEffect(() => {
@@ -91,64 +123,31 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    
-    async function load() {
-      const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
-      if (!cats) return;
-      const { data: subs } = await supabase.from('subcategories').select('*').order('sort_order');
-      const { data: brands } = await supabase.from('subcategory_brands' as any).select('*').order('sort_order');
-      
-      const merged = cats
-        .filter((cat: any) => cat.is_visible !== false)
-        .map((category) => ({
-          ...category,
-          subcategories: (subs || [])
-            .filter((sub: any) => sub.category_id === category.id && sub.is_visible !== false)
-            .map((sub: any) => ({
-              ...sub,
-              brands: (brands || [])
-                .filter((b: any) => b.subcategory_id === sub.id && b.is_visible !== false)
-            })),
-        }));
-      if (mounted) setCategories(merged as unknown as Category[]);
-    }
-
-    async function loadSection() {
-      const { data } = await supabase
-        .from('page_sections')
-        .select('heading, name, show_heading, background_color')
-        .eq('id', sectionId)
-        .single();
-      
-      if (data && mounted) {
-        setHeading(data.heading || data.name || 'Explore companies by category');
-        setShowHeading(data.show_heading !== false);
-        setSectionBackgroundColor(data.background_color);
-      }
-    }
-
-    load();
-    loadSection();
-
     const channel = supabase
       .channel(`categories_live_${sectionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.categorySection.bySectionId(sectionId) });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategories' }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.categorySection.bySectionId(sectionId) });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.categorySection.bySectionId(sectionId) });
+      })
       .subscribe();
 
     const sectionsChannel = supabase
       .channel(`page_sections_cat_${sectionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections', filter: `id=eq.${sectionId}` }, () => loadSection())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections', filter: `id=eq.${sectionId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.pageSection.byId(sectionId) });
+      })
       .subscribe();
 
     return () => {
-      mounted = false;
       channel.unsubscribe();
       sectionsChannel.unsubscribe();
     };
-  }, [sectionId]);
+  }, [sectionId, queryClient]);
 
   if (categories.length === 0) return null;
 

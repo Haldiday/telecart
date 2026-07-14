@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -36,8 +36,7 @@ import Ads3ColSeeAllPage from "./pages/Ads3ColSeeAllPage";
 import BrandActionLinksPage from "./pages/BrandActionLinksPage";
 import BrandActionLinksSeeAllPage from "./pages/BrandActionLinksSeeAllPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
-
-const queryClient = new QueryClient();
+import { queryClient } from "./lib/queryClient";
 
 const router = createBrowserRouter(
   [

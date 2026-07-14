@@ -8,6 +8,8 @@ import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { VideoModal } from '@/components/shared/VideoModal';
 import { isVideoUrl } from '@/lib/utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Card {
   id: string;
@@ -34,6 +36,39 @@ interface FeaturedCardsProps {
   headingClassName?: string;
 }
 
+async function fetchFeaturedCards(sectionId: string, cardsTable: string) {
+  const db = supabase as any;
+  const { data } = await db
+    .from(cardsTable)
+    .select('*')
+    .eq('section_id', sectionId)
+    .order('sort_order');
+  
+  return (data as any[])
+    .filter(card => card.is_visible !== false)
+    .map((card) => ({
+      ...card,
+      link: card.link ?? null,
+      is_fixed: card.is_fixed ?? false,
+      show_border: card.show_border ?? false,
+      border_color: card.border_color ?? null,
+      background_color: card.background_color ?? null,
+      is_visible: card.is_visible ?? true,
+      open_in_new_tab: card.open_in_new_tab ?? false,
+    }));
+}
+
+async function fetchSectionData(sectionId: string, sectionTable: string) {
+  const db = supabase as any;
+  const { data } = await db
+    .from(sectionTable)
+    .select('heading, name, show_heading')
+    .eq('id', sectionId)
+    .single();
+  
+  return data as any;
+}
+
 export default function FeaturedCards({
   sectionId,
   sectionTable = 'page_sections',
@@ -43,11 +78,19 @@ export default function FeaturedCards({
   backgroundColor,
   headingClassName,
 }: FeaturedCardsProps) {
-  const db = supabase as any;
-  const [cards, setCards] = useState<Card[]>([]);
-  const [heading, setHeading] = useState('Featured Companies');
-  const [showHeading, setShowHeading] = useState(true);
-  const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const { data: cards = [] } = useQuery({
+    queryKey: queryKeys.featuredCards.bySectionId(sectionId, cardsTable),
+    queryFn: () => fetchFeaturedCards(sectionId, cardsTable),
+  });
+  const { data: sectionData } = useQuery({
+    queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
+    queryFn: () => fetchSectionData(sectionId, sectionTable),
+  });
+
+  const heading = sectionData?.heading || sectionData?.name || 'Featured Companies';
+  const showHeading = sectionData?.show_heading !== false;
+
   const [isTablet, setIsTablet] = useState(false);
   const location = useLocation();
   const isSeeAllPage = location.pathname.startsWith("/see-all/featured-cards");
@@ -62,6 +105,7 @@ export default function FeaturedCards({
     return () => window.removeEventListener('resize', checkTablet);
   }, []);
 
+  const isMobile = useIsMobile();
   const visibleCount = isMobile ? 1 : isTablet ? 2 : 3;
   const cardsToDisplay = useMemo(() => {
     const fixedCards = cards.filter(card => card.is_fixed);
@@ -133,54 +177,14 @@ export default function FeaturedCards({
   } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   useEffect(() => {
-    let mounted = true;
-    
-    const loadCards = () => {
-      db
-      .from(cardsTable)
-      .select('*')
-      .eq('section_id', sectionId)
-      .order('sort_order')
-      .then(({ data }) => {
-        if (data && mounted) {
-          setCards((data as any[])
-            .filter(card => card.is_visible !== false)
-            .map((card) => ({
-              ...card,
-              link: card.link ?? null,
-              is_fixed: card.is_fixed ?? false,
-              show_border: card.show_border ?? false,
-              border_color: card.border_color ?? null,
-              background_color: card.background_color ?? null,
-              is_visible: card.is_visible ?? true,
-              open_in_new_tab: card.open_in_new_tab ?? false,
-            })));
-        }
-      });
-    };
-
-    const loadSection = async () => {
-      const { data } = await db
-        .from(sectionTable)
-        .select('heading, name, show_heading')
-        .eq('id', sectionId)
-        .single();
-      
-      if (data && mounted) {
-        setHeading(data.heading || data.name || 'Featured Companies');
-        setShowHeading(data.show_heading !== false);
-      }
-    };
-
-    loadCards();
-    loadSection();
-
     const cardsChannel = supabase
       .channel(`featured_cards_${sectionId}_live`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: cardsTable },
-        loadCards
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.featuredCards.bySectionId(sectionId, cardsTable) });
+        }
       )
       .subscribe();
 
@@ -189,16 +193,17 @@ export default function FeaturedCards({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: sectionTable },
-        loadSection
+        () => {
+          queryClient.invalidateQueries({ queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const });
+        }
       )
       .subscribe();
 
     return () => {
-      mounted = false;
       cardsChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };
-  }, [cardsTable, db, sectionId, sectionTable]);
+  }, [cardsTable, sectionId, sectionTable, queryClient]);
 
   const displayCards = useMemo(
     () => needsCarousel ? [...cardsToDisplay, ...cardsToDisplay.slice(0, duplicatedCount)] : cardsToDisplay,

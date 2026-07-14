@@ -5,6 +5,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Ad {
   id: string;
@@ -28,6 +30,28 @@ interface Ads2ColSectionProps {
   headingClassName?: string;
 }
 
+async function fetchAds(sectionId: string, adsTable: string) {
+  const db = supabase as any;
+  const { data } = await db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order');
+  return (data as any[])
+    .filter(ad => ad.is_visible !== false)
+    .map((ad) => ({
+      ...ad,
+      is_fixed: ad.is_fixed ?? false,
+      show_border: ad.show_border ?? false,
+      border_color: ad.border_color ?? null,
+      background_color: ad.background_color ?? null,
+      show_image: ad.show_image ?? true,
+      is_visible: ad.is_visible ?? true,
+    }));
+}
+
+async function fetchSectionData(sectionId: string, sectionTable: string) {
+  const db = supabase as any;
+  const { data } = await db.from(sectionTable).select('heading, name, show_heading').eq('id', sectionId).single();
+  return data as any;
+}
+
 export default function Ads2ColSection({
   sectionId,
   sectionTable = 'page_sections',
@@ -37,10 +61,19 @@ export default function Ads2ColSection({
   backgroundColor,
   headingClassName,
 }: Ads2ColSectionProps) {
-  const db = supabase as any;
-  const [ads, setAds] = useState<Ad[]>([]);
-  const [heading, setHeading] = useState('2 Column Ads');
-  const [showHeading, setShowHeading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: ads = [] } = useQuery({
+    queryKey: queryKeys.ads.bySectionId(sectionId, '2col'),
+    queryFn: () => fetchAds(sectionId, adsTable),
+  });
+  const { data: sectionData } = useQuery({
+    queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
+    queryFn: () => fetchSectionData(sectionId, sectionTable),
+  });
+
+  const heading = sectionData?.heading || sectionData?.name || '2 Column Ads';
+  const showHeading = sectionData?.show_heading !== false;
+
   const isMobile = useIsMobile();
   const visibleCount = isMobile ? 1 : 2;
   const visibleAds = useMemo(
@@ -102,58 +135,25 @@ export default function Ads2ColSection({
   } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   useEffect(() => {
-    let mounted = true;
-    
-    const loadAds = () => {
-      db.from(adsTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }) => {
-        if (data && mounted) {
-          setAds((data as any[])
-            .filter(ad => ad.is_visible !== false)
-            .map((ad) => ({
-              ...ad,
-              is_fixed: ad.is_fixed ?? false,
-              show_border: ad.show_border ?? false,
-              border_color: ad.border_color ?? null,
-              background_color: ad.background_color ?? null,
-              show_image: ad.show_image ?? true,
-              is_visible: ad.is_visible ?? true,
-            })));
-        }
-      });
-    };
-
-    const loadSection = async () => {
-      const { data } = await db
-        .from(sectionTable)
-        .select('heading, name, show_heading')
-        .eq('id', sectionId)
-        .single();
-      
-      if (data && mounted) {
-        setHeading(data.heading || data.name || '2 Column Ads');
-        setShowHeading(data.show_heading !== false);
-      }
-    };
-
-    loadAds();
-    loadSection();
-
     const adsChannel = supabase
       .channel(`ads_2col_${sectionId}_live`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: adsTable }, loadAds)
+      .on('postgres_changes', { event: '*', schema: 'public', table: adsTable }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.ads.bySectionId(sectionId, '2col') });
+      })
       .subscribe();
 
     const sectionsChannel = supabase
       .channel(`page_sections_2col_${sectionId}_live`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: sectionTable }, loadSection)
+      .on('postgres_changes', { event: '*', schema: 'public', table: sectionTable }, () => {
+        queryClient.invalidateQueries({ queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const });
+      })
       .subscribe();
 
     return () => {
-      mounted = false;
       adsChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };
-  }, [adsTable, db, sectionId, sectionTable]);
+  }, [adsTable, sectionId, sectionTable, queryClient]);
 
   const displayAds = useMemo(
     () => !fixedMode && needsCarousel ? [...adsToDisplay, ...adsToDisplay.slice(0, duplicatedCount)] : adsToDisplay,

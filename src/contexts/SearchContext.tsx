@@ -6,12 +6,13 @@ import React, {
   useRef,
   useCallback,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
+import { buildHierarchicalSearchResults } from '@/lib/searchHierarchy';
 
-type SearchResultType = 'category' | 'subcategory' | 'brand';
+type SearchResultType = 'category' | 'subcategory' | 'brand' | 'brand_action_link' | 'section';
 
 export interface SearchResult {
   id: string;
@@ -72,6 +73,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
   }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const isMobile = useIsMobile();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
@@ -172,6 +174,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         { data: categories, error: categoriesError },
         { data: subcategories, error: subcategoriesError },
         { data: brandMatches, error: brandMatchesError },
+        { data: sections, error: sectionsError },
       ] = await Promise.all([
         supabase
           .from('categories')
@@ -187,8 +190,16 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           .limit(20),
         (supabase as any)
           .from('subcategory_brands')
-          .select('id, name, link, subcategory_id, subcategories(id, name, category_id), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
+          .select('id, name, link, subcategory_id, subcategories(id, name, category_id, custom_link, custom_link_type), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
           .ilike('name', `%${searchTerm}%`)
+          .order('sort_order')
+          .limit(20),
+        supabase
+          .from('page_sections')
+          .select('id, section_type, heading, name')
+          .eq('is_visible', true)
+          .in('section_type', ['cards', 'offers', 'ads_3col'])
+          .or(`heading.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`)
           .order('sort_order')
           .limit(20),
       ]);
@@ -207,89 +218,56 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
           setSearchError('Unable to search right now.');
           setResults([]);
         } else {
-          const categoryResults: SearchResult[] = (categories || []).map((category) => ({
-            id: category.id,
-            type: 'category' as const,
-            name: category.name,
+          const mappedResults = buildHierarchicalSearchResults({
+            query: searchTerm,
+            categories: (categories || []).map((category: any) => ({
+              id: category.id,
+              name: category.name,
+            })),
+            subcategories: (subcategories || []).map((subcategory: any) => ({
+              id: subcategory.id,
+              category_id: subcategory.category_id,
+              name: subcategory.name,
+              custom_link: subcategory.custom_link,
+              custom_link_type: subcategory.custom_link_type,
+              subcategory_brands: (subcategory.subcategory_brands || []).map((brand: any) => ({
+                id: brand.id,
+                name: brand.name,
+                link: brand.link,
+              })),
+            })),
+            brands: (brandMatches || []).map((brand: any) => ({
+              id: brand.id,
+              name: brand.name,
+              subcategory_id: brand.subcategory_id,
+              link: brand.link,
+              subcategories: brand.subcategories,
+              action_links: brand.action_links,
+              action_link_1_text: brand.action_link_1_text,
+              action_link_1_url: brand.action_link_1_url,
+              action_link_1_new_tab: brand.action_link_1_new_tab,
+              action_link_1_enabled: brand.action_link_1_enabled,
+              action_link_2_text: brand.action_link_2_text,
+              action_link_2_url: brand.action_link_2_url,
+              action_link_2_new_tab: brand.action_link_2_new_tab,
+              action_link_2_enabled: brand.action_link_2_enabled,
+              action_link_3_text: brand.action_link_3_text,
+              action_link_3_url: brand.action_link_3_url,
+              action_link_3_new_tab: brand.action_link_3_new_tab,
+              action_link_3_enabled: brand.action_link_3_enabled,
+            })),
+            sections: (sections || []).map((section: any) => ({
+              id: section.id,
+              heading: section.heading,
+              name: section.name,
+            })),
+          });
+
+          const finalResults: SearchResult[] = mappedResults.map((result) => ({
+            ...result,
+            type: result.type as SearchResultType,
           }));
 
-          const processedResults: SearchResult[] = [];
-          const seenResults = new Set<string>();
-
-          const addUniqueResult = (result: SearchResult) => {
-            // For subcategory results with a brand, include the brand name in the key to avoid deduping
-            let key: string;
-            if (result.type === 'subcategory' && result.brandName) {
-              key = `${result.type}:${result.id}:${result.brandName}`;
-            } else {
-              key = `${result.type}:${result.id}`;
-            }
-            if (!seenResults.has(key)) {
-              seenResults.add(key);
-              processedResults.push(result);
-            }
-          };
-
-          (subcategories || []).forEach((subcategory) => {
-            const brands = subcategory.subcategory_brands || [];
-            if (brands.length > 0) {
-              // For subcategories with brands: create one subcategory result per brand
-              brands.forEach((brand: any) => {
-                addUniqueResult({
-                  id: subcategory.id, // Use subcategory's id so clicking navigates to subcategory page
-                  type: 'subcategory' as const,
-                  name: `${subcategory.name} (${brand.name})`,
-                  categoryId: subcategory.category_id,
-                  custom_link: subcategory.custom_link,
-                  custom_link_type: subcategory.custom_link_type,
-                  brandName: brand.name,
-                });
-              });
-            } else {
-              // For subcategories with no brands: just add the subcategory
-              addUniqueResult({
-                id: subcategory.id,
-                type: 'subcategory' as const,
-                name: subcategory.name,
-                categoryId: subcategory.category_id,
-                custom_link: subcategory.custom_link,
-                custom_link_type: subcategory.custom_link_type,
-              });
-            }
-          });
-
-          const brandResults: SearchResult[] = (brandMatches || []).map((brand: any) => ({
-            id: brand.id,
-            type: 'brand' as const,
-            name: brand.name,
-            subcategoryId: brand.subcategory_id,
-            categoryId: brand.subcategories?.category_id,
-            subcategoryName: brand.subcategories?.name || '',
-            link: brand.link,
-            action_links: brand.action_links,
-            action_link_1_text: brand.action_link_1_text,
-            action_link_1_url: brand.action_link_1_url,
-            action_link_1_new_tab: brand.action_link_1_new_tab,
-            action_link_1_enabled: brand.action_link_1_enabled,
-            action_link_2_text: brand.action_link_2_text,
-            action_link_2_url: brand.action_link_2_url,
-            action_link_2_new_tab: brand.action_link_2_new_tab,
-            action_link_2_enabled: brand.action_link_2_enabled,
-            action_link_3_text: brand.action_link_3_text,
-            action_link_3_url: brand.action_link_3_url,
-            action_link_3_new_tab: brand.action_link_3_new_tab,
-            action_link_3_enabled: brand.action_link_3_enabled,
-          }));
-
-          categoryResults.forEach((result) => {
-            addUniqueResult(result);
-          });
-          
-          brandResults.forEach((result) => {
-            addUniqueResult(result);
-          });
-
-          const finalResults = [...processedResults];
           console.log('[SearchContext] finalResults:', finalResults);
           setResults(finalResults);
         }
@@ -312,12 +290,59 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [query]);
 
+  // Reset search state on route change
+  useEffect(() => {
+    setQuery('');
+    setResults([]);
+    setIsSearchActive(false);
+    setSelectedIndex(-1);
+    setSearchError(null);
+  }, [location.pathname]);
+
   // Cleanup effect for mountedRef
   useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
   }, []);
+
+  const openSearchLink = useCallback(
+    (value: string | null | undefined, fallbackPath?: string) => {
+      if (!value) {
+        if (fallbackPath) {
+          navigate(fallbackPath);
+        }
+        return;
+      }
+
+      const normalizedValue = value.trim();
+      if (!normalizedValue) {
+        if (fallbackPath) {
+          navigate(fallbackPath);
+        }
+        return;
+      }
+
+      if (/^(mailto|tel):/i.test(normalizedValue)) {
+        window.location.href = normalizedValue;
+        return;
+      }
+
+      try {
+        const url = new URL(normalizedValue);
+        window.open(url.toString(), '_blank', 'noopener,noreferrer');
+      } catch {
+        if (/^https?:\/\//i.test(normalizedValue) || normalizedValue.startsWith('www.')) {
+          window.open(normalizedValue.startsWith('http') ? normalizedValue : `https://${normalizedValue}`, '_blank', 'noopener,noreferrer');
+        } else if (normalizedValue.startsWith('/') || normalizedValue.startsWith('#')) {
+          navigate(normalizedValue);
+        } else if (fallbackPath) {
+          navigate(fallbackPath);
+        }
+      }
+    },
+    [navigate]
+  );
 
   const handleResultClick = useCallback(
     (result: SearchResult) => {
@@ -328,39 +353,36 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         navigate(`/category/${result.id}`);
       } else if (result.type === 'subcategory') {
         if (result.custom_link) {
-          try {
-            const url = new URL(result.custom_link);
-            window.open(url.toString(), '_blank');
-          } catch {
-            // If custom_link is invalid, navigate to category page
-            if (result.categoryId) {
-              navigate(`/category/${result.categoryId}`);
-            }
-          }
+          openSearchLink(result.custom_link, result.categoryId ? `/category/${result.categoryId}/subcategory/${result.id}/brands` : undefined);
         } else if (result.categoryId) {
-          navigate(`/category/${result.categoryId}`);
+          navigate(`/category/${result.categoryId}/subcategory/${result.id}/brands`);
         }
       } else if (result.type === 'brand') {
-        const actionLinks = getBrandActionLinks(result);
-        const hasActionLinks = actionLinks.length > 0;
-        
-        if (result.link) {
-          // If brand has a link, keep current behavior
-          if (actionLinks.length === 0) {
-            try {
-              const url = new URL(result.link);
-              window.open(url.toString(), '_blank');
-            } catch {
-              // Do nothing
-            }
-          }
-        } else if (hasActionLinks && result.categoryId && result.subcategoryId) {
-          // If brand has no link but has action links, navigate to action links page
+        const hasActionLinks = Boolean(
+          result.action_links?.filter((link) => Boolean(link?.text || link?.url)).length ||
+          result.action_link_1_url ||
+          result.action_link_2_url ||
+          result.action_link_3_url
+        );
+
+        if (hasActionLinks && result.categoryId && result.subcategoryId) {
+          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
+        } else if (result.link) {
+          openSearchLink(result.link);
+        } else if (result.categoryId && result.subcategoryId) {
           navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
         }
+      } else if (result.type === 'brand_action_link') {
+        if (result.link) {
+          openSearchLink(result.link);
+        } else if (result.categoryId && result.subcategoryId) {
+          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id.split('-action-')[0]}/action-links`);
+        }
+      } else if (result.type === 'section') {
+        navigate(`/#section-${result.id}`);
       }
     },
-    [navigate]
+    [navigate, openSearchLink]
   );
 
   const handleSearchButton = useCallback(() => {

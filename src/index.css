@@ -46,6 +46,18 @@
         background-color: #f1f5f9;
         color: #17313B;
     }
+    .mobile-mega-menu-link {
+        font-family: 'Roboto', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 24px;
+        color: rgb(23, 49, 59);
+        @apply transition-all rounded-lg py-2.5 px-4;
+    }
+    .mobile-mega-menu-link:hover {
+        background-color: #f1f5f9;
+        color: #17313B;
+    }
     .mega-menu-link::before {
         content: '';
         position: absolute;

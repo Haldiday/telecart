@@ -112,8 +112,8 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
   const hasActionLinks = actionLinks.length > 0;
   const isExpandable = hasActionLinks && typeof onToggle === 'function';
   const hasLinkOrActions = brand.link || hasActionLinks;
-  const hasSeeAllLinks = actionLinks.length > 5;
-  const displayedLinks = hasSeeAllLinks ? actionLinks.slice(0, 5) : actionLinks;
+  const hasSeeAllLinks = actionLinks.length > 0;
+  const displayedLinks = actionLinks;
 
   return (
     <div className="border-b border-border/30 last:border-0">
@@ -182,7 +182,7 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
                 className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
                 onClick={(e) => e.stopPropagation()}
               >
-                See all →
+                Explore →
               </Link>
             )}
           </div>

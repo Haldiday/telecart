@@ -9,6 +9,8 @@ import SubcategorySectionShell from './SubcategorySectionShell';
 import RichTextContent from '@/components/shared/RichTextContent';
 import { VideoModal } from '@/components/shared/VideoModal';
 import { isVideoUrl } from '@/lib/utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Offer {
   id: string;
@@ -35,6 +37,33 @@ interface OffersSectionProps {
   isSubcategory?: boolean;
 }
 
+async function fetchOffers(sectionId: string, offersTable: string) {
+  const db = supabase as any;
+  const { data } = await db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order');
+  return (data as any[])
+    .filter(offer => offer.is_visible !== false)
+    .map((offer) => ({
+      ...offer,
+      is_fixed: offer.is_fixed ?? false,
+      show_border: offer.show_border ?? false,
+      border_color: offer.border_color ?? null,
+      background_color: offer.background_color ?? null,
+      show_image: offer.show_image ?? true,
+      is_visible: offer.is_visible ?? true,
+      open_in_new_tab: offer.open_in_new_tab ?? false,
+    }));
+}
+
+async function fetchSectionData(sectionId: string, sectionTable: string) {
+  const db = supabase as any;
+  const { data } = await db
+    .from(sectionTable)
+    .select('heading, name, show_heading')
+    .eq('id', sectionId)
+    .single();
+  return data as any;
+}
+
 export default function OffersSection({
   sectionId,
   sectionTable = 'page_sections',
@@ -44,10 +73,19 @@ export default function OffersSection({
   headingClassName,
   isSubcategory = false,
 }: OffersSectionProps) {
-  const db = supabase as any;
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [heading, setHeading] = useState('Offers & Discounts');
-  const [showHeading, setShowHeading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: offers = [] } = useQuery({
+    queryKey: queryKeys.offers.bySectionId(sectionId),
+    queryFn: () => fetchOffers(sectionId, offersTable),
+  });
+  const { data: sectionData } = useQuery({
+    queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
+    queryFn: () => fetchSectionData(sectionId, sectionTable),
+  });
+  
+  const heading = sectionData?.heading || sectionData?.name || 'Offers & Discounts';
+  const showHeading = sectionData?.show_heading !== false;
+
   const isMobile = useIsMobile();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
@@ -139,57 +177,25 @@ export default function OffersSection({
   } = useFixedCarouselTouch(fixedPageIndex, totalFixedPages, setFixedPageIndex);
 
   useEffect(() => {
-    let mounted = true;
-    
-    const loadOffers = () => {
-      db.from(offersTable).select('*').eq('section_id', sectionId).order('sort_order').then(({ data }: { data: Offer[] | null }) => {
-        if (data && mounted) setOffers((data as any[])
-            .filter(offer => offer.is_visible !== false)
-            .map((offer) => ({
-              ...offer,
-              is_fixed: offer.is_fixed ?? false,
-              show_border: offer.show_border ?? false,
-              border_color: offer.border_color ?? null,
-              background_color: offer.background_color ?? null,
-              show_image: offer.show_image ?? true,
-              is_visible: offer.is_visible ?? true,
-              open_in_new_tab: offer.open_in_new_tab ?? false,
-            })));
-      });
-    };
-
-    const loadSection = async () => {
-      const { data } = await db
-        .from(sectionTable)
-        .select('heading, name, show_heading')
-        .eq('id', sectionId)
-        .single();
-      
-      if (data && mounted) {
-        setHeading(data.heading || data.name || 'Offers & Discounts');
-        setShowHeading(data.show_heading !== false);
-      }
-    };
-
-    loadOffers();
-    loadSection();
-
     const offersChannel = supabase
       .channel(`offers_${sectionId}_live`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: offersTable }, loadOffers)
+      .on('postgres_changes', { event: '*', schema: 'public', table: offersTable }, () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.offers.bySectionId(sectionId) });
+      })
       .subscribe();
 
     const sectionsChannel = supabase
       .channel(`page_sections_offers_${sectionId}_live`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: sectionTable }, loadSection)
+      .on('postgres_changes', { event: '*', schema: 'public', table: sectionTable }, () => {
+        queryClient.invalidateQueries({ queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const });
+      })
       .subscribe();
 
     return () => {
-      mounted = false;
       offersChannel.unsubscribe();
       sectionsChannel.unsubscribe();
     };
-  }, [db, offersTable, sectionId, sectionTable]);
+  }, [offersTable, sectionId, sectionTable, queryClient]);
 
   const displayOffers = useMemo(
     () => !fixedMode && needsCarousel ? [...visibleOffers, ...visibleOffers.slice(0, duplicatedCount)] : visibleOffers,
