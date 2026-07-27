@@ -1,0 +1,16 @@
+name = "final-telecart"
+main = "functions"
+compatibility_date = "2026-07-27"
+type = "javascript"
+
+# Set your Cloudflare account and project values before deploying.
+# If you use Cloudflare Pages, this file helps local tooling and publish commands.
+account_id = ""
+project_name = "final-telecart"
+
+[build]
+command = "npm run build"
+upload = { format = "service-worker" }
+
+[site]
+bucket = "./dist"

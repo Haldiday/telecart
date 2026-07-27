@@ -1,10 +1,10 @@
 import axios from 'axios';
 import type { AuthResponse, SendOTPRequest, VerifyOTPRequest, User } from '../types/auth';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiBaseUrl = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
-  baseURL: `${apiUrl}/api`,
+  baseURL: apiBaseUrl ? `${apiBaseUrl}/api` : '/api',
   headers: {
     'Content-Type': 'application/json',
   },
