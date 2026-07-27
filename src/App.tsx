@@ -1,11 +1,11 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useEffect } from "react";
-import { SearchProvider } from "./contexts/SearchContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
@@ -37,6 +37,10 @@ import BrandActionLinksPage from "./pages/BrandActionLinksPage";
 import BrandActionLinksSeeAllPage from "./pages/BrandActionLinksSeeAllPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
 import { queryClient } from "./lib/queryClient";
+import { Login } from "./pages/Login";
+import { VerifyOTP } from "./pages/VerifyOTP";
+import { Dashboard } from "./pages/Dashboard";
+import { Account } from "./pages/Account";
 
 const router = createBrowserRouter(
   [
@@ -71,6 +75,24 @@ const router = createBrowserRouter(
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
         { path: "/admin/login", element: <AdminLogin /> },
         { path: "/admin", element: <AdminDashboard /> },
+        { path: "/login", element: <Login /> },
+        { path: "/verify-otp", element: <VerifyOTP /> },
+        { 
+          path: "/dashboard", 
+          element: (
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          ) 
+        },
+        { 
+          path: "/profile/account", 
+          element: (
+            <ProtectedRoute>
+              <Account />
+            </ProtectedRoute>
+          ) 
+        },
         { path: "*", element: <NotFound /> },
       ]
     }

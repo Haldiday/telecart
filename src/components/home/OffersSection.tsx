@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,6 +11,7 @@ import { VideoModal } from '@/components/shared/VideoModal';
 import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Offer {
   id: string;
@@ -87,6 +88,7 @@ export default function OffersSection({
   const showHeading = sectionData?.show_heading !== false;
 
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
   const isSeeAllPage = location.pathname.startsWith("/see-all/offers");
@@ -99,10 +101,21 @@ export default function OffersSection({
     if (isVideoUrl(offer.link)) {
       setVideoModal({ isOpen: true, url: offer.link });
     } else {
-      if (offer.open_in_new_tab) {
-        window.open(offer.link, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = offer.link;
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: offer.link,
+        type: 'offer',
+        entityId: offer.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+      });
+      if (allowed) {
+        if (offer.open_in_new_tab) {
+          window.open(offer.link, '_blank', 'noopener,noreferrer');
+        } else {
+          window.location.href = offer.link;
+        }
       }
     }
   };

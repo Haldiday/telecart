@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -6,6 +7,7 @@ import { useInfiniteStepCarousel } from '@/hooks/useInfiniteStepCarousel';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Ad {
   id: string;
@@ -71,6 +73,8 @@ export default function Ads1ColSection({
   });
 
   const heading = sectionData?.heading || sectionData?.name || 'Featured Ad';
+  const location = useLocation();
+  const navigate = useNavigate();
   const showHeading = sectionData?.show_heading !== false;
 
   const isMobile = useIsMobile();
@@ -194,7 +198,18 @@ export default function Ads1ColSection({
                       }}
                       onClick={() => {
                         if (ad.link) {
-                          window.location.href = ad.link;
+                          const allowed = requireAuthenticationBeforeOpeningLink({
+                            destination: ad.link,
+                            type: 'ad',
+                            entityId: ad.id,
+                            pathname: location.pathname,
+                            search: location.search,
+                            hash: location.hash,
+                            navigate,
+                          });
+                          if (allowed) {
+                            window.location.href = ad.link;
+                          }
                         }
                       }}
                     >
@@ -226,7 +241,18 @@ export default function Ads1ColSection({
                   }}
                   onClick={() => {
                     if (ad.link) {
-                      window.location.href = ad.link;
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: ad.link,
+                        type: 'ad',
+                        entityId: ad.id,
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        window.location.href = ad.link;
+                      }
                     }
                   }}
                 >

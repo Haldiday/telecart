@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -7,6 +7,7 @@ import BrandActionLinks from '@/components/shared/BrandActionLinks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCategorySection } from '@/hooks/useCategorySection';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Brand {
   id: string;
@@ -76,6 +77,7 @@ async function fetchPageSectionById(sectionId: string): Promise<PageSectionData 
 export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor }: CategoriesSectionProps) {
   const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: categories = [] } = useCategorySection(sectionId);
   const { data: sectionData } = useQuery({
     queryKey: queryKeys.pageSection.byId(sectionId),
@@ -123,7 +125,6 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
   }, []);
 
   useEffect(() => {
-<<<<<<< HEAD
     const channel = supabase
       .channel(`categories_live_${sectionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
@@ -135,58 +136,6 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subcategory_brands' }, () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.categorySection.bySectionId(sectionId) });
       })
-=======
-    let mounted = true;
-    
-    async function load() {
-      const { data: cats } = await supabase.from('categories').select('*').eq('section_id', sectionId).order('sort_order');
-      if (!cats) return;
-      const categoryIds = cats.map((cat: any) => cat.id).filter(Boolean);
-      const { data: subs } = categoryIds.length > 0
-        ? await supabase.from('subcategories').select('*').in('category_id', categoryIds).order('sort_order')
-        : { data: [] };
-
-      const subcategoryIds = (subs || []).map((sub: any) => sub.id).filter(Boolean);
-      const { data: brands } = subcategoryIds.length > 0
-        ? await supabase.from('subcategory_brands' as any).select('*').in('subcategory_id', subcategoryIds).order('sort_order')
-        : { data: [] };
-      
-      const merged = cats
-        .filter((cat: any) => cat.is_visible !== false)
-        .map((category) => ({
-          ...category,
-          subcategories: (subs || [])
-            .filter((sub: any) => sub.category_id === category.id && sub.is_visible !== false)
-            .map((sub: any) => ({
-              ...sub,
-              brands: (brands || [])
-                .filter((b: any) => b.subcategory_id === sub.id && b.is_visible !== false)
-            })),
-        }));
-      if (mounted) setCategories(merged as unknown as Category[]);
-    }
-
-    async function loadSection() {
-      const { data } = await supabase
-        .from('page_sections')
-        .select('heading, name, show_heading, background_color')
-        .eq('id', sectionId)
-        .single();
-      
-      if (data && mounted) {
-        setHeading(data.heading || data.name || 'Explore companies by category');
-        setShowHeading(data.show_heading !== false);
-        setSectionBackgroundColor(data.background_color);
-      }
-    }
-
-    load();
-    loadSection();
-
-    const channel = supabase
-      .channel(`categories_live_${sectionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => load())
->>>>>>> a30613a28d5280ea07e0b3f8552f0c12c06b833d
       .subscribe();
 
     const sectionsChannel = supabase
@@ -278,7 +227,18 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                           if (hasBrands) {
                             toggleSubcategory(sub.id);
                           } else if (sub.custom_link) {
-                            window.open(sub.custom_link, '_blank');
+                            const allowed = requireAuthenticationBeforeOpeningLink({
+                              destination: sub.custom_link,
+                              type: 'subcategory',
+                              entityId: sub.id,
+                              pathname: location.pathname,
+                              search: location.search,
+                              hash: location.hash,
+                              navigate,
+                            });
+                            if (allowed) {
+                              window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+                            }
                           }
                           // Else do nothing
                         };
@@ -380,7 +340,18 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                         if (hasBrands) {
                           toggleSubcategory(sub.id);
                         } else if (sub.custom_link) {
-                          window.open(sub.custom_link, '_blank');
+                          const allowed = requireAuthenticationBeforeOpeningLink({
+                            destination: sub.custom_link,
+                            type: 'subcategory',
+                            entityId: sub.id,
+                            pathname: location.pathname,
+                            search: location.search,
+                            hash: location.hash,
+                            navigate,
+                          });
+                          if (allowed) {
+                            window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+                          }
                         }
                         // Else do nothing
                       };

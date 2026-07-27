@@ -6,6 +6,7 @@ import { InputOTP, InputOTPSlot, InputOTPGroup } from "@/components/ui/input-otp
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { resumePendingAuthDestination } from '@/lib/authGuard';
 
 interface OtpErrorPayload {
   error?: {
@@ -132,7 +133,10 @@ export default function LoginPage() {
       }));
 
       toast.success('Login successful!');
-      navigate('/');
+      const resumed = resumePendingAuthDestination({ navigate });
+      if (!resumed) {
+        navigate('/');
+      }
     } catch (error) {
       const friendlyMessage = await getFriendlyFunctionError(error, "Failed to verify OTP. Please try again.");
       toast.error(friendlyMessage);

@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { SearchProvider } from "@/contexts/SearchContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { useLayoutEffect } from "react";
 
 export const AuthLayout = () => {
@@ -10,8 +11,10 @@ export const AuthLayout = () => {
   }, [location.pathname]);
 
   return (
-    <SearchProvider>
-      <Outlet />
-    </SearchProvider>
+    <AuthProvider>
+      <SearchProvider>
+        <Outlet />
+      </SearchProvider>
+    </AuthProvider>
   );
 };

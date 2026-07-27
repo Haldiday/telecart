@@ -3,7 +3,17 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearch } from '@/contexts/SearchContext';
+import { useAuth } from '@/contexts/AuthContext';
 import type { SearchResult } from '@/contexts/SearchContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface PageSection {
   id: string;
@@ -111,6 +121,7 @@ export default function Header() {
   const stickyInputRef = useRef<HTMLInputElement>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+  const { user, logout } = useAuth();
   const {
     query,
     setQuery,
@@ -358,9 +369,13 @@ export default function Header() {
               {headerSettings.for_providers_text}
             </a>
           )}
-          {headerSettings.sign_in_visible && (
+          {!user && headerSettings.sign_in_visible && (
             <a
               href={headerSettings.sign_in_link}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/login');
+              }}
               className="top-header-link"
               aria-label={headerSettings.sign_in_text}
             >
@@ -369,11 +384,45 @@ export default function Header() {
           )}
           {headerSettings.join_visible && (
             <a 
-              href={headerSettings.join_link} 
+              href={headerSettings.join_link}
               className="top-header-link border border-white rounded-full px-5 py-1.5 hover:bg-white hover:text-[#0b212e]"
             >
               {headerSettings.join_text}
             </a>
+          )}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <Avatar className="h-8 w-8 bg-white text-[#17313B]">
+                    <AvatarImage src={user.profile_photo || ''} alt={user.full_name || user.email} />
+                    <AvatarFallback className="bg-white text-[#17313B]">
+                      {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="focus:bg-blue-50 focus:text-blue-700 data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700"
+                  onClick={() => navigate('/profile/account')}
+                >
+                  Account
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="focus:bg-blue-50 focus:text-blue-700 data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700"
+                  onClick={async () => { await logout(); navigate('/'); }}
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -704,28 +753,70 @@ export default function Header() {
                   )}
                   
                   <div className="flex flex-col gap-4 mt-6 px-2">
-                    {headerSettings.join_visible && (
-                      <a 
-                        href={headerSettings.join_link} 
-                        className="w-full bg-[#1d4ed8] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {headerSettings.join_text}
-                      </a>
-                    )}
-                    {headerSettings.sign_in_visible && (
-                      <a
-                        href={headerSettings.sign_in_link}
-                        className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                        onClick={() => { setMobileOpen(false); }}
-                      >
-                        <PublicIcon
-                          src={getPublicVideoIconPath(HEADER_ICON_FILES.user)}
-                          alt=""
-                          className="w-5 h-5"
-                        />
-                        {headerSettings.sign_in_text}
-                      </a>
+                    {user ? (
+                      <>
+                        <div className="flex items-center gap-3 px-2 py-2">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.profile_photo || ''} alt={user.full_name || user.email} />
+                            <AvatarFallback>
+                              {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <p className="text-sm font-medium">{user.full_name || 'User'}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { setMobileOpen(false); navigate('/profile/account'); }}
+                          className="w-full text-left px-4 py-2 hover:bg-muted rounded-lg transition-colors"
+                        >
+                          Account
+                        </button>
+                        <button
+                          onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}
+                          className="w-full bg-[#1d4ed8] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
+                        >
+                          Dashboard
+                        </button>
+                        <button
+                          onClick={async () => { setMobileOpen(false); await logout(); navigate('/'); }}
+                          className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                          <PublicIcon
+                            src={getPublicVideoIconPath(HEADER_ICON_FILES.user)}
+                            alt=""
+                            className="w-5 h-5"
+                          />
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {headerSettings.join_visible && (
+                          <a 
+                            href={headerSettings.join_link}
+                            onClick={(e) => { e.preventDefault(); setMobileOpen(false); navigate('/login'); }} 
+                            className="w-full bg-[#1d4ed8] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
+                          >
+                            {headerSettings.join_text}
+                          </a>
+                        )}
+                        {headerSettings.sign_in_visible && (
+                          <a
+                            href={headerSettings.sign_in_link}
+                            onClick={(e) => { e.preventDefault(); setMobileOpen(false); navigate('/login'); }}
+                            className="w-full border-2 border-[#17313B] text-[#17313B] py-3 rounded-lg font-bold text-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                          >
+                            <PublicIcon
+                              src={getPublicVideoIconPath(HEADER_ICON_FILES.user)}
+                              alt=""
+                              className="w-5 h-5"
+                            />
+                            {headerSettings.sign_in_text}
+                          </a>
+                        )}
+                      </>
                     )}
 
                     {headerSettings.submit_button_visible && (
@@ -793,46 +884,42 @@ export default function Header() {
               ) : results.length === 0 ? (
                 <div className="px-5 py-2 text-sm text-[#61646b]">No results found.</div>
               ) : (
-                results.map((result) => (
-                <button
-                  key={`${result.type}-${result.id}${result.brandName ? `-${result.brandName}` : ''}`}
-                  type="button"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    if (blurTimeoutRef.current) {
-                      clearTimeout(blurTimeoutRef.current);
-                      blurTimeoutRef.current = null;
-                    }
-                    setIsSearchActive(true);
-                  }}
-                  onClick={() => handleHeaderResultClick(result)}
-                  className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
-                >
-                    {result.type === 'brand' && !result.name.includes('(') ? (
-                      <>
-                        <span className="text-[#1c1c1c]">{result.name}</span>
-                        {result.subcategoryName && (
-                          <span className="ml-2 text-[#1d4ed8]">({result.subcategoryName})</span>
-                        )}
-                      </>
-                    ) : (
-                      (() => {
-                        const match = result.name.match(/^(.+?)(\s*\([^)]+\))?$/);
-                        if (match) {
-                          const mainText = match[1] || '';
-                          const parenthetical = match[2] || '';
-                          return (
-                            <>
-                              <span className="text-[#1c1c1c]">{mainText}</span>
-                              {parenthetical && <span className="text-[#1d4ed8]">{parenthetical}</span>}
-                            </>
-                          );
+                results.map((result) => {
+                  const match = result.name.match(/^(.+?)(\s*\([^)]+\))?$/);
+                  const mainText = match?.[1] || result.name;
+                  const parenthetical = match?.[2] || '';
+
+                  return (
+                    <button
+                      key={`${result.type}-${result.id}${result.brandName ? `-${result.brandName}` : ''}`}
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        if (blurTimeoutRef.current) {
+                          clearTimeout(blurTimeoutRef.current);
+                          blurTimeoutRef.current = null;
                         }
-                        return <span>{result.name}</span>;
-                      })()
-                    )}
-                  </button>
-                ))
+                        setIsSearchActive(true);
+                      }}
+                      onClick={() => handleHeaderResultClick(result)}
+                      className="flex w-full items-center gap-2 px-5 py-2 text-left text-sm hover:bg-[#f5f5f5]"
+                    >
+                      {result.type === 'brand' && !result.name.includes('(') ? (
+                        <>
+                          <span className="text-[#1c1c1c]">{result.name}</span>
+                          {result.subcategoryName && (
+                            <span className="ml-2 text-[#1d4ed8]">({result.subcategoryName})</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[#1c1c1c]">{mainText}</span>
+                          {parenthetical && <span className="text-[#1d4ed8]">{parenthetical}</span>}
+                        </>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
           )}

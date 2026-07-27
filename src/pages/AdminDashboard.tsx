@@ -4975,38 +4975,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Sign In */}
-                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold">Sign In</h3>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={headerSettings.sign_in_visible}
-                        onCheckedChange={(checked) => setHeaderSettings({ ...headerSettings, sign_in_visible: checked })}
-                      />
-                      <span className="text-sm font-medium">{headerSettings.sign_in_visible ? 'Visible' : 'Hidden'}</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Text</label>
-                      <input
-                        value={headerSettings.sign_in_text}
-                        onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_text: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Link (WhatsApp or any URL)</label>
-                      <input
-                        value={headerSettings.sign_in_link}
-                        onChange={(e) => setHeaderSettings({ ...headerSettings, sign_in_link: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                        placeholder="https://example.com/sign-in"
-                      />
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* Join */}
                 <div className="bg-card rounded-xl border border-border p-5 space-y-4">

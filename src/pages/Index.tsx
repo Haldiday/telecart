@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearch } from '@/contexts/SearchContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ChevronUp } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -62,7 +63,24 @@ export default function Index() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const heroSectionRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { showMobileStickySearch } = useSearch();
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    const hasVisited = localStorage.getItem('hasVisited');
+    if (!hasVisited && !user) {
+      const timer = setTimeout(() => {
+        localStorage.setItem('hasVisited', 'true');
+        navigate('/login');
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else if (!hasVisited) {
+      localStorage.setItem('hasVisited', 'true');
+    }
+  }, [authLoading, user, navigate]);
 
   const sectionsQuery = useQuery({
     queryKey: queryKeys.pageSections.home,

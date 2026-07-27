@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,6 +11,7 @@ import { VideoModal } from '@/components/shared/VideoModal';
 import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Ad {
   description: string | null;
@@ -83,6 +84,7 @@ export default function Ads3ColSection({
   const showHeading = sectionData?.show_heading !== false;
 
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
   const isSeeAllPage = location.pathname.startsWith("/see-all/3-ads");
@@ -94,10 +96,21 @@ export default function Ads3ColSection({
     if (isVideoUrl(ad.link)) {
       setVideoModal({ isOpen: true, url: ad.link });
     } else {
-      if (ad.open_in_new_tab) {
-        window.open(ad.link, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = ad.link;
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: ad.link,
+        type: 'ad',
+        entityId: ad.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+      });
+      if (allowed) {
+        if (ad.open_in_new_tab) {
+          window.open(ad.link, '_blank', 'noopener,noreferrer');
+        } else {
+          window.location.href = ad.link;
+        }
       }
     }
   };

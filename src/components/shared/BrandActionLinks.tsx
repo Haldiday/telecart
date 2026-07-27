@@ -1,5 +1,6 @@
 import { Plus, Minus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 export interface BrandActionLinkItem {
   id?: string;
@@ -108,16 +109,14 @@ export function getBrandActionLinks(brand: BrandWithActionLinks): BrandActionLin
 }
 
 export default function BrandActionLinks({ brand, isExpanded = false, onToggle, categoryId, subcategoryId }: BrandActionLinksProps) {
+  const navigate = useNavigate();
   const actionLinks = getBrandActionLinks(brand);
   const hasActionLinks = actionLinks.length > 0;
   const isExpandable = hasActionLinks && typeof onToggle === 'function';
   const hasLinkOrActions = brand.link || hasActionLinks;
   const hasSeeAllLinks = actionLinks.length > 0;
   const displayedLinks = actionLinks;
-<<<<<<< HEAD
 
-=======
->>>>>>> a30613a28d5280ea07e0b3f8552f0c12c06b833d
   return (
     <div className="border-b border-border/30 last:border-0">
       <div
@@ -125,7 +124,21 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
           if (isExpandable) {
             onToggle?.();
           } else if (brand.link) {
-            window.open(brand.link, '_blank');
+            const allowed = requireAuthenticationBeforeOpeningLink({
+              destination: brand.link,
+              type: 'brand',
+              entityId: brand.id,
+              pathname: window.location.pathname,
+              search: window.location.search,
+              hash: window.location.hash,
+              navigate,
+              onUnauthenticated: () => {
+                // no-op; the helper already redirects to login
+              },
+            });
+            if (allowed) {
+              window.open(brand.link, '_blank', 'noopener,noreferrer');
+            }
           }
         }}
         className={`flex items-center justify-between py-2 text-left text-sm md:text-base font-normal text-foreground ${hasLinkOrActions ? 'hover:text-[#1d4ed8] cursor-pointer' : 'opacity-100'}`}
@@ -163,6 +176,21 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
                     href={link.url}
                     target={link.newTab ? '_blank' : undefined}
                     rel={link.newTab ? 'noopener noreferrer' : undefined}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: link.url,
+                        type: 'brandAction',
+                        entityId: brand.id,
+                        pathname: window.location.pathname,
+                        search: window.location.search,
+                        hash: window.location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        window.open(link.url, link.newTab ? '_blank' : '_self', 'noopener,noreferrer');
+                      }
+                    }}
                     className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
                   >
                     {link.text}
@@ -183,7 +211,21 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
               <Link
                 to={`/category/${categoryId}/subcategory/${subcategoryId}/brand/${brand.id}/action-links`}
                 className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const allowed = requireAuthenticationBeforeOpeningLink({
+                    destination: `/category/${categoryId}/subcategory/${subcategoryId}/brand/${brand.id}/action-links`,
+                    type: 'brandActionLinks',
+                    entityId: brand.id,
+                    pathname: window.location.pathname,
+                    search: window.location.search,
+                    hash: window.location.hash,
+                    navigate,
+                  });
+                  if (!allowed) {
+                    e.preventDefault();
+                  }
+                }}
               >
                 Explore →
               </Link>

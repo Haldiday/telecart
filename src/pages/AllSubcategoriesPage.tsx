@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, ChevronRight, Plus, Minus } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks from '@/components/shared/BrandActionLinks';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Category {
   id: string;
@@ -43,6 +44,7 @@ interface BrandItem {
 
 export default function AllSubcategoriesPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { categoryId } = useParams<{ categoryId: string }>();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -119,7 +121,18 @@ export default function AllSubcategoriesPage() {
     if (brandsBySubcategory[sub.id]?.length > 0) {
       setExpandedSubcategoryId(expandedSubcategoryId === sub.id ? null : sub.id);
     } else if (sub.custom_link) {
-      window.open(sub.custom_link, '_blank');
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: sub.custom_link,
+        type: 'subcategory',
+        entityId: sub.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+      });
+      if (allowed) {
+        window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+      }
     }
     // Else do nothing
   };

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight, Plus, Minus, ArrowUpRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks, { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Category {
   id: string;
@@ -48,6 +49,8 @@ interface BrandItem {
 
 export default function SubcategoryBrands() {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [brands, setBrands] = useState<BrandItem[]>([]);
@@ -158,6 +161,22 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_1_link || '#'}
                     target={subcategory.button_1_link ? '_blank' : undefined}
                     rel={subcategory.button_1_link ? 'noopener noreferrer' : undefined}
+                    onClick={(event) => {
+                      if (!subcategory.button_1_link) return;
+                      event.preventDefault();
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: subcategory.button_1_link,
+                        type: 'subcategoryButton',
+                        entityId: subcategoryId,
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        window.open(subcategory.button_1_link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-3 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_1_text}
@@ -169,6 +188,22 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_2_link || '#'}
                     target={subcategory.button_2_link ? '_blank' : undefined}
                     rel={subcategory.button_2_link ? 'noopener noreferrer' : undefined}
+                    onClick={(event) => {
+                      if (!subcategory.button_2_link) return;
+                      event.preventDefault();
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: subcategory.button_2_link,
+                        type: 'subcategoryButton',
+                        entityId: subcategoryId,
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        window.open(subcategory.button_2_link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_2_text}
@@ -180,6 +215,22 @@ export default function SubcategoryBrands() {
                     href={subcategory.button_3_link || '#'}
                     target={subcategory.button_3_link ? '_blank' : undefined}
                     rel={subcategory.button_3_link ? 'noopener noreferrer' : undefined}
+                    onClick={(event) => {
+                      if (!subcategory.button_3_link) return;
+                      event.preventDefault();
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: subcategory.button_3_link,
+                        type: 'subcategoryButton',
+                        entityId: subcategoryId,
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        window.open(subcategory.button_3_link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
                   >
                     {subcategory.button_3_text}

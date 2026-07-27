@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -10,6 +10,7 @@ import { VideoModal } from '@/components/shared/VideoModal';
 import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Card {
   id: string;
@@ -93,6 +94,7 @@ export default function FeaturedCards({
 
   const [isTablet, setIsTablet] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isSeeAllPage = location.pathname.startsWith("/see-all/featured-cards");
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
 
@@ -121,10 +123,21 @@ export default function FeaturedCards({
     if (isVideoUrl(card.link)) {
       setVideoModal({ isOpen: true, url: card.link });
     } else {
-      if (card.open_in_new_tab) {
-        window.open(card.link, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = card.link;
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: card.link,
+        type: 'featuredCard',
+        entityId: card.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+      });
+      if (allowed) {
+        if (card.open_in_new_tab) {
+          window.open(card.link, '_blank', 'noopener,noreferrer');
+        } else {
+          window.location.href = card.link;
+        }
       }
     }
   };

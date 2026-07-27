@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -7,6 +8,7 @@ import { useFixedCarouselTouch } from '@/hooks/useFixedCarouselTouch';
 import SubcategorySectionShell from './SubcategorySectionShell';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 interface Ad {
   id: string;
@@ -72,6 +74,8 @@ export default function Ads2ColSection({
   });
 
   const heading = sectionData?.heading || sectionData?.name || '2 Column Ads';
+  const location = useLocation();
+  const navigate = useNavigate();
   const showHeading = sectionData?.show_heading !== false;
 
   const isMobile = useIsMobile();
@@ -250,7 +254,18 @@ export default function Ads2ColSection({
                       <div
                         onClick={() => {
                           if (ad.link) {
-                            window.location.href = ad.link;
+                            const allowed = requireAuthenticationBeforeOpeningLink({
+                              destination: ad.link,
+                              type: 'ad',
+                              entityId: ad.id,
+                              pathname: location.pathname,
+                              search: location.search,
+                              hash: location.hash,
+                              navigate,
+                            });
+                            if (allowed) {
+                              window.location.href = ad.link;
+                            }
                           }
                         }}
                         className={`block h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
@@ -287,7 +302,18 @@ export default function Ads2ColSection({
                         <div
                           onClick={() => {
                             if (ad.link) {
-                              window.location.href = ad.link;
+                              const allowed = requireAuthenticationBeforeOpeningLink({
+                                destination: ad.link,
+                                type: 'ad',
+                                entityId: ad.id,
+                                pathname: location.pathname,
+                                search: location.search,
+                                hash: location.hash,
+                                navigate,
+                              });
+                              if (allowed) {
+                                window.location.href = ad.link;
+                              }
                             }
                           }}
                           className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
