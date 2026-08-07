@@ -40,7 +40,7 @@ export async function onRequestPost({ request, env }) {
         if (error instanceof WhatsAppOtpError) {
             return jsonResponse({ success: false, message: error.message }, error.reason === 'too_many_attempts' ? 429 : 400);
         }
-        console.error('[WhatsApp OTP] Verification failed', { phoneSuffix: phone ? .slice(-4) || null, error: error instanceof Error ? error.message : String(error) });
+        console.error('[WhatsApp OTP] Verification failed', { phoneSuffix: phone ? phone.slice(-4) : null, error: error instanceof Error ? error.message : String(error) });
         return jsonResponse({ success: false, message: 'Unable to verify WhatsApp OTP right now. Please try again.' }, 500);
     }
 }
