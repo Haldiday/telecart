@@ -2,6 +2,7 @@ import { jsonResponse } from '../../helpers/utils.js';
 import { consumeRateLimit, getClientIp } from '../../helpers/rateLimiter.js';
 import { deleteWhatsAppOtp, storeWhatsAppOtp } from '../../helpers/whatsappOtpStore.js';
 import { generateWhatsAppOtp, normalizePhone, sendWhatsAppOtp, WhatsAppServiceError } from '../../helpers/whatsapp.js';
+import { getSupabaseAdmin } from '../../helpers/supabase.js';
 
 export async function onRequestPost({ request, env }) {
     let phone;
@@ -13,6 +14,19 @@ export async function onRequestPost({ request, env }) {
         if (!consumeRateLimit(clientIp, 5) || !consumeRateLimit(`whatsapp:${phone}`, 3)) {
             console.warn('[WhatsApp OTP] Rate limit exceeded', { phoneSuffix: phone.slice(-4), clientIp });
             return jsonResponse({ success: false, message: 'Too many OTP requests. Please try again later.' }, 429);
+        }
+
+        const supabase = getSupabaseAdmin(env);
+        const { data: existingUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('phone', phone)
+            .maybeSingle();
+        if (userError && userError.code !== 'PGRST116') {
+            throw userError;
+        }
+        if (!existingUser) {
+            return jsonResponse({ success: false, message: 'This phone number is not registered. Please create an account first.' }, 404);
         }
 
         const otp = generateWhatsAppOtp();
@@ -28,7 +42,7 @@ export async function onRequestPost({ request, env }) {
         if (error instanceof WhatsAppServiceError) {
             return jsonResponse({ success: false, message: error.message }, error.status);
         }
-        console.error('[WhatsApp OTP] Send failed', { phoneSuffix: phone?.slice(-4) || null, error: error instanceof Error ? error.message : String(error) });
+        console.error('[WhatsApp OTP] Send failed', { phoneSuffix: phone ? phone.slice(-4) : null, error: error instanceof Error ? error.message : String(error) });
         return jsonResponse({ success: false, message: 'Unable to send WhatsApp OTP right now. Please try again.' }, 500);
     }
 }

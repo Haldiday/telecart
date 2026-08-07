@@ -180,6 +180,85 @@ function buildBrandActionLinkPayload(actionLinks: BrandActionLinkItem[] | undefi
     .filter((link) => Boolean(link.text || link.url));
 }
 
+function extractMissingColumnsFromError(errorMessage: string) {
+  const missingColumns = new Set<string>();
+  const patterns = [
+    /column "([^"]+)" of relation "[^"]+" does not exist/gi,
+    /could not find column "([^"]+)"/gi,
+    /Could not find the column named "([^"]+)"/gi,
+    /column "([^"]+)" does not exist/gi,
+    /relation "[^"]+" does not exist/gi,
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(errorMessage))) {
+      if (match[1]) missingColumns.add(match[1]);
+    }
+  }
+
+  return missingColumns;
+}
+
+function stripColumnsFromPayload<T extends Record<string, any>>(items: T[], columns: Set<string>) {
+  if (columns.size === 0) return items;
+  return items.map((item) => {
+    const filtered = { ...item };
+    columns.forEach((column) => delete filtered[column]);
+    return filtered;
+  });
+}
+
+async function upsertWithMissingColumnFallback<T extends Record<string, any>>(table: string, rows: T[]) {
+  let payload = rows;
+  const removedColumns = new Set<string>();
+
+  while (true) {
+    const { error } = await supabase.from(table as any).upsert(payload as any);
+    if (!error) return;
+
+    const errorMessage = (error as any)?.message || JSON.stringify(error);
+    const missingColumns = extractMissingColumnsFromError(errorMessage);
+    const newColumns = [...missingColumns].filter((column) => !removedColumns.has(column));
+
+    if (newColumns.length === 0) {
+      throw error;
+    }
+
+    newColumns.forEach((column) => removedColumns.add(column));
+    payload = stripColumnsFromPayload(rows, removedColumns);
+
+    if (payload.length === 0) {
+      throw error;
+    }
+  }
+}
+
+async function insertWithMissingColumnFallback<T extends Record<string, any>>(table: string, rows: T[]) {
+  let payload = rows;
+  const removedColumns = new Set<string>();
+
+  while (true) {
+    const { error } = await supabase.from(table as any).insert(payload as any);
+    if (!error) return;
+
+    const errorMessage = (error as any)?.message || JSON.stringify(error);
+    const missingColumns = extractMissingColumnsFromError(errorMessage);
+    const newColumns = [...missingColumns].filter((column) => !removedColumns.has(column));
+
+    if (newColumns.length === 0) {
+      throw error;
+    }
+
+    newColumns.forEach((column) => removedColumns.add(column));
+    payload = stripColumnsFromPayload(rows, removedColumns);
+
+    if (payload.length === 0) {
+      throw error;
+    }
+  }
+}
+
 interface LegalPage { id: string; slug: string; title: string; content: string | null; is_visible?: boolean; }
 interface AdvertiseSettings {
   id?: string;
@@ -1716,6 +1795,24 @@ export default function AdminDashboard() {
     }
     if (browseAllDirectoriesSettingsData.data) {
       setBrowseAllDirectoriesSettings(browseAllDirectoriesSettingsData.data as BrowseAllDirectoriesSettings);
+    }
+  }
+
+  async function refreshCategoryListData() {
+    try {
+      const [cat, sub] = await Promise.all([
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('subcategories').select('*').order('sort_order'),
+      ]);
+
+      if (cat.error) throw cat.error;
+      if (sub.error) throw sub.error;
+
+      if (cat.data) setCategories(cat.data);
+      if (sub.data) setSubcategories(sub.data as unknown as Subcategory[]);
+    } catch (error) {
+      console.error('Error refreshing category list data:', error);
+      throw error;
     }
   }
 
@@ -3800,8 +3897,13 @@ export default function AdminDashboard() {
 
       // Save subcategories
       if (categoryId) {
-        // Upsert subcategories (handles both insert and update)
-        const subsToUpsert = editSubs.map((sub, index) => ({
+        const subIds = editSubs.map((s) => s.id).filter(Boolean);
+        const activeSub = activeSubId ? editSubs.find((sub) => sub.id === activeSubId) : undefined;
+        const subsToUpsert = activeSubId
+          ? activeSub ? [activeSub] : []
+          : editSubs;
+
+        const subcategoryRows = subsToUpsert.map((sub, index) => ({
           id: sub.id,
           category_id: categoryId,
           name: sub.name,
@@ -3847,49 +3949,29 @@ export default function AdminDashboard() {
           sort_order: index,
         }));
 
-        try {
-          const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
-          if (subError) throw subError;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-          const isMissingVisibleColumn =
-            (error as any)?.code === 'PGRST204' ||
-            errorMessage.includes("Could not find the 'is_visible' column") ||
-            errorMessage.includes('is_visible');
+        const deleteSubcategories = activeSubId
+          ? Promise.resolve()
+          : (subIds.length > 0
+            ? subIds.reduce(
+              (query, id) => query.neq('id', id),
+              supabase.from('subcategories').delete().eq('category_id', categoryId),
+            )
+            : supabase.from('subcategories').delete().eq('category_id', categoryId));
 
-          if (!isMissingVisibleColumn) {
-            throw error;
-          }
-
-          const fallbackSubsToUpsert = subsToUpsert.map(({ is_visible, ...rest }) => rest);
-          const { error: fallbackSubError } = await supabase.from('subcategories').upsert(fallbackSubsToUpsert as any);
-          if (fallbackSubError) throw fallbackSubError;
-        }
-
-        // Delete any subcategories in the database that are no longer in editSubs
-        const subIds = editSubs.map(s => s.id).filter(Boolean);
-        const deleteSubcategories = subIds.length > 0
-          ? supabase.from('subcategories').delete().eq('category_id', categoryId).notIn('id', subIds)
-          : supabase.from('subcategories').delete().eq('category_id', categoryId);
-        // When editing a specific subcategory, only delete its data; otherwise delete all
         const deleteButtons = activeSubId
           ? supabase.from('category_buttons').delete().eq('subcategory_id', activeSubId)
-          : supabase.from('category_buttons').delete().in('subcategory_id', subIds);
+          : (subIds.length > 0
+            ? supabase.from('category_buttons').delete().in('subcategory_id', subIds)
+            : Promise.resolve());
+
         const deleteSubBrands = activeSubId
           ? supabase.from('subcategory_brands' as any).delete().eq('subcategory_id', activeSubId)
-          : supabase.from('subcategory_brands' as any).delete().in('subcategory_id', subIds);
+          : (subIds.length > 0
+            ? supabase.from('subcategory_brands' as any).delete().in('subcategory_id', subIds)
+            : Promise.resolve());
 
-        // Run all deletes in parallel
-        await Promise.all([
-          deleteSubcategories,
-          deleteButtons,
-          deleteSubBrands,
-        ]);
-
-        // Insert new buttons for each subcategory
-        const buttonsToInsert = [];
+        const buttonsToInsert: any[] = [];
         if (activeSubId) {
-          // Only save buttons for the actively edited subcategory
           const subButtons = effectiveButtonsState[activeSubId] || [];
           subButtons.forEach((button, index) => {
             if (button.label?.trim() || button.link?.trim()) {
@@ -3904,7 +3986,6 @@ export default function AdminDashboard() {
             }
           });
         } else {
-          // Save buttons for all subcategories when editing the whole category
           for (const sub of editSubs) {
             const subButtons = effectiveButtonsState[sub.id] || [];
             subButtons.forEach((button, index) => {
@@ -3922,10 +4003,8 @@ export default function AdminDashboard() {
           }
         }
 
-        // Insert new subcategory brands
-        const subBrandsToInsert = [];
+        const subBrandsToInsert: any[] = [];
         if (activeSubId) {
-          // Only save brands for the actively edited subcategory
           const subBrands = effectiveSubBrandsState[activeSubId] || [];
           subBrands.forEach((brand, index) => {
             if (brand.name) {
@@ -3964,7 +4043,6 @@ export default function AdminDashboard() {
             }
           });
         } else {
-          // Save brands for all subcategories when editing the whole category
           for (const subId of subIds) {
             const subBrands = effectiveSubBrandsState[subId] || [];
             subBrands.forEach((brand, index) => {
@@ -4006,42 +4084,36 @@ export default function AdminDashboard() {
           }
         }
 
-        // Run all inserts in parallel
-        await Promise.all([
-          buttonsToInsert.length > 0 ? supabase.from('category_buttons').insert(buttonsToInsert) : Promise.resolve(),
-          (async () => {
-            if (subBrandsToInsert.length === 0) return;
-            try {
-              const { error } = await supabase.from('subcategory_brands' as any).insert(subBrandsToInsert);
-              if (error) throw error;
-            } catch (err) {
-              const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
-              console.warn('Failed to insert subcategory brands with full payload, retrying with schema-safe columns...', errorMessage);
-              const safeBrands = subBrandsToInsert.map(({
-                description,
-                buttons,
-                is_visible,
-                primary_cta_label, primary_cta_link, primary_cta_visible,
-                more_actions_label, more_actions_visible,
-                join_network_label, join_network_link, join_network_visible,
-                ...rest
-              }) => rest);
-              const { error: secondError } = await supabase.from('subcategory_brands' as any).insert(safeBrands);
-              if (secondError) throw secondError;
-            }
-          })(),
-        ]);
+        const subsUpsertPromise = subcategoryRows.length > 0
+          ? upsertWithMissingColumnFallback('subcategories', subcategoryRows as any)
+          : Promise.resolve();
 
-        // Save About sections for each subcategory in parallel
-        await Promise.all(subIds.map(subId => saveAboutSections(subId)));
-        // Save Key Features sections for each subcategory in parallel
-        await Promise.all(subIds.map(subId => saveKeyFeaturesSections(subId, effectiveSubOverviewPointsState[subId] || [])));
+        const deletePromises = [deleteSubcategories, deleteButtons, deleteSubBrands];
+        await Promise.all(deletePromises);
+
+        const insertPromises = [
+          buttonsToInsert.length > 0 ? insertWithMissingColumnFallback('category_buttons', buttonsToInsert) : Promise.resolve(),
+          subBrandsToInsert.length > 0 ? insertWithMissingColumnFallback('subcategory_brands', subBrandsToInsert) : Promise.resolve(),
+        ];
+
+        const sectionSubIds = activeSubId ? [activeSubId] : subIds;
+        const aboutPromises = sectionSubIds.map(subId => saveAboutSections(subId));
+        const keyFeaturePromises = sectionSubIds.map(subId => saveKeyFeaturesSections(subId, effectiveSubOverviewPointsState[subId] || []));
+
+        await Promise.all([
+          subsUpsertPromise,
+          ...insertPromises,
+          ...aboutPromises,
+          ...keyFeaturePromises,
+        ]);
       }
 
       toast.success('Category saved successfully!');
       setEditCategory(null);
       setEditSubs([]);
-      loadAll();
+      refreshCategoryListData().catch((reloadError) => {
+        console.error('Failed to reload category list data after save:', reloadError);
+      });
     } catch (error) {
       console.error('Error saving category:', error instanceof Error ? error.message : JSON.stringify(error));
       toast.error('Failed to save category.');
@@ -4697,8 +4769,8 @@ export default function AdminDashboard() {
                   }
                 }}
                 className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === item.key || (item.children && item.children.some(child => child.key === tab))
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                   }`}
               >
                 <div className="flex items-center gap-2 md:gap-3 min-w-0">
@@ -4720,8 +4792,8 @@ export default function AdminDashboard() {
                         setSidebarOpen(false);
                       }}
                       className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === child.key
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                         }`}
                     >
                       <span className="truncate">{child.label}</span>
@@ -5156,8 +5228,8 @@ export default function AdminDashboard() {
                         key={section.id}
                         onClick={() => setSelectedCardsSectionId(section.id)}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedCardsSectionId === section.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
                           }`}
                       >
                         {getSectionDisplayName(section)}
@@ -5356,8 +5428,8 @@ export default function AdminDashboard() {
                             key={section.id}
                             onClick={() => setSelectedCategoriesSectionId(section.id)}
                             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedCategoriesSectionId === section.id
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-card border border-border text-foreground hover:bg-muted'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-card border border-border text-foreground hover:bg-muted'
                               }`}
                           >
                             {getSectionDisplayName(section)}
@@ -6994,8 +7066,8 @@ export default function AdminDashboard() {
                         key={section.id}
                         onClick={() => setSelectedOffersSectionId(section.id)}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedOffersSectionId === section.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
                           }`}
                       >
                         {getSectionDisplayName(section)}
@@ -7201,8 +7273,8 @@ export default function AdminDashboard() {
                         key={section.id}
                         onClick={() => setSelectedAds2SectionId(section.id)}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds2SectionId === section.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
                           }`}
                       >
                         {getSectionDisplayName(section)}
@@ -7379,8 +7451,8 @@ export default function AdminDashboard() {
                         key={section.id}
                         onClick={() => setSelectedAds1SectionId(section.id)}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds1SectionId === section.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
                           }`}
                       >
                         {getSectionDisplayName(section)}
@@ -7557,8 +7629,8 @@ export default function AdminDashboard() {
                         key={section.id}
                         onClick={() => setSelectedAds3SectionId(section.id)}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds3SectionId === section.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border border-border text-foreground hover:bg-muted'
                           }`}
                       >
                         {getSectionDisplayName(section)}

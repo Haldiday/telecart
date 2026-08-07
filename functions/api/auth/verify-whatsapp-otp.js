@@ -20,18 +20,13 @@ export async function onRequestPost({ request, env }) {
         const { data: existingUser, error: selectError } = await supabase.from('users').select('*').eq('phone', phone).single();
         if (selectError && selectError.code !== 'PGRST116') throw selectError;
 
-        const signupData = existingUser ? null : parseSignupData(body.signupData);
-        if (!existingUser && !signupData) {
-            return jsonResponse({ success: false, message: 'First name, last name, and company name are required to create an account.' }, 400);
+        if (!existingUser) {
+            return jsonResponse({ success: false, message: 'This phone number is not registered. Please create an account first.' }, 404);
         }
+
         verifyWhatsAppOtp(phone, otp);
         let user = existingUser;
-        if (!user) {
-            const { data, error } = await supabase.from('users')
-                .insert({ phone, phone_verified: true, is_verified: true, ...signupData }).select('*').single();
-            if (error) throw error;
-            user = data;
-        } else if (!user.phone_verified || !user.is_verified) {
+        if (!user.phone_verified || !user.is_verified) {
             const { data, error } = await supabase.from('users')
                 .update({ phone_verified: true, is_verified: true }).eq('id', user.id).select('*').single();
             if (error) throw error;
@@ -45,7 +40,7 @@ export async function onRequestPost({ request, env }) {
         if (error instanceof WhatsAppOtpError) {
             return jsonResponse({ success: false, message: error.message }, error.reason === 'too_many_attempts' ? 429 : 400);
         }
-        console.error('[WhatsApp OTP] Verification failed', { phoneSuffix: phone?.slice(-4) || null, error: error instanceof Error ? error.message : String(error) });
+        console.error('[WhatsApp OTP] Verification failed', { phoneSuffix: phone ? .slice(-4) || null, error: error instanceof Error ? error.message : String(error) });
         return jsonResponse({ success: false, message: 'Unable to verify WhatsApp OTP right now. Please try again.' }, 500);
     }
 }

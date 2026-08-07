@@ -30,8 +30,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           } else {
             localStorage.removeItem('auth_token');
           }
-        } catch (error) {
-          localStorage.removeItem('auth_token');
+        } catch (error: any) {
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            localStorage.removeItem('auth_token');
+          } else {
+            console.error('Auth initialization error:', error);
+          }
         }
       }
       setLoading(false);
@@ -42,6 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('auth_token', token);
+    localStorage.removeItem('msg91_session');
     setUser(userData);
   };
 

@@ -1,6 +1,7 @@
 ﻿import { getConfig } from '../../helpers/config.js';
 import { MSG91Service } from '../../helpers/msg91.js';
 import { EmailValidationService, EmailValidationServiceError } from '../../helpers/emailValidation.js';
+import { getSupabaseAdmin } from '../../helpers/supabase.js';
 import { jsonResponse, validateEmail } from '../../helpers/utils.js';
 import { consumeRateLimit, getClientIp } from '../../helpers/rateLimiter.js';
 
@@ -64,6 +65,19 @@ export async function onRequestPost({ request, env }) {
         if (validationResult.isDisposable) {
             console.warn('[OTP Request] Rejected', { reason: validationResult.rejectionReason || 'disposable', emailFormat: getEmailLogDetails(email), validationResult });
             return jsonResponse({ success: false, message: 'Please enter valid email.' }, 400);
+        }
+
+        const supabase = getSupabaseAdmin(env);
+        const { data: existingUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', normalizedEmail)
+            .maybeSingle();
+        if (userError && userError.code !== 'PGRST116') {
+            throw userError;
+        }
+        if (!existingUser) {
+            return jsonResponse({ success: false, message: 'This email is not registered. Please create an account first.' }, 404);
         }
 
         // Quick config checks to provide clearer errors in Cloudflare Pages environment

@@ -105,7 +105,7 @@ export function resumePendingAuthDestination(options?: {
 
 export function isAuthenticated(): boolean {
   if (typeof window === 'undefined') return false;
-  return Boolean(window.localStorage.getItem('auth_token') || window.localStorage.getItem('msg91_session'));
+  return Boolean(window.localStorage.getItem('auth_token'));
 }
 
 export function logoutAndRedirectToHome(navigate: (path: string) => void, clearAuth?: () => Promise<void> | void) {
@@ -116,7 +116,6 @@ export function logoutAndRedirectToHome(navigate: (path: string) => void, clearA
 
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('auth_token');
-      window.localStorage.removeItem('msg91_session');
       window.sessionStorage.removeItem('pending_auth_destination');
       window.sessionStorage.removeItem(PENDING_AUTH_DESTINATION_KEY);
     }

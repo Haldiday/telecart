@@ -30,24 +30,15 @@ export async function onRequestPost({ request, env }) {
             throw selectError;
         }
 
-        const signupData = existingUser ? null : parseSignupData(body.signupData);
-        if (!existingUser && !signupData) {
-            return jsonResponse({ success: false, message: 'First name, last name, and company name are required to create an account.' }, 400);
+        if (!existingUser) {
+            return jsonResponse({ success: false, message: 'This email is not registered. Please create an account first.' }, 404);
         }
 
         const otpService = new MSG91Service(config);
         await otpService.verifyOTP(email, otp);
         let user = existingUser;
 
-        if (!existingUser) {
-            const { data: newUser, error: insertError } = await supabase
-                .from('users')
-                .insert({ email, is_verified: true, ...signupData })
-                .select('*')
-                .single();
-            if (insertError) throw insertError;
-            user = newUser;
-        } else if (!existingUser.is_verified) {
+        if (!existingUser.is_verified) {
             const { data: updatedUser, error: updateError } = await supabase
                 .from('users')
                 .update({ is_verified: true })

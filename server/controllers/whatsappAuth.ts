@@ -8,6 +8,15 @@ export async function sendWhatsAppOTP(req: Request, res: Response) {
   const phone = normalizePhone(req.body?.phone);
   if (!phone) return res.status(400).json({ success: false, message: 'Please provide a valid mobile number.' });
   try {
+    const supabase = getSupabaseAdmin();
+    const { data: existingUser, error: selectError } = await supabase.from('users').select('id').eq('phone', phone).maybeSingle();
+    if (selectError && selectError.code !== 'PGRST116') {
+      throw selectError;
+    }
+    if (!existingUser) {
+      return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });
+    }
+
     await sendWhatsAppOtp(phone);
     return res.json({ success: true, message: 'WhatsApp OTP sent successfully' });
   } catch (error) {
@@ -41,14 +50,9 @@ export async function verifyWhatsAppOTP(req: Request, res: Response) {
 
     let user = existingUser;
     if (!user) {
-      const { data, error } = await supabase.from('users').insert({ phone, phone_verified: true, is_verified: true }).select('*').single();
-      if (error) {
-        console.error('[WhatsApp OTP] User insert failed', { phoneSuffix: phone.slice(-4), error });
-        throw error;
-      }
-      user = data;
-      console.info('[WhatsApp OTP] New user created', { phoneSuffix: phone.slice(-4), userId: user.id });
-    } else if (!user.phone_verified || !user.is_verified) {
+      return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });
+    }
+    if (!user.phone_verified || !user.is_verified) {
       const { data, error } = await supabase.from('users').update({ phone_verified: true, is_verified: true }).eq('id', user.id).select('*').single();
       if (error) {
         console.error('[WhatsApp OTP] User update failed', { phoneSuffix: phone.slice(-4), userId: user.id, error });
