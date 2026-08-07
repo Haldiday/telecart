@@ -10,9 +10,20 @@ import type {
   SignupCompleteRequest,
 } from '../types/auth';
 
-// In production, use VITE_API_URL if configured, otherwise use relative API paths.
-// In development, prefer VITE_API_URL if provided, otherwise default to localhost.
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
+function getApiBaseUrl() {
+  const configuredUrl = typeof import.meta.env.VITE_API_URL === 'string' ? import.meta.env.VITE_API_URL.trim() : '';
+
+  if (import.meta.env.PROD) {
+    if (configuredUrl && configuredUrl.startsWith('http://localhost')) {
+      return '';
+    }
+    return configuredUrl || '';
+  }
+
+  return configuredUrl || 'http://localhost:3001';
+}
+
+const apiBaseUrl = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: apiBaseUrl ? `${apiBaseUrl}/api` : '/api',

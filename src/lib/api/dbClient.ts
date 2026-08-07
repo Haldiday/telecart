@@ -39,8 +39,21 @@ export interface DbResponse<T = unknown> {
 
 type AuthTokenProvider = () => Promise<string | null>;
 
+function getDbApiBase() {
+  const configuredUrl = typeof import.meta.env.VITE_API_URL === 'string' ? import.meta.env.VITE_API_URL.trim() : '';
+
+  if (import.meta.env.PROD) {
+    if (configuredUrl && configuredUrl.startsWith('http://localhost')) {
+      return '';
+    }
+    return configuredUrl || '';
+  }
+
+  return configuredUrl || 'http://localhost:3001';
+}
+
 // Prefer VITE_API_URL when configured; otherwise use relative API path in production or localhost in development.
-const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
+const API_BASE = getDbApiBase();
 
 let authTokenProvider: AuthTokenProvider = async () => null;
 

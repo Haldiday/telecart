@@ -27,9 +27,12 @@ function parseExpiresIn(value) {
 
 export async function signJwt(payload, secret, expiresIn) {
     const expiresInSeconds = parseExpiresIn(expiresIn);
+    const expiration = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0 ?
+        Math.floor(Date.now() / 1000) + expiresInSeconds :
+        undefined;
     return new SignJWT(payload)
         .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime(expiresInSeconds)
+        .setExpirationTime(expiration)
         .sign(encoder.encode(secret));
 }
 
