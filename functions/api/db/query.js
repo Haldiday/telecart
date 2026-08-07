@@ -1,6 +1,6 @@
-﻿import { executeQuery } from '../../../helpers/dbExecutor.js';
-import { jsonResponse, getBearerToken } from '../../../helpers/utils.js';
-import { getSupabaseUserByToken, isAdminUser } from '../../../helpers/supabaseAuth.js';
+﻿import { executeQuery } from '../../helpers/dbExecutor.js';
+import { jsonResponse, getBearerToken } from '../../helpers/utils.js';
+import { getSupabaseUserByToken, isAdminUser } from '../../helpers/supabaseAuth.js';
 
 export async function onRequestPost({ request, env }) {
     try {

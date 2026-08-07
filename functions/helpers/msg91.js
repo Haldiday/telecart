@@ -1,3 +1,5 @@
+import { storeOtp, verifyOtp } from './otpStore.js';
+
 export class MSG91Service {
     constructor(config) {
         this.config = config;
@@ -9,23 +11,34 @@ export class MSG91Service {
     }
 
     getFromEmail() {
-        return this.config.msg91EmailDomain ?
+        return this.config.msg91FromEmail || (this.config.msg91EmailDomain ?
             `no-reply@${this.config.msg91EmailDomain}` :
-            'no-reply@mailer91.com';
+            'no-reply@mailer91.com');
     }
 
     async sendOTP(email, otp) {
-        if (!this.config.msg91AuthKey && !this.config.useFakeOtp) {
-            throw new Error('MSG91 auth key is not configured');
+        if (!otp) {
+            otp = this.generateOTP();
         }
 
+        storeOtp(email, otp);
+        console.info('[OTP] Stored OTP for email delivery');
+
         if (this.config.useFakeOtp) {
-            console.log(`[FAKE OTP] Sending OTP ${otp} to email: ${email}`);
+            console.info('[OTP] Fake delivery enabled');
             return { success: true, message: 'OTP sent successfully' };
+        }
+
+        if (!this.config.msg91AuthKey) {
+            throw new Error('MSG91 auth key is not configured');
         }
 
         if (!this.config.msg91TemplateId) {
             throw new Error('MSG91 email template is not configured');
+        }
+
+        if (!this.config.msg91EmailDomain) {
+            throw new Error('MSG91 email domain is not configured');
         }
 
         const url = `${this.baseUrl}/email/send`;
@@ -34,13 +47,13 @@ export class MSG91Service {
                 to: [{
                     name: email.split('@')[0],
                     email,
-                }, ],
+                }],
                 variables: {
                     company_name: 'BizReq',
                     name: email.split('@')[0],
                     otp,
                 },
-            }, ],
+            }],
             from: {
                 name: 'BizReq',
                 email: this.getFromEmail(),
@@ -48,6 +61,8 @@ export class MSG91Service {
             domain: this.config.msg91EmailDomain,
             template_id: this.config.msg91TemplateId,
         };
+
+        console.info('[MSG91] Sending OTP email', { hasAuthKey: Boolean(this.config.msg91AuthKey), hasTemplateId: Boolean(this.config.msg91TemplateId), hasEmailDomain: Boolean(this.config.msg91EmailDomain), hasFromEmail: Boolean(this.config.msg91FromEmail) });
 
         const response = await fetch(url, {
             method: 'POST',
@@ -65,5 +80,11 @@ export class MSG91Service {
         }
 
         return { success: true, message: 'OTP sent successfully' };
+    }
+
+    async verifyOTP(email, otp) {
+        verifyOtp(email, otp);
+        console.info('[OTP] OTP verification successful');
+        return { success: true, message: 'OTP verified successfully' };
     }
 }

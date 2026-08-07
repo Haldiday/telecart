@@ -11,6 +11,7 @@ import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Card {
   id: string;
@@ -27,6 +28,13 @@ interface Card {
   open_in_new_tab: boolean;
 }
 
+interface PageSectionData {
+  heading?: string | null;
+  name?: string | null;
+  show_heading?: boolean | null;
+  background_color?: string | null;
+}
+
 interface FeaturedCardsProps {
   sectionId: string;
   sectionTable?: string;
@@ -35,6 +43,7 @@ interface FeaturedCardsProps {
   compact?: boolean;
   backgroundColor?: string | null;
   headingClassName?: string;
+  sectionData?: PageSectionData | null;
 }
 
 async function fetchFeaturedCards(sectionId: string, cardsTable: string) {
@@ -44,7 +53,7 @@ async function fetchFeaturedCards(sectionId: string, cardsTable: string) {
     .select('*')
     .eq('section_id', sectionId)
     .order('sort_order');
-  
+
   return (data as any[])
     .filter(card => card.is_visible !== false)
     .map((card) => ({
@@ -66,7 +75,7 @@ async function fetchSectionData(sectionId: string, sectionTable: string) {
     .select('heading, name, show_heading')
     .eq('id', sectionId)
     .single();
-  
+
   return data as any;
 }
 
@@ -78,16 +87,19 @@ export default function FeaturedCards({
   compact = false,
   backgroundColor,
   headingClassName,
+  sectionData: sectionDataProp,
 }: FeaturedCardsProps) {
   const queryClient = useQueryClient();
   const { data: cards = [] } = useQuery({
     queryKey: queryKeys.featuredCards.bySectionId(sectionId, cardsTable),
     queryFn: () => fetchFeaturedCards(sectionId, cardsTable),
   });
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
     queryFn: () => fetchSectionData(sectionId, sectionTable),
+    enabled: sectionDataProp === undefined,
   });
+  const sectionData = sectionDataProp ?? fetchedSectionData;
 
   const heading = sectionData?.heading || sectionData?.name || 'Featured Companies';
   const showHeading = sectionData?.show_heading !== false;
@@ -97,6 +109,18 @@ export default function FeaturedCards({
   const navigate = useNavigate();
   const isSeeAllPage = location.pathname.startsWith("/see-all/featured-cards");
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pendingVideoUrl = params.get('pending_video_url');
+    if (!pendingVideoUrl) return;
+    if (videoModal.isOpen) return;
+
+    setVideoModal({ isOpen: true, url: pendingVideoUrl });
+    params.delete('pending_video_url');
+    const cleanedSearch = params.toString();
+    navigate(`${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash}`, { replace: true });
+  }, [location.hash, location.pathname, location.search, navigate, videoModal.isOpen]);
 
   useEffect(() => {
     const checkTablet = () => {
@@ -121,7 +145,20 @@ export default function FeaturedCards({
     if (!card.link) return;
 
     if (isVideoUrl(card.link)) {
-      setVideoModal({ isOpen: true, url: card.link });
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: card.link,
+        type: 'featuredCardVideo',
+        entityId: card.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+        pendingVideoUrl: card.link,
+        onAuthenticated: () => {
+          setVideoModal({ isOpen: true, url: card.link });
+        },
+      });
+      if (!allowed) return;
     } else {
       const allowed = requireAuthenticationBeforeOpeningLink({
         destination: card.link,
@@ -133,11 +170,12 @@ export default function FeaturedCards({
         navigate,
       });
       if (allowed) {
-        if (card.open_in_new_tab) {
-          window.open(card.link, '_blank', 'noopener,noreferrer');
-        } else {
-          window.location.href = card.link;
-        }
+        void openZohoProtectedLink({
+          destination: card.link,
+          navigate,
+          target: card.open_in_new_tab ? '_blank' : '_self',
+          onError: () => undefined,
+        });
       }
     }
   };
@@ -201,7 +239,7 @@ export default function FeaturedCards({
       )
       .subscribe();
 
-    const sectionsChannel = supabase
+    const sectionsChannel = sectionDataProp === undefined ? supabase
       .channel(`page_sections_${sectionId}_live`)
       .on(
         'postgres_changes',
@@ -210,13 +248,15 @@ export default function FeaturedCards({
           queryClient.invalidateQueries({ queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const });
         }
       )
-      .subscribe();
+      .subscribe() : null;
 
     return () => {
       cardsChannel.unsubscribe();
-      sectionsChannel.unsubscribe();
+      if (sectionsChannel) {
+        sectionsChannel.unsubscribe();
+      }
     };
-  }, [cardsTable, sectionId, sectionTable, queryClient]);
+  }, [cardsTable, sectionId, sectionTable, queryClient, sectionDataProp]);
 
   const displayCards = useMemo(
     () => needsCarousel ? [...cardsToDisplay, ...cardsToDisplay.slice(0, duplicatedCount)] : cardsToDisplay,
@@ -241,9 +281,9 @@ export default function FeaturedCards({
             <div
               onClick={() => handleCardClick(card)}
               className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
-              style={{ 
+              style={{
                 backgroundColor: card.background_color || '#fcf9f5',
-                borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                borderColor: card.show_border && card.border_color ? card.border_color : undefined
               }}
             >
               {card.logo_url && (
@@ -302,7 +342,7 @@ export default function FeaturedCards({
 
         {(fixedMode && cardsToDisplay.length > visibleCount) ? (
           <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
-            <div 
+            <div
               className="flex"
               style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
             >
@@ -313,9 +353,9 @@ export default function FeaturedCards({
                       <div
                         onClick={() => handleCardClick(card)}
                         className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
-                        style={{ 
+                        style={{
                           backgroundColor: card.background_color || '#fcf9f5',
-                          borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                          borderColor: card.show_border && card.border_color ? card.border_color : undefined
                         }}
                       >
                         {card.logo_url && (
@@ -345,7 +385,7 @@ export default function FeaturedCards({
           </div>
         ) : needsCarousel ? (
           <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-            <div 
+            <div
               className="overflow-hidden overflow-x-hidden touch-pan-y py-6"
               style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               ref={containerRef}
@@ -354,9 +394,9 @@ export default function FeaturedCards({
               onTouchEnd={onTouchEnd}
             >
               <div className="flex" onTransitionEnd={handleTransitionEnd} style={{
-                  transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
-                  transition: animate ? 'transform 650ms ease' : 'none',
-                }}>
+                transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
+                transition: animate ? 'transform 650ms ease' : 'none',
+              }}>
                 {displayCards.map((card, displayIndex) => (
                   <div
                     key={`${card.id}-${displayIndex}`}
@@ -366,9 +406,9 @@ export default function FeaturedCards({
                     <div
                       onClick={() => handleCardClick(card)}
                       className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
-                      style={{ 
+                      style={{
                         backgroundColor: card.background_color || '#fcf9f5',
-                        borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                        borderColor: card.show_border && card.border_color ? card.border_color : undefined
                       }}
                     >
                       {card.logo_url && (
@@ -398,9 +438,9 @@ export default function FeaturedCards({
                 <div
                   onClick={() => handleCardClick(card)}
                   className={`h-[240px] rounded-[28px] pt-8 pl-8 pr-6 pb-6 transition-transform duration-300 ${card.link ? 'hover:scale-[1.02]' : ''} flex flex-col group cursor-pointer overflow-hidden ${card.show_border ? 'border border-gray-200' : 'border-2 border-transparent'} hover:shadow-md`}
-                  style={{ 
+                  style={{
                     backgroundColor: card.background_color || '#fcf9f5',
-                    borderColor: card.show_border && card.border_color ? card.border_color : undefined 
+                    borderColor: card.show_border && card.border_color ? card.border_color : undefined
                   }}
                 >
                   {card.logo_url && (
@@ -428,35 +468,35 @@ export default function FeaturedCards({
 
   return (
     <section id={`section-${sectionId}`}>
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-    <div className={compact ? '' : 'py-6 md:py-8'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        {showHeading && (
-          <div className="flex items-center justify-between mb-5">
-            <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>
-              {heading}
-            </h2>
-            {!isSeeAllPage && (
-              <Link to={`/see-all/featured-cards/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
-                See All
-              </Link>
+      <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+        <div className={compact ? '' : 'py-6 md:py-8'}>
+          <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+            {showHeading && (
+              <div className="flex items-center justify-between mb-5">
+                <h2 className={headingClassName || `section-heading ${compact ? 'mt-0' : ''}`}>
+                  {heading}
+                </h2>
+                {!isSeeAllPage && (
+                  <Link to={`/see-all/featured-cards/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
+                    See All
+                  </Link>
+                )}
+              </div>
+            )}
+            {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
+            {needsCarousel && !(hideSeeAllOnMobile && isMobile) && !isSeeAllPage && (
+              <div className="mt-6 flex justify-center">
+
+              </div>
             )}
           </div>
-        )}
-        {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
-        {needsCarousel && !(hideSeeAllOnMobile && isMobile) && !isSeeAllPage && (
-          <div className="mt-6 flex justify-center">
-            
-          </div>
-        )}
-      </div>
-    </div>
-    <VideoModal
-      isOpen={videoModal.isOpen}
-      onClose={() => setVideoModal({ isOpen: false, url: '' })}
-      videoUrl={videoModal.url}
-    />
-    </SubcategorySectionShell>
+        </div>
+        <VideoModal
+          isOpen={videoModal.isOpen}
+          onClose={() => setVideoModal({ isOpen: false, url: '' })}
+          videoUrl={videoModal.url}
+        />
+      </SubcategorySectionShell>
     </section>
   );
 }

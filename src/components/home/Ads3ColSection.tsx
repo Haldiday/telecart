@@ -12,6 +12,7 @@ import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Ad {
   description: string | null;
@@ -28,6 +29,13 @@ interface Ad {
   open_in_new_tab: boolean;
 }
 
+interface PageSectionData {
+  heading?: string | null;
+  name?: string | null;
+  show_heading?: boolean | null;
+  background_color?: string | null;
+}
+
 interface Ads3ColSectionProps {
   sectionId: string;
   sectionTable?: string;
@@ -36,6 +44,7 @@ interface Ads3ColSectionProps {
   compact?: boolean;
   backgroundColor?: string | null;
   headingClassName?: string;
+  sectionData?: PageSectionData | null;
 }
 
 async function fetchAds(sectionId: string, adsTable: string) {
@@ -69,16 +78,19 @@ export default function Ads3ColSection({
   compact = false,
   backgroundColor,
   headingClassName,
+  sectionData: sectionDataProp,
 }: Ads3ColSectionProps) {
   const queryClient = useQueryClient();
   const { data: ads = [] } = useQuery({
     queryKey: queryKeys.ads.bySectionId(sectionId, '3col'),
     queryFn: () => fetchAds(sectionId, adsTable),
   });
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
     queryFn: () => fetchSectionData(sectionId, sectionTable),
+    enabled: sectionDataProp === undefined,
   });
+  const sectionData = sectionDataProp ?? fetchedSectionData;
 
   const heading = sectionData?.heading || sectionData?.name || '3 Column Ads';
   const showHeading = sectionData?.show_heading !== false;
@@ -90,11 +102,36 @@ export default function Ads3ColSection({
   const isSeeAllPage = location.pathname.startsWith("/see-all/3-ads");
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pendingVideoUrl = params.get('pending_video_url');
+    if (!pendingVideoUrl) return;
+    if (videoModal.isOpen) return;
+
+    setVideoModal({ isOpen: true, url: pendingVideoUrl });
+    params.delete('pending_video_url');
+    const cleanedSearch = params.toString();
+    navigate(`${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash}`, { replace: true });
+  }, [location.hash, location.pathname, location.search, navigate, videoModal.isOpen]);
+
   const handleAdClick = (ad: Ad) => {
     if (!ad.link) return;
 
     if (isVideoUrl(ad.link)) {
-      setVideoModal({ isOpen: true, url: ad.link });
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: ad.link,
+        type: 'adVideo',
+        entityId: ad.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+        pendingVideoUrl: ad.link,
+        onAuthenticated: () => {
+          setVideoModal({ isOpen: true, url: ad.link });
+        },
+      });
+      if (!allowed) return;
     } else {
       const allowed = requireAuthenticationBeforeOpeningLink({
         destination: ad.link,
@@ -106,11 +143,12 @@ export default function Ads3ColSection({
         navigate,
       });
       if (allowed) {
-        if (ad.open_in_new_tab) {
-          window.open(ad.link, '_blank', 'noopener,noreferrer');
-        } else {
-          window.location.href = ad.link;
-        }
+        void openZohoProtectedLink({
+          destination: ad.link,
+          navigate,
+          target: ad.open_in_new_tab ? '_blank' : '_self',
+          onError: () => undefined,
+        });
       }
     }
   };
@@ -128,16 +166,16 @@ export default function Ads3ColSection({
   const fixedMode = visibleAds.some((ad) => ad.is_fixed);
   const adsToDisplay = fixedMode ? visibleAds.filter(ad => ad.is_fixed) : visibleAds;
   const [fixedPageIndex, setFixedPageIndex] = useState(0);
-  
+
   // Dynamic layout based on number of ads and screen size
   const visibleCount = useMemo(() => {
     if (windowWidth < 768) return 1; // Mobile
     if (windowWidth < 1024) return 2; // Tablet
-    
+
     // Desktop: Always show 3 columns for consistent height
     return 3;
   }, [windowWidth]);
-  
+
   const totalFixedPages = Math.ceil(adsToDisplay.length / visibleCount);
 
   // Group ads into pages for fixed mode sliding
@@ -229,16 +267,16 @@ export default function Ads3ColSection({
         {adsToDisplay.map((ad) => (
           <div key={ad.id} className="w-full">
             <div
-                onClick={() => handleAdClick(ad)}
-                className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                style={{
-                  ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                  backgroundColor: ad.background_color || undefined
-                }}
+              onClick={() => handleAdClick(ad)}
+              className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+              style={{
+                ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                backgroundColor: ad.background_color || undefined
+              }}
+            >
+              <div
+                className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
               >
-                <div
-                  className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                >
                 {ad.show_image !== false && ad.image_url && (
                   <img
                     src={ad.image_url}
@@ -258,9 +296,9 @@ export default function Ads3ColSection({
                   )}
                 </div>
               )}
-              </div>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
     );
   };
@@ -300,7 +338,7 @@ export default function Ads3ColSection({
 
         {needsCarousel ? (
           <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-            <div 
+            <div
               className="overflow-hidden overflow-x-hidden touch-pan-y"
               style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               ref={containerRef}
@@ -323,16 +361,16 @@ export default function Ads3ColSection({
                     style={{ width: `${slideWidth}%` }}
                   >
                     <div
-                        onClick={() => handleAdClick(ad)}
-                        className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                        style={{
-                          ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                          backgroundColor: ad.background_color || undefined
-                        }}
+                      onClick={() => handleAdClick(ad)}
+                      className={`block group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                      style={{
+                        ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                        backgroundColor: ad.background_color || undefined
+                      }}
+                    >
+                      <div
+                        className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
                       >
-                        <div
-                          className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                        >
                         {ad.show_image !== false && ad.image_url && (
                           <img
                             src={ad.image_url}
@@ -360,7 +398,7 @@ export default function Ads3ColSection({
           </div>
         ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
           <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
-            <div 
+            <div
               className="flex flex-row flex-nowrap"
               style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
             >
@@ -414,16 +452,16 @@ export default function Ads3ColSection({
             {adsToDisplay.map((ad) => (
               <div key={ad.id} className="w-full">
                 <div
-                    onClick={() => handleAdClick(ad)}
-                    className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={{
-                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                      backgroundColor: ad.background_color || undefined
-                    }}
+                  onClick={() => handleAdClick(ad)}
+                  className={`block w-full group rounded-2xl overflow-hidden cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                  style={{
+                    ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                    backgroundColor: ad.background_color || undefined
+                  }}
+                >
+                  <div
+                    className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
                   >
-                    <div
-                      className="w-full overflow-hidden h-[160px] sm:h-auto sm:aspect-[16/9]"
-                    >
                     {ad.show_image !== false && ad.image_url && (
                       <img
                         src={ad.image_url}
@@ -443,9 +481,9 @@ export default function Ads3ColSection({
                       )}
                     </div>
                   )}
-                  </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -454,30 +492,30 @@ export default function Ads3ColSection({
 
   return (
     <section id={`section-${sectionId}`}>
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-    <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        {showHeading && (
-          <div className="flex items-center justify-between mb-8">
-            <h2 className={headingClassName || "section-heading !mb-0"}>
-              {heading}
-            </h2>
-            {!isSeeAllPage && (
-              <Link to={`/see-all/3-ads/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
-                See All
-              </Link>
+      <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+        <div className={compact ? '' : 'py-4 md:py-6'}>
+          <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+            {showHeading && (
+              <div className="flex items-center justify-between mb-8">
+                <h2 className={headingClassName || "section-heading !mb-0"}>
+                  {heading}
+                </h2>
+                {!isSeeAllPage && (
+                  <Link to={`/see-all/3-ads/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
+                    See All
+                  </Link>
+                )}
+              </div>
             )}
+            {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
           </div>
-        )}
-        {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
-      </div>
-    </div>
-    <VideoModal
-      isOpen={videoModal.isOpen}
-      onClose={() => setVideoModal({ isOpen: false, url: '' })}
-      videoUrl={videoModal.url}
-    />
-    </SubcategorySectionShell>
+        </div>
+        <VideoModal
+          isOpen={videoModal.isOpen}
+          onClose={() => setVideoModal({ isOpen: false, url: '' })}
+          videoUrl={videoModal.url}
+        />
+      </SubcategorySectionShell>
     </section>
   );
 }

@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCategorySection } from '@/hooks/useCategorySection';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Brand {
   id: string;
@@ -50,6 +51,7 @@ interface Category {
 interface CategoriesSectionProps {
   sectionId: string;
   backgroundColor?: string | null;
+  sectionData?: PageSectionData | null;
 }
 
 interface PageSectionData {
@@ -65,25 +67,26 @@ async function fetchPageSectionById(sectionId: string): Promise<PageSectionData 
     .select('heading, name, show_heading, background_color')
     .eq('id', sectionId)
     .single();
-  
+
   if (error) {
     console.error('Error fetching page section:', error);
     return null;
   }
-  
+
   return data;
 }
 
-export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor }: CategoriesSectionProps) {
+export default function CategoriesSection({ sectionId, backgroundColor: propBackgroundColor, sectionData: sectionDataProp }: CategoriesSectionProps) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
   const { data: categories = [] } = useCategorySection(sectionId);
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: queryKeys.pageSection.byId(sectionId),
     queryFn: () => fetchPageSectionById(sectionId),
-    enabled: !!sectionId,
+    enabled: sectionDataProp === undefined && !!sectionId,
   });
+  const sectionData = sectionDataProp ?? fetchedSectionData;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({});
   const [subcategoryExpanded, setSubcategoryExpanded] = useState<Record<string, boolean>>({});
@@ -138,18 +141,23 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
       })
       .subscribe();
 
-    const sectionsChannel = supabase
-      .channel(`page_sections_cat_${sectionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections', filter: `id=eq.${sectionId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.pageSection.byId(sectionId) });
-      })
-      .subscribe();
+    let sectionsChannel: any = null;
+    if (sectionDataProp === undefined) {
+      sectionsChannel = supabase
+        .channel(`page_sections_cat_${sectionId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'page_sections', filter: `id=eq.${sectionId}` }, () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.pageSection.byId(sectionId) });
+        })
+        .subscribe();
+    }
 
     return () => {
       channel.unsubscribe();
-      sectionsChannel.unsubscribe();
+      if (sectionsChannel) {
+        sectionsChannel.unsubscribe();
+      }
     };
-  }, [sectionId, queryClient]);
+  }, [sectionId, queryClient, sectionDataProp]);
 
   if (categories.length === 0) return null;
 
@@ -162,7 +170,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
 
   return (
     <section id={`section-${sectionId}`} className="py-2 md:py-3 bg-white md:bg-[#f9f8f5]" style={{ backgroundColor: propBackgroundColor || sectionBackgroundColor || undefined }}>
-     
+
 
       <div ref={accordionRef} className="mx-auto max-w-[1580px] px-6 md:px-8 lg:px-12">
         {showHeading && (
@@ -187,6 +195,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                   <button
                     type="button"
                     onClick={() => {
+                      console.log('Category clicked', category.name);
                       const isCurrentlyOpen = !!mobileExpanded[category.id];
 
                       setSubcategoryExpanded({});
@@ -224,6 +233,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                         const hasBrands = sub.brands.length > 0;
 
                         const handleSubcategoryClick = () => {
+                          console.log('Subcategory clicked', sub.name);
                           if (hasBrands) {
                             toggleSubcategory(sub.id);
                           } else if (sub.custom_link) {
@@ -237,7 +247,12 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                               navigate,
                             });
                             if (allowed) {
-                              window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+                              void openZohoProtectedLink({
+                                destination: sub.custom_link,
+                                navigate,
+                                target: '_blank',
+                                onError: () => undefined,
+                              });
                             }
                           }
                           // Else do nothing
@@ -268,13 +283,13 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                                 <div className="border-l-2 border-blue-500 pl-4 ml-1">
                                   {displayBrands.slice(0, 6).map((brand) => (
                                     <BrandActionLinks
-                                    key={brand.id}
-                                    brand={brand}
-                                    isExpanded={expandedBrandId === brand.id}
-                                    onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
-                                    categoryId={category.id}
-                                    subcategoryId={sub.id}
-                                  />
+                                      key={brand.id}
+                                      brand={brand}
+                                      isExpanded={expandedBrandId === brand.id}
+                                      onToggle={() => setExpandedBrandId(expandedBrandId === brand.id ? null : brand.id)}
+                                      categoryId={category.id}
+                                      subcategoryId={sub.id}
+                                    />
                                   ))}
                                   {displayBrands.length > 6 && (
                                     <Link
@@ -290,8 +305,8 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                           </div>
                         );
                       })}
-                      
-                      
+
+
                     </div>
                   )}
                 </div>
@@ -337,6 +352,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                       const hasBrands = sub.brands.length > 0;
 
                       const handleSubcategoryClick = () => {
+                        console.log('Subcategory clicked', sub.name);
                         if (hasBrands) {
                           toggleSubcategory(sub.id);
                         } else if (sub.custom_link) {
@@ -350,7 +366,12 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                             navigate,
                           });
                           if (allowed) {
-                            window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+                            void openZohoProtectedLink({
+                              destination: sub.custom_link,
+                              navigate,
+                              target: '_blank',
+                              onError: () => undefined,
+                            });
                           }
                         }
                         // Else do nothing
@@ -438,7 +459,7 @@ export default function CategoriesSection({ sectionId, backgroundColor: propBack
                 </div>
               );
             })}
-            
+
 
           </div>
         )}

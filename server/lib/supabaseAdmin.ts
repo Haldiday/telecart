@@ -7,8 +7,8 @@ export function getSupabaseAdmin(): SupabaseClient {
     return supabaseAdmin;
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!supabaseUrl) {
     throw new Error('Missing SUPABASE_URL (or VITE_SUPABASE_URL) environment variable');

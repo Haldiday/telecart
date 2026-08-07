@@ -106,6 +106,20 @@ const getCachedHeaderSettings = (): HeaderSettings => {
   }
 };
 
+function maskPhoneForDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return phone;
+  return digits.length <= 4 ? `+${digits}` : `+${digits.slice(-4)}`;
+}
+
+function getAvatarFallbackText(user: { full_name?: string | null; email?: string | null; phone?: string | null } | null | undefined): string {
+  if (!user) return 'U';
+  if (user.full_name) return user.full_name.charAt(0).toUpperCase();
+  if (user.email) return user.email.charAt(0).toUpperCase();
+  const digits = user.phone?.replace(/\D/g, '');
+  return digits ? digits.slice(-1) : 'U';
+}
+
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -122,6 +136,8 @@ export default function Header() {
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const { user, logout } = useAuth();
+  const userIdentifier = user?.email || maskPhoneForDisplay(user?.phone || '') || 'User';
+  const avatarFallbackText = getAvatarFallbackText(user);
   const {
     query,
     setQuery,
@@ -395,9 +411,9 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <Avatar className="h-8 w-8 bg-white text-[#17313B]">
-                    <AvatarImage src={user.profile_photo || ''} alt={user.full_name || user.email} />
+                    <AvatarImage src={user.profile_photo || ''} alt={user.full_name || userIdentifier} />
                     <AvatarFallback className="bg-white text-[#17313B]">
-                      {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                      {avatarFallbackText}
                     </AvatarFallback>
                   </Avatar>
                 </button>
@@ -405,7 +421,7 @@ export default function Header() {
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.email}</p>
+                    <p className="text-sm font-medium leading-none">{userIdentifier}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -757,14 +773,14 @@ export default function Header() {
                       <>
                         <div className="flex items-center gap-3 px-2 py-2">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.profile_photo || ''} alt={user.full_name || user.email} />
+                            <AvatarImage src={user.profile_photo || ''} alt={user.full_name || userIdentifier} />
                             <AvatarFallback>
-                              {user.full_name ? user.full_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                              {avatarFallbackText}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
                             <p className="text-sm font-medium">{user.full_name || 'User'}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">{userIdentifier}</p>
                           </div>
                         </div>
                         <button

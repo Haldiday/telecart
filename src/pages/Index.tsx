@@ -215,12 +215,18 @@ export default function Index() {
                 if (!Component) return null;
 
                 const sectionContent = (() => {
+                  const componentProps = {
+                    sectionId: section.id,
+                    sectionData: section,
+                    backgroundColor: section.background_color,
+                  };
+
                   // Hide "See All" on mobile for Featured Cards in overview
                   if (section.section_type === 'cards') {
-                    return <Component sectionId={section.id} hideSeeAllOnMobile={true} backgroundColor={section.background_color} />;
+                    return <Component {...componentProps} hideSeeAllOnMobile={true} />;
                   }
 
-                  return <Component sectionId={section.id} backgroundColor={section.background_color} />;
+                  return <Component {...componentProps} />;
                 })();
 
                 // Apply background color to section container if specified

@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
 import { buildHierarchicalSearchResults } from '@/lib/searchHierarchy';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
 
 type SearchResultType = 'category' | 'subcategory' | 'brand' | 'brand_action_link' | 'section';
 
@@ -70,26 +71,26 @@ interface SearchContextType {
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
-    children,
-  }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const isMobile = useIsMobile();
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [searchError, setSearchError] = useState<string | null>(null);
-    const [isSearchActive, setIsSearchActive] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(-1);
-    const [showHeaderSearch, setShowHeaderSearch] = useState(false);
-    const [showMobileStickySearch, setShowMobileStickySearch] = useState(false);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const mountedRef = useRef(true);
-    const lastRequestRef = useRef<number>(0);
-    const requestIdCounterRef = useRef<number>(0);
-    const searchContainerRef = useRef<HTMLDivElement | null>(null);
-    const heroSearchContainerRef = useRef<HTMLDivElement | null>(null);
-    const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  children,
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showHeaderSearch, setShowHeaderSearch] = useState(false);
+  const [showMobileStickySearch, setShowMobileStickySearch] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
+  const lastRequestRef = useRef<number>(0);
+  const requestIdCounterRef = useRef<number>(0);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const heroSearchContainerRef = useRef<HTMLDivElement | null>(null);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Scroll detection for header search
   useEffect(() => {
@@ -97,7 +98,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       const scrollThreshold = 100;
       const scrolled = window.scrollY > scrollThreshold;
       console.log('[SearchContext] handleScroll called', { scrollY: window.scrollY, scrolled, isMobile });
-      
+
       // Desktop: show header search when scrolled
       // Mobile: never show header search, but show sticky search when scrolled
       if (isMobile) {
@@ -122,9 +123,9 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleResize);
     window.visualViewport?.addEventListener('resize', handleVisualViewportResize);
-    
+
     handleScroll(); // Call once to set initial state
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
@@ -171,38 +172,38 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         const [
-        { data: categories, error: categoriesError },
-        { data: subcategories, error: subcategoriesError },
-        { data: brandMatches, error: brandMatchesError },
-        { data: sections, error: sectionsError },
-      ] = await Promise.all([
-        supabase
-          .from('categories')
-          .select('id, name')
-          .ilike('name', `%${searchTerm}%`)
-          .order('sort_order')
-          .limit(20),
-        (supabase as any)
-          .from('subcategories')
-          .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
-          .ilike('name', `%${searchTerm}%`)
-          .order('sort_order')
-          .limit(20),
-        (supabase as any)
-          .from('subcategory_brands')
-          .select('id, name, link, subcategory_id, subcategories(id, name, category_id, custom_link, custom_link_type), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
-          .ilike('name', `%${searchTerm}%`)
-          .order('sort_order')
-          .limit(20),
-        supabase
-          .from('page_sections')
-          .select('id, section_type, heading, name')
-          .eq('is_visible', true)
-          .in('section_type', ['cards', 'offers', 'ads_3col'])
-          .or(`heading.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`)
-          .order('sort_order')
-          .limit(20),
-      ]);
+          { data: categories, error: categoriesError },
+          { data: subcategories, error: subcategoriesError },
+          { data: brandMatches, error: brandMatchesError },
+          { data: sections, error: sectionsError },
+        ] = await Promise.all([
+          supabase
+            .from('categories')
+            .select('id, name')
+            .ilike('name', `%${searchTerm}%`)
+            .order('sort_order')
+            .limit(20),
+          (supabase as any)
+            .from('subcategories')
+            .select('id, category_id, name, custom_link, custom_link_type, subcategory_brands(*)')
+            .ilike('name', `%${searchTerm}%`)
+            .order('sort_order')
+            .limit(20),
+          (supabase as any)
+            .from('subcategory_brands')
+            .select('id, name, link, subcategory_id, subcategories(id, name, category_id, custom_link, custom_link_type), action_links, action_link_1_text, action_link_1_url, action_link_1_new_tab, action_link_1_enabled, action_link_2_text, action_link_2_url, action_link_2_new_tab, action_link_2_enabled, action_link_3_text, action_link_3_url, action_link_3_new_tab, action_link_3_enabled')
+            .ilike('name', `%${searchTerm}%`)
+            .order('sort_order')
+            .limit(20),
+          supabase
+            .from('page_sections')
+            .select('id, section_type, heading, name')
+            .eq('is_visible', true)
+            .in('section_type', ['cards', 'offers', 'ads_3col'])
+            .or(`heading.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`)
+            .order('sort_order')
+            .limit(20),
+        ]);
 
         if (!mountedRef.current || lastRequestRef.current !== requestId) {
           return;
@@ -212,7 +213,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log('[SearchContext] categories:', categories, 'error:', categoriesError);
         console.log('[SearchContext] subcategories:', subcategories, 'error:', subcategoriesError);
         console.log('[SearchContext] brandMatches:', brandMatches, 'error:', brandMatchesError);
-        
+
         if (categoriesError || subcategoriesError || brandMatchesError) {
           console.error('[SearchContext] errors:', { categoriesError, subcategoriesError, brandMatchesError });
           setSearchError('Unable to search right now.');
@@ -307,10 +308,25 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const openSearchLink = useCallback(
-    (value: string | null | undefined, fallbackPath?: string) => {
+    (
+      value: string | null | undefined,
+      fallbackPath?: string,
+      options?: { type?: string; entityId?: string | null }
+    ) => {
       if (!value) {
         if (fallbackPath) {
-          navigate(fallbackPath);
+          requireAuthenticationBeforeOpeningLink({
+            destination: fallbackPath,
+            type: options?.type ?? 'search-result',
+            entityId: options?.entityId ?? null,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(fallbackPath);
+            },
+          });
         }
         return;
       }
@@ -318,30 +334,66 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       const normalizedValue = value.trim();
       if (!normalizedValue) {
         if (fallbackPath) {
-          navigate(fallbackPath);
+          requireAuthenticationBeforeOpeningLink({
+            destination: fallbackPath,
+            type: options?.type ?? 'search-result',
+            entityId: options?.entityId ?? null,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(fallbackPath);
+            },
+          });
         }
         return;
       }
 
-      if (/^(mailto|tel):/i.test(normalizedValue)) {
-        window.location.href = normalizedValue;
-        return;
-      }
-
-      try {
-        const url = new URL(normalizedValue);
-        window.open(url.toString(), '_blank', 'noopener,noreferrer');
-      } catch {
-        if (/^https?:\/\//i.test(normalizedValue) || normalizedValue.startsWith('www.')) {
-          window.open(normalizedValue.startsWith('http') ? normalizedValue : `https://${normalizedValue}`, '_blank', 'noopener,noreferrer');
-        } else if (normalizedValue.startsWith('/') || normalizedValue.startsWith('#')) {
-          navigate(normalizedValue);
-        } else if (fallbackPath) {
-          navigate(fallbackPath);
+      const openValue = () => {
+        if (/^(mailto|tel):/i.test(normalizedValue)) {
+          window.location.href = normalizedValue;
+          return;
         }
-      }
+
+        try {
+          const url = new URL(normalizedValue);
+          void openZohoProtectedLink({
+            destination: url.toString(),
+            navigate,
+            target: '_blank',
+            onError: () => undefined,
+          });
+          return;
+        } catch {
+          if (/^https?:\/\//i.test(normalizedValue) || normalizedValue.startsWith('www.')) {
+            const resolved = normalizedValue.startsWith('http') ? normalizedValue : `https://${normalizedValue}`;
+            void openZohoProtectedLink({
+              destination: resolved,
+              navigate,
+              target: '_blank',
+              onError: () => undefined,
+            });
+          } else if (normalizedValue.startsWith('/') || normalizedValue.startsWith('#')) {
+            navigate(normalizedValue);
+          } else if (fallbackPath) {
+            navigate(fallbackPath);
+          }
+        }
+      };
+
+      requireAuthenticationBeforeOpeningLink({
+        destination: normalizedValue,
+        type: options?.type ?? 'search-result',
+        entityId: options?.entityId ?? null,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+        onAuthenticated: openValue,
+      });
     },
-    [navigate]
+    [location.hash, location.pathname, location.search, navigate]
   );
 
   const handleResultClick = useCallback(
@@ -350,12 +402,37 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       setQuery('');
 
       if (result.type === 'category') {
-        navigate(`/category/${result.id}`);
+        requireAuthenticationBeforeOpeningLink({
+          destination: `/category/${result.id}`,
+          type: 'category',
+          entityId: result.id,
+          pathname: location.pathname,
+          search: location.search,
+          hash: location.hash,
+          navigate,
+          onAuthenticated: () => {
+            navigate(`/category/${result.id}`);
+          },
+        });
       } else if (result.type === 'subcategory') {
         if (result.custom_link) {
-          openSearchLink(result.custom_link, result.categoryId ? `/category/${result.categoryId}/subcategory/${result.id}/brands` : undefined);
+          openSearchLink(result.custom_link, result.categoryId ? `/category/${result.categoryId}/subcategory/${result.id}/brands` : undefined, {
+            type: 'subcategory',
+            entityId: result.id,
+          });
         } else if (result.categoryId) {
-          navigate(`/category/${result.categoryId}/subcategory/${result.id}/brands`);
+          requireAuthenticationBeforeOpeningLink({
+            destination: `/category/${result.categoryId}/subcategory/${result.id}/brands`,
+            type: 'subcategory',
+            entityId: result.id,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(`/category/${result.categoryId}/subcategory/${result.id}/brands`);
+            },
+          });
         }
       } else if (result.type === 'brand') {
         const hasActionLinks = Boolean(
@@ -366,23 +443,73 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
         );
 
         if (hasActionLinks && result.categoryId && result.subcategoryId) {
-          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
+          requireAuthenticationBeforeOpeningLink({
+            destination: `/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`,
+            type: 'brand',
+            entityId: result.id,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
+            },
+          });
         } else if (result.link) {
-          openSearchLink(result.link);
+          openSearchLink(result.link, undefined, {
+            type: 'brand',
+            entityId: result.id,
+          });
         } else if (result.categoryId && result.subcategoryId) {
-          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
+          requireAuthenticationBeforeOpeningLink({
+            destination: `/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`,
+            type: 'brand',
+            entityId: result.id,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id}/action-links`);
+            },
+          });
         }
       } else if (result.type === 'brand_action_link') {
         if (result.link) {
-          openSearchLink(result.link);
+          openSearchLink(result.link, undefined, {
+            type: 'brandActionLink',
+            entityId: result.id,
+          });
         } else if (result.categoryId && result.subcategoryId) {
-          navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id.split('-action-')[0]}/action-links`);
+          requireAuthenticationBeforeOpeningLink({
+            destination: `/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id.split('-action-')[0]}/action-links`,
+            type: 'brandActionLink',
+            entityId: result.id,
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            navigate,
+            onAuthenticated: () => {
+              navigate(`/category/${result.categoryId}/subcategory/${result.subcategoryId}/brand/${result.id.split('-action-')[0]}/action-links`);
+            },
+          });
         }
       } else if (result.type === 'section') {
-        navigate(`/#section-${result.id}`);
+        requireAuthenticationBeforeOpeningLink({
+          destination: `/#section-${result.id}`,
+          type: 'section',
+          entityId: result.id,
+          pathname: location.pathname,
+          search: location.search,
+          hash: location.hash,
+          navigate,
+          onAuthenticated: () => {
+            navigate(`/#section-${result.id}`);
+          },
+        });
       }
     },
-    [navigate, openSearchLink]
+    [location.hash, location.pathname, location.search, navigate, openSearchLink]
   );
 
   const handleSearchButton = useCallback(() => {
@@ -416,7 +543,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
     const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
       const clickedHeaderSearch = searchContainerRef.current?.contains(event.target as Node);
       const clickedHeroSearch = heroSearchContainerRef.current?.contains(event.target as Node);
-      
+
       if (!clickedHeaderSearch && !clickedHeroSearch) {
         setIsSearchActive(false);
         setSelectedIndex(-1);

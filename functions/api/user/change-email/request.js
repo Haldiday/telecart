@@ -1,8 +1,8 @@
-﻿import { getConfig } from '../../../../helpers/config.js';
-import { getSupabaseAdmin } from '../../../../helpers/supabase.js';
-import { MSG91Service } from '../../../../helpers/msg91.js';
-import { jsonResponse, getBearerToken, validateEmail } from '../../../../helpers/utils.js';
-import { getSupabaseUserByToken } from '../../../../helpers/supabaseAuth.js';
+﻿import { getConfig } from '../../../helpers/config.js';
+import { getSupabaseAdmin } from '../../../helpers/supabase.js';
+import { MSG91Service } from '../../../helpers/msg91.js';
+import { jsonResponse, getBearerToken, validateEmail } from '../../../helpers/utils.js';
+import { getSupabaseUserByToken } from '../../../helpers/supabaseAuth.js';
 
 export async function onRequestPost({ request, env }) {
     try {
@@ -35,7 +35,9 @@ export async function onRequestPost({ request, env }) {
 
         const config = getConfig(env);
         const otpService = new MSG91Service(config);
-        await otpService.sendOTP(user.email);
+        const otp = otpService.generateOTP();
+        console.log('[OTP] Generated OTP for email change request', { email: user.email, otp });
+        await otpService.sendOTP(user.email, otp);
         return jsonResponse({ success: true, message: 'OTP sent to your current email address' });
     } catch (error) {
         console.error('Error requesting email change:', error);

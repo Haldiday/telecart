@@ -25,33 +25,39 @@ import { useToast } from '@/hooks/use-toast';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useNavigate } from 'react-router-dom';
 
-const ZOHO_FORM_URL = import.meta.env.VITE_ZOHO_FORM_URL || '';
-
 export const Account: React.FC = () => {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  const [fullName, setFullName] = useState(user?.full_name || '');
+
+  const [firstName, setFirstName] = useState(user?.first_name || '');
+  const [lastName, setLastName] = useState(user?.last_name || '');
   const [companyName, setCompanyName] = useState(user?.company_name || '');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [isRedirectingToZoho, setIsRedirectingToZoho] = useState(false);
-  
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
+  const [isVerifyingEmailOtp, setIsVerifyingEmailOtp] = useState(false);
+
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
+  const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
+
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
       const response = await userAPI.updateProfile({
-        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
         company_name: companyName,
       });
-      
+
       if (response.success && response.user) {
         updateUser(response.user);
         toast({
@@ -70,12 +76,12 @@ export const Account: React.FC = () => {
       setIsSaving(false);
     }
   };
-  
+
   const handleRequestChangeEmail = async () => {
     try {
-      setIsSendingOtp(true);
+      setIsSendingEmailOtp(true);
       await userAPI.requestChangeEmail(newEmail);
-      setOtpSent(true);
+      setEmailOtpSent(true);
       toast({
         title: 'OTP sent',
         description: 'OTP has been sent to your current email address.',
@@ -88,21 +94,21 @@ export const Account: React.FC = () => {
         variant: 'destructive',
       });
     } finally {
-      setIsSendingOtp(false);
+      setIsSendingEmailOtp(false);
     }
   };
-  
+
   const handleVerifyEmailChange = async () => {
     try {
-      setIsVerifyingOtp(true);
-      const response = await userAPI.verifyChangeEmail(otp, newEmail);
-      
+      setIsVerifyingEmailOtp(true);
+      const response = await userAPI.verifyChangeEmail(emailOtp, newEmail);
+
       if (response.success && response.user && response.token) {
         updateUser({ ...response.user, token: response.token });
         setIsEmailModalOpen(false);
-        setOtpSent(false);
+        setEmailOtpSent(false);
         setNewEmail('');
-        setOtp('');
+        setEmailOtp('');
         toast({
           title: 'Email updated',
           description: 'Your email has been updated successfully!',
@@ -116,77 +122,103 @@ export const Account: React.FC = () => {
         variant: 'destructive',
       });
     } finally {
-      setIsVerifyingOtp(false);
+      setIsVerifyingEmailOtp(false);
     }
   };
-  
+
   const resetEmailModal = () => {
-    setOtpSent(false);
+    setEmailOtpSent(false);
     setNewEmail('');
-    setOtp('');
+    setEmailOtp('');
   };
 
-  const handleOpenZohoForm = async () => {
-    if (!ZOHO_FORM_URL) {
-      toast({
-        title: 'Configuration missing',
-        description: 'The Zoho form URL has not been configured yet.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  const handleRequestChangePhone = async () => {
     try {
-      setIsRedirectingToZoho(true);
-      const response = await userAPI.generateZohoToken({
-        name: fullName || user?.full_name || '',
-        companyName: companyName || user?.company_name || '',
-      });
-
-      if (!response.success || !response.token) {
-        throw new Error(response.message || 'Unable to generate secure Zoho token');
-      }
-
-      const url = new URL(ZOHO_FORM_URL);
-      url.searchParams.set('token', response.token);
-      window.location.assign(url.toString());
-    } catch (error) {
-      console.error('Error redirecting to Zoho form:', error);
+      setIsSendingPhoneOtp(true);
+      await userAPI.requestChangePhone(newPhone);
+      setPhoneOtpSent(true);
       toast({
-        title: 'Unable to continue',
-        description: getApiErrorMessage(error, 'Failed to prepare the Zoho form link. Please try again.'),
+        title: 'OTP sent',
+        description: 'OTP has been sent to your current phone number.',
+      });
+    } catch (error) {
+      console.error('Error requesting phone change:', error);
+      toast({
+        title: 'Error',
+        description: getApiErrorMessage(error, 'Failed to send OTP. Please try again.'),
         variant: 'destructive',
       });
     } finally {
-      setIsRedirectingToZoho(false);
+      setIsSendingPhoneOtp(false);
     }
+  };
+
+  const handleVerifyPhoneChange = async () => {
+    try {
+      setIsVerifyingPhoneOtp(true);
+      const response = await userAPI.verifyChangePhone(phoneOtp, newPhone);
+
+      if (response.success && response.user && response.token) {
+        updateUser({ ...response.user, token: response.token });
+        setIsPhoneModalOpen(false);
+        setPhoneOtpSent(false);
+        setNewPhone('');
+        setPhoneOtp('');
+        toast({
+          title: 'Phone updated',
+          description: 'Your phone number has been updated successfully!',
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying phone change:', error);
+      toast({
+        title: 'Invalid OTP',
+        description: getApiErrorMessage(error, 'The OTP you entered is invalid or expired. Please try again.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifyingPhoneOtp(false);
+    }
+  };
+
+  const resetPhoneModal = () => {
+    setPhoneOtpSent(false);
+    setNewPhone('');
+    setPhoneOtp('');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-3xl font-bold">Account Settings</h1>
-          <Button variant="outline" onClick={() => navigate('/')}>
-            Go to Home Page
-          </Button>
-        </div>
+
 
         <Card>
-          <CardHeader>
+          <CardHeader className="w-full flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle>Profile Information</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => navigate('/')}>Go to Home Page</Button>
           </CardHeader>
           <CardContent className="space-y-6">
-            
 
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-              />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter your first name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Enter your last name"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -217,7 +249,7 @@ export const Account: React.FC = () => {
                   disabled
                   className="cursor-not-allowed"
                 />
-                {user?.is_verified && (
+                {user?.email_verified && (
                   <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
                     Verified
                   </Badge>
@@ -225,7 +257,33 @@ export const Account: React.FC = () => {
               </div>
             </div>
 
-           
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsPhoneModalOpen(true)}
+                >
+                  Change Phone
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="phone"
+                  value={user?.phone || ''}
+                  disabled
+                  className="cursor-not-allowed"
+                />
+                {user?.phone_verified && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
+                    Verified
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <Button
@@ -234,14 +292,6 @@ export const Account: React.FC = () => {
                 className="w-full md:w-auto"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleOpenZohoForm}
-                disabled={isRedirectingToZoho}
-                className="w-full md:w-auto"
-              >
-                {isRedirectingToZoho ? 'Preparing...' : 'Open Zoho Form'}
               </Button>
             </div>
           </CardContent>
@@ -256,13 +306,13 @@ export const Account: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Change Email Address</DialogTitle>
             <DialogDescription>
-              {otpSent 
-                ? 'Enter the OTP sent to your current email address.' 
-                : 'Enter your new email address below. We will send an OTP to your current email for verification.'}
+              {emailOtpSent
+                ? 'Enter the OTP sent to your current email address.'
+                : ''}
             </DialogDescription>
           </DialogHeader>
 
-          {!otpSent ? (
+          {!emailOtpSent ? (
             <>
               <div className="space-y-2">
                 <Label htmlFor="newEmail">New Email</Label>
@@ -280,21 +330,21 @@ export const Account: React.FC = () => {
                 </DialogClose>
                 <Button
                   onClick={handleRequestChangeEmail}
-                  disabled={isSendingOtp || !newEmail}
+                  disabled={isSendingEmailOtp || !newEmail}
                 >
-                  {isSendingOtp ? 'Sending...' : 'Continue'}
+                  {isSendingEmailOtp ? 'Sending...' : 'Continue'}
                 </Button>
               </DialogFooter>
             </>
           ) : (
             <>
               <div className="space-y-2">
-                <Label htmlFor="otp">Enter OTP</Label>
+                <Label htmlFor="emailOtp">Enter OTP</Label>
                 <InputOTP
-                  id="otp"
+                  id="emailOtp"
                   maxLength={6}
-                  value={otp}
-                  onChange={setOtp}
+                  value={emailOtp}
+                  onChange={setEmailOtp}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
@@ -311,7 +361,7 @@ export const Account: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   onClick={resetEmailModal}
-                  disabled={isSendingOtp}
+                  disabled={isSendingEmailOtp}
                 >
                   Back
                 </Button>
@@ -321,9 +371,93 @@ export const Account: React.FC = () => {
                   </DialogClose>
                   <Button
                     onClick={handleVerifyEmailChange}
-                    disabled={isVerifyingOtp || otp.length < 6}
+                    disabled={isVerifyingEmailOtp || emailOtp.length < 6}
                   >
-                    {isVerifyingOtp ? 'Verifying...' : 'Verify'}
+                    {isVerifyingEmailOtp ? 'Verifying...' : 'Verify'}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPhoneModalOpen} onOpenChange={(open) => {
+        setIsPhoneModalOpen(open);
+        if (!open) resetPhoneModal();
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Phone Number</DialogTitle>
+            <DialogDescription>
+              {phoneOtpSent
+                ? 'Enter the OTP sent to your current phone number.'
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          {!phoneOtpSent ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="newPhone">New Phone Number</Label>
+                <Input
+                  id="newPhone"
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Enter your new phone number"
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleRequestChangePhone}
+                  disabled={isSendingPhoneOtp || !newPhone}
+                >
+                  {isSendingPhoneOtp ? 'Sending...' : 'Continue'}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="phoneOtp">Enter OTP</Label>
+                <InputOTP
+                  id="phoneOtp"
+                  maxLength={6}
+                  value={phoneOtp}
+                  onChange={setPhoneOtp}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <DialogFooter className="mt-4 flex items-center justify-between">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={resetPhoneModal}
+                  disabled={isSendingPhoneOtp}
+                >
+                  Back
+                </Button>
+                <div className="flex gap-2">
+                  <DialogClose asChild>
+                    <Button variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    onClick={handleVerifyPhoneChange}
+                    disabled={isVerifyingPhoneOtp || phoneOtp.length < 6}
+                  >
+                    {isVerifyingPhoneOtp ? 'Verifying...' : 'Verify'}
                   </Button>
                 </div>
               </DialogFooter>

@@ -1,0 +1,6 @@
+ALTER TABLE public.users ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS first_name TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_name TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique_idx ON public.users (phone) WHERE phone IS NOT NULL;

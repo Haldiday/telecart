@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks, { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Category {
   id: string;
@@ -61,7 +62,7 @@ export default function SubcategoryBrands() {
     if (!categoryId || !subcategoryId) return;
 
     let mounted = true;
-    
+
     const loadData = async () => {
       if (!mounted) return;
       setLoading(true);
@@ -76,12 +77,12 @@ export default function SubcategoryBrands() {
 
       if (categoryData) setCategory(categoryData);
       if (subcategoryData) setSubcategory(subcategoryData);
-      
+
       if (brandsData) {
         const visibleBrands = brandsData.filter((brand: any) => brand.is_visible !== false);
         setBrands(visibleBrands);
       }
-      
+
       if (subcategoryData) {
         setSubcategory({
           ...(subcategoryData as Subcategory),
@@ -96,7 +97,7 @@ export default function SubcategoryBrands() {
           button_3_visible: (subcategoryData as any).button_3_visible ?? false,
         });
       }
-      
+
       setLoading(false);
     };
 
@@ -127,7 +128,7 @@ export default function SubcategoryBrands() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
               <ChevronRight className="h-3 w-3" />
-              <Link 
+              <Link
                 to={`/category/${category.id}/subcategories`}
                 className="hover:text-foreground transition-colors"
               >
@@ -174,7 +175,12 @@ export default function SubcategoryBrands() {
                         navigate,
                       });
                       if (allowed) {
-                        window.open(subcategory.button_1_link, '_blank', 'noopener,noreferrer');
+                        void openZohoProtectedLink({
+                          destination: subcategory.button_1_link,
+                          navigate,
+                          target: '_blank',
+                          onError: () => undefined,
+                        });
                       }
                     }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-3 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
@@ -201,7 +207,12 @@ export default function SubcategoryBrands() {
                         navigate,
                       });
                       if (allowed) {
-                        window.open(subcategory.button_2_link, '_blank', 'noopener,noreferrer');
+                        void openZohoProtectedLink({
+                          destination: subcategory.button_2_link,
+                          navigate,
+                          target: '_blank',
+                          onError: () => undefined,
+                        });
                       }
                     }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
@@ -228,7 +239,12 @@ export default function SubcategoryBrands() {
                         navigate,
                       });
                       if (allowed) {
-                        window.open(subcategory.button_3_link, '_blank', 'noopener,noreferrer');
+                        void openZohoProtectedLink({
+                          destination: subcategory.button_3_link,
+                          navigate,
+                          target: '_blank',
+                          onError: () => undefined,
+                        });
                       }
                     }}
                     className="inline-flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-4 py-2 text-base font-medium text-[#111111] transition-all duration-200 hover:border-[#1d4ed8] hover:text-[#1d4ed8]"
@@ -253,7 +269,7 @@ export default function SubcategoryBrands() {
                 const hasActionLinks = actionLinks.length > 0;
                 const isExpanded = expandedBrandId === brand.id;
                 const hasLinkOrActions = brand.link || hasActionLinks;
-                
+
                 return (
                   <div key={brand.id} className="rounded-xl border border-gray-300 bg-card p-2">
                     <BrandActionLinks

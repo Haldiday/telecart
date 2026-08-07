@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -9,6 +9,8 @@ import Ads1ColSection from '@/components/home/Ads1ColSection';
 import Ads2ColSection from '@/components/home/Ads2ColSection';
 import Ads3ColSection from '@/components/home/Ads3ColSection';
 import { getBrandActionLinks } from '@/components/shared/BrandActionLinks';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 import { toast } from 'sonner';
 import {
@@ -249,6 +251,8 @@ const normalizeExternalUrl = (url: string) => {
 
 export default function SubcategoryDetail() {
   const { categoryId, subcategoryId } = useParams<{ categoryId: string; subcategoryId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
@@ -461,7 +465,7 @@ export default function SubcategoryDetail() {
     if (!categoryId || !subcategoryId) return;
 
     let mounted = true;
-    
+
     const loadData = async () => {
       const [{ data: categoryData }, { data: subcategoryData }, { data: productData }, { data: buttonData }, { data: overviewPointData }, { data: brandData }, { data: aboutSectionsData }, { data: subcategorySectionsData }, { data: kfSectionsData }] = await Promise.all([
         supabase.from('categories').select('*').eq('id', categoryId).single(),
@@ -515,13 +519,13 @@ export default function SubcategoryDetail() {
           buttonData && buttonData.length > 0
             ? (buttonData as unknown as CategoryButton[])
             : defaultCategoryButtons.map((button, index) => ({
-                id: `default-${index}`,
-                subcategory_id: subcategoryId,
-                label: button.label,
-                link: button.link || null,
-                is_visible: button.is_visible,
-                sort_order: index,
-              }))
+              id: `default-${index}`,
+              subcategory_id: subcategoryId,
+              label: button.label,
+              link: button.link || null,
+              is_visible: button.is_visible,
+              sort_order: index,
+            }))
         );
       }
 
@@ -722,11 +726,11 @@ export default function SubcategoryDetail() {
               const actionLinks = getBrandActionLinks(brand);
               const hasActionLinks = actionLinks.length > 0;
               const brandBoxClassName =
-                'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group';             const content = (
-                <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
-                  {brand.name || 'Unnamed brand'}
-                </span>
-              );
+                'rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md group'; const content = (
+                  <span className="block max-w-full text-base font-medium text-foreground transition-colors group-hover:text-primary">
+                    {brand.name || 'Unnamed brand'}
+                  </span>
+                );
 
               if (externalUrl && !hasActionLinks) {
                 return (
@@ -736,6 +740,27 @@ export default function SubcategoryDetail() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={brandBoxClassName}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      console.log('Brand clicked', brand.name);
+                      const allowed = requireAuthenticationBeforeOpeningLink({
+                        destination: externalUrl,
+                        type: 'brand',
+                        entityId: brand.id,
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                        navigate,
+                      });
+                      if (allowed) {
+                        void openZohoProtectedLink({
+                          destination: externalUrl,
+                          navigate,
+                          target: '_blank',
+                          onError: () => undefined,
+                        });
+                      }
+                    }}
                   >
                     {content}
                   </a>
@@ -765,17 +790,15 @@ export default function SubcategoryDetail() {
           {(activeTabKey === 'overview' && !showAllOverviewPoints ? sectionPoints.slice(0, INITIAL_OVERVIEW_POINTS_COUNT) : sectionPoints).map((point) => (
             <div
               key={point.id}
-              className={`flex items-center gap-3 rounded-xl border border-border/50 px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:text-primary ${
-                point.is_highlighted
-                  ? 'bg-white'
-                  : 'bg-background'
-              }`}
+              className={`flex items-center gap-3 rounded-xl border border-border/50 px-4 py-2 text-left text-sm md:text-base text-foreground font-normal transition-all hover:text-primary ${point.is_highlighted
+                ? 'bg-white'
+                : 'bg-background'
+                }`}
             >
               {point.is_highlighted && (
                 <CheckCircle2
-                  className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${
-                    point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
-                  }`}
+                  className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${point.highlight_color === 'blue' ? 'text-blue-600' : 'text-emerald-600'
+                    }`}
                 />
               )}
               <span>{point.text}</span>
@@ -820,9 +843,9 @@ export default function SubcategoryDetail() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-        <main className="flex-1">
-            {/* Hero Section with colored background and video */}
-        <div 
+      <main className="flex-1">
+        {/* Hero Section with colored background and video */}
+        <div
           className="relative w-full max-w-none overflow-hidden border-b border-border"
           style={subcategory?.hero_background_color ? { backgroundColor: subcategory.hero_background_color } : undefined}
         >
@@ -960,9 +983,8 @@ export default function SubcategoryDetail() {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(index)}
-                  className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
-                    activeTab === index ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${activeTab === index ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     {tab.icon}
@@ -981,39 +1003,37 @@ export default function SubcategoryDetail() {
                 {aboutSections
                   .filter((section) => section.is_visible !== false)
                   .map((section) => (
-                  <div
-                    key={section.id}
-                    className={`w-full rounded-none border border-border px-6 md:px-8 shadow-sm text-left ${
-                      section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
-                    }`}
-                    style={{ backgroundColor: section.background_color || '#ffffff' }}
-                  >
-                    {section.heading && (
-                      <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
-                    )}
                     <div
-                      className={RICH_HTML_CONTENT_CLASS}
-                      dangerouslySetInnerHTML={{ __html: section.content || '' }}
-                    />
-                  </div>
-                ))}
+                      key={section.id}
+                      className={`w-full rounded-none border border-border px-6 md:px-8 shadow-sm text-left ${section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
+                        }`}
+                      style={{ backgroundColor: section.background_color || '#ffffff' }}
+                    >
+                      {section.heading && (
+                        <h2 className={SECTION_HEADING_CLASS} style={{ color: section.heading_color || '#111111' }}>{section.heading}</h2>
+                      )}
+                      <div
+                        className={RICH_HTML_CONTENT_CLASS}
+                        dangerouslySetInnerHTML={{ __html: section.content || '' }}
+                      />
+                    </div>
+                  ))}
 
                 {/* Multi-section Key Features */}
                 {keyFeaturesSections
                   .filter(section => section.is_visible)
                   .map((section) => (
-                  <div 
-                    key={section.id} 
-                    className={`w-full rounded-none border border-border bg-card px-6 md:px-8 shadow-sm ${
-                      section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
-                    }`}
-                  >
-                    {section.heading && (
-                      <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
-                    )}
-                    {renderHeaderPoints(section.id)}
-                  </div>
-                ))}
+                    <div
+                      key={section.id}
+                      className={`w-full rounded-none border border-border bg-card px-6 md:px-8 shadow-sm ${section.heading ? 'pt-3 pb-4' : 'py-6 md:py-8'
+                        }`}
+                    >
+                      {section.heading && (
+                        <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                      )}
+                      {renderHeaderPoints(section.id)}
+                    </div>
+                  ))}
 
                 {/* Legacy/Fallback Overview Card (only if no sections exist) */}
                 {keyFeaturesSections.length === 0 && shouldShowOverviewCard && showOverviewPointsSection && showHeaderPointsSection && visibleOverviewPoints.length > 0 && (
@@ -1047,7 +1067,12 @@ export default function SubcategoryDetail() {
                           onClick={() => {
                             const externalUrl = normalizeExternalUrl(product.link);
                             if (externalUrl) {
-                              window.open(externalUrl, '_blank', 'noopener,noreferrer');
+                              void openZohoProtectedLink({
+                                destination: externalUrl,
+                                navigate,
+                                target: '_blank',
+                                onError: () => undefined,
+                              });
                             }
                           }}
                           className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-5 py-2 text-left transition-all hover:border-primary/50 hover:shadow-md"
@@ -1132,106 +1157,106 @@ export default function SubcategoryDetail() {
                     }
                     return null;
                   })}
-            </div>
-          )}
+              </div>
+            )}
 
 
-          {activeTabKey === 'key_features' && showHeaderPointsTab && (
-            <div className="w-full space-y-8">
-              {keyFeaturesSections
-                .filter(section => section.is_visible)
-                .map((section) => (
-                <div 
-                  key={section.id}
-                  className={section.heading ? '' : 'py-6 md:py-8'}
+            {activeTabKey === 'key_features' && showHeaderPointsTab && (
+              <div className="w-full space-y-8">
+                {keyFeaturesSections
+                  .filter(section => section.is_visible)
+                  .map((section) => (
+                    <div
+                      key={section.id}
+                      className={section.heading ? '' : 'py-6 md:py-8'}
+                    >
+                      {section.heading && (
+                        <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+                      )}
+                      {renderHeaderPoints(section.id)}
+                    </div>
+                  ))}
+
+                {/* Legacy fallback if no sections defined but points exist */}
+                {keyFeaturesSections.length === 0 && (
+                  <div>
+                    <h2 className={SECTION_HEADING_CLASS}>
+                      {subcategory?.key_features_tab_label || 'Key Features'}
+                    </h2>
+                    {renderHeaderPoints()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTabKey === 'brands' && showBrandsTab && (
+              <div className="w-full">
+                <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
+                {brands.length > 0 ? (
+                  renderBrandGrid()
+                ) : (
+                  <p className="text-sm text-muted-foreground">No brands available yet.</p>
+                )}
+              </div>
+            )}
+
+            {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
+              <div className="w-full">
+                <h2 className={SECTION_HEADING_CLASS}>Form</h2>
+                <a
+                  href={formLink.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
                 >
-                  {section.heading && (
-                    <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
-                  )}
-                  {renderHeaderPoints(section.id)}
-                </div>
-              ))}
-              
-              {/* Legacy fallback if no sections defined but points exist */}
-              {keyFeaturesSections.length === 0 && (
-                <div>
-                  <h2 className={SECTION_HEADING_CLASS}>
-                    {subcategory?.key_features_tab_label || 'Key Features'}
-                  </h2>
-                  {renderHeaderPoints()}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTabKey === 'brands' && showBrandsTab && (
-            <div className="w-full">
-              <h2 className={SECTION_HEADING_CLASS}>{brandsTabLabel}</h2>
-              {brands.length > 0 ? (
-                renderBrandGrid()
-              ) : (
-                <p className="text-sm text-muted-foreground">No brands available yet.</p>
-              )}
-            </div>
-          )}
-
-          {activeTabKey === 'form' && showFormAsTab && formLink.trim() && (
-            <div className="w-full">
-              <h2 className={SECTION_HEADING_CLASS}>Form</h2>
-              <a 
-                href={formLink.trim()} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                Open form in new tab
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </div>
-          )}
-        </div>
+                  Open form in new tab
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
       {showAboutSection && !subcategory?.custom_link && (
         <section className="pb-6 md:pb-8">
           <div className="container mx-auto px-4 md:px-8 lg:px-10">
-            <div 
+            <div
               className="rounded-none py-6 md:py-10 px-6 md:px-12 shadow-sm"
               style={{ backgroundColor: aboutBgColor }}
             >
-            <div className="grid grid-cols-1 md:items-start">
-              <div className="md:pl-4">
-                <div 
-                  className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full"
-                  style={{ backgroundColor: `${aboutHeadingColor}e6`, color: aboutBgColor }}
-                >
-                  {subcategory?.link?.trim() ? (
-                    <img src={subcategory.link.trim()} alt="Contact" className="h-8 w-8 object-contain" />
-                  ) : (
-                    <Mail className="h-5 w-5" />
-                  )}
+              <div className="grid grid-cols-1 md:items-start">
+                <div className="md:pl-4">
+                  <div
+                    className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full"
+                    style={{ backgroundColor: `${aboutHeadingColor}e6`, color: aboutBgColor }}
+                  >
+                    {subcategory?.link?.trim() ? (
+                      <img src={subcategory.link.trim()} alt="Contact" className="h-8 w-8 object-contain" />
+                    ) : (
+                      <Mail className="h-5 w-5" />
+                    )}
+                  </div>
+                  <h3
+                    className={`max-w-[560px] ${SECTION_HEADING_CLASS}`}
+                    style={{ color: aboutHeadingColor }}
+                  >
+                    {(aboutHeading || '').trim() || 'Need Help Deciding?'}
+                  </h3>
+                  <p
+                    className={`mt-3 ${SECTION_SUBTEXT_CLASS} font-semibold`}
+                    style={{ color: aboutSubheadingColor }}
+                  >
+                    {aboutSubheading}
+                  </p>
+                  <p
+                    className={`mt-5 max-w-[560px] ${SECTION_SUBTEXT_CLASS}`}
+                    style={{ color: aboutDescriptionColor }}
+                  >
+                    {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs."}
+                  </p>
                 </div>
-                <h3 
-                  className={`max-w-[560px] ${SECTION_HEADING_CLASS}`}
-                  style={{ color: aboutHeadingColor }}
-                >
-                  {(aboutHeading || '').trim() || 'Need Help Deciding?'}
-                </h3>
-                <p 
-                  className={`mt-3 ${SECTION_SUBTEXT_CLASS} font-semibold`}
-                  style={{ color: aboutSubheadingColor }}
-                >
-                  {aboutSubheading}
-                </p>
-                <p 
-                  className={`mt-5 max-w-[560px] ${SECTION_SUBTEXT_CLASS}`}
-                  style={{ color: aboutDescriptionColor }}
-                >
-                  {(aboutContent || '').trim() || "We'll help you find the right tools that fit your budget and business needs."}
-                </p>
               </div>
-            </div>
             </div>
           </div>
         </section>

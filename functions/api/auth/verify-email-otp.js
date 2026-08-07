@@ -1,8 +1,9 @@
-import { getConfig } from '../../../helpers/config.js';
-import { getSupabaseAdmin } from '../../../helpers/supabase.js';
-import { MSG91Service } from '../../../helpers/msg91.js';
-import { signJwt } from '../../../helpers/jwt.js';
-import { jsonResponse, validateEmail, validateOTP } from '../../../helpers/utils.js';
+import { getConfig } from '../../helpers/config.js';
+import { getSupabaseAdmin } from '../../helpers/supabase.js';
+import { MSG91Service } from '../../helpers/msg91.js';
+import { signJwt } from '../../helpers/jwt.js';
+import { jsonResponse, validateEmail, validateOTP } from '../../helpers/utils.js';
+import { parseSignupData } from '../../helpers/signup.js';
 
 export async function onRequestPost({ request, env }) {
     try {
@@ -18,9 +19,6 @@ export async function onRequestPost({ request, env }) {
         }
 
         const config = getConfig(env);
-        const otpService = new MSG91Service(config);
-        await otpService.verifyOTP(email, otp);
-
         const supabase = getSupabaseAdmin(env);
         const { data: existingUser, error: selectError } = await supabase
             .from('users')
@@ -32,12 +30,19 @@ export async function onRequestPost({ request, env }) {
             throw selectError;
         }
 
+        const signupData = existingUser ? null : parseSignupData(body.signupData);
+        if (!existingUser && !signupData) {
+            return jsonResponse({ success: false, message: 'First name, last name, and company name are required to create an account.' }, 400);
+        }
+
+        const otpService = new MSG91Service(config);
+        await otpService.verifyOTP(email, otp);
         let user = existingUser;
 
         if (!existingUser) {
             const { data: newUser, error: insertError } = await supabase
                 .from('users')
-                .insert({ email, is_verified: true })
+                .insert({ email, is_verified: true, ...signupData })
                 .select('*')
                 .single();
             if (insertError) throw insertError;

@@ -50,18 +50,12 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [isLoading, setIsLoading] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToWhatsApp, setAgreeToWhatsApp] = useState(false);
   const navigate = useNavigate();
 
   const handleSendOTP = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
       toast.error("Please enter a valid phone number");
-      return;
-    }
-
-    if (!agreeToTerms) {
-      toast.error("Please agree to Privacy Policy and T&Cs");
       return;
     }
 
@@ -194,24 +188,7 @@ export default function LoginPage() {
 
               {/* Checkboxes */}
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="terms"
-                    checked={agreeToTerms}
-                    onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
-                    className="mt-1"
-                  />
-                  <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                    I agree to the{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Privacy Policy
-                    </a>
-                    {' '}and{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      T&Cs
-                    </a>
-                  </label>
-                </div>
+
 
                 <div className="flex items-start gap-3">
                   <Checkbox

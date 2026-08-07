@@ -8,6 +8,7 @@ import SubcategorySectionShell from './SubcategorySectionShell';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Ad {
   id: string;
@@ -21,6 +22,13 @@ interface Ad {
   show_image: boolean;
 }
 
+interface PageSectionData {
+  heading?: string | null;
+  name?: string | null;
+  show_heading?: boolean | null;
+  background_color?: string | null;
+}
+
 interface Ads1ColSectionProps {
   sectionId: string;
   sectionTable?: string;
@@ -29,6 +37,7 @@ interface Ads1ColSectionProps {
   compact?: boolean;
   backgroundColor?: string | null;
   headingClassName?: string;
+  sectionData?: PageSectionData | null;
 }
 
 async function fetchAds(sectionId: string, adsTable: string) {
@@ -61,16 +70,19 @@ export default function Ads1ColSection({
   compact = false,
   backgroundColor,
   headingClassName,
+  sectionData: sectionDataProp,
 }: Ads1ColSectionProps) {
   const queryClient = useQueryClient();
   const { data: ads = [] } = useQuery({
     queryKey: queryKeys.ads.bySectionId(sectionId, '1col'),
     queryFn: () => fetchAds(sectionId, adsTable),
   });
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
     queryFn: () => fetchSectionData(sectionId, sectionTable),
+    enabled: sectionDataProp === undefined,
   });
+  const sectionData = sectionDataProp ?? fetchedSectionData;
 
   const heading = sectionData?.heading || sectionData?.name || 'Featured Ad';
   const location = useLocation();
@@ -115,7 +127,7 @@ export default function Ads1ColSection({
       )
       .subscribe();
 
-    const sectionChannel = supabase
+    const sectionChannel = sectionDataProp === undefined ? supabase
       .channel(`page_sections_1col_${sectionId}_live`)
       .on(
         'postgres_changes',
@@ -124,73 +136,123 @@ export default function Ads1ColSection({
           queryClient.invalidateQueries({ queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const });
         }
       )
-      .subscribe();
+      .subscribe() : null;
 
     return () => {
       adsChannel.unsubscribe();
-      sectionChannel.unsubscribe();
+      if (sectionChannel) {
+        sectionChannel.unsubscribe();
+      }
     };
-  }, [adsTable, sectionId, sectionTable, queryClient]);
+  }, [adsTable, sectionId, sectionTable, queryClient, sectionDataProp]);
 
   if (ads.length === 0) return null;
 
   return (
     <section id={`section-${sectionId}`}>
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-    <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        {showHeading && (
-          <h2 className={headingClassName || "section-heading"}>
-            {heading}
-          </h2>
-        )}
+      <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+        <div className={compact ? '' : 'py-4 md:py-6'}>
+          <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+            {showHeading && (
+              <h2 className={headingClassName || "section-heading"}>
+                {heading}
+              </h2>
+            )}
 
-        <div className="relative">
-          {!isMobile && needsCarousel && (
-            <>
-              <button
-                onClick={goPrev}
-                className="absolute left-0 md:-left-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-              <button
-                onClick={goNext}
-                className="absolute right-0 md:-right-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors"
-                aria-label="Next slide"
-              >
-                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-            </>
-          )}
-
-          {needsCarousel ? (
-            <div
-              className="overflow-hidden touch-pan-y"
-              style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-              ref={containerRef}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-              onMouseEnter={onMouseEnter}
-              onMouseLeave={onMouseLeave}
-            >
-              <div
-                className="flex"
-                onTransitionEnd={handleTransitionEnd}
-                style={{
-                  transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
-                  transition: animate ? 'transform 650ms ease' : 'none',
-                }}
-              >
-                {displayAds.map((ad, displayIndex) => (
-                  <div
-                    key={`${ad.id}-${displayIndex}`}
-                    className="w-full flex-none"
-                    style={{ width: `${slideWidth}%` }}
+            <div className="relative">
+              {!isMobile && needsCarousel && (
+                <>
+                  <button
+                    onClick={goPrev}
+                    className="absolute left-0 md:-left-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors"
+                    aria-label="Previous slide"
                   >
+                    <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+                  </button>
+                  <button
+                    onClick={goNext}
+                    className="absolute right-0 md:-right-12 top-1/2 -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+                  </button>
+                </>
+              )}
+
+              {needsCarousel ? (
+                <div
+                  className="overflow-hidden touch-pan-y"
+                  style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+                  ref={containerRef}
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                  onMouseEnter={onMouseEnter}
+                  onMouseLeave={onMouseLeave}
+                >
+                  <div
+                    className="flex"
+                    onTransitionEnd={handleTransitionEnd}
+                    style={{
+                      transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
+                      transition: animate ? 'transform 650ms ease' : 'none',
+                    }}
+                  >
+                    {displayAds.map((ad, displayIndex) => (
+                      <div
+                        key={`${ad.id}-${displayIndex}`}
+                        className="w-full flex-none"
+                        style={{ width: `${slideWidth}%` }}
+                      >
+                        <div
+                          className={`rounded-[12px] overflow-hidden shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                          style={{
+                            ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                            backgroundColor: ad.background_color || undefined,
+                          }}
+                          onClick={() => {
+                            if (ad.link) {
+                              const allowed = requireAuthenticationBeforeOpeningLink({
+                                destination: ad.link,
+                                type: 'ad',
+                                entityId: ad.id,
+                                pathname: location.pathname,
+                                search: location.search,
+                                hash: location.hash,
+                                navigate,
+                              });
+                              if (allowed) {
+                                void openZohoProtectedLink({
+                                  destination: ad.link,
+                                  navigate,
+                                  target: '_self',
+                                  onError: () => undefined,
+                                });
+                              }
+                            }
+                          }}
+                        >
+                          <div className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]">
+                            <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
+                              {ad.show_image !== false && ad.image_url && (
+                                <img
+                                  src={ad.image_url}
+                                  alt="Ad"
+                                  className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-contain' : 'object-contain'}`}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {adsToDisplay.map((ad) => (
                     <div
+                      key={ad.id}
                       className={`rounded-[12px] overflow-hidden shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`}
                       style={{
                         ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
@@ -208,12 +270,19 @@ export default function Ads1ColSection({
                             navigate,
                           });
                           if (allowed) {
-                            window.location.href = ad.link;
+                            void openZohoProtectedLink({
+                              destination: ad.link,
+                              navigate,
+                              target: '_self',
+                              onError: () => undefined,
+                            });
                           }
                         }
                       }}
                     >
-                      <div className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]">
+                      <div
+                        className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
+                      >
                         <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
                           {ad.show_image !== false && ad.image_url && (
                             <img
@@ -225,58 +294,13 @@ export default function Ads1ColSection({
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {adsToDisplay.map((ad) => (
-                <div 
-                  key={ad.id}
-                  className={`rounded-[12px] overflow-hidden shadow-sm cursor-pointer ${ad.show_border ? 'border' : ''}`} 
-                  style={{
-                    ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                    backgroundColor: ad.background_color || undefined,
-                  }}
-                  onClick={() => {
-                    if (ad.link) {
-                      const allowed = requireAuthenticationBeforeOpeningLink({
-                        destination: ad.link,
-                        type: 'ad',
-                        entityId: ad.id,
-                        pathname: location.pathname,
-                        search: location.search,
-                        hash: location.hash,
-                        navigate,
-                      });
-                      if (allowed) {
-                        window.location.href = ad.link;
-                      }
-                    }
-                  }}
-                >
-                  <div
-                    className="block overflow-hidden rounded-[12px] transition-transform duration-300 hover:scale-[1.01]"
-                  >
-                    <div className="h-[160px] md:h-[220px] lg:h-[300px] w-full flex items-center justify-center">
-                      {ad.show_image !== false && ad.image_url && (
-                        <img
-                          src={ad.image_url}
-                          alt="Ad"
-                          className={`h-full w-full ${mobileContainImage ? 'object-contain md:object-contain' : 'object-contain'}`}
-                        />
-                      )}
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-    </SubcategorySectionShell>
+      </SubcategorySectionShell>
     </section>
   );
 }

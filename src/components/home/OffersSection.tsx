@@ -12,6 +12,7 @@ import { isVideoUrl } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Offer {
   id: string;
@@ -73,17 +74,20 @@ export default function OffersSection({
   backgroundColor,
   headingClassName,
   isSubcategory = false,
+  sectionData: sectionDataProp,
 }: OffersSectionProps) {
   const queryClient = useQueryClient();
   const { data: offers = [] } = useQuery({
     queryKey: queryKeys.offers.bySectionId(sectionId),
     queryFn: () => fetchOffers(sectionId, offersTable),
   });
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
     queryFn: () => fetchSectionData(sectionId, sectionTable),
+    enabled: sectionDataProp === undefined,
   });
-  
+  const sectionData = sectionDataProp ?? fetchedSectionData;
+
   const heading = sectionData?.heading || sectionData?.name || 'Offers & Discounts';
   const showHeading = sectionData?.show_heading !== false;
 
@@ -94,12 +98,37 @@ export default function OffersSection({
   const isSeeAllPage = location.pathname.startsWith("/see-all/offers");
   const [videoModal, setVideoModal] = useState<{ isOpen: boolean; url: string }>({ isOpen: false, url: '' });
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pendingVideoUrl = params.get('pending_video_url');
+    if (!pendingVideoUrl) return;
+    if (videoModal.isOpen) return;
+
+    setVideoModal({ isOpen: true, url: pendingVideoUrl });
+    params.delete('pending_video_url');
+    const cleanedSearch = params.toString();
+    navigate(`${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash}`, { replace: true });
+  }, [location.hash, location.pathname, location.search, navigate, videoModal.isOpen]);
+
   const handleOfferClick = (offer: Offer, e: React.MouseEvent) => {
     e.preventDefault();
     if (!offer.link) return;
 
     if (isVideoUrl(offer.link)) {
-      setVideoModal({ isOpen: true, url: offer.link });
+      const allowed = requireAuthenticationBeforeOpeningLink({
+        destination: offer.link,
+        type: 'offerVideo',
+        entityId: offer.id,
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        navigate,
+        pendingVideoUrl: offer.link,
+        onAuthenticated: () => {
+          setVideoModal({ isOpen: true, url: offer.link });
+        },
+      });
+      if (!allowed) return;
     } else {
       const allowed = requireAuthenticationBeforeOpeningLink({
         destination: offer.link,
@@ -111,11 +140,12 @@ export default function OffersSection({
         navigate,
       });
       if (allowed) {
-        if (offer.open_in_new_tab) {
-          window.open(offer.link, '_blank', 'noopener,noreferrer');
-        } else {
-          window.location.href = offer.link;
-        }
+        void openZohoProtectedLink({
+          destination: offer.link,
+          navigate,
+          target: offer.open_in_new_tab ? '_blank' : '_self',
+          onError: () => undefined,
+        });
       }
     }
   };
@@ -230,8 +260,8 @@ export default function OffersSection({
       <div className="w-full grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 md:px-12">
         {visibleOffers.map((offer) => (
           <div key={offer.id} className="flex h-full">
-            <a 
-              href={offer.link || '#'} 
+            <a
+              href={offer.link || '#'}
               onClick={(e) => handleOfferClick(offer, e)}
               className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
               style={{ maxWidth: (isHomePage || isSubcategory) ? '380px' : undefined }}
@@ -309,7 +339,7 @@ export default function OffersSection({
 
         {needsCarousel ? (
           <div className="relative md:px-20" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-            <div 
+            <div
               className="overflow-hidden overflow-x-hidden rounded-lg -mx-[9px] md:-mx-10 touch-pan-y"
               style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
               ref={containerRef}
@@ -331,8 +361,8 @@ export default function OffersSection({
                     className="flex-none px-[9px]"
                     style={{ width: `${slideWidth}%` }}
                   >
-                    <a 
-                      href={offer.link || '#'} 
+                    <a
+                      href={offer.link || '#'}
                       onClick={(e) => handleOfferClick(offer, e)}
                       className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
                       style={{ maxWidth: (isHomePage || isSubcategory) ? '330px' : undefined }}
@@ -376,19 +406,19 @@ export default function OffersSection({
 
             {/* Mobile Navigation */}
             <div className="flex gap-2 md:hidden justify-center mt-4">
-              
+
             </div>
           </div>
         ) : (
-          <div 
-            className="overflow-hidden overflow-x-hidden touch-pan-y" 
+          <div
+            className="overflow-hidden overflow-x-hidden touch-pan-y"
             style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-            ref={fixedContainerRef} 
-            onTouchStart={onFixedTouchStart} 
-            onTouchMove={onFixedTouchMove} 
+            ref={fixedContainerRef}
+            onTouchStart={onFixedTouchStart}
+            onTouchMove={onFixedTouchMove}
             onTouchEnd={onFixedTouchEnd}
           >
-            <div 
+            <div
               className="flex"
               style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
             >
@@ -396,8 +426,8 @@ export default function OffersSection({
                 <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 md:px-12">
                   {page.map((offer) => (
                     <div key={offer.id} className="flex h-full">
-                      <a 
-                        href={offer.link || '#'} 
+                      <a
+                        href={offer.link || '#'}
                         onClick={(e) => handleOfferClick(offer, e)}
                         className={`flex flex-col group mx-auto h-full ${(isHomePage || isSubcategory) ? 'w-full' : ''}`}
                         style={{ maxWidth: (isHomePage || isSubcategory) ? '380px' : undefined }}
@@ -451,30 +481,30 @@ export default function OffersSection({
 
   return (
     <section id={`section-${sectionId}`}>
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-      <div className={compact ? '' : 'py-4 md:py-6'}>
-        <div className={compact ? '' : 'mx-auto max-w-[1580px] px-9 md:px-20 lg:px-10'}>
-          {showHeading && (
-            <div className="flex items-center justify-between mb-8">
-              <h2 className={headingClassName || "section-heading !mb-0"}>
-                {heading}
-              </h2>
-              {!isSeeAllPage && (
-                <Link to={`/see-all/offers/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
-                  See All
-                </Link>
-              )}
-            </div>
-          )}
-          {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
+      <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+        <div className={compact ? '' : 'py-4 md:py-6'}>
+          <div className={compact ? '' : 'mx-auto max-w-[1580px] px-9 md:px-20 lg:px-10'}>
+            {showHeading && (
+              <div className="flex items-center justify-between mb-8">
+                <h2 className={headingClassName || "section-heading !mb-0"}>
+                  {heading}
+                </h2>
+                {!isSeeAllPage && (
+                  <Link to={`/see-all/offers/${sectionId}`} style={{ color: '#1d4ed8' }} className="text-base font-medium hover:underline px-8 py-1">
+                    See All
+                  </Link>
+                )}
+              </div>
+            )}
+            {isSeeAllPage ? renderSeeAllPage() : renderHomePage()}
+          </div>
         </div>
-      </div>
-      <VideoModal
-        isOpen={videoModal.isOpen}
-        onClose={() => setVideoModal({ isOpen: false, url: '' })}
-        videoUrl={videoModal.url}
-      />
-    </SubcategorySectionShell>
+        <VideoModal
+          isOpen={videoModal.isOpen}
+          onClose={() => setVideoModal({ isOpen: false, url: '' })}
+          videoUrl={videoModal.url}
+        />
+      </SubcategorySectionShell>
     </section>
   );
 }

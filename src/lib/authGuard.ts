@@ -9,6 +9,7 @@ export interface PendingAuthDestination {
   hash?: string;
   entityId?: string | null;
   externalUrl?: string | null;
+  pendingVideoUrl?: string | null;
 }
 
 const PENDING_AUTH_DESTINATION_KEY = 'pending_auth_destination';
@@ -52,6 +53,28 @@ export function resumePendingAuthDestination(options?: {
   if (typeof window === 'undefined') return false;
 
   const navigate = options?.navigate;
+  if (pendingDestination.pendingVideoUrl && pendingDestination.pathname) {
+    const url = new URL(pendingDestination.pathname, window.location.origin);
+    if (pendingDestination.search) {
+      url.search = pendingDestination.search;
+    }
+    const params = new URLSearchParams(url.search);
+    params.set('pending_video_url', pendingDestination.pendingVideoUrl);
+    url.search = params.toString();
+    if (pendingDestination.hash) {
+      url.hash = pendingDestination.hash;
+    }
+
+    const resumePath = `${url.pathname}${url.search ? `?${url.search}` : ''}${url.hash}`;
+    if (navigate) {
+      navigate(resumePath, { replace: true });
+      return true;
+    }
+
+    window.location.assign(url.toString());
+    return true;
+  }
+
   const targetPath = pendingDestination.pathname
     ? `${pendingDestination.pathname}${pendingDestination.search ?? ''}${pendingDestination.hash ?? ''}`
     : pendingDestination.destination;
@@ -116,6 +139,7 @@ export function requireAuthenticationBeforeOpeningLink(options: {
   pathname?: string;
   search?: string;
   hash?: string;
+  pendingVideoUrl?: string | null;
 }) {
   const { destination, fallbackPath, navigate, onAuthenticated, onUnauthenticated, type, entityId, externalUrl, pathname, search, hash } = options;
 
@@ -134,6 +158,7 @@ export function requireAuthenticationBeforeOpeningLink(options: {
     hash,
     entityId: entityId ?? null,
     externalUrl: externalUrl ?? null,
+    pendingVideoUrl: options.pendingVideoUrl ?? null,
   };
 
   setStoredPendingAuthDestination(pendingDestination);

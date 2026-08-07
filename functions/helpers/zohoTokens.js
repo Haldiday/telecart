@@ -1,37 +1,44 @@
-const tokens = new Map();
+﻿import { getSupabaseAdmin } from './supabase.js';
 
-export function createZohoPrefillToken({ userId, name, email, companyName, ttlMs = 300000 }) {
-    pruneExpired();
+export async function createZohoPrefillToken({ env, userId, ttlMs = 300000 }) {
+    const supabase = getSupabaseAdmin(env);
     const token = crypto.randomUUID();
     const expiresAt = Date.now() + Math.max(1000, ttlMs);
-    const record = { token, userId, name, email, companyName, expiresAt };
-    tokens.set(token, record);
-    return record;
+
+    const { error } = await supabase.from('zoho_prefill_tokens').insert({
+        token,
+        user_id: userId,
+        expires_at: expiresAt,
+    });
+
+    if (error) throw error;
+
+    return { token, expiresAt };
 }
 
-export function consumeZohoPrefillToken(token) {
-    pruneExpired();
-    if (!token || !tokens.has(token)) {
+export async function validateZohoPrefillToken({ env, token }) {
+    if (!token) return null;
+
+    const supabase = getSupabaseAdmin(env);
+    const { data, error } = await supabase
+        .from('zoho_prefill_tokens')
+        .select('token, user_id, expires_at')
+        .eq('token', token)
+        .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    if (data.expires_at <= Date.now()) {
+        await supabase.from('zoho_prefill_tokens').delete().eq('token', token);
         return null;
     }
-    const record = tokens.get(token);
-    if (!record || record.expiresAt <= Date.now()) {
-        tokens.delete(token);
-        return null;
-    }
-    tokens.delete(token);
-    return {
-        name: record.name,
-        email: record.email,
-        companyName: record.companyName,
-    };
+
+    return { token: data.token, userId: data.user_id };
 }
 
-function pruneExpired() {
-    const now = Date.now();
-    for (const [key, record] of tokens.entries()) {
-        if (record.expiresAt <= now) {
-            tokens.delete(key);
-        }
-    }
+export async function markZohoPrefillTokenUsed({ env, token }) {
+    const supabase = getSupabaseAdmin(env);
+    const { error } = await supabase.from('zoho_prefill_tokens').delete().eq('token', token);
+    if (error) throw error;
 }

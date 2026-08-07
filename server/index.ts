@@ -8,6 +8,7 @@ import { storageRouter } from './routes/storage.js';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
 import formsRouter from './routes/forms.js';
+import whatsappAuthRouter from './routes/whatsappAuth.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -33,6 +34,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/auth', whatsappAuthRouter);
 app.use('/api/user', userRouter);
 app.use('/api/forms', formsRouter);
 app.use('/api/zoho', formsRouter);

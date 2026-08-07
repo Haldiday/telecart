@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks from '@/components/shared/BrandActionLinks';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Category {
   id: string;
@@ -71,7 +72,7 @@ export default function CategoryDetail() {
     if (!id) return;
 
     let mounted = true;
-    
+
     const loadData = async () => {
       const [
         { data: categoryData },
@@ -92,7 +93,7 @@ export default function CategoryDetail() {
         setCategory(categoryData);
       }
       if (subcategoryData) setSubcategories(visibleSubcategories);
-      
+
       // Group brands by subcategory
       const brandsMap: Record<string, BrandItem[]> = {};
       if (brandsData) {
@@ -123,6 +124,7 @@ export default function CategoryDetail() {
   }, [id]);
 
   const handleSubcategoryClick = (sub: Subcategory) => {
+    console.log('Subcategory clicked', sub.name);
     setExpandedBrandIds({}); // Reset brand expansions when changing subcategory
     if (brandsBySubcategory[sub.id]?.length > 0) {
       setExpandedSubcategoryId(expandedSubcategoryId === sub.id ? null : sub.id);
@@ -137,7 +139,12 @@ export default function CategoryDetail() {
         navigate,
       });
       if (allowed) {
-        window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+        void openZohoProtectedLink({
+          destination: sub.custom_link,
+          navigate,
+          target: '_blank',
+          onError: () => undefined,
+        });
       }
     }
     // Else do nothing
@@ -180,9 +187,8 @@ export default function CategoryDetail() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(index + 1)}
-                  className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
-                    activeTab === index + 1 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${activeTab === index + 1 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     {tab.icon}
@@ -201,16 +207,15 @@ export default function CategoryDetail() {
                 const hasBrands = brandsBySubcategory[sub.id]?.length > 0;
                 const isClickable = sub.custom_link || hasBrands;
                 const isExpanded = expandedSubcategoryId === sub.id;
-                
+
                 return (
                   <div key={sub.id} className="rounded-xl border border-gray-300 bg-card p-4">
                     <div
                       onClick={() => isClickable && handleSubcategoryClick(sub)}
-                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
-                        isClickable 
-                          ? 'hover:text-primary cursor-pointer' 
-                          : ''
-                      }`}
+                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${isClickable
+                        ? 'hover:text-primary cursor-pointer'
+                        : ''
+                        }`}
                     >
                       <span>{sub.name}</span>
                       {hasBrands && (
@@ -221,7 +226,7 @@ export default function CategoryDetail() {
                         )
                       )}
                     </div>
-                    
+
                     {hasBrands && isExpanded && (
                       <div className="mt-3 space-y-2">
                         <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">

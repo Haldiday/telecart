@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import BrandActionLinks from '@/components/shared/BrandActionLinks';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Category {
   id: string;
@@ -63,7 +64,7 @@ export default function AllSubcategoriesPage() {
     if (!categoryId) return;
 
     let mounted = true;
-    
+
     const loadData = async () => {
       if (!mounted) return;
       setLoading(true);
@@ -83,7 +84,7 @@ export default function AllSubcategoriesPage() {
       if (categoryData) setCategory(categoryData);
       const visibleSubcategories = (subcategoriesData || []).filter((sub: any) => sub.is_visible !== false);
       if (subcategoriesData) setSubcategories(visibleSubcategories);
-      
+
       // Group brands by subcategory
       const brandsMap: Record<string, BrandItem[]> = {};
       if (brandsData) {
@@ -97,7 +98,7 @@ export default function AllSubcategoriesPage() {
           });
       }
       setBrandsBySubcategory(brandsMap);
-      
+
       setLoading(false);
     };
 
@@ -117,6 +118,7 @@ export default function AllSubcategoriesPage() {
   }, [categoryId]);
 
   const handleSubcategoryClick = (sub: Subcategory) => {
+    console.log('Subcategory clicked', sub.name);
     setExpandedBrandIds({}); // Reset brand expansions when changing subcategory
     if (brandsBySubcategory[sub.id]?.length > 0) {
       setExpandedSubcategoryId(expandedSubcategoryId === sub.id ? null : sub.id);
@@ -131,7 +133,12 @@ export default function AllSubcategoriesPage() {
         navigate,
       });
       if (allowed) {
-        window.open(sub.custom_link, '_blank', 'noopener,noreferrer');
+        void openZohoProtectedLink({
+          destination: sub.custom_link,
+          navigate,
+          target: '_blank',
+          onError: () => undefined,
+        });
       }
     }
     // Else do nothing
@@ -190,58 +197,57 @@ export default function AllSubcategoriesPage() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start">
               {subcategories.map((sub) => {
-                  const hasBrands = brandsBySubcategory[sub.id]?.length > 0;
-                  const isClickable = sub.custom_link || hasBrands;
-                  const isExpanded = expandedSubcategoryId === sub.id;
-                  
-                  return (
-                    <div key={sub.id} className="rounded-xl border border-gray-300 bg-card p-4">
-                      <div
-                        onClick={() => isClickable && handleSubcategoryClick(sub)}
-                        className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${
-                          isClickable 
-                            ? 'hover:text-primary cursor-pointer' 
-                            : ''
+                const hasBrands = brandsBySubcategory[sub.id]?.length > 0;
+                const isClickable = sub.custom_link || hasBrands;
+                const isExpanded = expandedSubcategoryId === sub.id;
+
+                return (
+                  <div key={sub.id} className="rounded-xl border border-gray-300 bg-card p-4">
+                    <div
+                      onClick={() => isClickable && handleSubcategoryClick(sub)}
+                      className={`flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground ${isClickable
+                        ? 'hover:text-primary cursor-pointer'
+                        : ''
                         }`}
-                      >
-                        <span>{sub.name}</span>
-                        {hasBrands && (
-                          isExpanded ? (
-                            <Minus className="h-3.5 w-3.5 text-gray/400" />
-                          ) : (
-                            <Plus className="h-3.5 w-3.5 text-gray/400" />
-                          )
-                        )}
-                      </div>
-                      
-                      {hasBrands && isExpanded && (
-                        <div className="mt-3 space-y-2">
-                          <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
-                            {brandsBySubcategory[sub.id]?.slice(0, 5).map((brand) => (
-                              <BrandActionLinks
-                                key={brand.id}
-                                brand={brand}
-                                isExpanded={Boolean(expandedBrandIds[brand.id])}
-                                onToggle={() => setExpandedBrandIds((prev) => ({
-                                  ...prev,
-                                  [brand.id]: !prev[brand.id],
-                                }))}
-                              />
-                            ))}
-                            {brandsBySubcategory[sub.id]?.length > 5 && (
-                              <Link
-                                to={`/category/${category.id}/subcategory/${sub.id}/brands`}
-                                className="text-sm font-semibold text-primary hover:underline"
-                              >
-                                See All →
-                              </Link>
-                            )}
-                          </div>
-                        </div>
+                    >
+                      <span>{sub.name}</span>
+                      {hasBrands && (
+                        isExpanded ? (
+                          <Minus className="h-3.5 w-3.5 text-gray/400" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 text-gray/400" />
+                        )
                       )}
                     </div>
-                  );
-                })}
+
+                    {hasBrands && isExpanded && (
+                      <div className="mt-3 space-y-2">
+                        <div className="space-y-2 border-l-2 border-[#2b7bcc] pl-4 ml-1">
+                          {brandsBySubcategory[sub.id]?.slice(0, 5).map((brand) => (
+                            <BrandActionLinks
+                              key={brand.id}
+                              brand={brand}
+                              isExpanded={Boolean(expandedBrandIds[brand.id])}
+                              onToggle={() => setExpandedBrandIds((prev) => ({
+                                ...prev,
+                                [brand.id]: !prev[brand.id],
+                              }))}
+                            />
+                          ))}
+                          {brandsBySubcategory[sub.id]?.length > 5 && (
+                            <Link
+                              to={`/category/${category.id}/subcategory/${sub.id}/brands`}
+                              className="text-sm font-semibold text-primary hover:underline"
+                            >
+                              See All →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

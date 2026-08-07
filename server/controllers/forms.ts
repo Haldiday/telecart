@@ -19,11 +19,18 @@ function isHttpsRequest(req: AuthRequest) {
 
 export const generateZohoPrefillToken = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('generateZohoPrefillToken route entered');
+    console.log('headers:', JSON.stringify(req.headers));
+    console.log('body:', JSON.stringify(req.body));
+    console.log('user:', req.user);
+
     if (!req.user) {
+      console.log('generateZohoPrefillToken: missing req.user');
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
     if (!isHttpsRequest(req) && process.env.NODE_ENV === 'production') {
+      console.log('generateZohoPrefillToken: HTTPS required');
       return res.status(403).json({ success: false, message: 'HTTPS is required' });
     }
 
@@ -32,24 +39,40 @@ export const generateZohoPrefillToken = async (req: AuthRequest, res: Response) 
       ? Math.min(MAX_TTL_MS, Math.max(MIN_TTL_MS, Math.round(rawTtl)))
       : DEFAULT_TTL_MS;
 
-    const supabase = getSupabaseAdmin();
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('email, full_name, company_name')
-      .eq('id', req.user.id)
-      .single();
+    const reqName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const reqCompanyName = typeof req.body?.companyName === 'string' ? req.body.companyName.trim() : '';
+    const reqFirstName = typeof req.body?.firstName === 'string' ? req.body.firstName.trim() : '';
+    const reqLastName = typeof req.body?.lastName === 'string' ? req.body.lastName.trim() : '';
 
-    if (profileError) {
-      throw profileError;
+    let profile: { email?: string | null; full_name?: string | null; company_name?: string | null; phone?: string | null; first_name?: string | null; last_name?: string | null } | null = null;
+
+    try {
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase
+        .from('users')
+        .select('email, full_name, company_name, phone, first_name, last_name')
+        .eq('id', req.user.id)
+        .single();
+
+      if (!error) {
+        profile = data;
+      }
+    } catch (profileError) {
+      console.warn('Unable to load user profile while generating Zoho token, continuing with request data', profileError);
     }
 
-    const record = createZohoPrefillToken({
+    const record = await createZohoPrefillToken({
       userId: req.user.id,
-      name: profile?.full_name || '',
-      email: profile?.email || req.user.email,
-      companyName: profile?.company_name || '',
+      name: reqName || profile?.full_name || '',
+      email: profile?.email || req.user.email || '',
+      companyName: reqCompanyName || profile?.company_name || '',
+      phone: profile?.phone ?? null,
+      firstName: reqFirstName || (profile?.first_name ?? null),
+      lastName: reqLastName || (profile?.last_name ?? null),
       ttlMs,
     });
+
+    console.log('Zoho token created:', record);
 
     return res.status(200).json({
       success: true,
@@ -77,7 +100,7 @@ export const prefillZohoForm = async (req: AuthRequest, res: Response) => {
     console.log('  body:', JSON.stringify(req.body, null, 2));
     console.log('  rawBody:', req.rawBody ?? '<empty>');
     console.log('  token candidate:', tokenCandidate);
-    const payload = consumeZohoPrefillToken(token);
+    const payload = await consumeZohoPrefillToken(token);
 
     if (!payload) {
       console.warn('Zoho prefill failed: invalid or expired token', { token });

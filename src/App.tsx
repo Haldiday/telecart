@@ -38,7 +38,11 @@ import BrandActionLinksSeeAllPage from "./pages/BrandActionLinksSeeAllPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
 import { queryClient } from "./lib/queryClient";
 import { Login } from "./pages/Login";
+import { EmailLogin } from "./pages/EmailLogin";
+import { SignupFlow } from "./pages/SignupFlow";
 import { VerifyOTP } from "./pages/VerifyOTP";
+import { WhatsAppLogin } from "./pages/WhatsAppLogin";
+import { VerifyWhatsAppOTP } from "./pages/VerifyWhatsAppOTP";
 import { Dashboard } from "./pages/Dashboard";
 import { Account } from "./pages/Account";
 
@@ -61,7 +65,7 @@ const router = createBrowserRouter(
         { path: "/advertise", element: <AdvertisePage /> },
         { path: "/get-listed", element: <GetListedPage /> },
         { path: "/write-for-us", element: <WriteForUsPage /> },
-                  { path: "/vendor-guidelines", element: <VendorGuidelinesPage /> },
+        { path: "/vendor-guidelines", element: <VendorGuidelinesPage /> },
         { path: "/browse-all-directories", element: <BrowseAllDirectoriesPage /> },
         { path: "/see-all", element: <SeeAllPage /> },
         { path: "/see-all/featured-cards/:sectionId", element: <FeaturedCardsSeeAllPage /> },
@@ -76,22 +80,26 @@ const router = createBrowserRouter(
         { path: "/admin/login", element: <AdminLogin /> },
         { path: "/admin", element: <AdminDashboard /> },
         { path: "/login", element: <Login /> },
+        { path: "/login/email", element: <EmailLogin /> },
+        { path: "/signup", element: <SignupFlow /> },
         { path: "/verify-otp", element: <VerifyOTP /> },
-        { 
-          path: "/dashboard", 
+        { path: "/login/whatsapp", element: <WhatsAppLogin /> },
+        { path: "/verify-whatsapp-otp", element: <VerifyWhatsAppOTP /> },
+        {
+          path: "/dashboard",
           element: (
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          ) 
+          )
         },
-        { 
-          path: "/profile/account", 
+        {
+          path: "/profile/account",
           element: (
             <ProtectedRoute>
               <Account />
             </ProtectedRoute>
-          ) 
+          )
         },
         { path: "*", element: <NotFound /> },
       ]

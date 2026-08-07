@@ -1,6 +1,7 @@
 import { Plus, Minus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 export interface BrandActionLinkItem {
   id?: string;
@@ -53,13 +54,13 @@ function normalizeActionLinkValue(value?: string | null) {
 function normalizeBrandActionLinks(brand: BrandWithActionLinks): Array<{ text: string; url: string; newTab?: boolean; enabled?: boolean }> {
   const configuredLinks = Array.isArray(brand.action_links)
     ? brand.action_links
-        .map((link) => ({
-          text: normalizeActionLinkValue(link?.text),
-          url: normalizeActionLinkValue(link?.url),
-          newTab: Boolean(link?.new_tab),
-          enabled: link?.enabled ?? true,
-        }))
-        .filter((link) => Boolean(link.text || link.url || link.enabled !== undefined))
+      .map((link) => ({
+        text: normalizeActionLinkValue(link?.text),
+        url: normalizeActionLinkValue(link?.url),
+        newTab: Boolean(link?.new_tab),
+        enabled: link?.enabled ?? true,
+      }))
+      .filter((link) => Boolean(link.text || link.url || link.enabled !== undefined))
     : [];
 
   if (configuredLinks.length > 0) {
@@ -124,6 +125,7 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
           if (isExpandable) {
             onToggle?.();
           } else if (brand.link) {
+            console.log('Brand clicked', brand.name);
             const allowed = requireAuthenticationBeforeOpeningLink({
               destination: brand.link,
               type: 'brand',
@@ -137,7 +139,12 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
               },
             });
             if (allowed) {
-              window.open(brand.link, '_blank', 'noopener,noreferrer');
+              void openZohoProtectedLink({
+                destination: brand.link,
+                navigate,
+                target: '_blank',
+                onError: () => undefined,
+              });
             }
           }
         }}
@@ -149,7 +156,28 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full truncate"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Brand clicked', brand.name);
+              const allowed = requireAuthenticationBeforeOpeningLink({
+                destination: brand.link,
+                type: 'brand',
+                entityId: brand.id,
+                pathname: window.location.pathname,
+                search: window.location.search,
+                hash: window.location.hash,
+                navigate,
+              });
+              if (allowed) {
+                void openZohoProtectedLink({
+                  destination: brand.link,
+                  navigate,
+                  target: '_blank',
+                  onError: () => undefined,
+                });
+              }
+            }}
           >
             {brand.name}
           </a>
@@ -178,6 +206,7 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
                     rel={link.newTab ? 'noopener noreferrer' : undefined}
                     onClick={(event) => {
                       event.preventDefault();
+                      console.log('Brand Action clicked', link.text);
                       const allowed = requireAuthenticationBeforeOpeningLink({
                         destination: link.url,
                         type: 'brandAction',
@@ -188,7 +217,12 @@ export default function BrandActionLinks({ brand, isExpanded = false, onToggle, 
                         navigate,
                       });
                       if (allowed) {
-                        window.open(link.url, link.newTab ? '_blank' : '_self', 'noopener,noreferrer');
+                        void openZohoProtectedLink({
+                          destination: link.url,
+                          navigate,
+                          target: link.newTab ? '_blank' : '_self',
+                          onError: () => undefined,
+                        });
                       }
                     }}
                     className="block border-b border-border/50 bg-card px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/5"

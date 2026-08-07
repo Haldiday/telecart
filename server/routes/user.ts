@@ -1,7 +1,14 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middlewares/jwt.js';
-import { getProfile, updateProfile, requestChangeEmail, verifyChangeEmail } from '../controllers/user.js';
+import {
+  getProfile,
+  updateProfile,
+  requestChangeEmail,
+  verifyChangeEmail,
+  requestChangePhone,
+  verifyChangePhone,
+} from '../controllers/user.js';
 import { config } from '../config/index.js';
 
 const router = Router();
@@ -24,5 +31,7 @@ router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 router.post('/change-email/request', otpRateLimiter, requestChangeEmail);
 router.post('/change-email/verify', verifyChangeEmail);
+router.post('/change-phone/request', otpRateLimiter, requestChangePhone);
+router.post('/change-phone/verify', verifyChangePhone);
 
 export default router;

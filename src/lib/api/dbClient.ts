@@ -39,7 +39,10 @@ export interface DbResponse<T = unknown> {
 
 type AuthTokenProvider = () => Promise<string | null>;
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+// Use relative API base in production; in development use VITE_API_URL or localhost.
+const API_BASE = import.meta.env.PROD
+  ? ''
+  : (import.meta.env.VITE_API_URL ?? 'http://localhost:3001');
 
 let authTokenProvider: AuthTokenProvider = async () => null;
 
@@ -207,14 +210,13 @@ class ApiQueryBuilder<T = unknown> implements PromiseLike<DbResponse<T>> {
 }
 
 class ApiStorageBucket {
-  constructor(private bucket: string) {}
+  constructor(private bucket: string) { }
 
   async upload(path: string, file: File, _options?: { contentType?: string; upsert?: boolean }) {
     const token = await authTokenProvider();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('path', path);
-    formData.append('bucket', this.bucket);
 
     const headers: Record<string, string> = {};
     if (token) {
@@ -255,8 +257,19 @@ class ApiStorageBucket {
   }
 
   getPublicUrl(path: string) {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${this.bucket}/${path}`;
+    const publicUrlBase = import.meta.env.VITE_R2_PUBLIC_URL;
+    if (!publicUrlBase) {
+      throw new Error('Missing VITE_R2_PUBLIC_URL environment variable');
+    }
+
+    const normalizedBase = publicUrlBase.replace(/\/+$/, '');
+    const encodedPath = path
+      .replace(/^\/+/, '')
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+
+    const publicUrl = `${normalizedBase}/${encodedPath}`;
     return { data: { publicUrl } };
   }
 }

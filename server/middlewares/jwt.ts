@@ -7,6 +7,10 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('[jwt] authHeader', authHeader);
+  console.log('[jwt] token', token);
+  console.log('[jwt] secret', config.jwt.secret);
+
   if (!token) {
     return res.status(401).json({ success: false, message: 'Authentication required' });
   }
@@ -16,9 +20,11 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
       id: string;
       email: string;
     };
+    console.log('[jwt] decoded', decoded);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('[jwt] verify error', error);
     return res.status(403).json({ success: false, message: 'Invalid or expired token' });
   }
 }

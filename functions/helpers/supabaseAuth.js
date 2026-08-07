@@ -37,7 +37,7 @@ export async function requireAdminAuth(request) {
     }
 
     const user = await getSupabaseUserByToken(request.env, token);
-    if (!user || !user.id) {}
+    if (!user || !user.id) { }
 
     const isAdmin = await isAdminUser(request.env, user.id);
     return { isAdmin, userId: user.id };

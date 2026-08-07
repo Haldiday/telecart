@@ -7,7 +7,7 @@ describe('zoho prefill token lifecycle', () => {
   });
 
   it('creates a one-time token that returns profile data and then expires after use', async () => {
-    const record = createZohoPrefillToken({
+    const record = await createZohoPrefillToken({
       userId: 'user-123',
       name: 'Mohd Faiz',
       email: 'faiz@example.com',
@@ -15,26 +15,67 @@ describe('zoho prefill token lifecycle', () => {
       ttlMs: 5 * 60 * 1000,
     });
 
-    const firstUse = consumeZohoPrefillToken(record.token);
+    const firstUse = await consumeZohoPrefillToken(record.token);
     expect(firstUse).toMatchObject({
       name: 'Mohd Faiz',
       email: 'faiz@example.com',
       companyName: 'BizReq',
     });
 
-    expect(consumeZohoPrefillToken(record.token)).toBeNull();
+    expect(await consumeZohoPrefillToken(record.token)).toBeNull();
   });
 
   it('rejects expired tokens', async () => {
-    seedExpiredZohoPrefillToken('expired-token', {
-      userId: 'user-123',
+    await seedExpiredZohoPrefillToken('expired-token', {
+      user_id: 'user-123',
       name: 'Mohd Faiz',
       email: 'faiz@example.com',
-      companyName: 'BizReq',
-      expiresAt: Date.now() - 1000,
+      company_name: 'BizReq',
+      phone: null,
+      first_name: null,
+      last_name: null,
+      expires_at: Date.now() - 1000,
+      used: true,
     });
 
-    const consumed = consumeZohoPrefillToken('expired-token');
+    const consumed = await consumeZohoPrefillToken('expired-token');
     expect(consumed).toBeNull();
+  });
+
+  it('creates and consumes tokens without Supabase when credentials are unavailable', async () => {
+    const previousUrl = process.env.SUPABASE_URL;
+    const previousServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    try {
+      const record = await createZohoPrefillToken({
+        userId: 'user-456',
+        name: 'Fallback User',
+        email: 'fallback@example.com',
+        companyName: 'Fallback Co',
+        ttlMs: 5 * 60 * 1000,
+      });
+
+      const payload = await consumeZohoPrefillToken(record.token);
+      expect(payload).toMatchObject({
+        name: 'Fallback User',
+        email: 'fallback@example.com',
+        companyName: 'Fallback Co',
+      });
+    } finally {
+      if (previousUrl === undefined) {
+        delete process.env.SUPABASE_URL;
+      } else {
+        process.env.SUPABASE_URL = previousUrl;
+      }
+
+      if (previousServiceRoleKey === undefined) {
+        delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      } else {
+        process.env.SUPABASE_SERVICE_ROLE_KEY = previousServiceRoleKey;
+      }
+    }
   });
 });

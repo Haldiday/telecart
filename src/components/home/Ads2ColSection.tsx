@@ -9,6 +9,7 @@ import SubcategorySectionShell from './SubcategorySectionShell';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Ad {
   id: string;
@@ -22,6 +23,13 @@ interface Ad {
   show_image: boolean;
 }
 
+interface PageSectionData {
+  heading?: string | null;
+  name?: string | null;
+  show_heading?: boolean | null;
+  background_color?: string | null;
+}
+
 interface Ads2ColSectionProps {
   sectionId: string;
   sectionTable?: string;
@@ -30,6 +38,7 @@ interface Ads2ColSectionProps {
   compact?: boolean;
   backgroundColor?: string | null;
   headingClassName?: string;
+  sectionData?: PageSectionData | null;
 }
 
 async function fetchAds(sectionId: string, adsTable: string) {
@@ -62,16 +71,19 @@ export default function Ads2ColSection({
   compact = false,
   backgroundColor,
   headingClassName,
+  sectionData: sectionDataProp,
 }: Ads2ColSectionProps) {
   const queryClient = useQueryClient();
   const { data: ads = [] } = useQuery({
     queryKey: queryKeys.ads.bySectionId(sectionId, '2col'),
     queryFn: () => fetchAds(sectionId, adsTable),
   });
-  const { data: sectionData } = useQuery({
+  const { data: fetchedSectionData } = useQuery({
     queryKey: [...queryKeys.pageSection.byId(sectionId), sectionTable] as const,
     queryFn: () => fetchSectionData(sectionId, sectionTable),
+    enabled: sectionDataProp === undefined,
   });
+  const sectionData = sectionDataProp ?? fetchedSectionData;
 
   const heading = sectionData?.heading || sectionData?.name || '2 Column Ads';
   const location = useLocation();
@@ -168,107 +180,52 @@ export default function Ads2ColSection({
 
   return (
     <section id={`section-${sectionId}`}>
-    <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
-    <div className={compact ? '' : 'py-4 md:py-6'}>
-      <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
-        {showHeading && (
-          <h2 className={headingClassName || "section-heading"}>
-            {heading}
-          </h2>
-        )}
-        <div className="relative group/fixed">
-          {!isMobile && (showFixedControls || needsCarousel) && (
-            <>
-              <button
-                onClick={fixedMode ? handleFixedPrev : goPrev}
-                className="absolute left-0 md:-left-12 top-[80px] md:top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={fixedMode ? fixedPageIndex === 0 : false}
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-              <button
-                onClick={fixedMode ? handleFixedNext : goNext}
-                className="absolute right-0 md:-right-12 top-[80px] md:top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
-                disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
-                aria-label="Next slide"
-              >
-                <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
-              </button>
-            </>
-          )}
-
-          {fixedMode && isMobile ? (
-            <div className="flex flex-col gap-5">
-              {adsToDisplay.map((ad) => (
-                <div key={ad.id} className="w-full">
-                  <div
-                    onClick={() => {
-                      if (ad.link) {
-                        window.location.href = ad.link;
-                      }
-                    }}
-                    className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={{
-                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                      backgroundColor: ad.background_color || undefined,
-                    }}
+      <SubcategorySectionShell compact={compact} backgroundColor={backgroundColor} hasHeading={showHeading}>
+        <div className={compact ? '' : 'py-4 md:py-6'}>
+          <div className={compact ? '' : 'mx-auto max-w-[1580px] px-6 md:px-12'}>
+            {showHeading && (
+              <h2 className={headingClassName || "section-heading"}>
+                {heading}
+              </h2>
+            )}
+            <div className="relative group/fixed">
+              {!isMobile && (showFixedControls || needsCarousel) && (
+                <>
+                  <button
+                    onClick={fixedMode ? handleFixedPrev : goPrev}
+                    className="absolute left-0 md:-left-12 top-[80px] md:top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                    disabled={fixedMode ? fixedPageIndex === 0 : false}
+                    aria-label="Previous slide"
                   >
-                    {ad.show_image !== false && ad.image_url && (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <img
-                          src={ad.image_url}
-                          alt="Ad"
-                          className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : needsCarousel ? (
-            <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-              <div 
-                className="overflow-hidden overflow-x-hidden touch-pan-y"
-                style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-                ref={containerRef}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-              >
-                <div
-                  className="flex"
-                  onTransitionEnd={handleTransitionEnd}
-                  style={{
-                    transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
-                    transition: animate ? 'transform 650ms ease' : 'none',
-                  }}
-                >
-                  {displayAds.map((ad, displayIndex) => (
-                    <div
-                      key={`${ad.id}-${displayIndex}`}
-                      className="flex-none px-1.5"
-                      style={{ width: `${slideWidth}%` }}
-                    >
+                    <ChevronLeft className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+                  </button>
+                  <button
+                    onClick={fixedMode ? handleFixedNext : goNext}
+                    className="absolute right-0 md:-right-12 top-[80px] md:top-[150px] -translate-y-1/2 z-10 p-1 md:p-2 text-black hover:text-black/70 transition-colors disabled:opacity-30"
+                    disabled={fixedMode ? fixedPageIndex === totalFixedPages - 1 : false}
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="h-8 w-8 md:h-12 md:w-12 stroke-[1.5px]" />
+                  </button>
+                </>
+              )}
+
+              {fixedMode && isMobile ? (
+                <div className="flex flex-col gap-5">
+                  {adsToDisplay.map((ad) => (
+                    <div key={ad.id} className="w-full">
                       <div
                         onClick={() => {
                           if (ad.link) {
-                            const allowed = requireAuthenticationBeforeOpeningLink({
+                            void openZohoProtectedLink({
                               destination: ad.link,
-                              type: 'ad',
-                              entityId: ad.id,
-                              pathname: location.pathname,
-                              search: location.search,
-                              hash: location.hash,
                               navigate,
+                              target: '_self',
+                              onError: () => undefined,
                             });
-                            if (allowed) {
-                              window.location.href = ad.link;
-                            }
                           }
                         }}
-                        className={`block h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
                         style={{
                           ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
                           backgroundColor: ad.background_color || undefined,
@@ -287,39 +244,150 @@ export default function Ads2ColSection({
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
-            <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
-              <div 
-                className="flex"
-                style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
-              >
-                {fixedPages.map((page, pageIdx) => (
-                  <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-5 md:grid-cols-2">
-                    {page.map((ad) => (
-                      <div key={ad.id} className="flex h-full">
+              ) : needsCarousel ? (
+                <div className="relative" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+                  <div
+                    className="overflow-hidden overflow-x-hidden touch-pan-y"
+                    style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+                    ref={containerRef}
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                  >
+                    <div
+                      className="flex"
+                      onTransitionEnd={handleTransitionEnd}
+                      style={{
+                        transform: `translateX(calc(-${index * slideWidth}% + ${dragOffset}%))`,
+                        transition: animate ? 'transform 650ms ease' : 'none',
+                      }}
+                    >
+                      {displayAds.map((ad, displayIndex) => (
                         <div
-                          onClick={() => {
-                            if (ad.link) {
-                              const allowed = requireAuthenticationBeforeOpeningLink({
-                                destination: ad.link,
-                                type: 'ad',
-                                entityId: ad.id,
-                                pathname: location.pathname,
-                                search: location.search,
-                                hash: location.hash,
-                                navigate,
-                              });
-                              if (allowed) {
-                                window.location.href = ad.link;
-                              }
-                            }
-                          }}
-                          className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                          style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                          key={`${ad.id}-${displayIndex}`}
+                          className="flex-none px-1.5"
+                          style={{ width: `${slideWidth}%` }}
                         >
-                          {ad.show_image !== false && ad.image_url && (
+                          <div
+                            onClick={() => {
+                              if (ad.link) {
+                                const allowed = requireAuthenticationBeforeOpeningLink({
+                                  destination: ad.link,
+                                  type: 'ad',
+                                  entityId: ad.id,
+                                  pathname: location.pathname,
+                                  search: location.search,
+                                  hash: location.hash,
+                                  navigate,
+                                });
+                                if (allowed) {
+                                  void openZohoProtectedLink({
+                                    destination: ad.link,
+                                    navigate,
+                                    target: '_self',
+                                    onError: () => undefined,
+                                  });
+                                }
+                              }
+                            }}
+                            className={`block h-[160px] md:h-[220px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                            style={{
+                              ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                              backgroundColor: ad.background_color || undefined,
+                            }}
+                          >
+                            {ad.show_image !== false && ad.image_url && (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <img
+                                  src={ad.image_url}
+                                  alt="Ad"
+                                  className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (fixedMode && adsToDisplay.length > visibleCount) ? (
+                <div className="overflow-hidden overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }} ref={fixedContainerRef} onTouchStart={onFixedTouchStart} onTouchMove={onFixedTouchMove} onTouchEnd={onFixedTouchEnd}>
+                  <div
+                    className="flex"
+                    style={{ transform: getTransformStyle(), transition: getTransitionStyle() }}
+                  >
+                    {fixedPages.map((page, pageIdx) => (
+                      <div key={pageIdx} className="w-full flex-none grid grid-cols-1 gap-5 md:grid-cols-2">
+                        {page.map((ad) => (
+                          <div key={ad.id} className="flex h-full">
+                            <div
+                              onClick={() => {
+                                if (ad.link) {
+                                  const allowed = requireAuthenticationBeforeOpeningLink({
+                                    destination: ad.link,
+                                    type: 'ad',
+                                    entityId: ad.id,
+                                    pathname: location.pathname,
+                                    search: location.search,
+                                    hash: location.hash,
+                                    navigate,
+                                  });
+                                  if (allowed) {
+                                    void openZohoProtectedLink({
+                                      destination: ad.link,
+                                      navigate,
+                                      target: '_self',
+                                      onError: () => undefined,
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl bg-muted cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                              style={ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}}
+                            >
+                              {ad.show_image !== false && ad.image_url && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <img
+                                    src={ad.image_url}
+                                    alt="Ad"
+                                    className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
+                        {Array.from({ length: visibleCount - page.length }).map((_, i) => (
+                          <div key={`empty-${i}`} className="hidden md:flex h-full" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-5">
+                  {adsToDisplay.map((ad) => (
+                    <div key={ad.id} className="w-1/2">
+                      <div
+                        onClick={() => {
+                          if (ad.link) {
+                            void openZohoProtectedLink({
+                              destination: ad.link,
+                              navigate,
+                              target: '_self',
+                              onError: () => undefined,
+                            });
+                          }
+                        }}
+                        className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
+                        style={{
+                          ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
+                          backgroundColor: ad.background_color || undefined,
+                        }}
+                      >
+                        {ad.show_image !== false && ad.image_url && (
                           <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={ad.image_url}
@@ -328,51 +396,15 @@ export default function Ads2ColSection({
                             />
                           </div>
                         )}
-                        </div>
                       </div>
-                    ))}
-                    {/* Fill empty spaces in fixed mode if current page has less than visibleCount items */}
-                    {Array.from({ length: visibleCount - page.length }).map((_, i) => (
-                      <div key={`empty-${i}`} className="hidden md:flex h-full" />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-5">
-              {adsToDisplay.map((ad) => (
-                <div key={ad.id} className="w-1/2">
-                  <div
-                    onClick={() => {
-                      if (ad.link) {
-                        window.location.href = ad.link;
-                      }
-                    }}
-                    className={`block w-full h-[120px] md:h-[160px] lg:h-[280px] overflow-hidden rounded-xl cursor-pointer ${ad.show_border ? 'border' : ''}`}
-                    style={{
-                      ...(ad.show_border && ad.border_color ? { borderColor: ad.border_color } : {}),
-                      backgroundColor: ad.background_color || undefined,
-                    }}
-                  >
-                    {ad.show_image !== false && ad.image_url && (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <img
-                          src={ad.image_url}
-                          alt="Ad"
-                          className={`h-full w-full transition-transform duration-300 hover:scale-105 object-contain`}
-                        />
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-    </SubcategorySectionShell>
+      </SubcategorySectionShell>
     </section>
   );
 }

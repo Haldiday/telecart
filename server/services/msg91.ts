@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
 
-// Store generated OTPs in memory so the same code can be verified later
-const sentOTPs = new Map<string, string>();
+const OTP_TTL_MS = 5 * 60 * 1000;
+const MAX_ATTEMPTS = 5;
+
+// Store generated OTPs in memory so the same code can be verified later.
+// The entry also tracks expiry so the OTP cannot be reused after the allowed window.
+const sentOTPs = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
 export class MSG91Service {
   private apiKey: string;
@@ -40,8 +44,13 @@ export class MSG91Service {
   }
 
   async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
     const otp = this.generateOTP();
-    sentOTPs.set(email.toLowerCase(), otp);
+    sentOTPs.set(normalizedEmail, {
+      otp,
+      expiresAt: Date.now() + OTP_TTL_MS,
+      attempts: 0,
+    });
 
     if (this.useFakeOTP) {
       console.log(`[FAKE OTP] Sending OTP ${otp} to email: ${email}`);
@@ -66,13 +75,13 @@ export class MSG91Service {
         {
           to: [
             {
-              name: email.split('@')[0],
-              email,
+              name: normalizedEmail.split('@')[0],
+              email: normalizedEmail,
             },
           ],
           variables: {
             company_name: 'BizReq',
-            name: email.split('@')[0],
+            name: normalizedEmail.split('@')[0],
             otp,
           },
         },
@@ -140,16 +149,29 @@ export class MSG91Service {
   }
 
   async verifyOTP(email: string, otp: string): Promise<{ success: boolean; message: string }> {
-    const storedOTP = sentOTPs.get(email.toLowerCase());
-    console.log(`[OTP] Verifying OTP:`, { email, otp, storedOTP });
+    const normalizedEmail = email.trim().toLowerCase();
+    const entry = sentOTPs.get(normalizedEmail);
+    console.log(`[OTP] Verifying OTP:`, { email: normalizedEmail, otp, entry: entry ? { ...entry, otp: '***' } : null });
 
-    if (otp === storedOTP) {
-      return {
-        success: true,
-        message: 'OTP verified successfully',
-      };
+    if (!entry || entry.expiresAt <= Date.now()) {
+      sentOTPs.delete(normalizedEmail);
+      throw new Error('Invalid or expired OTP');
     }
 
-    throw new Error('Invalid or expired OTP');
+    if (entry.attempts >= MAX_ATTEMPTS) {
+      sentOTPs.delete(normalizedEmail);
+      throw new Error('Too many incorrect OTP attempts. Please request a new code.');
+    }
+
+    if (entry.otp !== otp) {
+      entry.attempts += 1;
+      throw new Error('Invalid or expired OTP');
+    }
+
+    sentOTPs.delete(normalizedEmail);
+    return {
+      success: true,
+      message: 'OTP verified successfully',
+    };
   }
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { getBrandActionLinks, BrandWithActionLinks } from '@/components/shared/BrandActionLinks';
+import { requireAuthenticationBeforeOpeningLink } from '@/lib/authGuard';
+import { openZohoProtectedLink } from '@/lib/zohoLink';
 
 interface Category {
   id: string;
@@ -46,6 +48,8 @@ interface BrandItem {
 
 export default function BrandActionLinksPage() {
   const { categoryId, subcategoryId, brandId } = useParams<{ categoryId: string; subcategoryId: string; brandId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [brand, setBrand] = useState<BrandItem | null>(null);
@@ -55,7 +59,7 @@ export default function BrandActionLinksPage() {
     if (!categoryId || !subcategoryId || !brandId) return;
 
     let mounted = true;
-    
+
     const loadData = async () => {
       if (!mounted) return;
       setLoading(true);
@@ -71,7 +75,7 @@ export default function BrandActionLinksPage() {
       if (categoryData) setCategory(categoryData);
       if (subcategoryData) setSubcategory(subcategoryData);
       if (brandData) setBrand(brandData);
-      
+
       setLoading(false);
     };
 
@@ -105,14 +109,14 @@ export default function BrandActionLinksPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
               <ChevronRight className="h-3 w-3" />
-              <Link 
+              <Link
                 to={`/category/${category.id}/subcategories`}
                 className="hover:text-foreground transition-colors"
               >
                 {category.name}
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <Link 
+              <Link
                 to={`/category/${category.id}/subcategory/${subcategory.id}/brands`}
                 className="hover:text-foreground transition-colors"
               >
@@ -161,6 +165,27 @@ export default function BrandActionLinksPage() {
                       target={link.newTab ? '_blank' : undefined}
                       rel={link.newTab ? 'noopener noreferrer' : undefined}
                       className="flex items-center justify-between text-left text-sm md:text-base font-normal text-foreground hover:text-primary cursor-pointer"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        console.log('Brand Action clicked', link.text);
+                        const allowed = requireAuthenticationBeforeOpeningLink({
+                          destination: link.url,
+                          type: 'brandAction',
+                          entityId: brandId,
+                          pathname: location.pathname,
+                          search: location.search,
+                          hash: location.hash,
+                          navigate,
+                        });
+                        if (allowed) {
+                          void openZohoProtectedLink({
+                            destination: link.url,
+                            navigate,
+                            target: link.newTab ? '_blank' : '_self',
+                            onError: () => undefined,
+                          });
+                        }
+                      }}
                     >
                       <span>{link.text}</span>
                     </a>

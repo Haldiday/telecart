@@ -1,7 +1,7 @@
-﻿import { getConfig } from '../../../helpers/config.js';
-import { getSupabaseAdmin } from '../../../helpers/supabase.js';
-import { verifyJwt } from '../../../helpers/jwt.js';
-import { jsonResponse, getBearerToken } from '../../../helpers/utils.js';
+﻿import { getConfig } from '../../helpers/config.js';
+import { getSupabaseAdmin } from '../../helpers/supabase.js';
+import { verifyJwt } from '../../helpers/jwt.js';
+import { jsonResponse, getBearerToken } from '../../helpers/utils.js';
 
 function getUserFromToken(request, env) {
     const token = getBearerToken(request);

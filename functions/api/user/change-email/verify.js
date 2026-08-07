@@ -1,9 +1,9 @@
-﻿import { getConfig } from '../../../../helpers/config.js';
-import { getSupabaseAdmin } from '../../../../helpers/supabase.js';
-import { MSG91Service } from '../../../../helpers/msg91.js';
-import { signJwt } from '../../../../helpers/jwt.js';
-import { jsonResponse, getBearerToken, validateEmail, validateOTP } from '../../../../helpers/utils.js';
-import { getSupabaseUserByToken } from '../../../../helpers/supabaseAuth.js';
+﻿import { getConfig } from '../../../helpers/config.js';
+import { getSupabaseAdmin } from '../../../helpers/supabase.js';
+import { MSG91Service } from '../../../helpers/msg91.js';
+import { signJwt } from '../../../helpers/jwt.js';
+import { jsonResponse, getBearerToken, validateEmail, validateOTP } from '../../../helpers/utils.js';
+import { getSupabaseUserByToken } from '../../../helpers/supabaseAuth.js';
 
 export async function onRequestPost({ request, env }) {
     try {
