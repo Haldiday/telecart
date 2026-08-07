@@ -11,22 +11,11 @@ export async function onRequestGet({ request, env }) {
         }
 
         const config = getConfig(env);
-        let payload;
-
-        try {
-            payload = await verifyJwt(token, config.jwtSecret);
-        } catch (jwtError) {
-            console.error('JWT verification failed:', jwtError);
-            return jsonResponse({ success: false, message: 'Invalid or expired token' }, 401);
-        }
+        const payload = await verifyJwt(token, config.jwtSecret);
 
         const supabase = getSupabaseAdmin(env);
         const { data: user, error } = await supabase.from('users').select('*').eq('id', payload.id).single();
-
-        if (error || !user) {
-            console.error('User lookup failed for token payload:', { payload, error });
-            return jsonResponse({ success: false, message: 'Authentication required' }, 401);
-        }
+        if (error) throw error;
 
         return jsonResponse({ success: true, user });
     } catch (error) {
