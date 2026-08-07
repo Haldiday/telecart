@@ -37,6 +37,22 @@ function applyFilters(query, filters) {
             case 'or':
                 result = result.or(filter.value);
                 break;
+            case 'not':
+                // Support 'not' filters. `filter.value` can be either a primitive (treated as !=)
+                // or an object { op: 'eq'|'in'|..., value: ... } to express the inner comparison.
+                try {
+                    if (filter && typeof filter.value === 'object' && filter.value !== null && filter.value.op) {
+                        result = result.not(filter.column, filter.value.op, filter.value.value);
+                    } else {
+                        // default: not equal
+                        result = result.not(filter.column, 'eq', filter.value);
+                    }
+                } catch (e) {
+                    // If the runtime supabase client doesn't support this signature, log and rethrow
+                    console.error('applyFilters: failed to apply not() filter', { filter, err: e });
+                    throw e;
+                }
+                break;
             default:
                 throw new Error(`Unsupported filter operation: ${filter.op}`);
         }
@@ -79,18 +95,18 @@ export async function executeQuery(spec, env) {
 
     try {
         if (spec.action === 'select') {
-            let query = supabase.from(spec.table).select(spec.select ?? '*', spec.selectOptions);
+            let query = supabase.from(spec.table).select(spec.select ? ? '*', spec.selectOptions);
             query = applyFilters(query, spec.filters || []);
             query = applyOrders(query, spec);
             query = applyLimitAndSingle(query, spec);
             const { data, error, count } = await query;
-            return { data, error: formatError(error), count: count ?? null };
+            return { data, error: formatError(error), count: count ? ? null };
         }
 
         if (spec.action === 'insert') {
             let query = supabase.from(spec.table).insert(spec.body);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(spec.select ? ? '*');
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -101,7 +117,7 @@ export async function executeQuery(spec, env) {
             let query = supabase.from(spec.table).update(spec.body);
             query = applyFilters(query, spec.filters || []);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(spec.select ? ? '*');
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -112,7 +128,7 @@ export async function executeQuery(spec, env) {
             let query = supabase.from(spec.table).delete();
             query = applyFilters(query, spec.filters || []);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(spec.select ? ? '*');
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -122,7 +138,7 @@ export async function executeQuery(spec, env) {
         if (spec.action === 'upsert') {
             let query = supabase.from(spec.table).upsert(spec.body);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(spec.select ? ? '*');
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -132,6 +148,7 @@ export async function executeQuery(spec, env) {
         return { data: null, error: { message: `Unsupported action: ${spec.action}` } };
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Query execution failed';
+        console.error('executeQuery caught exception', { spec, message, err });
         return { data: null, error: { message } };
     }
 }
