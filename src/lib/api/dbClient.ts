@@ -39,8 +39,9 @@ export interface DbResponse<T = unknown> {
 
 type AuthTokenProvider = () => Promise<string | null>;
 
-// Prefer VITE_API_URL when configured; otherwise use relative API base in production or localhost in development.
-const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
+// Prefer VITE_API_URL in development when configured; otherwise use localhost for local dev.
+// In production, always use the relative API base path.
+const API_BASE = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
 let authTokenProvider: AuthTokenProvider = async () => null;
 
