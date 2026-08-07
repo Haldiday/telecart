@@ -8,8 +8,14 @@ function getUserFromToken(request, env) {
     if (!token) {
         return null;
     }
+
     const config = getConfig(env);
-    return verifyJwt(token, config.jwtSecret);
+    try {
+        return verifyJwt(token, config.jwtSecret);
+    } catch (error) {
+        console.warn('Invalid or expired auth token:', error ? .message ? ? error);
+        return null;
+    }
 }
 
 export async function onRequestGet({ request, env }) {

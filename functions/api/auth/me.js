@@ -11,11 +11,30 @@ export async function onRequestGet({ request, env }) {
         }
 
         const config = getConfig(env);
-        const payload = await verifyJwt(token, config.jwtSecret);
+        let payload;
+        try {
+            payload = await verifyJwt(token, config.jwtSecret);
+        } catch (error) {
+            console.warn('Invalid or expired auth token:', error ? .message ? ? error);
+            return jsonResponse({ success: false, message: 'Invalid or expired token' }, 401);
+        }
+
+        if (!payload || !payload.id) {
+            return jsonResponse({ success: false, message: 'Invalid token payload' }, 401);
+        }
 
         const supabase = getSupabaseAdmin(env);
         const { data: user, error } = await supabase.from('users').select('*').eq('id', payload.id).single();
-        if (error) throw error;
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return jsonResponse({ success: false, message: 'User not found' }, 401);
+            }
+            throw error;
+        }
+
+        if (!user) {
+            return jsonResponse({ success: false, message: 'User not found' }, 401);
+        }
 
         return jsonResponse({ success: true, user });
     } catch (error) {

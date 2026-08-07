@@ -1,7 +1,7 @@
 export function getConfig(env) {
     const supabaseUrl = String(env.SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim();
-    const supabaseServiceRoleKey = String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-    const jwtSecret = String(env.JWT_SECRET || '').trim();
+    const supabaseServiceRoleKey = String(env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_SERVICE_ROLE_KEY || '').trim();
+    const jwtSecret = String(env.JWT_SECRET || env.VITE_JWT_SECRET || '').trim();
     const msg91AuthKey = String(env.MSG91_AUTH_KEY || '').trim();
     const msg91TemplateId = String(env.MSG91_TEMPLATE_ID || '').trim();
     const msg91EmailDomain = String(env.MSG91_EMAIL_DOMAIN || '').trim();

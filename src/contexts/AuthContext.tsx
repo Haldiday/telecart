@@ -27,8 +27,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const response = await authAPI.getMe();
           if (response.success && response.user) {
             setUser(response.user);
-          } else {
+          } else if (response.message?.toLowerCase().includes('invalid') || response.message?.toLowerCase().includes('expired')) {
             localStorage.removeItem('auth_token');
+          } else {
+            console.warn('Auth initialization returned no user; keeping existing token for retry.', response);
           }
         } catch (error: any) {
           if (error.response?.status === 401 || error.response?.status === 403) {
