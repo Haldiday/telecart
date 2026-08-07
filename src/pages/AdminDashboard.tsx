@@ -84,14 +84,14 @@ interface BrandActionLinkItem {
   enabled?: boolean;
 }
 
-interface SubcategoryBrand { 
-  id?: string; 
-  name: string; 
-  logo_url: string | null; 
-  link: string | null; 
+interface SubcategoryBrand {
+  id?: string;
+  name: string;
+  logo_url: string | null;
+  link: string | null;
   description?: string | null;
   buttons?: CategoryButton[];
-  is_visible: boolean; 
+  is_visible: boolean;
   action_links?: BrandActionLinkItem[];
   action_link_1_text?: string | null;
   action_link_1_url?: string | null;
@@ -124,14 +124,14 @@ interface Ad3 { id: string; image_url: string | null; heading: string | null; de
 function normalizeAdminBrandActionLinks(brand: Partial<SubcategoryBrand> & Record<string, any>): BrandActionLinkItem[] {
   const configuredLinks = Array.isArray((brand as any).action_links)
     ? (brand as any).action_links
-        .map((link: BrandActionLinkItem | null | undefined) => ({
-          id: link?.id,
-          text: link?.text?.trim() || null,
-          url: link?.url?.trim() || null,
-          new_tab: Boolean(link?.new_tab),
-          enabled: link?.enabled ?? true,
-        }))
-        .filter((link) => Boolean(link.text || link.url || link.enabled !== undefined))
+      .map((link: BrandActionLinkItem | null | undefined) => ({
+        id: link?.id,
+        text: link?.text?.trim() || null,
+        url: link?.url?.trim() || null,
+        new_tab: Boolean(link?.new_tab),
+        enabled: link?.enabled ?? true,
+      }))
+      .filter((link) => Boolean(link.text || link.url || link.enabled !== undefined))
     : [];
 
   if (configuredLinks.length > 0) {
@@ -459,7 +459,7 @@ interface Ad3Item extends Ad2Item {
   background_color: string | null;
 }
 
-interface FAQ extends FAQRecord {}
+interface FAQ extends FAQRecord { }
 
 type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
@@ -618,9 +618,9 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: 'ads_1col', label: '1-Col Ad', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_2col', label: '2-Col Ads', icon: <Image className="w-5 h-5" /> },
   { key: 'ads_3col', label: '3-Col Ads', icon: <Image className="w-5 h-5" /> },
-  { 
-    key: 'footer', 
-    label: 'Footer Options', 
+  {
+    key: 'footer',
+    label: 'Footer Options',
     icon: <Home className="w-5 h-5" />,
     children: [
       { key: 'advertise', label: 'Advertise Page' },
@@ -1010,389 +1010,389 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let mounted = true;
-    
-      const loadAllSafe = async () => {
+
+    const loadAllSafe = async () => {
+      try {
+        const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, subscribers, faqsData, advertiseSettingsData, advertiseCardsData, advertiseSectionsData, getListedPlansData, getListedPlanFeaturesData, getListedComparisonRowsData, getListedComparisonCellsData, getListedSettingsData, writeForUsSettingsData, vendorGuidelinesSettingsData, browseAllDirectoriesSettingsData] = await Promise.all([
+          supabase.from('page_sections').select('*').order('sort_order'),
+          supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          supabase.from('featured_cards').select('*').order('sort_order'),
+          supabase.from('categories').select('*').order('sort_order'),
+          supabase.from('subcategories').select('*').order('sort_order'),
+          supabase.from('offers').select('*').order('sort_order'),
+          supabase.from('ads_2col').select('*').order('sort_order'),
+          supabase.from('ads_3col').select('*').order('sort_order'),
+          supabase.from('category_buttons').select('*').order('sort_order'),
+          supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+          supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
+          supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
+          supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          supabase.from('footer_subscribers').select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
+          supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
+          supabase.from('advertise_page_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          supabase.from('advertise_cards').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('advertise_sections').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('get_listed_plans').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
+          supabase.from('get_listed_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          (supabase as any).from('write_for_us_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          (supabase as any).from('vendor_guidelines_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+          (supabase as any).from('browse_all_directories_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
+        ]);
+
+        let subBrands;
         try {
-          const [s, h, header, c, cat, sub, o, a2, a3, btns, aboutSects, contact, kfSections, legal, footer, subscribers, faqsData, advertiseSettingsData, advertiseCardsData, advertiseSectionsData, getListedPlansData, getListedPlanFeaturesData, getListedComparisonRowsData, getListedComparisonCellsData, getListedSettingsData, writeForUsSettingsData, vendorGuidelinesSettingsData, browseAllDirectoriesSettingsData] = await Promise.all([
-            supabase.from('page_sections').select('*').order('sort_order'),
-            supabase.from('hero_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            supabase.from('header_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            supabase.from('featured_cards').select('*').order('sort_order'),
-            supabase.from('categories').select('*').order('sort_order'),
-            supabase.from('subcategories').select('*').order('sort_order'),
-            supabase.from('offers').select('*').order('sort_order'),
-            supabase.from('ads_2col').select('*').order('sort_order'),
-            supabase.from('ads_3col').select('*').order('sort_order'),
-            supabase.from('category_buttons').select('*').order('sort_order'),
-            supabase.from('subcategory_about_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
-            supabase.from('contact_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            supabase.from('subcategory_key_features_sections' as any).select('*').order('sort_order').then(res => res, err => ({ data: null, error: err })),
-            supabase.from('legal_pages').select('*').then(res => res, err => ({ data: null, error: err })),
-            supabase.from('footer_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            supabase.from('footer_subscribers').select('*').order('created_at', { ascending: false }).then(res => res, err => ({ data: null, error: err })),
-            supabase.from('faqs').select('*').order('sort_order', { ascending: true }).then(res => res, err => ({ data: null, error: err })),
-            supabase.from('advertise_page_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            supabase.from('advertise_cards').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('advertise_sections').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_plans').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_plan_features').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_comparison_rows').select('*').order('sort_order').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_comparison_cells').select('*').then(res => res, err => ({ data: [], error: err })),
-            supabase.from('get_listed_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            (supabase as any).from('write_for_us_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            (supabase as any).from('vendor_guidelines_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-            (supabase as any).from('browse_all_directories_settings').select('*').limit(1).maybeSingle().then(res => res, err => ({ data: null, error: err })),
-          ]);
-
-          let subBrands;
-          try {
-            const result = await supabase.from('subcategory_brands' as any).select('*');
-            subBrands = result;
-          } catch {
-            subBrands = { data: [] };
-          }
-          let subOverviewPoints;
-          try {
-            const result = await supabase.from('subcategory_overview_points' as any).select('*');
-            subOverviewPoints = result;
-          } catch {
-            subOverviewPoints = { data: [] };
-          }
-          
-          if (!mounted) return;
-
-          if (s.data) setSections(s.data);
-          console.log('📥 Fetched contact settings data from Supabase:', contact.data);
-          
-          // Process contact settings
-          if (contact.data) {
-            // If we have data from Supabase, use it directly
-            console.log('✅ Loading contact settings from database');
-            setContactSettings({
-              id: contact.data.id,
-              heading: contact.data.heading ?? '',
-              email_label: contact.data.email_label ?? '',
-              email: contact.data.email ?? '',
-              description_1: contact.data.description_1 ?? '',
-              description_2: contact.data.description_2 ?? '',
-              image_url: contact.data.image_url ?? '',
-              phone: (contact.data as any).phone ?? '',
-              whatsapp: (contact.data as any).whatsapp ?? '',
-              address: (contact.data as any).address ?? '',
-              form_embed: (contact.data as any).form_embed ?? '',
-              contact_emails: (contact.data as any).contact_emails ?? [],
-              nodal_officer_title: (contact.data as any).nodal_officer_title ?? '',
-              nodal_officer_name: (contact.data as any).nodal_officer_name ?? '',
-              nodal_officer_phone: (contact.data as any).nodal_officer_phone ?? '',
-              nodal_officer_email: (contact.data as any).nodal_officer_email ?? '',
-              nodal_officer_visible: (contact.data as any).nodal_officer_visible ?? true,
-              appellate_authority_title: (contact.data as any).appellate_authority_title ?? '',
-              appellate_authority_name: (contact.data as any).appellate_authority_name ?? '',
-              appellate_authority_phone: (contact.data as any).appellate_authority_phone ?? '',
-              appellate_authority_email: (contact.data as any).appellate_authority_email ?? '',
-              appellate_authority_visible: (contact.data as any).appellate_authority_visible ?? true,
-              is_visible: (contact.data as any).is_visible ?? true,
-            });
-          } else {
-            console.log('⚠️ No contact settings data found in database');
-            // Keep default state if no data (don't overwrite)
-          }
-          
-          // Mark contact settings as loaded
-          setIsLoadingContactSettings(false);
-          if (header.data) setHeaderSettings(header.data);
-          if (footer.data) {
-            const footerData = footer.data as any;
-            setFooterSettings({
-              id: footerData.id,
-              description: footerData.description ?? '',
-              description_visible: footerData.description_visible ?? true,
-              twitter_label: footerData.twitter_label ?? 'Twitter',
-              twitter_link: footerData.twitter_link ?? '#',
-              twitter_visible: footerData.twitter_visible ?? true,
-              linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
-              linkedin_link: footerData.linkedin_link ?? '#',
-              linkedin_visible: footerData.linkedin_visible ?? true,
-              facebook_label: footerData.facebook_label ?? 'Facebook',
-              facebook_link: footerData.facebook_link ?? '#',
-              facebook_visible: footerData.facebook_visible ?? true,
-              instagram_label: footerData.instagram_label ?? 'Instagram',
-              instagram_link: footerData.instagram_link ?? '#',
-              instagram_visible: footerData.instagram_visible ?? false,
-              youtube_label: footerData.youtube_label ?? 'YouTube',
-              youtube_link: footerData.youtube_link ?? '#',
-              youtube_visible: footerData.youtube_visible ?? false,
-              social_whatsapp_visible: footerData.social_whatsapp_visible ?? false,
-              social_media_visible: footerData.social_media_visible ?? true,
-              about_us_visible: footerData.about_us_visible ?? true,
-              contact_visible: footerData.contact_visible ?? true,
-              privacy_policy_visible: footerData.privacy_policy_visible ?? true,
-              terms_of_service_visible: footerData.terms_of_service_visible ?? true,
-              refund_policy_visible: footerData.refund_policy_visible ?? true,
-              refund_policy_1_visible: footerData.refund_policy_1_visible ?? true,
-              refund_policy_2_visible: footerData.refund_policy_2_visible ?? true,
-              refund_policy_3_visible: footerData.refund_policy_3_visible ?? true,
-              refund_policy_4_visible: footerData.refund_policy_4_visible ?? true,
-              faq_visible: footerData.faq_visible ?? true,
-              faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
-              whatsapp_number: footerData.whatsapp_number ?? '',
-              whatsapp_visible: footerData.whatsapp_visible ?? false,
-              phone: footerData.phone ?? '',
-              phone_visible: footerData.phone_visible ?? false,
-              email: footerData.email ?? '',
-              email_visible: footerData.email_visible ?? false,
-              bottom_footer_email: footerData.bottom_footer_email ?? '',
-              bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
-              bottom_branding_visible: footerData.bottom_branding_visible ?? true,
-              bottom_branding_text: footerData.bottom_branding_text ?? '',
-              submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
-              submit_rft_url: footerData.submit_rft_url ?? '',
-              submit_rft_enabled: footerData.submit_rft_enabled ?? false,
-              get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
-              get_recommendations_url: footerData.get_recommendations_url ?? '',
-              get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
-              get_listed_visible: footerData.get_listed_visible ?? true,
-              advertise_visible: footerData.advertise_visible ?? true,
-              write_for_us_visible: footerData.write_for_us_visible ?? true,
-              vendor_guidelines_visible: footerData.vendor_guidelines_visible ?? true,
-              view_all_categories_visible: footerData.view_all_categories_visible ?? true,
-              vendors_visible: footerData.vendors_visible ?? true,
-              buyers_visible: footerData.buyers_visible ?? true,
-            });
-          }
-          if (subscribers.data) {
-            setFooterSubscribers(
-              (subscribers.data as Array<{ id: string; email: string; created_at: string }>).map(subscriber => ({
-                id: subscriber.id,
-                email: subscriber.email,
-                created_at: subscriber.created_at,
-              }))
-            );
-          }
-          if (legal.data) {
-            setLegalPages(legal.data as LegalPage[]);
-            // Initialize editable titles and visibility
-            const titles: Record<string, string> = {};
-            const visibility: Record<string, boolean> = {};
-            legal.data.forEach((page: any) => {
-              titles[page.slug] = page.title;
-              visibility[page.slug] = page.is_visible ?? true;
-            });
-            setEditableLegalTitles(titles);
-            setEditableLegalVisibility(visibility);
-          }
-          if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
-          if (h.data) { 
-      const heroData = h.data as any;
-      // Try to split main_text using ||| delimiter
-      const mainText = heroData.main_text || '';
-      let part1 = '';
-      let part2 = '';
-      if (mainText.includes('|||')) {
-        const split = mainText.split('|||');
-        part1 = split[0] || '';
-        part2 = split[1] || '';
-      } else {
-        // Backward compatibility: if no delimiter, use whole text as part1
-        part1 = mainText;
-      }
-      setHeroTextPart1(part1); 
-      setHeroTextPart2(part2); 
-      console.log('Loading hero words:', heroData.animated_words);
-      const loadedWords: string[] = heroData.animated_words || [];
-      const loadedVisibilityRaw: boolean[] = Array.isArray(heroData.animated_word_visibility)
-        ? heroData.animated_word_visibility
-        : [];
-      setHeroWords(loadedWords);
-      setHeroAnimatedWordVisibility(loadedWords.map((_, index) => loadedVisibilityRaw[index] ?? true));
-      setHeroVisible(heroData.hero_visible ?? true);
-      setHeroTextPart1Visible(heroData.hero_text_part1_visible ?? true);
-      setHeroTextPart2Visible(heroData.hero_text_part2_visible ?? true);
-      setHeroAnimatedWordsVisible(heroData.hero_animated_words_visible ?? true);
-      setHeroSearchVisible(heroData.hero_search_visible ?? true);
-    }
-          if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
-          if (cat.data) setCategories(cat.data);
-      if (sub.data) {
-        setSubcategories(sub.data as unknown as Subcategory[]);
-        const map: Record<string, string> = {};
-        const keyFeaturesLabels: Record<string, string> = {};
-        const brandsLabels: Record<string, string> = {};
-        
-        sub.data.forEach((s: any) => { 
-          map[s.id] = s.name; 
-          keyFeaturesLabels[s.id] = s.key_features_tab_label || 'Key Features';
-          brandsLabels[s.id] = s.brands_tab_label || 'Brands';
-        });
-        setSubcategoriesMap(map);
-        setEditKeyFeaturesTabLabelState(keyFeaturesLabels);
-        setEditBrandsTabLabelState(brandsLabels);
-      }
-      if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null, show_image: offer.show_image ?? true })));
-      if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
-      if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
-      if (btns.data) {
-        setButtons(btns.data);
-        const buttonsBySubcategory: Record<string, CategoryButton[]> = {};
-        btns.data.forEach((btn: any) => {
-          if (btn.subcategory_id) {
-            if (!buttonsBySubcategory[btn.subcategory_id]) {
-              buttonsBySubcategory[btn.subcategory_id] = [];
-            }
-            buttonsBySubcategory[btn.subcategory_id].push({
-              id: btn.id,
-              label: btn.label,
-              link: btn.link,
-              is_visible: btn.is_visible,
-            });
-          }
-        });
-        setEditButtonsState(buttonsBySubcategory);
-      }
-      if (subBrands.data) {
-        const brandsBySubcategory: Record<string, SubcategoryBrand[]> = {};
-        subBrands.data.forEach((brand: any) => {
-          if (!brandsBySubcategory[brand.subcategory_id]) {
-            brandsBySubcategory[brand.subcategory_id] = [];
-          }
-          brandsBySubcategory[brand.subcategory_id].push({
-            id: brand.id,
-            name: brand.name,
-            logo_url: brand.logo_url,
-            link: brand.link,
-            description: brand.description,
-            buttons: brand.buttons || [],
-            is_visible: brand.is_visible,
-            action_links: normalizeAdminBrandActionLinks(brand),
-            action_link_1_text: brand.action_link_1_text,
-            action_link_1_url: brand.action_link_1_url,
-            action_link_1_new_tab: brand.action_link_1_new_tab,
-            action_link_1_enabled: brand.action_link_1_enabled,
-            action_link_2_text: brand.action_link_2_text,
-            action_link_2_url: brand.action_link_2_url,
-            action_link_2_new_tab: brand.action_link_2_new_tab,
-            action_link_2_enabled: brand.action_link_2_enabled,
-            action_link_3_text: brand.action_link_3_text,
-            action_link_3_url: brand.action_link_3_url,
-            action_link_3_new_tab: brand.action_link_3_new_tab,
-            action_link_3_enabled: brand.action_link_3_enabled,
-            primary_cta_label: brand.primary_cta_label,
-            primary_cta_link: brand.primary_cta_link,
-            primary_cta_visible: brand.primary_cta_visible,
-            more_actions_label: brand.more_actions_label,
-            more_actions_visible: brand.more_actions_visible,
-            join_network_label: brand.join_network_label,
-            join_network_link: brand.join_network_link,
-            join_network_visible: brand.join_network_visible
-          });
-        });
-        setEditSubBrandsState(brandsBySubcategory);
-      }
-      if (subOverviewPoints.data) {
-        const pointsBySubcategory: Record<string, SubcategoryOverviewPoint[]> = {};
-        subOverviewPoints.data.forEach((point: any) => {
-          if (!pointsBySubcategory[point.subcategory_id]) {
-            pointsBySubcategory[point.subcategory_id] = [];
-          }
-          pointsBySubcategory[point.subcategory_id].push({
-            id: point.id,
-            subcategory_id: point.subcategory_id,
-            section_id: point.section_id,
-            text: point.text,
-            is_highlighted: point.is_highlighted,
-            highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
-            sort_order: point.sort_order,
-          });
-        });
-        setEditSubOverviewPointsState(pointsBySubcategory);
-      }
-      if (aboutSects.data) {
-        setAboutSections(aboutSects.data as unknown as SubcategoryAboutSection[]);
-        const aboutSectionsBySubcategory: Record<string, SubcategoryAboutSection[]> = {};
-        const aboutSectionVisibilityBySubcategory: Record<string, Record<string, boolean>> = {};
-        aboutSects.data.forEach((section: any) => {
-          if (!aboutSectionsBySubcategory[section.subcategory_id]) {
-            aboutSectionsBySubcategory[section.subcategory_id] = [];
-            aboutSectionVisibilityBySubcategory[section.subcategory_id] = {};
-          }
-          aboutSectionsBySubcategory[section.subcategory_id].push({
-            id: section.id,
-            subcategory_id: section.subcategory_id,
-            heading: section.heading,
-            content: section.content,
-            background_color: section.background_color || '#ffffff',
-            heading_color: section.heading_color || '#000000',
-            sort_order: section.sort_order,
-            created_at: section.created_at,
-            updated_at: section.updated_at,
-          });
-          aboutSectionVisibilityBySubcategory[section.subcategory_id][section.id] = section.is_visible ?? true;
-        });
-        setEditAboutSections(aboutSectionsBySubcategory);
-        setEditAboutSectionVisibility(aboutSectionVisibilityBySubcategory);
-      }
-      if (kfSections.data) {
-        setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
-        const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
-        kfSections.data.forEach((section: any) => {
-          if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
-          groupedKFSections[section.subcategory_id].push({
-            id: section.id,
-            subcategory_id: section.subcategory_id,
-            heading: section.heading,
-            is_visible: section.is_visible,
-            sort_order: section.sort_order,
-          });
-        });
-        setEditKeyFeaturesSections(groupedKFSections);
-      }
-      
-      // Load Advertise Data
-      console.log('📥 Fetched advertise settings data from Supabase:', advertiseSettingsData);
-      if (advertiseSettingsData.data) {
-        console.log('✅ Setting advertise settings:', advertiseSettingsData.data);
-        const raw = advertiseSettingsData.data as any;
-        setAdvertiseSettings({
-          ...raw,
-          hero_button_visible: raw.hero_button_visible ?? true,
-        });
-      } else {
-        console.log('⚠️ No advertise settings data found');
-      }
-      if (advertiseCardsData.data) {
-        setAdvertiseCards(advertiseCardsData.data as AdvertiseCard[]);
-      }
-      if (advertiseSectionsData.data) {
-            setAdvertiseSections(advertiseSectionsData.data as AdvertiseSection[]);
-          }
-          if (getListedPlansData.data) {
-            setGetListedPlans(getListedPlansData.data as GetListedPlan[]);
-          }
-          if (getListedPlanFeaturesData.data) {
-            setGetListedPlanFeatures(getListedPlanFeaturesData.data as GetListedPlanFeature[]);
-          }
-          if (getListedComparisonRowsData.data) {
-            setGetListedComparisonRows(getListedComparisonRowsData.data as GetListedComparisonRow[]);
-          }
-          if (getListedComparisonCellsData.data) {
-            setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
-          }
-          if (getListedSettingsData.data) {
-            setGetListedSettings(getListedSettingsData.data as unknown as GetListedSettings);
-          }
-          if (writeForUsSettingsData.data) {
-            setWriteForUsSettings(writeForUsSettingsData.data as WriteForUsSettings);
-          }
-          if (vendorGuidelinesSettingsData.data) {
-            setVendorGuidelinesSettings(vendorGuidelinesSettingsData.data as VendorGuidelinesSettings);
-          }
-          if (browseAllDirectoriesSettingsData.data) {
-            setBrowseAllDirectoriesSettings(browseAllDirectoriesSettingsData.data as BrowseAllDirectoriesSettings);
-          }
-        } catch (error) {
-          console.error('Error in loadAllSafe:', error);
+          const result = await supabase.from('subcategory_brands' as any).select('*');
+          subBrands = result;
+        } catch {
+          subBrands = { data: [] };
         }
-      };
+        let subOverviewPoints;
+        try {
+          const result = await supabase.from('subcategory_overview_points' as any).select('*');
+          subOverviewPoints = result;
+        } catch {
+          subOverviewPoints = { data: [] };
+        }
+
+        if (!mounted) return;
+
+        if (s.data) setSections(s.data);
+        console.log('📥 Fetched contact settings data from Supabase:', contact.data);
+
+        // Process contact settings
+        if (contact.data) {
+          // If we have data from Supabase, use it directly
+          console.log('✅ Loading contact settings from database');
+          setContactSettings({
+            id: contact.data.id,
+            heading: contact.data.heading ?? '',
+            email_label: contact.data.email_label ?? '',
+            email: contact.data.email ?? '',
+            description_1: contact.data.description_1 ?? '',
+            description_2: contact.data.description_2 ?? '',
+            image_url: contact.data.image_url ?? '',
+            phone: (contact.data as any).phone ?? '',
+            whatsapp: (contact.data as any).whatsapp ?? '',
+            address: (contact.data as any).address ?? '',
+            form_embed: (contact.data as any).form_embed ?? '',
+            contact_emails: (contact.data as any).contact_emails ?? [],
+            nodal_officer_title: (contact.data as any).nodal_officer_title ?? '',
+            nodal_officer_name: (contact.data as any).nodal_officer_name ?? '',
+            nodal_officer_phone: (contact.data as any).nodal_officer_phone ?? '',
+            nodal_officer_email: (contact.data as any).nodal_officer_email ?? '',
+            nodal_officer_visible: (contact.data as any).nodal_officer_visible ?? true,
+            appellate_authority_title: (contact.data as any).appellate_authority_title ?? '',
+            appellate_authority_name: (contact.data as any).appellate_authority_name ?? '',
+            appellate_authority_phone: (contact.data as any).appellate_authority_phone ?? '',
+            appellate_authority_email: (contact.data as any).appellate_authority_email ?? '',
+            appellate_authority_visible: (contact.data as any).appellate_authority_visible ?? true,
+            is_visible: (contact.data as any).is_visible ?? true,
+          });
+        } else {
+          console.log('⚠️ No contact settings data found in database');
+          // Keep default state if no data (don't overwrite)
+        }
+
+        // Mark contact settings as loaded
+        setIsLoadingContactSettings(false);
+        if (header.data) setHeaderSettings(header.data);
+        if (footer.data) {
+          const footerData = footer.data as any;
+          setFooterSettings({
+            id: footerData.id,
+            description: footerData.description ?? '',
+            description_visible: footerData.description_visible ?? true,
+            twitter_label: footerData.twitter_label ?? 'Twitter',
+            twitter_link: footerData.twitter_link ?? '#',
+            twitter_visible: footerData.twitter_visible ?? true,
+            linkedin_label: footerData.linkedin_label ?? 'LinkedIn',
+            linkedin_link: footerData.linkedin_link ?? '#',
+            linkedin_visible: footerData.linkedin_visible ?? true,
+            facebook_label: footerData.facebook_label ?? 'Facebook',
+            facebook_link: footerData.facebook_link ?? '#',
+            facebook_visible: footerData.facebook_visible ?? true,
+            instagram_label: footerData.instagram_label ?? 'Instagram',
+            instagram_link: footerData.instagram_link ?? '#',
+            instagram_visible: footerData.instagram_visible ?? false,
+            youtube_label: footerData.youtube_label ?? 'YouTube',
+            youtube_link: footerData.youtube_link ?? '#',
+            youtube_visible: footerData.youtube_visible ?? false,
+            social_whatsapp_visible: footerData.social_whatsapp_visible ?? false,
+            social_media_visible: footerData.social_media_visible ?? true,
+            about_us_visible: footerData.about_us_visible ?? true,
+            contact_visible: footerData.contact_visible ?? true,
+            privacy_policy_visible: footerData.privacy_policy_visible ?? true,
+            terms_of_service_visible: footerData.terms_of_service_visible ?? true,
+            refund_policy_visible: footerData.refund_policy_visible ?? true,
+            refund_policy_1_visible: footerData.refund_policy_1_visible ?? true,
+            refund_policy_2_visible: footerData.refund_policy_2_visible ?? true,
+            refund_policy_3_visible: footerData.refund_policy_3_visible ?? true,
+            refund_policy_4_visible: footerData.refund_policy_4_visible ?? true,
+            faq_visible: footerData.faq_visible ?? true,
+            faq_heading: footerData.faq_heading ?? 'Frequently Asked Questions',
+            whatsapp_number: footerData.whatsapp_number ?? '',
+            whatsapp_visible: footerData.whatsapp_visible ?? false,
+            phone: footerData.phone ?? '',
+            phone_visible: footerData.phone_visible ?? false,
+            email: footerData.email ?? '',
+            email_visible: footerData.email_visible ?? false,
+            bottom_footer_email: footerData.bottom_footer_email ?? '',
+            bottom_footer_email_visible: footerData.bottom_footer_email_visible ?? false,
+            bottom_branding_visible: footerData.bottom_branding_visible ?? true,
+            bottom_branding_text: footerData.bottom_branding_text ?? '',
+            submit_rft_label: footerData.submit_rft_label ?? 'Submit RFT',
+            submit_rft_url: footerData.submit_rft_url ?? '',
+            submit_rft_enabled: footerData.submit_rft_enabled ?? false,
+            get_recommendations_label: footerData.get_recommendations_label ?? 'Get Recommendations',
+            get_recommendations_url: footerData.get_recommendations_url ?? '',
+            get_recommendations_enabled: footerData.get_recommendations_enabled ?? false,
+            get_listed_visible: footerData.get_listed_visible ?? true,
+            advertise_visible: footerData.advertise_visible ?? true,
+            write_for_us_visible: footerData.write_for_us_visible ?? true,
+            vendor_guidelines_visible: footerData.vendor_guidelines_visible ?? true,
+            view_all_categories_visible: footerData.view_all_categories_visible ?? true,
+            vendors_visible: footerData.vendors_visible ?? true,
+            buyers_visible: footerData.buyers_visible ?? true,
+          });
+        }
+        if (subscribers.data) {
+          setFooterSubscribers(
+            (subscribers.data as Array<{ id: string; email: string; created_at: string }>).map(subscriber => ({
+              id: subscriber.id,
+              email: subscriber.email,
+              created_at: subscriber.created_at,
+            }))
+          );
+        }
+        if (legal.data) {
+          setLegalPages(legal.data as LegalPage[]);
+          // Initialize editable titles and visibility
+          const titles: Record<string, string> = {};
+          const visibility: Record<string, boolean> = {};
+          legal.data.forEach((page: any) => {
+            titles[page.slug] = page.title;
+            visibility[page.slug] = page.is_visible ?? true;
+          });
+          setEditableLegalTitles(titles);
+          setEditableLegalVisibility(visibility);
+        }
+        if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
+        if (h.data) {
+          const heroData = h.data as any;
+          // Try to split main_text using ||| delimiter
+          const mainText = heroData.main_text || '';
+          let part1 = '';
+          let part2 = '';
+          if (mainText.includes('|||')) {
+            const split = mainText.split('|||');
+            part1 = split[0] || '';
+            part2 = split[1] || '';
+          } else {
+            // Backward compatibility: if no delimiter, use whole text as part1
+            part1 = mainText;
+          }
+          setHeroTextPart1(part1);
+          setHeroTextPart2(part2);
+          console.log('Loading hero words:', heroData.animated_words);
+          const loadedWords: string[] = heroData.animated_words || [];
+          const loadedVisibilityRaw: boolean[] = Array.isArray(heroData.animated_word_visibility)
+            ? heroData.animated_word_visibility
+            : [];
+          setHeroWords(loadedWords);
+          setHeroAnimatedWordVisibility(loadedWords.map((_, index) => loadedVisibilityRaw[index] ?? true));
+          setHeroVisible(heroData.hero_visible ?? true);
+          setHeroTextPart1Visible(heroData.hero_text_part1_visible ?? true);
+          setHeroTextPart2Visible(heroData.hero_text_part2_visible ?? true);
+          setHeroAnimatedWordsVisible(heroData.hero_animated_words_visible ?? true);
+          setHeroSearchVisible(heroData.hero_search_visible ?? true);
+        }
+        if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null })));
+        if (cat.data) setCategories(cat.data);
+        if (sub.data) {
+          setSubcategories(sub.data as unknown as Subcategory[]);
+          const map: Record<string, string> = {};
+          const keyFeaturesLabels: Record<string, string> = {};
+          const brandsLabels: Record<string, string> = {};
+
+          sub.data.forEach((s: any) => {
+            map[s.id] = s.name;
+            keyFeaturesLabels[s.id] = s.key_features_tab_label || 'Key Features';
+            brandsLabels[s.id] = s.brands_tab_label || 'Brands';
+          });
+          setSubcategoriesMap(map);
+          setEditKeyFeaturesTabLabelState(keyFeaturesLabels);
+          setEditBrandsTabLabelState(brandsLabels);
+        }
+        if (o.data) setOffers((o.data as any[]).map(offer => ({ ...offer, is_fixed: offer.is_fixed ?? false, show_border: offer.show_border ?? false, border_color: offer.border_color ?? null, background_color: offer.background_color ?? null, show_image: offer.show_image ?? true })));
+        if (a2.data) setAds2((a2.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
+        if (a3.data) setAds3((a3.data as any[]).map(ad => ({ ...ad, is_fixed: ad.is_fixed ?? false, show_border: ad.show_border ?? false, border_color: ad.border_color ?? null, background_color: ad.background_color ?? null, show_image: ad.show_image ?? true })));
+        if (btns.data) {
+          setButtons(btns.data);
+          const buttonsBySubcategory: Record<string, CategoryButton[]> = {};
+          btns.data.forEach((btn: any) => {
+            if (btn.subcategory_id) {
+              if (!buttonsBySubcategory[btn.subcategory_id]) {
+                buttonsBySubcategory[btn.subcategory_id] = [];
+              }
+              buttonsBySubcategory[btn.subcategory_id].push({
+                id: btn.id,
+                label: btn.label,
+                link: btn.link,
+                is_visible: btn.is_visible,
+              });
+            }
+          });
+          setEditButtonsState(buttonsBySubcategory);
+        }
+        if (subBrands.data) {
+          const brandsBySubcategory: Record<string, SubcategoryBrand[]> = {};
+          subBrands.data.forEach((brand: any) => {
+            if (!brandsBySubcategory[brand.subcategory_id]) {
+              brandsBySubcategory[brand.subcategory_id] = [];
+            }
+            brandsBySubcategory[brand.subcategory_id].push({
+              id: brand.id,
+              name: brand.name,
+              logo_url: brand.logo_url,
+              link: brand.link,
+              description: brand.description,
+              buttons: brand.buttons || [],
+              is_visible: brand.is_visible,
+              action_links: normalizeAdminBrandActionLinks(brand),
+              action_link_1_text: brand.action_link_1_text,
+              action_link_1_url: brand.action_link_1_url,
+              action_link_1_new_tab: brand.action_link_1_new_tab,
+              action_link_1_enabled: brand.action_link_1_enabled,
+              action_link_2_text: brand.action_link_2_text,
+              action_link_2_url: brand.action_link_2_url,
+              action_link_2_new_tab: brand.action_link_2_new_tab,
+              action_link_2_enabled: brand.action_link_2_enabled,
+              action_link_3_text: brand.action_link_3_text,
+              action_link_3_url: brand.action_link_3_url,
+              action_link_3_new_tab: brand.action_link_3_new_tab,
+              action_link_3_enabled: brand.action_link_3_enabled,
+              primary_cta_label: brand.primary_cta_label,
+              primary_cta_link: brand.primary_cta_link,
+              primary_cta_visible: brand.primary_cta_visible,
+              more_actions_label: brand.more_actions_label,
+              more_actions_visible: brand.more_actions_visible,
+              join_network_label: brand.join_network_label,
+              join_network_link: brand.join_network_link,
+              join_network_visible: brand.join_network_visible
+            });
+          });
+          setEditSubBrandsState(brandsBySubcategory);
+        }
+        if (subOverviewPoints.data) {
+          const pointsBySubcategory: Record<string, SubcategoryOverviewPoint[]> = {};
+          subOverviewPoints.data.forEach((point: any) => {
+            if (!pointsBySubcategory[point.subcategory_id]) {
+              pointsBySubcategory[point.subcategory_id] = [];
+            }
+            pointsBySubcategory[point.subcategory_id].push({
+              id: point.id,
+              subcategory_id: point.subcategory_id,
+              section_id: point.section_id,
+              text: point.text,
+              is_highlighted: point.is_highlighted,
+              highlight_color: point.highlight_color === 'blue' ? 'blue' : 'green',
+              sort_order: point.sort_order,
+            });
+          });
+          setEditSubOverviewPointsState(pointsBySubcategory);
+        }
+        if (aboutSects.data) {
+          setAboutSections(aboutSects.data as unknown as SubcategoryAboutSection[]);
+          const aboutSectionsBySubcategory: Record<string, SubcategoryAboutSection[]> = {};
+          const aboutSectionVisibilityBySubcategory: Record<string, Record<string, boolean>> = {};
+          aboutSects.data.forEach((section: any) => {
+            if (!aboutSectionsBySubcategory[section.subcategory_id]) {
+              aboutSectionsBySubcategory[section.subcategory_id] = [];
+              aboutSectionVisibilityBySubcategory[section.subcategory_id] = {};
+            }
+            aboutSectionsBySubcategory[section.subcategory_id].push({
+              id: section.id,
+              subcategory_id: section.subcategory_id,
+              heading: section.heading,
+              content: section.content,
+              background_color: section.background_color || '#ffffff',
+              heading_color: section.heading_color || '#000000',
+              sort_order: section.sort_order,
+              created_at: section.created_at,
+              updated_at: section.updated_at,
+            });
+            aboutSectionVisibilityBySubcategory[section.subcategory_id][section.id] = section.is_visible ?? true;
+          });
+          setEditAboutSections(aboutSectionsBySubcategory);
+          setEditAboutSectionVisibility(aboutSectionVisibilityBySubcategory);
+        }
+        if (kfSections.data) {
+          setKeyFeaturesSections(kfSections.data as unknown as SubcategoryKeyFeaturesSection[]);
+          const groupedKFSections: Record<string, SubcategoryKeyFeaturesSection[]> = {};
+          kfSections.data.forEach((section: any) => {
+            if (!groupedKFSections[section.subcategory_id]) groupedKFSections[section.subcategory_id] = [];
+            groupedKFSections[section.subcategory_id].push({
+              id: section.id,
+              subcategory_id: section.subcategory_id,
+              heading: section.heading,
+              is_visible: section.is_visible,
+              sort_order: section.sort_order,
+            });
+          });
+          setEditKeyFeaturesSections(groupedKFSections);
+        }
+
+        // Load Advertise Data
+        console.log('📥 Fetched advertise settings data from Supabase:', advertiseSettingsData);
+        if (advertiseSettingsData.data) {
+          console.log('✅ Setting advertise settings:', advertiseSettingsData.data);
+          const raw = advertiseSettingsData.data as any;
+          setAdvertiseSettings({
+            ...raw,
+            hero_button_visible: raw.hero_button_visible ?? true,
+          });
+        } else {
+          console.log('⚠️ No advertise settings data found');
+        }
+        if (advertiseCardsData.data) {
+          setAdvertiseCards(advertiseCardsData.data as AdvertiseCard[]);
+        }
+        if (advertiseSectionsData.data) {
+          setAdvertiseSections(advertiseSectionsData.data as AdvertiseSection[]);
+        }
+        if (getListedPlansData.data) {
+          setGetListedPlans(getListedPlansData.data as GetListedPlan[]);
+        }
+        if (getListedPlanFeaturesData.data) {
+          setGetListedPlanFeatures(getListedPlanFeaturesData.data as GetListedPlanFeature[]);
+        }
+        if (getListedComparisonRowsData.data) {
+          setGetListedComparisonRows(getListedComparisonRowsData.data as GetListedComparisonRow[]);
+        }
+        if (getListedComparisonCellsData.data) {
+          setGetListedComparisonCells(getListedComparisonCellsData.data as GetListedComparisonCell[]);
+        }
+        if (getListedSettingsData.data) {
+          setGetListedSettings(getListedSettingsData.data as unknown as GetListedSettings);
+        }
+        if (writeForUsSettingsData.data) {
+          setWriteForUsSettings(writeForUsSettingsData.data as WriteForUsSettings);
+        }
+        if (vendorGuidelinesSettingsData.data) {
+          setVendorGuidelinesSettings(vendorGuidelinesSettingsData.data as VendorGuidelinesSettings);
+        }
+        if (browseAllDirectoriesSettingsData.data) {
+          setBrowseAllDirectoriesSettings(browseAllDirectoriesSettingsData.data as BrowseAllDirectoriesSettings);
+        }
+      } catch (error) {
+        console.error('Error in loadAllSafe:', error);
+      }
+    };
 
     loadAllSafe();
 
@@ -1531,7 +1531,7 @@ export default function AdminDashboard() {
     });
     if (legal.data) setLegalPages(legal.data as LegalPage[]);
     if (faqsData.data) setFaqs(faqsData.data as FAQ[]);
-    if (h.data) { 
+    if (h.data) {
       const heroData = h.data as any;
       // Try to split main_text using ||| delimiter
       const mainText = heroData.main_text || '';
@@ -1545,10 +1545,10 @@ export default function AdminDashboard() {
         // Backward compatibility: if no delimiter, use whole text as part1
         part1 = mainText;
       }
-      setHeroTextPart1(part1); 
-      setHeroTextPart2(part2); 
+      setHeroTextPart1(part1);
+      setHeroTextPart2(part2);
       console.log('Loading hero words:', heroData.animated_words);
-      setHeroWords(heroData.animated_words || []); 
+      setHeroWords(heroData.animated_words || []);
     }
     if (c.data) setCards((c.data as any[]).map(card => ({ ...card, link: card.link ?? null, is_fixed: card.is_fixed ?? false, show_border: card.show_border ?? false, border_color: card.border_color ?? null, is_visible: card.is_visible ?? true })));
     if (cat.data) setCategories(cat.data);
@@ -1676,18 +1676,18 @@ export default function AdminDashboard() {
     console.log('advertiseSettingsData:', advertiseSettingsData);
     console.log('advertiseCardsData:', advertiseCardsData);
     console.log('advertiseSectionsData:', advertiseSectionsData);
-    
+
     if (advertiseSettingsData.data) {
       console.log('Setting advertiseSettings:', advertiseSettingsData.data);
       setAdvertiseSettings(advertiseSettingsData.data as AdvertiseSettings);
     } else {
       console.log('No advertiseSettingsData.data found');
     }
-    
+
     if (advertiseCardsData.data) {
       setAdvertiseCards(advertiseCardsData.data as AdvertiseCard[]);
     }
-    
+
     if (advertiseSectionsData.data) {
       setAdvertiseSections(advertiseSectionsData.data as AdvertiseSection[]);
     }
@@ -1740,7 +1740,7 @@ export default function AdminDashboard() {
   const handleSaveAdvertiseSettings = async () => {
     try {
       console.log('Saving advertise settings:', advertiseSettings);
-      
+
       // Prepare data with only existing database columns
       const dataToSave: any = {
         hero_small_heading: advertiseSettings.hero_small_heading,
@@ -1788,7 +1788,7 @@ export default function AdminDashboard() {
           .select('id')
           .limit(1);
         console.log('existingData:', existingData);
-        
+
         if (existingData && existingData.length > 0) {
           console.log('Updating existing record:', existingData[0].id);
           result = await supabase
@@ -1807,12 +1807,12 @@ export default function AdminDashboard() {
       console.log('Supabase result:', result);
       const { error } = result;
       if (error) throw error;
-      
+
       // Also save footer setting for Advertise
       await updateFooterVisibilitySetting({
         advertise_visible: footerSettings.advertise_visible ?? true,
       });
-      
+
       console.log('Advertise settings saved successfully!');
       toast.success('Advertise settings saved successfully!');
       loadAll(); // Reload data to confirm save
@@ -2028,10 +2028,10 @@ export default function AdminDashboard() {
         };
         result = await supabase.from('advertise_cards').insert(newCard);
       }
-      
+
       const { error } = result;
       if (error) throw error;
-      
+
       console.log('Advertise card saved successfully!');
       setShowAddAdvertiseCardModal(false);
       setEditAdvertiseCard(null);
@@ -2086,10 +2086,10 @@ export default function AdminDashboard() {
         };
         result = await supabase.from('advertise_sections').insert(newSection);
       }
-      
+
       const { error } = result;
       if (error) throw error;
-      
+
       console.log('Advertise section saved successfully!');
       setShowAddAdvertiseSectionModal(false);
       setEditAdvertiseSection(null);
@@ -2173,15 +2173,15 @@ export default function AdminDashboard() {
         .from('get_listed_plans')
         .update({ comparison_header: editingComparisonHeaderText })
         .eq('id', planId);
-      
+
       const { error } = result;
       if (error) throw error;
-      
+
       // Update local state to reflect change immediately
-      setGetListedPlans(prev => prev.map(p => 
+      setGetListedPlans(prev => prev.map(p =>
         p.id === planId ? { ...p, comparison_header: editingComparisonHeaderText } : p
       ));
-      
+
       setEditingComparisonHeaderPlanId(null);
       setEditingComparisonHeaderText('');
       toast.success('Comparison header saved!');
@@ -2875,11 +2875,11 @@ export default function AdminDashboard() {
     console.log('Saving hero with words:', words);
     const { data } = await supabase.from('hero_settings').select('id').limit(1).single();
     // Store parts using ||| as delimiter, or original main_text for backward compatibility
-    const mainTextValue = heroTextPart1 || heroTextPart2 
-      ? `${heroTextPart1}|||${heroTextPart2}` 
+    const mainTextValue = heroTextPart1 || heroTextPart2
+      ? `${heroTextPart1}|||${heroTextPart2}`
       : '';
     if (data) {
-      const { error } = await supabase.from('hero_settings').update({ 
+      const { error } = await supabase.from('hero_settings').update({
         main_text: mainTextValue,
         animated_words: words,
         animated_word_visibility: animatedWordVisibility,
@@ -2907,12 +2907,12 @@ export default function AdminDashboard() {
     }
     try {
       if (editCard.id) {
-        const updateData: any = { 
-          title: editCard.title.trim(), 
-          description: editCard.description.trim(), 
-          logo_url: editCard.logo_url, 
-          link: editCard.link || null, 
-          show_border: editCard.show_border ?? false, 
+        const updateData: any = {
+          title: editCard.title.trim(),
+          description: editCard.description.trim(),
+          logo_url: editCard.logo_url,
+          link: editCard.link || null,
+          show_border: editCard.show_border ?? false,
           border_color: editCard.border_color ?? null,
           background_color: editCard.background_color ?? null,
           open_in_new_tab: editCard.open_in_new_tab ?? false
@@ -2923,17 +2923,17 @@ export default function AdminDashboard() {
         const { error } = await supabase.from('featured_cards').update(updateData).eq('id', editCard.id);
         if (error) throw error;
       } else {
-        const insertData: any = { 
-          title: editCard.title.trim(), 
-          description: editCard.description.trim(), 
-          logo_url: editCard.logo_url, 
-          link: editCard.link || null, 
-          show_border: editCard.show_border ?? false, 
-          border_color: editCard.border_color ?? null, 
+        const insertData: any = {
+          title: editCard.title.trim(),
+          description: editCard.description.trim(),
+          logo_url: editCard.logo_url,
+          link: editCard.link || null,
+          show_border: editCard.show_border ?? false,
+          border_color: editCard.border_color ?? null,
           background_color: editCard.background_color ?? null,
           open_in_new_tab: editCard.open_in_new_tab ?? false,
-          sort_order: cards.length, 
-          section_id: selectedCardsSectionId 
+          sort_order: cards.length,
+          section_id: selectedCardsSectionId
         };
         if (cardsFixedModeEnabled !== undefined) {
           insertData.is_fixed = cardsFixedModeEnabled;
@@ -3802,7 +3802,7 @@ export default function AdminDashboard() {
       if (categoryId) {
         // Upsert subcategories (handles both insert and update)
         const subsToUpsert = editSubs.map((sub, index) => ({
-          id: sub.id, 
+          id: sub.id,
           category_id: categoryId,
           name: sub.name,
           link: sub.link || null,
@@ -3846,7 +3846,7 @@ export default function AdminDashboard() {
           button_3_visible: sub.button_3_visible ?? false,
           sort_order: index,
         }));
-        
+
         try {
           const { error: subError } = await supabase.from('subcategories').upsert(subsToUpsert as any);
           if (subError) throw subError;
@@ -3867,8 +3867,10 @@ export default function AdminDashboard() {
         }
 
         // Delete any subcategories in the database that are no longer in editSubs
-        const subIds = editSubs.map(s => s.id);
-        const deleteSubcategories = supabase.from('subcategories').delete().eq('category_id', categoryId).not('id', 'in', `(${subIds.join(',')})`);
+        const subIds = editSubs.map(s => s.id).filter(Boolean);
+        const deleteSubcategories = subIds.length > 0
+          ? supabase.from('subcategories').delete().eq('category_id', categoryId).notIn('id', subIds)
+          : supabase.from('subcategories').delete().eq('category_id', categoryId);
         // When editing a specific subcategory, only delete its data; otherwise delete all
         const deleteButtons = activeSubId
           ? supabase.from('category_buttons').delete().eq('subcategory_id', activeSubId)
@@ -4015,14 +4017,14 @@ export default function AdminDashboard() {
             } catch (err) {
               const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
               console.warn('Failed to insert subcategory brands with full payload, retrying with schema-safe columns...', errorMessage);
-              const safeBrands = subBrandsToInsert.map(({ 
+              const safeBrands = subBrandsToInsert.map(({
                 description,
                 buttons,
                 is_visible,
                 primary_cta_label, primary_cta_link, primary_cta_visible,
                 more_actions_label, more_actions_visible,
                 join_network_label, join_network_link, join_network_visible,
-                ...rest 
+                ...rest
               }) => rest);
               const { error: secondError } = await supabase.from('subcategory_brands' as any).insert(safeBrands);
               if (secondError) throw secondError;
@@ -4052,7 +4054,7 @@ export default function AdminDashboard() {
     setIsSavingContact(true);
     try {
       console.log('Starting saveContactSettings...');
-      
+
       // Step 1: Fetch ALL contact settings records (in case there are duplicates)
       const { data: allRecords, error: fetchAllError } = await supabase
         .from('contact_settings')
@@ -4095,7 +4097,7 @@ export default function AdminDashboard() {
       if (allRecords && allRecords.length > 0) {
         // If records exist: UPDATE the first one, DELETE others
         const firstRecordId = allRecords[0].id;
-        
+
         // Update the first record
         console.log('🔄 Updating existing record with ID:', firstRecordId);
         result = await supabase
@@ -4224,7 +4226,7 @@ export default function AdminDashboard() {
           .from('header_settings')
           .select('id')
           .limit(1);
-        
+
         if (existingData && existingData.length > 0) {
           result = await supabase
             .from('header_settings')
@@ -4239,7 +4241,7 @@ export default function AdminDashboard() {
 
       const { error } = result;
       if (error) throw error;
-      
+
       toast.success('Header settings saved successfully');
       loadAll();
     } catch (error: any) {
@@ -4324,7 +4326,7 @@ export default function AdminDashboard() {
           .from('footer_settings')
           .select('id')
           .limit(1);
-        
+
         if (existingData && existingData.length > 0) {
           result = await supabase
             .from('footer_settings')
@@ -4339,7 +4341,7 @@ export default function AdminDashboard() {
 
       const { error } = result;
       if (error) throw error;
-      
+
       toast.success('Footer settings saved successfully');
       loadAll(); // Reload data to confirm save
     } catch (error: any) {
@@ -4631,7 +4633,7 @@ export default function AdminDashboard() {
     try {
       const success1 = await updateHeading(editingHeadingSectionId, editingHeadingText, editingHeadingBackgroundColor);
       const success2 = await toggleShowHeading(editingHeadingSectionId, editingHeadingVisible);
-      
+
       // Also sync the section name (tab label) with the heading text
       const success3 = await updateSectionName(editingHeadingSectionId, editingHeadingText || 'Featured Cards');
 
@@ -4694,11 +4696,10 @@ export default function AdminDashboard() {
                     setExpandedSidebarItem(null); // Close sub-menus when clicking a main item
                   }
                 }}
-                className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${
-                  tab === item.key || (item.children && item.children.some(child => child.key === tab))
+                className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === item.key || (item.children && item.children.some(child => child.key === tab))
                     ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                     : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2 md:gap-3 min-w-0">
                   <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
@@ -4708,7 +4709,7 @@ export default function AdminDashboard() {
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedSidebarItem === item.key ? 'rotate-180' : ''}`} />
                 )}
               </button>
-              
+
               {item.children && expandedSidebarItem === item.key && (
                 <div className="mt-1 ml-4 space-y-0.5 md:space-y-1 border-l border-sidebar-border/50 pl-2">
                   {item.children.map((child) => (
@@ -4718,11 +4719,10 @@ export default function AdminDashboard() {
                         setTab(child.key);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
-                        tab === child.key
+                      className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === child.key
                           ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                           : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                      }`}
+                        }`}
                     >
                       <span className="truncate">{child.label}</span>
                     </button>
@@ -5155,11 +5155,10 @@ export default function AdminDashboard() {
                       <button
                         key={section.id}
                         onClick={() => setSelectedCardsSectionId(section.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          selectedCardsSectionId === section.id
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedCardsSectionId === section.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-card border border-border text-foreground hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {getSectionDisplayName(section)}
                       </button>
@@ -5242,23 +5241,23 @@ export default function AdminDashboard() {
                   {cards
                     .filter(c => selectedCardsSectionId ? c.section_id === selectedCardsSectionId : true)
                     .map((card) => (
-                    <div key={card.id} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
-                      {card.logo_url && <img src={card.logo_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-muted p-1" />}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{card.title}</h3>
-                        <div className="text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description || '' }} />
+                      <div key={card.id} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
+                        {card.logo_url && <img src={card.logo_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-muted p-1" />}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm">{card.title}</h3>
+                          <div className="text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: card.description || '' }} />
+                        </div>
+                        <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                          <Switch
+                            checked={card.is_visible ?? true}
+                            onCheckedChange={(checked) => toggleFeaturedCardVisibility(card.id, Boolean(checked))}
+                          />
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase">{(card.is_visible ?? true) ? 'ON' : 'OFF'}</span>
+                        </div>
+                        <button onClick={() => setEditCard(card)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => deleteCard(card.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                       </div>
-                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
-                        <Switch
-                          checked={card.is_visible ?? true}
-                          onCheckedChange={(checked) => toggleFeaturedCardVisibility(card.id, Boolean(checked))}
-                        />
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase">{(card.is_visible ?? true) ? 'ON' : 'OFF'}</span>
-                      </div>
-                      <button onClick={() => setEditCard(card)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => deleteCard(card.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
               {editCard && (
@@ -5356,11 +5355,10 @@ export default function AdminDashboard() {
                           <button
                             key={section.id}
                             onClick={() => setSelectedCategoriesSectionId(section.id)}
-                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                              selectedCategoriesSectionId === section.id
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedCategoriesSectionId === section.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-card border border-border text-foreground hover:bg-muted'
-                            }`}
+                              }`}
                           >
                             {getSectionDisplayName(section)}
                           </button>
@@ -5403,366 +5401,366 @@ export default function AdminDashboard() {
                     )}
                   </div>
 
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
-                <SortableContext items={selectedCategories.map((cat) => cat.id)} strategy={verticalListSortingStrategy}>
-                  <div className="grid gap-3">
-                    {selectedCategories.map((cat) => (
-                      <div key={cat.id}>
-                        <SortableCategoryItem id={cat.id}>
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.bg_color }}>
-                            {cat.icon_url && <img src={cat.icon_url} alt="" className="w-6 h-6 object-contain" />}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-sm">{cat.name}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              {subcategories.filter(s => s.category_id === cat.id).length} subcategories
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
-                              <Switch
-                                checked={cat.is_visible ?? true}
-                                onCheckedChange={(checked) => toggleCategoryVisibility(cat.id, Boolean(checked))}
-                              />
-                              <span className="text-[10px] font-medium text-muted-foreground uppercase">{(cat.is_visible ?? true) ? 'ON' : 'OFF'}</span>
-                            </div>
-                            <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </SortableCategoryItem>
-                        {editCategory?.id === cat.id && (
-                          <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <h3 className="text-lg font-semibold">{editCategory.id ? 'Edit Category' : 'Add Category'}</h3>
-                                <p className="text-sm text-muted-foreground">Edit category details and subcategories below.</p>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
+                    <SortableContext items={selectedCategories.map((cat) => cat.id)} strategy={verticalListSortingStrategy}>
+                      <div className="grid gap-3">
+                        {selectedCategories.map((cat) => (
+                          <div key={cat.id}>
+                            <SortableCategoryItem id={cat.id}>
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.bg_color }}>
+                                {cat.icon_url && <img src={cat.icon_url} alt="" className="w-6 h-6 object-contain" />}
                               </div>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
-                                  className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                >
-                                  Cancel
-                                </button>
-                                <button onClick={async () => {
-                                  if (editingSubcategoryId) {
-                                    const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
-                                    if (editingSub) {
-                                      setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
-                                      setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                                      setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
-                                    }
-                                  }
-                                  await saveCategory();
-                                }} disabled={isSavingCategory} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
-                                  {isSavingCategory ? 'Saving...' : 'Save'}
-                                </button>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-sm">{cat.name}</h3>
+                                <p className="text-xs text-muted-foreground">
+                                  {subcategories.filter(s => s.category_id === cat.id).length} subcategories
+                                </p>
                               </div>
-                            </div>
-
-                            <div className="space-y-4">
-                              <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Name</label>
-                                <input value={editCategory.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1.5">Background Color</label>
-                                <div className="flex items-center gap-3">
-                                  <input type="color" value={editCategory.bg_color || '#FFF9C4'} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="w-12 h-10 rounded border border-input cursor-pointer" />
-                                  <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-lg border border-border">
+                                  <Switch
+                                    checked={cat.is_visible ?? true}
+                                    onCheckedChange={(checked) => toggleCategoryVisibility(cat.id, Boolean(checked))}
+                                  />
+                                  <span className="text-[10px] font-medium text-muted-foreground uppercase">{(cat.is_visible ?? true) ? 'ON' : 'OFF'}</span>
                                 </div>
+                                <button onClick={() => { setEditCategory(cat); setEditSubs(subcategories.filter(s => s.category_id === cat.id)); setEditSubcategory(null); }} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                <button onClick={() => deleteCategory(cat.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
                               </div>
-                              
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <label className="text-sm font-medium">Subcategories</label>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
-                                    className="text-sm text-primary font-semibold"
-                                  >
-                                    + Add
-                                  </button>
-                                </div>
-                                {editSubs.length === 0 ? (
-                                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                                    No subcategories added yet.
+                            </SortableCategoryItem>
+                            {editCategory?.id === cat.id && (
+                              <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                                <div className="flex items-center justify-between gap-4">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">{editCategory.id ? 'Edit Category' : 'Add Category'}</h3>
+                                    <p className="text-sm text-muted-foreground">Edit category details and subcategories below.</p>
                                   </div>
-                                ) : (
-                                  <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleSubcategoryDragEnd}
-                                  >
-                                    <SortableContext
-                                      items={editSubs.map(s => s.id)}
-                                      strategy={verticalListSortingStrategy}
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
+                                      className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                                     >
-                                      <div className="space-y-3">
-                                        {editSubs.map((sub) => (
-                                          <SortableAdminItem key={sub.id} id={sub.id}>
-                                            <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
-                                              <div className="min-w-0">
-                                                <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
-                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                                </div>
-                                              </div>
-                                              <div className="flex items-center gap-2">
-                                                <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                                  <Switch
-                                                    checked={(sub as any).is_visible ?? true}
-                                                    onCheckedChange={(checked) => {
-                                                      setEditSubs((prev) => prev.map((item) => item.id === sub.id ? { ...item, is_visible: Boolean(checked) } : item));
-                                                    }}
-                                                  />
-                                                  <span>{(sub as any).is_visible ?? true ? 'Visible' : 'Hidden'}</span>
-                                                </label>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setEditingSubcategoryId(sub.id);
-                                                    setEditButtons(editButtonsState[sub.id] || []);
-                                                    setEditSubBrands(editSubBrandsState[sub.id] || []);
-                                                    setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                                    setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
-                                                    setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                                    setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                                    setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
-                                                    setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
-                                                    setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
-                                                    setEditKeyFeaturesSections(prev => ({
-                                                      ...prev,
-                                                      [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
-                                                    }));
-                                                    setEditAboutSections(prev => ({
-                                                      ...prev,
-                                                      [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
-                                                    }));
-                                                  }}
-                                                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                                >
-                                                  Edit
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
-                                                  className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                                >
-                                                  <X className="w-4 h-4" />
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </SortableAdminItem>
-                                        ))}
-                                      </div>
-                                    </SortableContext>
-                                  </DndContext>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-              {editCategory && !editCategory.id && (
-                <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Add Category</h3>
-                      <p className="text-sm text-muted-foreground">Create a new category below.</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
-                        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                      >
-                        Cancel
-                      </button>
-                      <button onClick={async () => {
-                        if (editingSubcategoryId) {
-                          const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
-                          if (editingSub) {
-                            setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
-                            setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                            setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
-                          }
-                        }
-                        await saveCategory();
-                      }} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-                        Save
-                      </button>
-                    </div>
-                  </div>
+                                      Cancel
+                                    </button>
+                                    <button onClick={async () => {
+                                      if (editingSubcategoryId) {
+                                        const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
+                                        if (editingSub) {
+                                          setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
+                                          setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
+                                          setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
+                                        }
+                                      }
+                                      await saveCategory();
+                                    }} disabled={isSavingCategory} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                                      {isSavingCategory ? 'Saving...' : 'Save'}
+                                    </button>
+                                  </div>
+                                </div>
 
-                  <div className="space-y-4">
-                    <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Name</label>
-                      <input value={editCategory.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Background Color</label>
-                      <div className="flex items-center gap-3">
-                        <input type="color" value={editCategory.bg_color || '#FFF9C4'} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="w-12 h-10 rounded border border-input cursor-pointer" />
-                        <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Subcategories</label>
-                        <button
-                          type="button"
-                          onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
-                          className="text-sm text-primary font-semibold"
-                        >
-                          + Add
-                        </button>
-                      </div>
-                      {editSubs.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                          No subcategories added yet.
-                        </div>
-                      ) : (
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleSubcategoryDragEnd}
-                        >
-                          <SortableContext
-                            items={editSubs.map(s => s.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <div className="space-y-3">
-                              {editSubs.map((sub) => (
-                                <SortableAdminItem key={sub.id} id={sub.id}>
-                                  <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div className="min-w-0">
-                                      <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
-                                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingSubcategoryId(sub.id);
-                                          setEditButtons(editButtonsState[sub.id] || []);
-                                          setEditSubBrands(editSubBrandsState[sub.id] || []);
-                                          setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
-                                          setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
-                                          setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
-                                          setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
-                                          setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
-                                          setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
-                                          setEditKeyFeaturesSections(prev => ({
-                                            ...prev,
-                                            [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
-                                          }));
-                                          setEditAboutSections(prev => ({
-                                            ...prev,
-                                            [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
-                                          }));
-                                        }}
-                                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
-                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
+                                <div className="space-y-4">
+                                  <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1.5">Name</label>
+                                    <input value={editCategory.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1.5">Background Color</label>
+                                    <div className="flex items-center gap-3">
+                                      <input type="color" value={editCategory.bg_color || '#FFF9C4'} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="w-12 h-10 rounded border border-input cursor-pointer" />
+                                      <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
                                     </div>
                                   </div>
-                                </SortableAdminItem>
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {editSubcategory && !editSubs.some((sub) => sub.id === editSubcategory.id) && (
-                <Modal
-                  title="Add Subcategory"
-                  onClose={() => setEditSubcategory(null)}
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Name</label>
-                      <input
-                        value={editSubcategory.name || ''}
-                        onChange={(e) => setEditSubcategory({ ...editSubcategory, name: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setEditSubcategory(null)}
-                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!editSubcategory.name?.trim()) return;
-                          const nextSub: Subcategory = {
-                            id: editSubcategory.id || crypto.randomUUID(),
-                            category_id: editSubcategory.category_id || editCategory?.id || '',
-                            name: editSubcategory.name.trim(),
-                            link: editSubcategory.link?.trim() || null,
-                            video_url: editSubcategory.video_url?.trim() || null,
-                            image_url: editSubcategory.image_url?.trim() || null,
-                            video_url_2: (editSubcategory.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
-                            detail_description: editSubcategory.detail_description?.trim() || null,
-                            is_visible: (editSubcategory as any).is_visible ?? true,
-                            show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
-                            show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
-                            show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
-                            sort_order: editSubs.length,
-                          };
-                          setEditSubs((current) => {
-                            const existingIndex = current.findIndex((sub) => sub.id === nextSub.id);
-                            if (existingIndex >= 0) {
-                              const next = [...current];
-                              next[existingIndex] = { ...next[existingIndex], ...nextSub };
-                              return next;
+
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <label className="text-sm font-medium">Subcategories</label>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                                        className="text-sm text-primary font-semibold"
+                                      >
+                                        + Add
+                                      </button>
+                                    </div>
+                                    {editSubs.length === 0 ? (
+                                      <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                                        No subcategories added yet.
+                                      </div>
+                                    ) : (
+                                      <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleSubcategoryDragEnd}
+                                      >
+                                        <SortableContext
+                                          items={editSubs.map(s => s.id)}
+                                          strategy={verticalListSortingStrategy}
+                                        >
+                                          <div className="space-y-3">
+                                            {editSubs.map((sub) => (
+                                              <SortableAdminItem key={sub.id} id={sub.id}>
+                                                <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                                  <div className="min-w-0">
+                                                    <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                    <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                                      <Switch
+                                                        checked={(sub as any).is_visible ?? true}
+                                                        onCheckedChange={(checked) => {
+                                                          setEditSubs((prev) => prev.map((item) => item.id === sub.id ? { ...item, is_visible: Boolean(checked) } : item));
+                                                        }}
+                                                      />
+                                                      <span>{(sub as any).is_visible ?? true ? 'Visible' : 'Hidden'}</span>
+                                                    </label>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        setEditingSubcategoryId(sub.id);
+                                                        setEditButtons(editButtonsState[sub.id] || []);
+                                                        setEditSubBrands(editSubBrandsState[sub.id] || []);
+                                                        setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
+                                                        setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                                        setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
+                                                        setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                                        setEditKeyFeaturesTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).key_features_tab_label || 'Key Features' }));
+                                                        setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
+                                                        setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                                        setEditKeyFeaturesSections(prev => ({
+                                                          ...prev,
+                                                          [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                                        }));
+                                                        setEditAboutSections(prev => ({
+                                                          ...prev,
+                                                          [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                                        }));
+                                                      }}
+                                                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                                    >
+                                                      Edit
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                                      className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                                    >
+                                                      <X className="w-4 h-4" />
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </SortableAdminItem>
+                                            ))}
+                                          </div>
+                                        </SortableContext>
+                                      </DndContext>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                  {editCategory && !editCategory.id && (
+                    <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Add Category</h3>
+                          <p className="text-sm text-muted-foreground">Create a new category below.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setEditCategory(null); setEditSubs([]); setEditSubcategory(null); }}
+                            className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                          >
+                            Cancel
+                          </button>
+                          <button onClick={async () => {
+                            if (editingSubcategoryId) {
+                              const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
+                              if (editingSub) {
+                                setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
+                                setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
+                                setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
+                              }
                             }
-                            return [...current, nextSub];
-                          });
-                          const subcategoryId = nextSub.id;
-                          setEditShowBrandsState((prev) => ({ ...prev, [subcategoryId]: editShowBrandsState[editSubcategory.id || 'new'] ?? true }));
-                          setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
-                          setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
-                          setEditSubcategory(null);
-                          toast.success('Subcategory added! Click the main Save button to persist changes.');
-                        }}
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-                      >
-                        Add
-                      </button>
+                            await saveCategory();
+                          }} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                            Save
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <ImageUpload label="Icon" value={editCategory.icon_url || null} onChange={(url) => setEditCategory({ ...editCategory, icon_url: url })} folder="categories" />
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Name</label>
+                          <input value={editCategory.name || ''} onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-input bg-background" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Background Color</label>
+                          <div className="flex items-center gap-3">
+                            <input type="color" value={editCategory.bg_color || '#FFF9C4'} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="w-12 h-10 rounded border border-input cursor-pointer" />
+                            <input value={editCategory.bg_color || ''} onChange={(e) => setEditCategory({ ...editCategory, bg_color: e.target.value })} className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">Subcategories</label>
+                            <button
+                              type="button"
+                              onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                              className="text-sm text-primary font-semibold"
+                            >
+                              + Add
+                            </button>
+                          </div>
+                          {editSubs.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                              No subcategories added yet.
+                            </div>
+                          ) : (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleSubcategoryDragEnd}
+                            >
+                              <SortableContext
+                                items={editSubs.map(s => s.id)}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <div className="space-y-3">
+                                  {editSubs.map((sub) => (
+                                    <SortableAdminItem key={sub.id} id={sub.id}>
+                                      <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                        <div className="min-w-0">
+                                          <p className="truncate font-semibold text-sm">{sub.name || 'Untitled subcategory'}</p>
+                                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingSubcategoryId(sub.id);
+                                              setEditButtons(editButtonsState[sub.id] || []);
+                                              setEditSubBrands(editSubBrandsState[sub.id] || []);
+                                              setEditShowBrandsState((prev) => ({ ...prev, [sub.id]: sub.show_brands ?? true }));
+                                              setEditShowAboutSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_about_section ?? true }));
+                                              setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [sub.id]: (sub as any).show_header_points_section ?? true }));
+                                              setEditBrandsTabLabelState((prev) => ({ ...prev, [sub.id]: (sub as any).brands_tab_label || 'Brands' }));
+                                              setEditTabOrderState((prev) => ({ ...prev, [sub.id]: sub.tab_order || ['overview', 'key_features', 'brands', 'form'] }));
+                                              setEditSubOverviewPoints(editSubOverviewPointsState[sub.id] || []);
+                                              setEditKeyFeaturesSections(prev => ({
+                                                ...prev,
+                                                [sub.id]: editKeyFeaturesSections[sub.id] || keyFeaturesSections.filter(s => s.subcategory_id === sub.id)
+                                              }));
+                                              setEditAboutSections(prev => ({
+                                                ...prev,
+                                                [sub.id]: editAboutSections[sub.id] || aboutSections.filter(s => s.subcategory_id === sub.id)
+                                              }));
+                                            }}
+                                            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                            className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </SortableAdminItem>
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Modal>
-              )}
+                  )}
+                  {editSubcategory && !editSubs.some((sub) => sub.id === editSubcategory.id) && (
+                    <Modal
+                      title="Add Subcategory"
+                      onClose={() => setEditSubcategory(null)}
+                    >
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Name</label>
+                          <input
+                            value={editSubcategory.name || ''}
+                            onChange={(e) => setEditSubcategory({ ...editSubcategory, name: e.target.value })}
+                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setEditSubcategory(null)}
+                            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!editSubcategory.name?.trim()) return;
+                              const nextSub: Subcategory = {
+                                id: editSubcategory.id || crypto.randomUUID(),
+                                category_id: editSubcategory.category_id || editCategory?.id || '',
+                                name: editSubcategory.name.trim(),
+                                link: editSubcategory.link?.trim() || null,
+                                video_url: editSubcategory.video_url?.trim() || null,
+                                image_url: editSubcategory.image_url?.trim() || null,
+                                video_url_2: (editSubcategory.video_url_2 || []).filter(url => url?.trim()).map(url => url.trim()) || null,
+                                detail_description: editSubcategory.detail_description?.trim() || null,
+                                is_visible: (editSubcategory as any).is_visible ?? true,
+                                show_brands: editShowBrandsState[editSubcategory.id || 'new'] ?? true,
+                                show_about_section: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true,
+                                show_header_points_section: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true,
+                                sort_order: editSubs.length,
+                              };
+                              setEditSubs((current) => {
+                                const existingIndex = current.findIndex((sub) => sub.id === nextSub.id);
+                                if (existingIndex >= 0) {
+                                  const next = [...current];
+                                  next[existingIndex] = { ...next[existingIndex], ...nextSub };
+                                  return next;
+                                }
+                                return [...current, nextSub];
+                              });
+                              const subcategoryId = nextSub.id;
+                              setEditShowBrandsState((prev) => ({ ...prev, [subcategoryId]: editShowBrandsState[editSubcategory.id || 'new'] ?? true }));
+                              setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
+                              setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
+                              setEditSubcategory(null);
+                              toast.success('Subcategory added! Click the main Save button to persist changes.');
+                            }}
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </Modal>
+                  )}
                 </>
               ) : (
                 <>
                   {/* Inline Edit Subcategory View */}
-                                    {(() => {
+                  {(() => {
                     const editingSub = editSubs.find(s => s.id === editingSubcategoryId);
                     if (!editingSub) return null;
                     return (
@@ -5807,485 +5805,446 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Name</label>
-                      <input
-                        value={editingSub.name || ''}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, name: e.target.value } : s));
-                        }}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                      />
-                    </div>
-
-                    
-
-                      <div className="space-y-3 border-t pt-4">
-                       <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
-                      <input
-                        type="url"
-                        value={editingSub.custom_link || ''}
-                        onChange={(e) => {
-                          setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: e.target.value || undefined } : s));
-                        }}
-                        placeholder="https://example.com"
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                      />
-                    </div>
-
-                    {/* Buttons Section */}
-                    <div className="space-y-4 border-t pt-4">
-                      <h3 className="text-sm font-semibold text-foreground">Buttons</h3>
-                      
-                      {/* Button 1 */}
-                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
-                        <div className="flex items-center justify-between gap-4">
-                          <h4 className="text-sm font-medium">Button 1</h4>
-                          <label className="flex items-center gap-2">
-                            <Switch
-                              checked={editingSub.button_1_visible ?? false}
-                              onCheckedChange={(checked) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_visible: Boolean(checked) } : s));
-                              }}
-                            />
-                            <span className="text-sm text-muted-foreground">Visible</span>
-                          </label>
-                        </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                          <label className="block text-sm font-medium mb-1.5">Name</label>
                           <input
-                            type="text"
-                            value={editingSub.button_1_text || ''}
+                            value={editingSub.name || ''}
                             onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_text: e.target.value || null } : s));
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, name: e.target.value } : s));
                             }}
-                            placeholder="Button text"
                             className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
+
+
+
+                        <div className="space-y-3 border-t pt-4">
+                          <label className="block text-sm font-medium">Custom Redirect Link (Optional)</label>
                           <input
                             type="url"
-                            value={editingSub.button_1_link || ''}
+                            value={editingSub.custom_link || ''}
                             onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_link: e.target.value || null } : s));
+                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, custom_link: e.target.value || undefined } : s));
                             }}
                             placeholder="https://example.com"
                             className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                           />
                         </div>
-                      </div>
 
-                      {/* Button 2 */}
-                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
-                        <div className="flex items-center justify-between gap-4">
-                          <h4 className="text-sm font-medium">Button 2</h4>
-                          <label className="flex items-center gap-2">
-                            <Switch
-                              checked={editingSub.button_2_visible ?? false}
-                              onCheckedChange={(checked) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_visible: Boolean(checked) } : s));
-                              }}
-                            />
-                            <span className="text-sm text-muted-foreground">Visible</span>
-                          </label>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
-                          <input
-                            type="text"
-                            value={editingSub.button_2_text || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_text: e.target.value || null } : s));
-                            }}
-                            placeholder="Button text"
-                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
-                          <input
-                            type="url"
-                            value={editingSub.button_2_link || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_link: e.target.value || null } : s));
-                            }}
-                            placeholder="https://example.com"
-                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                          />
-                        </div>
-                      </div>
+                        {/* Buttons Section */}
+                        <div className="space-y-4 border-t pt-4">
+                          <h3 className="text-sm font-semibold text-foreground">Buttons</h3>
 
-                      {/* Button 3 */}
-                      <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
-                        <div className="flex items-center justify-between gap-4">
-                          <h4 className="text-sm font-medium">Button 3</h4>
-                          <label className="flex items-center gap-2">
-                            <Switch
-                              checked={editingSub.button_3_visible ?? false}
-                              onCheckedChange={(checked) => {
-                                setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_visible: Boolean(checked) } : s));
-                              }}
-                            />
-                            <span className="text-sm text-muted-foreground">Visible</span>
-                          </label>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Text</label>
-                          <input
-                            type="text"
-                            value={editingSub.button_3_text || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_text: e.target.value || null } : s));
-                            }}
-                            placeholder="Button text"
-                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1.5">Button Link</label>
-                          <input
-                            type="url"
-                            value={editingSub.button_3_link || ''}
-                            onChange={(e) => {
-                              setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_link: e.target.value || null } : s));
-                            }}
-                            placeholder="https://example.com"
-                            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  
-
-                 
-                    <div className="border-t">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Brands</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {activeAccordion === 'brands' && !editingBrandId && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Brands Tab Label</label>
-                            <input
-                              value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
-                              onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              placeholder="Brands"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <label className="text-sm font-medium">Brands List</label>
-                              <button
-                                type="button"
-                                onClick={() => setEditSubBrands([...editSubBrands, { 
-                                  id: crypto.randomUUID(), 
-                                  name: '', 
-                                  logo_url: null, 
-                                  link: null, 
-                                  description: '', 
-                                  buttons: [], 
-                                  is_visible: true,
-                                  action_link_1_text: null,
-                                  action_link_1_url: null,
-                                  action_link_1_new_tab: false,
-                                  action_link_1_enabled: false,
-                                  action_link_2_text: null,
-                                  action_link_2_url: null,
-                                  action_link_2_new_tab: false,
-                                  action_link_2_enabled: false,
-                                  action_link_3_text: null,
-                                  action_link_3_url: null,
-                                  action_link_3_new_tab: false,
-                                  action_link_3_enabled: false,
-                                  primary_cta_label: 'Submit RFP',
-                                  primary_cta_link: '',
-                                  primary_cta_visible: false,
-                                  more_actions_label: 'Contact',
-                                  more_actions_visible: false,
-                                  join_network_label: '+ Join their Network',
-                                  join_network_link: '',
-                                  join_network_visible: false
-                                }])}
-                                disabled={editSubBrands.length >= 10}
-                                className="text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                + Add Brand
-                              </button>
-                            </div>
-
-                            {editSubBrands.length === 0 ? (
-                              <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                                No brands added yet.
-                              </div>
-                            ) : (
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleBrandDragEnd}
-                              >
-                                <SortableContext
-                                  items={editSubBrands.map(b => b.id!)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  <div className="space-y-3">
-                                    {editSubBrands.map((brand) => (
-                                      <SortableAdminItem key={brand.id} id={brand.id!}>
-                                        <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
-                                          <div className="min-w-0">
-                                            <p className="truncate font-semibold text-sm">{brand.name || 'Untitled brand'}</p>
-                                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                              {(brand.action_links || []).length > 0 && (
-                                                <span>{(brand.action_links || []).length} action link{(brand.action_links || []).length !== 1 ? 's' : ''}</span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                            <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                              <Switch
-                                                checked={brand.is_visible ?? true}
-                                                onCheckedChange={(checked) => {
-                                                  const newBrands = editSubBrands.map(b => 
-                                                    b.id === brand.id ? { ...b, is_visible: Boolean(checked) } : b
-                                                  );
-                                                  setEditSubBrands(newBrands);
-                                                }}
-                                              />
-                                              <span>{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
-                                            </label>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setEditingBrandId(brand.id || '');
-                                                setEditingBrand(brand);
-                                              }}
-                                              className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                                            >
-                                              Edit
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const newBrands = editSubBrands.filter(b => b.id !== brand.id);
-                                                setEditSubBrands(newBrands);
-                                                if (editingBrandId === brand.id) {
-                                                  setEditingBrandId(null);
-                                                  setEditingBrand(null);
-                                                }
-                                              }}
-                                              className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                            >
-                                              <X className="w-4 h-4" />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </SortableAdminItem>
-                                    ))}
-                                  </div>
-                                </SortableContext>
-                              </DndContext>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {editingBrandId && editingBrand && (
-                        <div className="rounded-2xl border border-border bg-card p-6 space-y-6 mt-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              <h3 className="text-lg font-semibold">Edit Brand</h3>
-                              <p className="text-sm text-muted-foreground">{editingBrand.name || 'Untitled brand'}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingBrandId(null);
-                                setEditingBrand(null);
-                              }}
-                              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted flex items-center gap-2"
-                            >
-                              <ArrowLeft className="w-4 h-4" /> Back to Brands
-                            </button>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">Brand Name</label>
-                              <input
-                                type="text"
-                                placeholder="Brand name"
-                                value={editingBrand.name || ''}
-                                onChange={(e) => {
-                                  const updated = { ...editingBrand, name: e.target.value };
-                                  setEditingBrand(updated);
-                                  const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                  if (idx !== -1) {
-                                    const newBrands = [...editSubBrands];
-                                    newBrands[idx] = updated as SubcategoryBrand;
-                                    setEditSubBrands(newBrands);
-                                  }
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">Primary Link (optional)</label>
-                              <input
-                                type="text"
-                                placeholder="https://example.com"
-                                value={editingBrand.link || ''}
-                                onChange={(e) => {
-                                  const updated = { ...editingBrand, link: e.target.value || null };
-                                  setEditingBrand(updated);
-                                  const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                  if (idx !== -1) {
-                                    const newBrands = [...editSubBrands];
-                                    newBrands[idx] = updated as SubcategoryBrand;
-                                    setEditSubBrands(newBrands);
-                                  }
-                                }}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="flex items-center gap-2 text-sm font-medium">
+                          {/* Button 1 */}
+                          <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                            <div className="flex items-center justify-between gap-4">
+                              <h4 className="text-sm font-medium">Button 1</h4>
+                              <label className="flex items-center gap-2">
                                 <Switch
-                                  checked={editingBrand.is_visible ?? true}
+                                  checked={editingSub.button_1_visible ?? false}
                                   onCheckedChange={(checked) => {
-                                    const updated = { ...editingBrand, is_visible: Boolean(checked) };
-                                    setEditingBrand(updated);
-                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                    if (idx !== -1) {
-                                      const newBrands = [...editSubBrands];
-                                      newBrands[idx] = updated as SubcategoryBrand;
-                                      setEditSubBrands(newBrands);
-                                    }
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_visible: Boolean(checked) } : s));
                                   }}
                                 />
-                                <span>Visible</span>
+                                <span className="text-sm text-muted-foreground">Visible</span>
                               </label>
                             </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                              <input
+                                type="text"
+                                value={editingSub.button_1_text || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_text: e.target.value || null } : s));
+                                }}
+                                placeholder="Button text"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                              <input
+                                type="url"
+                                value={editingSub.button_1_link || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_1_link: e.target.value || null } : s));
+                                }}
+                                placeholder="https://example.com"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
 
-                            <div className="border-t pt-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-semibold">Brand Action Links</h4>
+                          {/* Button 2 */}
+                          <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                            <div className="flex items-center justify-between gap-4">
+                              <h4 className="text-sm font-medium">Button 2</h4>
+                              <label className="flex items-center gap-2">
+                                <Switch
+                                  checked={editingSub.button_2_visible ?? false}
+                                  onCheckedChange={(checked) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_visible: Boolean(checked) } : s));
+                                  }}
+                                />
+                                <span className="text-sm text-muted-foreground">Visible</span>
+                              </label>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                              <input
+                                type="text"
+                                value={editingSub.button_2_text || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_text: e.target.value || null } : s));
+                                }}
+                                placeholder="Button text"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                              <input
+                                type="url"
+                                value={editingSub.button_2_link || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_2_link: e.target.value || null } : s));
+                                }}
+                                placeholder="https://example.com"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Button 3 */}
+                          <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
+                            <div className="flex items-center justify-between gap-4">
+                              <h4 className="text-sm font-medium">Button 3</h4>
+                              <label className="flex items-center gap-2">
+                                <Switch
+                                  checked={editingSub.button_3_visible ?? false}
+                                  onCheckedChange={(checked) => {
+                                    setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_visible: Boolean(checked) } : s));
+                                  }}
+                                />
+                                <span className="text-sm text-muted-foreground">Visible</span>
+                              </label>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Text</label>
+                              <input
+                                type="text"
+                                value={editingSub.button_3_text || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_text: e.target.value || null } : s));
+                                }}
+                                placeholder="Button text"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1.5">Button Link</label>
+                              <input
+                                type="url"
+                                value={editingSub.button_3_link || ''}
+                                onChange={(e) => {
+                                  setEditSubs(editSubs.map(s => s.id === editingSub.id ? { ...s, button_3_link: e.target.value || null } : s));
+                                }}
+                                placeholder="https://example.com"
+                                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+
+
+                        <div className="border-t">
+                          <button
+                            type="button"
+                            onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
+                            className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                          >
+                            <label className="text-lg font-bold cursor-pointer">Brands</label>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'brands' ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {activeAccordion === 'brands' && !editingBrandId && (
+                            <div className="space-y-4 pb-6 px-2">
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Brands Tab Label</label>
+                                <input
+                                  value={editBrandsTabLabelState[editingSub.id] ?? 'Brands'}
+                                  onChange={(e) => setEditBrandsTabLabelState({ ...editBrandsTabLabelState, [editingSub.id]: e.target.value })}
+                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  placeholder="Brands"
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-3">
+                                  <label className="text-sm font-medium">Brands List</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSubBrands([...editSubBrands, {
+                                      id: crypto.randomUUID(),
+                                      name: '',
+                                      logo_url: null,
+                                      link: null,
+                                      description: '',
+                                      buttons: [],
+                                      is_visible: true,
+                                      action_link_1_text: null,
+                                      action_link_1_url: null,
+                                      action_link_1_new_tab: false,
+                                      action_link_1_enabled: false,
+                                      action_link_2_text: null,
+                                      action_link_2_url: null,
+                                      action_link_2_new_tab: false,
+                                      action_link_2_enabled: false,
+                                      action_link_3_text: null,
+                                      action_link_3_url: null,
+                                      action_link_3_new_tab: false,
+                                      action_link_3_enabled: false,
+                                      primary_cta_label: 'Submit RFP',
+                                      primary_cta_link: '',
+                                      primary_cta_visible: false,
+                                      more_actions_label: 'Contact',
+                                      more_actions_visible: false,
+                                      join_network_label: '+ Join their Network',
+                                      join_network_link: '',
+                                      join_network_visible: false
+                                    }])}
+                                    disabled={editSubBrands.length >= 10}
+                                    className="text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    + Add Brand
+                                  </button>
+                                </div>
+
+                                {editSubBrands.length === 0 ? (
+                                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                                    No brands added yet.
+                                  </div>
+                                ) : (
+                                  <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleBrandDragEnd}
+                                  >
+                                    <SortableContext
+                                      items={editSubBrands.map(b => b.id!)}
+                                      strategy={verticalListSortingStrategy}
+                                    >
+                                      <div className="space-y-3">
+                                        {editSubBrands.map((brand) => (
+                                          <SortableAdminItem key={brand.id} id={brand.id!}>
+                                            <div className="flex flex-1 flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+                                              <div className="min-w-0">
+                                                <p className="truncate font-semibold text-sm">{brand.name || 'Untitled brand'}</p>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                  {(brand.action_links || []).length > 0 && (
+                                                    <span>{(brand.action_links || []).length} action link{(brand.action_links || []).length !== 1 ? 's' : ''}</span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <label className="flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                                  <Switch
+                                                    checked={brand.is_visible ?? true}
+                                                    onCheckedChange={(checked) => {
+                                                      const newBrands = editSubBrands.map(b =>
+                                                        b.id === brand.id ? { ...b, is_visible: Boolean(checked) } : b
+                                                      );
+                                                      setEditSubBrands(newBrands);
+                                                    }}
+                                                  />
+                                                  <span>{(brand.is_visible ?? true) ? 'Visible' : 'Hidden'}</span>
+                                                </label>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setEditingBrandId(brand.id || '');
+                                                    setEditingBrand(brand);
+                                                  }}
+                                                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                                >
+                                                  Edit
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newBrands = editSubBrands.filter(b => b.id !== brand.id);
+                                                    setEditSubBrands(newBrands);
+                                                    if (editingBrandId === brand.id) {
+                                                      setEditingBrandId(null);
+                                                      setEditingBrand(null);
+                                                    }
+                                                  }}
+                                                  className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </SortableAdminItem>
+                                        ))}
+                                      </div>
+                                    </SortableContext>
+                                  </DndContext>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {editingBrandId && editingBrand && (
+                            <div className="rounded-2xl border border-border bg-card p-6 space-y-6 mt-4">
+                              <div className="flex items-center justify-between gap-4">
+                                <div>
+                                  <h3 className="text-lg font-semibold">Edit Brand</h3>
+                                  <p className="text-sm text-muted-foreground">{editingBrand.name || 'Untitled brand'}</p>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const updated = {
-                                      ...editingBrand,
-                                      action_links: [
-                                        ...(editingBrand.action_links || []),
-                                        {
-                                          id: crypto.randomUUID(),
-                                          text: '',
-                                          url: '',
-                                          new_tab: false,
-                                          enabled: true,
-                                        },
-                                      ],
-                                    };
-                                    setEditingBrand(updated);
-                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                    if (idx !== -1) {
-                                      const newBrands = [...editSubBrands];
-                                      newBrands[idx] = updated as SubcategoryBrand;
-                                      setEditSubBrands(newBrands);
-                                    }
+                                    setEditingBrandId(null);
+                                    setEditingBrand(null);
                                   }}
-                                  className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted flex items-center gap-2"
                                 >
-                                  <Plus className="w-4 h-4" /> Add Link
+                                  <ArrowLeft className="w-4 h-4" /> Back to Brands
                                 </button>
                               </div>
 
-                              {(editingBrand.action_links || []).length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No action links added yet.</p>
-                              ) : (
-                                <div className="space-y-3">
-                                  {(editingBrand.action_links || []).map((link, linkIdx) => (
-                                    <div key={link.id || linkIdx} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-medium">Link {linkIdx + 1}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const updated = {
-                                              ...editingBrand,
-                                              action_links: (editingBrand.action_links || []).filter((_, i) => i !== linkIdx),
-                                            };
-                                            setEditingBrand(updated);
-                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                            if (idx !== -1) {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[idx] = updated as SubcategoryBrand;
-                                              setEditSubBrands(newBrands);
-                                            }
-                                          }}
-                                          className="p-1 text-destructive hover:bg-destructive/10 rounded"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      </div>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Brand Name</label>
+                                  <input
+                                    type="text"
+                                    placeholder="Brand name"
+                                    value={editingBrand.name || ''}
+                                    onChange={(e) => {
+                                      const updated = { ...editingBrand, name: e.target.value };
+                                      setEditingBrand(updated);
+                                      const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                      if (idx !== -1) {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[idx] = updated as SubcategoryBrand;
+                                        setEditSubBrands(newBrands);
+                                      }
+                                    }}
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  />
+                                </div>
 
-                                      <div className="space-y-2">
-                                        <input
-                                          type="text"
-                                          placeholder="Link text"
-                                          value={link.text || ''}
-                                          onChange={(e) => {
-                                            const updatedLinks = [...(editingBrand.action_links || [])];
-                                            updatedLinks[linkIdx] = { ...link, text: e.target.value || null };
-                                            const updated = { ...editingBrand, action_links: updatedLinks };
-                                            setEditingBrand(updated);
-                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                            if (idx !== -1) {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[idx] = updated as SubcategoryBrand;
-                                              setEditSubBrands(newBrands);
-                                            }
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                        />
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Primary Link (optional)</label>
+                                  <input
+                                    type="text"
+                                    placeholder="https://example.com"
+                                    value={editingBrand.link || ''}
+                                    onChange={(e) => {
+                                      const updated = { ...editingBrand, link: e.target.value || null };
+                                      setEditingBrand(updated);
+                                      const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                      if (idx !== -1) {
+                                        const newBrands = [...editSubBrands];
+                                        newBrands[idx] = updated as SubcategoryBrand;
+                                        setEditSubBrands(newBrands);
+                                      }
+                                    }}
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                  />
+                                </div>
 
-                                        <input
-                                          type="text"
-                                          placeholder="Link URL"
-                                          value={link.url || ''}
-                                          onChange={(e) => {
-                                            const updatedLinks = [...(editingBrand.action_links || [])];
-                                            updatedLinks[linkIdx] = { ...link, url: e.target.value || null };
-                                            const updated = { ...editingBrand, action_links: updatedLinks };
-                                            setEditingBrand(updated);
-                                            const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
-                                            if (idx !== -1) {
-                                              const newBrands = [...editSubBrands];
-                                              newBrands[idx] = updated as SubcategoryBrand;
-                                              setEditSubBrands(newBrands);
-                                            }
-                                          }}
-                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                        />
+                                <div>
+                                  <label className="flex items-center gap-2 text-sm font-medium">
+                                    <Switch
+                                      checked={editingBrand.is_visible ?? true}
+                                      onCheckedChange={(checked) => {
+                                        const updated = { ...editingBrand, is_visible: Boolean(checked) };
+                                        setEditingBrand(updated);
+                                        const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                        if (idx !== -1) {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands[idx] = updated as SubcategoryBrand;
+                                          setEditSubBrands(newBrands);
+                                        }
+                                      }}
+                                    />
+                                    <span>Visible</span>
+                                  </label>
+                                </div>
 
-                                        <div className="flex items-center gap-2">
-                                          <label className="flex items-center gap-1 text-sm text-muted-foreground flex-1">
+                                <div className="border-t pt-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-semibold">Brand Action Links</h4>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = {
+                                          ...editingBrand,
+                                          action_links: [
+                                            ...(editingBrand.action_links || []),
+                                            {
+                                              id: crypto.randomUUID(),
+                                              text: '',
+                                              url: '',
+                                              new_tab: false,
+                                              enabled: true,
+                                            },
+                                          ],
+                                        };
+                                        setEditingBrand(updated);
+                                        const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                        if (idx !== -1) {
+                                          const newBrands = [...editSubBrands];
+                                          newBrands[idx] = updated as SubcategoryBrand;
+                                          setEditSubBrands(newBrands);
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                    >
+                                      <Plus className="w-4 h-4" /> Add Link
+                                    </button>
+                                  </div>
+
+                                  {(editingBrand.action_links || []).length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No action links added yet.</p>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {(editingBrand.action_links || []).map((link, linkIdx) => (
+                                        <div key={link.id || linkIdx} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <span className="text-sm font-medium">Link {linkIdx + 1}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updated = {
+                                                  ...editingBrand,
+                                                  action_links: (editingBrand.action_links || []).filter((_, i) => i !== linkIdx),
+                                                };
+                                                setEditingBrand(updated);
+                                                const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                                if (idx !== -1) {
+                                                  const newBrands = [...editSubBrands];
+                                                  newBrands[idx] = updated as SubcategoryBrand;
+                                                  setEditSubBrands(newBrands);
+                                                }
+                                              }}
+                                              className="p-1 text-destructive hover:bg-destructive/10 rounded"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+
+                                          <div className="space-y-2">
                                             <input
-                                              type="checkbox"
-                                              checked={link.new_tab ?? false}
+                                              type="text"
+                                              placeholder="Link text"
+                                              value={link.text || ''}
                                               onChange={(e) => {
                                                 const updatedLinks = [...(editingBrand.action_links || [])];
-                                                updatedLinks[linkIdx] = { ...link, new_tab: e.target.checked };
+                                                updatedLinks[linkIdx] = { ...link, text: e.target.value || null };
                                                 const updated = { ...editingBrand, action_links: updatedLinks };
                                                 setEditingBrand(updated);
                                                 const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
@@ -6295,16 +6254,16 @@ export default function AdminDashboard() {
                                                   setEditSubBrands(newBrands);
                                                 }
                                               }}
+                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                             />
-                                            Open in new tab
-                                          </label>
 
-                                          <div className="flex items-center gap-1">
-                                            <Switch
-                                              checked={link.enabled ?? true}
-                                              onCheckedChange={(checked) => {
+                                            <input
+                                              type="text"
+                                              placeholder="Link URL"
+                                              value={link.url || ''}
+                                              onChange={(e) => {
                                                 const updatedLinks = [...(editingBrand.action_links || [])];
-                                                updatedLinks[linkIdx] = { ...link, enabled: checked };
+                                                updatedLinks[linkIdx] = { ...link, url: e.target.value || null };
                                                 const updated = { ...editingBrand, action_links: updatedLinks };
                                                 setEditingBrand(updated);
                                                 const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
@@ -6314,48 +6273,87 @@ export default function AdminDashboard() {
                                                   setEditSubBrands(newBrands);
                                                 }
                                               }}
+                                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                             />
-                                            <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{link.enabled ?? true ? 'On' : 'Off'}</span>
+
+                                            <div className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1 text-sm text-muted-foreground flex-1">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={link.new_tab ?? false}
+                                                  onChange={(e) => {
+                                                    const updatedLinks = [...(editingBrand.action_links || [])];
+                                                    updatedLinks[linkIdx] = { ...link, new_tab: e.target.checked };
+                                                    const updated = { ...editingBrand, action_links: updatedLinks };
+                                                    setEditingBrand(updated);
+                                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                                    if (idx !== -1) {
+                                                      const newBrands = [...editSubBrands];
+                                                      newBrands[idx] = updated as SubcategoryBrand;
+                                                      setEditSubBrands(newBrands);
+                                                    }
+                                                  }}
+                                                />
+                                                Open in new tab
+                                              </label>
+
+                                              <div className="flex items-center gap-1">
+                                                <Switch
+                                                  checked={link.enabled ?? true}
+                                                  onCheckedChange={(checked) => {
+                                                    const updatedLinks = [...(editingBrand.action_links || [])];
+                                                    updatedLinks[linkIdx] = { ...link, enabled: checked };
+                                                    const updated = { ...editingBrand, action_links: updatedLinks };
+                                                    setEditingBrand(updated);
+                                                    const idx = editSubBrands.findIndex(b => b.id === editingBrandId);
+                                                    if (idx !== -1) {
+                                                      const newBrands = [...editSubBrands];
+                                                      newBrands[idx] = updated as SubcategoryBrand;
+                                                      setEditSubBrands(newBrands);
+                                                    }
+                                                  }}
+                                                />
+                                                <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{link.enabled ?? true ? 'On' : 'Off'}</span>
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
+                                      ))}
                                     </div>
-                                  ))}
+                                  )}
                                 </div>
-                              )}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'about-sections' ? null : 'about-sections')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">About Sections</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'about-sections' ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {activeAccordion === 'about-sections' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="flex items-center justify-between mb-4">
-                            <label className="text-sm font-medium">Manage multiple about content sections</label>
-                            <button
-                              type="button"
-                              onClick={() => addAboutSection(editingSub.id)}
-                              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                            >
-                              <Plus className="h-4 w-4" /> Add More
-                            </button>
-                          </div>
-                          
-                          {(editAboutSections[editingSub.id] || []).length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No About sections added yet. Click "Add More" to create your first About section.</p>
-                          ) : (
-                            <div className="space-y-3">
+                        <div className="hidden">
+                          <button
+                            type="button"
+                            onClick={() => setActiveAccordion(activeAccordion === 'about-sections' ? null : 'about-sections')}
+                            className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                          >
+                            <label className="text-lg font-bold cursor-pointer">About Sections</label>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'about-sections' ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {activeAccordion === 'about-sections' && (
+                            <div className="space-y-4 pb-6 px-2">
+                              <div className="flex items-center justify-between mb-4">
+                                <label className="text-sm font-medium">Manage multiple about content sections</label>
+                                <button
+                                  type="button"
+                                  onClick={() => addAboutSection(editingSub.id)}
+                                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                                >
+                                  <Plus className="h-4 w-4" /> Add More
+                                </button>
+                              </div>
+
+                              {(editAboutSections[editingSub.id] || []).length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4">No About sections added yet. Click "Add More" to create your first About section.</p>
+                              ) : (
+                                <div className="space-y-3">
                                   {(editAboutSections[editingSub.id] || []).map((section, index) => (
                                     <div key={section.id} className="w-full space-y-3" style={{ backgroundColor: section.background_color || '#ffffff', padding: '16px', borderRadius: '8px' }}>
                                       <div className="flex items-center justify-between gap-3">
@@ -6415,557 +6413,557 @@ export default function AdminDashboard() {
                                     </div>
                                   ))}
                                 </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'key-features' ? null : 'key-features')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Key Features Tab</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'key-features' ? 'rotate-180' : ''}`} />
-                      </button>
+                        <div className="hidden">
+                          <button
+                            type="button"
+                            onClick={() => setActiveAccordion(activeAccordion === 'key-features' ? null : 'key-features')}
+                            className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                          >
+                            <label className="text-lg font-bold cursor-pointer">Key Features Tab</label>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'key-features' ? 'rotate-180' : ''}`} />
+                          </button>
 
-                      {activeAccordion === 'key-features' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <div className="space-y-3 border-b pb-6">
-                            <div className="flex items-center justify-between">
-                              <label className="block text-sm font-medium">Enable Key Features Tab</label>
-                              <Switch
-                                checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
-                                onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Tab Label</label>
-                              <input
-                                value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
-                                onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
-                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                placeholder="Key Features"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between mb-4">
-                            <button
-                              type="button"
-                              onClick={() => addKeyFeaturesSection(editingSub.id)}
-                              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                            >
-                              <Plus className="h-4 w-4" /> Add More
-                            </button>
-                          </div>
-                          
-                          {(editKeyFeaturesSections[editingSub.id] || []).length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No Key Features sections added yet. Click "Add More" to create your first section.</p>
-                          ) : (
-                            <div className="space-y-6">
-                              {(editKeyFeaturesSections[editingSub.id] || []).map((section, sectionIndex) => (
-                                <div key={section.id} className="w-full space-y-4 rounded-xl border border-border bg-card p-4 shadow-sm">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <input
-                                      value={section.heading}
-                                      onChange={(e) => updateKeyFeaturesSection(editingSub.id, section.id, { heading: e.target.value })}
-                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-bold"
-                                      placeholder="Section heading (e.g., Key Features)"
-                                    />
-                                    <div className="flex items-center gap-2">
-                                      <Switch
-                                        checked={section.is_visible}
-                                        onCheckedChange={(value) => updateKeyFeaturesSection(editingSub.id, section.id, { is_visible: value })}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => deleteKeyFeaturesSection(editingSub.id, section.id)}
-                                        className="text-destructive hover:text-destructive/80 p-1"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {section.is_visible && (
-                                    <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                                      {editSubOverviewPoints
-                                        .filter(p => p.section_id === section.id)
-                                        .map((point, pointIndex) => {
-                                          return (
-                                            <div key={point.id || pointIndex} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
-                                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                                <input
-                                                  type="text"
-                                                  value={point.text}
-                                                  onChange={(e) => {
-                                                    const newPoints = [...editSubOverviewPoints];
-                                                    const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                    if (pointToUpdateIdx !== -1) {
-                                                      newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], text: e.target.value };
-                                                      setEditSubOverviewPoints(newPoints);
-                                                    }
-                                                  }}
-                                                  placeholder={`Point ${pointIndex + 1}`}
-                                                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                                />
-                                                <div className="flex items-center gap-3">
-                                                  <div className="flex items-center gap-2">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        const newPoints = [...editSubOverviewPoints];
-                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                        if (pointToUpdateIdx !== -1) {
-                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'green' };
-                                                          setEditSubOverviewPoints(newPoints);
-                                                        }
-                                                      }}
-                                                      className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
-                                                      style={{ backgroundColor: '#10b981' }}
-                                                    />
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        const newPoints = [...editSubOverviewPoints];
-                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                        if (pointToUpdateIdx !== -1) {
-                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'blue' };
-                                                          setEditSubOverviewPoints(newPoints);
-                                                        }
-                                                      }}
-                                                      className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
-                                                      style={{ backgroundColor: '#2563eb' }}
-                                                    />
-                                                  </div>
-                                                  <div className="flex items-center gap-2 border-l pl-3">
-                                                    <label className="text-xs text-muted-foreground">Highlight</label>
-                                                    <Switch
-                                                      checked={point.is_highlighted}
-                                                      onCheckedChange={(value) => {
-                                                        const newPoints = [...editSubOverviewPoints];
-                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
-                                                        if (pointToUpdateIdx !== -1) {
-                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], is_highlighted: value };
-                                                          setEditSubOverviewPoints(newPoints);
-                                                        }
-                                                      }}
-                                                    />
-                                                  </div>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const newPoints = editSubOverviewPoints.filter(p => p.id !== point.id);
-                                                      setEditSubOverviewPoints(newPoints);
-                                                    }}
-                                                    className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
-                                                  >
-                                                    <Trash2 className="w-4 h-4" />
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, section_id: section.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.filter(p => p.section_id === section.id).length }])}
-                                        className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                                      >
-                                        <Plus className="w-4 h-4" /> Add Point
-                                      </button>
-                                    </div>
-                                  )}
+                          {activeAccordion === 'key-features' && (
+                            <div className="space-y-4 pb-6 px-2">
+                              <div className="space-y-3 border-b pb-6">
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-sm font-medium">Enable Key Features Tab</label>
+                                  <Switch
+                                    checked={editShowHeaderPointsSectionState[editingSub.id] ?? true}
+                                    onCheckedChange={(value) => setEditShowHeaderPointsSectionState({ ...editShowHeaderPointsSectionState, [editingSub.id]: value })}
+                                  />
                                 </div>
-                              ))}
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Tab Label</label>
+                                  <input
+                                    value={editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features'}
+                                    onChange={(e) => setEditKeyFeaturesTabLabelState({ ...editKeyFeaturesTabLabelState, [editingSub.id]: e.target.value })}
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    placeholder="Key Features"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between mb-4">
+                                <button
+                                  type="button"
+                                  onClick={() => addKeyFeaturesSection(editingSub.id)}
+                                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                                >
+                                  <Plus className="h-4 w-4" /> Add More
+                                </button>
+                              </div>
+
+                              {(editKeyFeaturesSections[editingSub.id] || []).length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4">No Key Features sections added yet. Click "Add More" to create your first section.</p>
+                              ) : (
+                                <div className="space-y-6">
+                                  {(editKeyFeaturesSections[editingSub.id] || []).map((section, sectionIndex) => (
+                                    <div key={section.id} className="w-full space-y-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <input
+                                          value={section.heading}
+                                          onChange={(e) => updateKeyFeaturesSection(editingSub.id, section.id, { heading: e.target.value })}
+                                          className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-bold"
+                                          placeholder="Section heading (e.g., Key Features)"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                          <Switch
+                                            checked={section.is_visible}
+                                            onCheckedChange={(value) => updateKeyFeaturesSection(editingSub.id, section.id, { is_visible: value })}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => deleteKeyFeaturesSection(editingSub.id, section.id)}
+                                            className="text-destructive hover:text-destructive/80 p-1"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {section.is_visible && (
+                                        <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                                          {editSubOverviewPoints
+                                            .filter(p => p.section_id === section.id)
+                                            .map((point, pointIndex) => {
+                                              return (
+                                                <div key={point.id || pointIndex} className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                                    <input
+                                                      type="text"
+                                                      value={point.text}
+                                                      onChange={(e) => {
+                                                        const newPoints = [...editSubOverviewPoints];
+                                                        const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                        if (pointToUpdateIdx !== -1) {
+                                                          newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], text: e.target.value };
+                                                          setEditSubOverviewPoints(newPoints);
+                                                        }
+                                                      }}
+                                                      placeholder={`Point ${pointIndex + 1}`}
+                                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                                    />
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="flex items-center gap-2">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const newPoints = [...editSubOverviewPoints];
+                                                            const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                            if (pointToUpdateIdx !== -1) {
+                                                              newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'green' };
+                                                              setEditSubOverviewPoints(newPoints);
+                                                            }
+                                                          }}
+                                                          className={`h-7 w-7 rounded-full border-2 ${point.highlight_color !== 'blue' ? 'border-emerald-700 ring-2 ring-emerald-200' : 'border-border'}`}
+                                                          style={{ backgroundColor: '#10b981' }}
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const newPoints = [...editSubOverviewPoints];
+                                                            const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                            if (pointToUpdateIdx !== -1) {
+                                                              newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], highlight_color: 'blue' };
+                                                              setEditSubOverviewPoints(newPoints);
+                                                            }
+                                                          }}
+                                                          className={`h-7 w-7 rounded-full border-2 ${point.highlight_color === 'blue' ? 'border-blue-700 ring-2 ring-blue-200' : 'border-border'}`}
+                                                          style={{ backgroundColor: '#2563eb' }}
+                                                        />
+                                                      </div>
+                                                      <div className="flex items-center gap-2 border-l pl-3">
+                                                        <label className="text-xs text-muted-foreground">Highlight</label>
+                                                        <Switch
+                                                          checked={point.is_highlighted}
+                                                          onCheckedChange={(value) => {
+                                                            const newPoints = [...editSubOverviewPoints];
+                                                            const pointToUpdateIdx = newPoints.findIndex(p => p.id === point.id);
+                                                            if (pointToUpdateIdx !== -1) {
+                                                              newPoints[pointToUpdateIdx] = { ...newPoints[pointToUpdateIdx], is_highlighted: value };
+                                                              setEditSubOverviewPoints(newPoints);
+                                                            }
+                                                          }}
+                                                        />
+                                                      </div>
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          const newPoints = editSubOverviewPoints.filter(p => p.id !== point.id);
+                                                          setEditSubOverviewPoints(newPoints);
+                                                        }}
+                                                        className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
+                                                      >
+                                                        <Trash2 className="w-4 h-4" />
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditSubOverviewPoints([...editSubOverviewPoints, { id: crypto.randomUUID(), subcategory_id: editingSub.id, section_id: section.id, text: '', is_highlighted: false, highlight_color: 'green', sort_order: editSubOverviewPoints.filter(p => p.section_id === section.id).length }])}
+                                            className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                          >
+                                            <Plus className="w-4 h-4" /> Add Point
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="hidden">
-                      <button
-                        type="button"
-                        onClick={() => setActiveAccordion(activeAccordion === 'buttons' ? null : 'buttons')}
-                        className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
-                      >
-                        <label className="text-lg font-bold cursor-pointer">Buttons</label>
-                        <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'buttons' ? 'rotate-180' : ''}`} />
-                      </button>
+                        <div className="hidden">
+                          <button
+                            type="button"
+                            onClick={() => setActiveAccordion(activeAccordion === 'buttons' ? null : 'buttons')}
+                            className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                          >
+                            <label className="text-lg font-bold cursor-pointer">Buttons</label>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'buttons' ? 'rotate-180' : ''}`} />
+                          </button>
 
-                      {activeAccordion === 'buttons' && (
-                        <div className="space-y-4 pb-6 px-2">
-                          <p className="text-sm text-muted-foreground">Add up to 4 custom buttons for this subcategory.</p>
-                          {editButtons.length > 0 && (
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {editButtons.map((button, index) => (
-                                <div key={button.id || index} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <input
-                                      type="text"
-                                      value={button.label}
-                                      onChange={(e) => {
-                                        const newButtons = [...editButtons];
-                                        newButtons[index] = { ...newButtons[index], label: e.target.value };
-                                        setEditButtons(newButtons);
-                                      }}
-                                      placeholder="Button label"
-                                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                                    />
-                                    <Switch
-                                      checked={button.is_visible ?? false}
-                                      onCheckedChange={(value) => {
-                                        const newButtons = [...editButtons];
-                                        newButtons[index] = { ...newButtons[index], is_visible: value };
-                                        setEditButtons(newButtons);
-                                      }}
-                                      className="shrink-0"
-                                    />
-                                  </div>
+                          {activeAccordion === 'buttons' && (
+                            <div className="space-y-4 pb-6 px-2">
+                              <p className="text-sm text-muted-foreground">Add up to 4 custom buttons for this subcategory.</p>
+                              {editButtons.length > 0 && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  {editButtons.map((button, index) => (
+                                    <div key={button.id || index} className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <input
+                                          type="text"
+                                          value={button.label}
+                                          onChange={(e) => {
+                                            const newButtons = [...editButtons];
+                                            newButtons[index] = { ...newButtons[index], label: e.target.value };
+                                            setEditButtons(newButtons);
+                                          }}
+                                          placeholder="Button label"
+                                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                        />
+                                        <Switch
+                                          checked={button.is_visible ?? false}
+                                          onCheckedChange={(value) => {
+                                            const newButtons = [...editButtons];
+                                            newButtons[index] = { ...newButtons[index], is_visible: value };
+                                            setEditButtons(newButtons);
+                                          }}
+                                          className="shrink-0"
+                                        />
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={button.link || ''}
+                                        onChange={(e) => {
+                                          const newButtons = [...editButtons];
+                                          newButtons[index] = { ...newButtons[index], link: e.target.value || null };
+                                          setEditButtons(newButtons);
+                                        }}
+                                        placeholder="Button link"
+                                        className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                      />
+                                      <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {editButtons.length < 4 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditButtons([...editButtons, { id: crypto.randomUUID(), label: '', link: null, is_visible: true }])}
+                                  className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+                                >
+                                  <Plus className="w-4 h-4" /> Add Button
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+
+
+
+
+
+
+                        {productShowAddSectionModal && (
+                          <Modal title="Add Subcategory Section" onClose={() => setProductShowAddSectionModal(false)}>
+                            <div className="space-y-3">
+                              <select value={productAddSectionType} onChange={(e) => setProductAddSectionType(e.target.value as ProductAdminTab)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+                                {PRODUCT_SECTION_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                              </select>
+                              <input value={productAddSectionName} onChange={(e) => setProductAddSectionName(e.target.value)} placeholder="Section name (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <button type="button" onClick={() => productHandleAddSection(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Create</button>
+                            </div>
+                          </Modal>
+                        )}
+                        {productHeadingModalSectionId && (
+                          <Modal title="Edit Section Heading" onClose={() => setProductHeadingModalSectionId('')}>
+                            <div className="space-y-3">
+                              <input value={productHeadingModalValue} onChange={(e) => setProductHeadingModalValue(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm">
+                                <Switch checked={productHeadingVisible} onCheckedChange={(checked) => setProductHeadingVisible(Boolean(checked))} />
+                                <span>Show heading</span>
+                              </label>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Background Color</label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={productHeadingBackgroundColor || '#ffffff'}
+                                    onChange={(e) => setProductHeadingBackgroundColor(e.target.value)}
+                                    className="h-10 w-16 rounded cursor-pointer border border-input"
+                                  />
                                   <input
                                     type="text"
-                                    value={button.link || ''}
-                                    onChange={(e) => {
-                                      const newButtons = [...editButtons];
-                                      newButtons[index] = { ...newButtons[index], link: e.target.value || null };
-                                      setEditButtons(newButtons);
-                                    }}
-                                    placeholder="Button link"
-                                    className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                                    value={productHeadingBackgroundColor || ''}
+                                    onChange={(e) => setProductHeadingBackgroundColor(e.target.value)}
+                                    placeholder="#ffffff or leave empty for default"
+                                    className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
                                   />
-                                  <p className="mt-2 text-xs text-muted-foreground">{button.is_visible ? 'Visible' : 'Hidden'}</p>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                          {editButtons.length < 4 && (
-                            <button
-                              type="button"
-                              onClick={() => setEditButtons([...editButtons, { id: crypto.randomUUID(), label: '', link: null, is_visible: true }])}
-                              className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                            >
-                              <Plus className="w-4 h-4" /> Add Button
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-
-
-                    
-
-                    
-
-                    {productShowAddSectionModal && (
-                      <Modal title="Add Subcategory Section" onClose={() => setProductShowAddSectionModal(false)}>
-                        <div className="space-y-3">
-                          <select value={productAddSectionType} onChange={(e) => setProductAddSectionType(e.target.value as ProductAdminTab)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
-                            {PRODUCT_SECTION_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                          </select>
-                          <input value={productAddSectionName} onChange={(e) => setProductAddSectionName(e.target.value)} placeholder="Section name (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <button type="button" onClick={() => productHandleAddSection(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Create</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productHeadingModalSectionId && (
-                      <Modal title="Edit Section Heading" onClose={() => setProductHeadingModalSectionId('')}>
-                        <div className="space-y-3">
-                          <input value={productHeadingModalValue} onChange={(e) => setProductHeadingModalValue(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm">
-                            <Switch checked={productHeadingVisible} onCheckedChange={(checked) => setProductHeadingVisible(Boolean(checked))} />
-                            <span>Show heading</span>
-                          </label>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Background Color</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={productHeadingBackgroundColor || '#ffffff'}
-                                onChange={(e) => setProductHeadingBackgroundColor(e.target.value)}
-                                className="h-10 w-16 rounded cursor-pointer border border-input"
-                              />
-                              <input
-                                type="text"
-                                value={productHeadingBackgroundColor || ''}
-                                onChange={(e) => setProductHeadingBackgroundColor(e.target.value)}
-                                placeholder="#ffffff or leave empty for default"
-                                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                              />
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveHeadingModal(productHeadingModalSectionId, editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productEditCard && (
-                      <Modal title={productEditCard.id ? 'Edit Card' : 'Add Card'} onClose={() => setProductEditCard(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Logo" value={productEditCard.logo_url || null} onChange={(url) => setProductEditCard({ ...productEditCard, logo_url: url })} folder="cards" />
-                          <input value={productEditCard.title || ''} onChange={(e) => setProductEditCard({ ...productEditCard, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <CKEditor value={productEditCard.description || ''} onChange={(value) => setProductEditCard({ ...productEditCard, description: value })} placeholder="Description" className="min-h-[100px]" />
-                          <input value={productEditCard.link || ''} onChange={(e) => setProductEditCard({ ...productEditCard, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditCard.show_border ?? false} onCheckedChange={(checked) => setProductEditCard({ ...productEditCard, show_border: Boolean(checked) })} />
-                            <span>Enable Border</span>
-                          </label>
-                          {productEditCard.show_border && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={productEditCard.border_color || '#000000'}
-                                  onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value })}
-                                  className="h-10 w-20 rounded cursor-pointer border-0"
-                                />
-                                <input
-                                  type="text"
-                                  value={productEditCard.border_color || ''}
-                                  onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value || null })}
-                                  placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                                />
                               </div>
+                              <button type="button" onClick={() => productSaveHeadingModal(productHeadingModalSectionId, editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Card Background Color</label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={productEditCard.background_color || '#fcf9f5'}
-                                onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value })}
-                                className="h-10 w-20 rounded cursor-pointer border-0"
-                              />
-                              <input
-                                type="text"
-                                value={productEditCard.background_color || ''}
-                                onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value || null })}
-                                placeholder="#fcf9f5"
-                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                              />
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveCard(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productEditOffer && (
-                      <Modal title={productEditOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setProductEditOffer(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" />
-                          <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <CKEditor value={productEditOffer.description || ''} onChange={(value) => setProductEditOffer({ ...productEditOffer, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
-                          <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditOffer.show_border ?? false} onCheckedChange={(checked) => setProductEditOffer({ ...productEditOffer, show_border: Boolean(checked) })} />
-                            <span>Enable Border</span>
-                          </label>
-                          {productEditOffer.show_border && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={productEditOffer.border_color || '#000000'}
-                                  onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value })}
-                                  className="h-10 w-20 rounded cursor-pointer border-0"
-                                />
-                                <input
-                                  type="text"
-                                  value={productEditOffer.border_color || ''}
-                                  onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value || null })}
-                                  placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                                />
+                          </Modal>
+                        )}
+                        {productEditCard && (
+                          <Modal title={productEditCard.id ? 'Edit Card' : 'Add Card'} onClose={() => setProductEditCard(null)}>
+                            <div className="space-y-3">
+                              <ImageUpload label="Logo" value={productEditCard.logo_url || null} onChange={(url) => setProductEditCard({ ...productEditCard, logo_url: url })} folder="cards" />
+                              <input value={productEditCard.title || ''} onChange={(e) => setProductEditCard({ ...productEditCard, title: e.target.value })} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <CKEditor value={productEditCard.description || ''} onChange={(value) => setProductEditCard({ ...productEditCard, description: value })} placeholder="Description" className="min-h-[100px]" />
+                              <input value={productEditCard.link || ''} onChange={(e) => setProductEditCard({ ...productEditCard, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={productEditCard.show_border ?? false} onCheckedChange={(checked) => setProductEditCard({ ...productEditCard, show_border: Boolean(checked) })} />
+                                <span>Enable Border</span>
+                              </label>
+                              {productEditCard.show_border && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="color"
+                                      value={productEditCard.border_color || '#000000'}
+                                      onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value })}
+                                      className="h-10 w-20 rounded cursor-pointer border-0"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={productEditCard.border_color || ''}
+                                      onChange={(e) => setProductEditCard({ ...productEditCard, border_color: e.target.value || null })}
+                                      placeholder="#000000"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Card Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={productEditCard.background_color || '#fcf9f5'}
+                                    onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value })}
+                                    className="h-10 w-20 rounded cursor-pointer border-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={productEditCard.background_color || ''}
+                                    onChange={(e) => setProductEditCard({ ...productEditCard, background_color: e.target.value || null })}
+                                    placeholder="#fcf9f5"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                  />
+                                </div>
                               </div>
+                              <button type="button" onClick={() => productSaveCard(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={productEditOffer.background_color || '#f3f4f6'}
-                                onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value })}
-                                className="h-10 w-20 rounded cursor-pointer border-0"
-                              />
-                              <input
-                                type="text"
-                                value={productEditOffer.background_color || ''}
-                                onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value || null })}
-                                placeholder="#f3f4f6"
-                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                              />
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveOffer(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productEditAd1 && (
-                      <Modal title={productEditAd1.id ? 'Edit Ad 1' : 'Add Ad 1'} onClose={() => setProductEditAd1(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" />
-                          <input value={productEditAd1.link || ''} onChange={(e) => setProductEditAd1({ ...productEditAd1, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd1.show_border ?? false} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_border: Boolean(checked) })} />
-                            <span>Enable Border</span>
-                          </label>
-                          {productEditAd1.show_border && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={productEditAd1.border_color || '#000000'}
-                                  onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value })}
-                                  className="h-10 w-20 rounded cursor-pointer border-0"
-                                />
-                                <input
-                                  type="text"
-                                  value={productEditAd1.border_color || ''}
-                                  onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value || null })}
-                                  placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                                />
+                          </Modal>
+                        )}
+                        {productEditOffer && (
+                          <Modal title={productEditOffer.id ? 'Edit Offer' : 'Add Offer'} onClose={() => setProductEditOffer(null)}>
+                            <div className="space-y-3">
+                              <ImageUpload label="Image" value={productEditOffer.image_url || null} onChange={(url) => setProductEditOffer({ ...productEditOffer, image_url: url })} folder="offers" />
+                              <input value={productEditOffer.heading || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, heading: e.target.value })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <CKEditor value={productEditOffer.description || ''} onChange={(value) => setProductEditOffer({ ...productEditOffer, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
+                              <input value={productEditOffer.link || ''} onChange={(e) => setProductEditOffer({ ...productEditOffer, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={productEditOffer.show_border ?? false} onCheckedChange={(checked) => setProductEditOffer({ ...productEditOffer, show_border: Boolean(checked) })} />
+                                <span>Enable Border</span>
+                              </label>
+                              {productEditOffer.show_border && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="color"
+                                      value={productEditOffer.border_color || '#000000'}
+                                      onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value })}
+                                      className="h-10 w-20 rounded cursor-pointer border-0"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={productEditOffer.border_color || ''}
+                                      onChange={(e) => setProductEditOffer({ ...productEditOffer, border_color: e.target.value || null })}
+                                      placeholder="#000000"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={productEditOffer.background_color || '#f3f4f6'}
+                                    onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value })}
+                                    className="h-10 w-20 rounded cursor-pointer border-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={productEditOffer.background_color || ''}
+                                    onChange={(e) => setProductEditOffer({ ...productEditOffer, background_color: e.target.value || null })}
+                                    placeholder="#f3f4f6"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                  />
+                                </div>
                               </div>
+                              <button type="button" onClick={() => productSaveOffer(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={productEditAd1.background_color || '#f3f4f6'}
-                                onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value })}
-                                className="h-10 w-20 rounded cursor-pointer border-0"
-                              />
-                              <input
-                                type="text"
-                                value={productEditAd1.background_color || ''}
-                                onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value || null })}
-                                placeholder="#f3f4f6"
-                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                              />
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveAd1(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productEditAd2 && (
-                      <Modal title={productEditAd2.id ? 'Edit Ad 2' : 'Add Ad 2'} onClose={() => setProductEditAd2(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" />
-                          <input value={productEditAd2.link || ''} onChange={(e) => setProductEditAd2({ ...productEditAd2, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd2.show_border ?? false} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_border: Boolean(checked) })} />
-                            <span>Enable Border</span>
-                          </label>
-                          {productEditAd2.show_border && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={productEditAd2.border_color || '#000000'}
-                                  onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value })}
-                                  className="h-10 w-20 rounded cursor-pointer border-0"
-                                />
-                                <input
-                                  type="text"
-                                  value={productEditAd2.border_color || ''}
-                                  onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value || null })}
-                                  placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                                />
+                          </Modal>
+                        )}
+                        {productEditAd1 && (
+                          <Modal title={productEditAd1.id ? 'Edit Ad 1' : 'Add Ad 1'} onClose={() => setProductEditAd1(null)}>
+                            <div className="space-y-3">
+                              <ImageUpload label="Image" value={productEditAd1.image_url || null} onChange={(url) => setProductEditAd1({ ...productEditAd1, image_url: url })} folder="ads" />
+                              <input value={productEditAd1.link || ''} onChange={(e) => setProductEditAd1({ ...productEditAd1, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={productEditAd1.show_border ?? false} onCheckedChange={(checked) => setProductEditAd1({ ...productEditAd1, show_border: Boolean(checked) })} />
+                                <span>Enable Border</span>
+                              </label>
+                              {productEditAd1.show_border && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="color"
+                                      value={productEditAd1.border_color || '#000000'}
+                                      onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value })}
+                                      className="h-10 w-20 rounded cursor-pointer border-0"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={productEditAd1.border_color || ''}
+                                      onChange={(e) => setProductEditAd1({ ...productEditAd1, border_color: e.target.value || null })}
+                                      placeholder="#000000"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={productEditAd1.background_color || '#f3f4f6'}
+                                    onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value })}
+                                    className="h-10 w-20 rounded cursor-pointer border-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={productEditAd1.background_color || ''}
+                                    onChange={(e) => setProductEditAd1({ ...productEditAd1, background_color: e.target.value || null })}
+                                    placeholder="#f3f4f6"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                  />
+                                </div>
                               </div>
+                              <button type="button" onClick={() => productSaveAd1(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={productEditAd2.background_color || '#f3f4f6'}
-                                onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value })}
-                                className="h-10 w-20 rounded cursor-pointer border-0"
-                              />
-                              <input
-                                type="text"
-                                value={productEditAd2.background_color || ''}
-                                onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value || null })}
-                                placeholder="#f3f4f6"
-                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                              />
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveAd2(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
-                    {productEditAd3 && (
-                      <Modal title={productEditAd3.id ? 'Edit Ad 3' : 'Add Ad 3'} onClose={() => setProductEditAd3(null)}>
-                        <div className="space-y-3">
-                          <ImageUpload label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" />
-                          <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <CKEditor value={productEditAd3.description || ''} onChange={(value) => setProductEditAd3({ ...productEditAd3, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
-                          <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Switch checked={productEditAd3.show_border ?? false} onCheckedChange={(checked) => setProductEditAd3({ ...productEditAd3, show_border: Boolean(checked) })} />
-                            <span>Enable Border</span>
-                          </label>
-                          {productEditAd3.show_border && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1.5">Border Color</label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={productEditAd3.border_color || '#000000'}
-                                  onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value })}
-                                  className="h-10 w-20 rounded cursor-pointer border-0"
-                                />
-                                <input
-                                  type="text"
-                                  value={productEditAd3.border_color || ''}
-                                  onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value || null })}
-                                  placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                                />
+                          </Modal>
+                        )}
+                        {productEditAd2 && (
+                          <Modal title={productEditAd2.id ? 'Edit Ad 2' : 'Add Ad 2'} onClose={() => setProductEditAd2(null)}>
+                            <div className="space-y-3">
+                              <ImageUpload label="Image" value={productEditAd2.image_url || null} onChange={(url) => setProductEditAd2({ ...productEditAd2, image_url: url })} folder="ads" />
+                              <input value={productEditAd2.link || ''} onChange={(e) => setProductEditAd2({ ...productEditAd2, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={productEditAd2.show_border ?? false} onCheckedChange={(checked) => setProductEditAd2({ ...productEditAd2, show_border: Boolean(checked) })} />
+                                <span>Enable Border</span>
+                              </label>
+                              {productEditAd2.show_border && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="color"
+                                      value={productEditAd2.border_color || '#000000'}
+                                      onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value })}
+                                      className="h-10 w-20 rounded cursor-pointer border-0"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={productEditAd2.border_color || ''}
+                                      onChange={(e) => setProductEditAd2({ ...productEditAd2, border_color: e.target.value || null })}
+                                      placeholder="#000000"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={productEditAd2.background_color || '#f3f4f6'}
+                                    onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value })}
+                                    className="h-10 w-20 rounded cursor-pointer border-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={productEditAd2.background_color || ''}
+                                    onChange={(e) => setProductEditAd2({ ...productEditAd2, background_color: e.target.value || null })}
+                                    placeholder="#f3f4f6"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                  />
+                                </div>
                               </div>
+                              <button type="button" onClick={() => productSaveAd2(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={productEditAd3.background_color || '#f3f4f6'}
-                                onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value })}
-                                className="h-10 w-20 rounded cursor-pointer border-0"
-                              />
-                              <input
-                                type="text"
-                                value={productEditAd3.background_color || ''}
-                                onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value || null })}
-                                placeholder="#f3f4f6"
-                                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
-                              />
+                          </Modal>
+                        )}
+                        {productEditAd3 && (
+                          <Modal title={productEditAd3.id ? 'Edit Ad 3' : 'Add Ad 3'} onClose={() => setProductEditAd3(null)}>
+                            <div className="space-y-3">
+                              <ImageUpload label="Image" value={productEditAd3.image_url || null} onChange={(url) => setProductEditAd3({ ...productEditAd3, image_url: url })} folder="ads" />
+                              <input value={productEditAd3.heading || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, heading: e.target.value || null })} placeholder="Heading (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <CKEditor value={productEditAd3.description || ''} onChange={(value) => setProductEditAd3({ ...productEditAd3, description: value || null })} placeholder="Description (optional)" className="min-h-[100px]" />
+                              <input value={productEditAd3.link || ''} onChange={(e) => setProductEditAd3({ ...productEditAd3, link: e.target.value || null })} placeholder="Link (optional)" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Switch checked={productEditAd3.show_border ?? false} onCheckedChange={(checked) => setProductEditAd3({ ...productEditAd3, show_border: Boolean(checked) })} />
+                                <span>Enable Border</span>
+                              </label>
+                              {productEditAd3.show_border && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1.5">Border Color</label>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="color"
+                                      value={productEditAd3.border_color || '#000000'}
+                                      onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value })}
+                                      className="h-10 w-20 rounded cursor-pointer border-0"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={productEditAd3.border_color || ''}
+                                      onChange={(e) => setProductEditAd3({ ...productEditAd3, border_color: e.target.value || null })}
+                                      placeholder="#000000"
+                                      className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium mb-1.5">Container Background Color</label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={productEditAd3.background_color || '#f3f4f6'}
+                                    onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value })}
+                                    className="h-10 w-20 rounded cursor-pointer border-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={productEditAd3.background_color || ''}
+                                    onChange={(e) => setProductEditAd3({ ...productEditAd3, background_color: e.target.value || null })}
+                                    placeholder="#f3f4f6"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background"
+                                  />
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => productSaveAd3(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
                             </div>
-                          </div>
-                          <button type="button" onClick={() => productSaveAd3(editingSub.id)} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-                        </div>
-                      </Modal>
-                    )}
+                          </Modal>
+                        )}
 
-                  </div>
-                );
-              })()}
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -6995,11 +6993,10 @@ export default function AdminDashboard() {
                       <button
                         key={section.id}
                         onClick={() => setSelectedOffersSectionId(section.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          selectedOffersSectionId === section.id
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedOffersSectionId === section.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-card border border-border text-foreground hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {getSectionDisplayName(section)}
                       </button>
@@ -7203,11 +7200,10 @@ export default function AdminDashboard() {
                       <button
                         key={section.id}
                         onClick={() => setSelectedAds2SectionId(section.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          selectedAds2SectionId === section.id
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds2SectionId === section.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-card border border-border text-foreground hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {getSectionDisplayName(section)}
                       </button>
@@ -7286,20 +7282,20 @@ export default function AdminDashboard() {
                   {ads2
                     .filter(a => selectedAds2SectionId ? a.section_id === selectedAds2SectionId : true)
                     .map((ad) => (
-                    <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[2/1] bg-muted group">
-                      {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
-                          <Switch
-                            checked={ad.is_visible ?? true}
-                            onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
-                          />
+                      <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[2/1] bg-muted group">
+                        {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
+                            <Switch
+                              checked={ad.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleAd2Visibility(ad.id, Boolean(checked))}
+                            />
+                          </div>
+                          <button onClick={() => setEditAd2(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => deleteAd2(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
-                        <button onClick={() => setEditAd2(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteAd2(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
               {editAd2 && (
@@ -7382,11 +7378,10 @@ export default function AdminDashboard() {
                       <button
                         key={section.id}
                         onClick={() => setSelectedAds1SectionId(section.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          selectedAds1SectionId === section.id
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds1SectionId === section.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-card border border-border text-foreground hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {getSectionDisplayName(section)}
                       </button>
@@ -7561,11 +7556,10 @@ export default function AdminDashboard() {
                       <button
                         key={section.id}
                         onClick={() => setSelectedAds3SectionId(section.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                          selectedAds3SectionId === section.id
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${selectedAds3SectionId === section.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-card border border-border text-foreground hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {getSectionDisplayName(section)}
                       </button>
@@ -7645,20 +7639,20 @@ export default function AdminDashboard() {
                   {ads3
                     .filter(a => selectedAds3SectionId ? a.section_id === selectedAds3SectionId : true)
                     .map((ad) => (
-                    <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[16/9] bg-muted group">
-                      {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
-                          <Switch
-                            checked={ad.is_visible ?? true}
-                            onCheckedChange={(checked) => toggleAd3Visibility(ad.id, Boolean(checked))}
-                          />
+                      <div key={ad.id} className="relative rounded-xl overflow-hidden border border-border aspect-[16/9] bg-muted group">
+                        {ad.image_url && <img src={ad.image_url} alt="" className="w-full h-full object-cover" />}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center">
+                            <Switch
+                              checked={ad.is_visible ?? true}
+                              onCheckedChange={(checked) => toggleAd3Visibility(ad.id, Boolean(checked))}
+                            />
+                          </div>
+                          <button onClick={() => setEditAd3(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => deleteAd3(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
-                        <button onClick={() => setEditAd3(ad)} className="w-8 h-8 rounded-full bg-card shadow flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteAd3(ad.id)} className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground shadow flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
               {editAd3 && (
@@ -7778,126 +7772,126 @@ export default function AdminDashboard() {
                       </button>
                     </div>
 
-                  {faqTree.length === 0 ? (
-                    <div className="text-center py-12 bg-card rounded-xl border border-border">
-                      <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
-                    </div>
-                  ) : (
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
-                      const { active, over } = event;
-                      if (!over) return;
-                      const topLevelFaqs = faqTree.filter((faq) => faq.parent_id == null);
-                      const oldIndex = topLevelFaqs.findIndex((faq) => faq.id === active.id);
-                      const newIndex = topLevelFaqs.findIndex((faq) => faq.id === over.id);
-                      if (oldIndex === -1 || newIndex === -1) return;
+                    {faqTree.length === 0 ? (
+                      <div className="text-center py-12 bg-card rounded-xl border border-border">
+                        <p className="text-muted-foreground">No FAQs yet. Add your first one!</p>
+                      </div>
+                    ) : (
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
+                        const { active, over } = event;
+                        if (!over) return;
+                        const topLevelFaqs = faqTree.filter((faq) => faq.parent_id == null);
+                        const oldIndex = topLevelFaqs.findIndex((faq) => faq.id === active.id);
+                        const newIndex = topLevelFaqs.findIndex((faq) => faq.id === over.id);
+                        if (oldIndex === -1 || newIndex === -1) return;
 
-                      const newOrder = arrayMove(topLevelFaqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
-                      const updatedFaqs = faqs.map((item) => {
-                        const updated = newOrder.find((entry) => entry.id === item.id);
-                        return updated ? { ...item, sort_order: updated.sort_order } : item;
-                      });
-                      setFaqs(updatedFaqs);
+                        const newOrder = arrayMove(topLevelFaqs, oldIndex, newIndex).map((faq, index) => ({ ...faq, sort_order: index }));
+                        const updatedFaqs = faqs.map((item) => {
+                          const updated = newOrder.find((entry) => entry.id === item.id);
+                          return updated ? { ...item, sort_order: updated.sort_order } : item;
+                        });
+                        setFaqs(updatedFaqs);
 
-                      for (const faq of newOrder) {
-                        await updateFaqSortOrder(faq.id, faq.sort_order);
-                      }
+                        for (const faq of newOrder) {
+                          await updateFaqSortOrder(faq.id, faq.sort_order);
+                        }
 
-                      toast.success('FAQ order saved!');
-                    }}>
-                      <SortableContext items={faqTree.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
-                        <div className="space-y-4">
-                          {faqTree.map((faq, index) => (
-                            <div key={faq.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                              <SortableAdminItem
-                                id={faq.id}
-                                className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2 mb-1">
-                                    <h3 className="font-semibold text-sm md:text-base truncate">{stripHtml(faq.question)}</h3>
-                                    <div className="flex items-center gap-1">
-                                      <Switch
-                                        checked={faq.is_visible}
-                                        onCheckedChange={async (checked) => {
-                                          await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
-                                          setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
-                                          toast.success('FAQ visibility updated!');
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                  <p className="text-xs md:text-sm text-muted-foreground">
-                                    {faq.children.length > 0 ? `${faq.children.length} sub FAQ${faq.children.length > 1 ? 's' : ''}` : 'No sub FAQs yet'}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => startEditFaq(faq as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                                  <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                              </SortableAdminItem>
-                              <div className="space-y-3 bg-background/40 px-4 py-4">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="text-sm font-semibold">Sub FAQs</h4>
-                                  <button onClick={() => startNewFaq(faq.id)} className="text-sm font-medium text-primary hover:underline">+ Add Sub FAQ</button>
-                                </div>
-                                {faq.children.length === 0 ? (
-                                  <p className="text-xs md:text-sm text-muted-foreground">No sub FAQs yet.</p>
-                                ) : (
-                                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
-                                    const { active, over } = event;
-                                    if (!over) return;
-                                    const children = faq.children;
-                                    const oldIndex = children.findIndex((c) => c.id === active.id);
-                                    const newIndex = children.findIndex((c) => c.id === over.id);
-                                    if (oldIndex === -1 || newIndex === -1) return;
-
-                                    const newOrder = arrayMove(children, oldIndex, newIndex).map((c, idx) => ({ ...c, sort_order: idx }));
-
-                                    // Update global faqs state with new child orders
-                                    setFaqs((prev) => prev.map((item) => {
-                                      const updated = newOrder.find((n) => n.id === item.id);
-                                      return updated ? { ...item, sort_order: updated.sort_order } : item;
-                                    }));
-
-                                    // Persist changes
-                                    for (const c of newOrder) {
-                                      await updateFaqSortOrder(c.id, c.sort_order);
-                                    }
-                                  }}>
-                                    <SortableContext items={faq.children.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-                                      <div className="space-y-3">
-                                        {faq.children.map((child) => (
-                                          <SortableAdminItem id={child.id} key={child.id} className="rounded-lg border border-border bg-background p-3">
-                                            <div className="min-w-0">
-                                              <p className="font-medium text-sm truncate">{stripHtml(child.question)}</p>
-                                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(child.answer)}</p>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <Switch
-                                                checked={child.is_visible}
-                                                onCheckedChange={async (checked) => {
-                                                  await supabase.from('faqs').update({ is_visible: checked }).eq('id', child.id);
-                                                  setFaqs((prev) => prev.map((item) => item.id === child.id ? { ...item, is_visible: checked } : item));
-                                                  toast.success('Sub FAQ visibility updated!');
-                                                }}
-                                              />
-                                              <button onClick={() => startEditFaq(child as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                                              <button onClick={() => deleteFaq(child.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
-                                            </div>
-                                          </SortableAdminItem>
-                                        ))}
+                        toast.success('FAQ order saved!');
+                      }}>
+                        <SortableContext items={faqTree.map((faq) => faq.id)} strategy={verticalListSortingStrategy}>
+                          <div className="space-y-4">
+                            {faqTree.map((faq, index) => (
+                              <div key={faq.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                <SortableAdminItem
+                                  id={faq.id}
+                                  className="rounded-none border-0 border-b border-border bg-transparent p-4 last:border-b-0"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <h3 className="font-semibold text-sm md:text-base truncate">{stripHtml(faq.question)}</h3>
+                                      <div className="flex items-center gap-1">
+                                        <Switch
+                                          checked={faq.is_visible}
+                                          onCheckedChange={async (checked) => {
+                                            await supabase.from('faqs').update({ is_visible: checked }).eq('id', faq.id);
+                                            setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_visible: checked } : f));
+                                            toast.success('FAQ visibility updated!');
+                                          }}
+                                        />
                                       </div>
-                                    </SortableContext>
-                                  </DndContext>
-                                )}
+                                    </div>
+                                    <p className="text-xs md:text-sm text-muted-foreground">
+                                      {faq.children.length > 0 ? `${faq.children.length} sub FAQ${faq.children.length > 1 ? 's' : ''}` : 'No sub FAQs yet'}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => startEditFaq(faq as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                    <button onClick={() => deleteFaq(faq.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                  </div>
+                                </SortableAdminItem>
+                                <div className="space-y-3 bg-background/40 px-4 py-4">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold">Sub FAQs</h4>
+                                    <button onClick={() => startNewFaq(faq.id)} className="text-sm font-medium text-primary hover:underline">+ Add Sub FAQ</button>
+                                  </div>
+                                  {faq.children.length === 0 ? (
+                                    <p className="text-xs md:text-sm text-muted-foreground">No sub FAQs yet.</p>
+                                  ) : (
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={async (event) => {
+                                      const { active, over } = event;
+                                      if (!over) return;
+                                      const children = faq.children;
+                                      const oldIndex = children.findIndex((c) => c.id === active.id);
+                                      const newIndex = children.findIndex((c) => c.id === over.id);
+                                      if (oldIndex === -1 || newIndex === -1) return;
+
+                                      const newOrder = arrayMove(children, oldIndex, newIndex).map((c, idx) => ({ ...c, sort_order: idx }));
+
+                                      // Update global faqs state with new child orders
+                                      setFaqs((prev) => prev.map((item) => {
+                                        const updated = newOrder.find((n) => n.id === item.id);
+                                        return updated ? { ...item, sort_order: updated.sort_order } : item;
+                                      }));
+
+                                      // Persist changes
+                                      for (const c of newOrder) {
+                                        await updateFaqSortOrder(c.id, c.sort_order);
+                                      }
+                                    }}>
+                                      <SortableContext items={faq.children.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                                        <div className="space-y-3">
+                                          {faq.children.map((child) => (
+                                            <SortableAdminItem id={child.id} key={child.id} className="rounded-lg border border-border bg-background p-3">
+                                              <div className="min-w-0">
+                                                <p className="font-medium text-sm truncate">{stripHtml(child.question)}</p>
+                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(child.answer)}</p>
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Switch
+                                                  checked={child.is_visible}
+                                                  onCheckedChange={async (checked) => {
+                                                    await supabase.from('faqs').update({ is_visible: checked }).eq('id', child.id);
+                                                    setFaqs((prev) => prev.map((item) => item.id === child.id ? { ...item, is_visible: checked } : item));
+                                                    toast.success('Sub FAQ visibility updated!');
+                                                  }}
+                                                />
+                                                <button onClick={() => startEditFaq(child as FAQ)} className="p-2 text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                                                <button onClick={() => deleteFaq(child.id)} className="p-2 text-destructive"><Trash2 className="w-4 h-4" /></button>
+                                              </div>
+                                            </SortableAdminItem>
+                                          ))}
+                                        </div>
+                                      </SortableContext>
+                                    </DndContext>
+                                  )}
+                                </div>
+                                {index < faqTree.length - 1 && <div className="border-t border-border" />}
                               </div>
-                              {index < faqTree.length - 1 && <div className="border-t border-border" />}
-                            </div>
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-                  )}
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    )}
                   </div>
                 </>
               ) : (
@@ -7951,7 +7945,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-base">Show "Advertise" in Footer</h3>
-            
+
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -8039,7 +8033,7 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={advertiseSettings.hero_image_visible}
@@ -8141,7 +8135,7 @@ export default function AdminDashboard() {
 
 
 
-              
+
 
               {/* Dynamic Sections Heading */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -8299,7 +8293,7 @@ export default function AdminDashboard() {
                   }}
                 >
                   <div className="space-y-4">
-                    
+
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Main Heading</label>
                       <input
@@ -8319,7 +8313,7 @@ export default function AdminDashboard() {
                         className="min-h-[100px]"
                       />
                     </div>
-                    
+
                     {/* Button Fields */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
@@ -8354,7 +8348,7 @@ export default function AdminDashboard() {
                         </div>
                       )}
                     </div>
-                    
+
                     <ImageUpload
                       label="Image"
                       value={editAdvertiseSection?.image_url || null}
@@ -8379,7 +8373,7 @@ export default function AdminDashboard() {
               {/* Page Settings */}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                  
+
                   <button
                     onClick={handleSaveGetListedSettings}
                     className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
@@ -8392,7 +8386,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
                       <label className="block text-sm font-medium">Show "Get Listed" in Footer</label>
-                      
+
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -8523,7 +8517,7 @@ export default function AdminDashboard() {
                           <label className="block text-xs text-muted-foreground mb-1">Button Visible</label>
                           <span className="text-sm">{plan.button_visible ? 'Yes' : 'No'}</span>
                         </div>
-                        
+
                       </div>
 
                       {/* Features */}
@@ -9002,7 +8996,7 @@ export default function AdminDashboard() {
                       />
                       <span className="text-sm text-muted-foreground">Plan Visible</span>
                     </div>
-                    
+
                     <button
                       onClick={handleSaveGetListedPlan}
                       className="w-full px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold"
@@ -9066,11 +9060,11 @@ export default function AdminDashboard() {
                   {isSavingFooter ? 'Saving...' : 'Save Settings'}
                 </button>
               </div>
-              
+
               <div className="space-y-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div>
                   <h3 className="font-semibold text-base mb-4">Footer Description</h3>
-                  
+
                   <CKEditor
                     value={footerSettings.description}
                     onChange={(value) => setFooterSettings({ ...footerSettings, description: value })}
@@ -9078,10 +9072,10 @@ export default function AdminDashboard() {
                     className="min-h-[120px]"
                   />
                 </div>
-                
+
                 <div className="space-y-4 border-t pt-6">
                   <h3 className="font-semibold text-base mb-4">Footer Column Visibility</h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
@@ -9095,7 +9089,7 @@ export default function AdminDashboard() {
                         <span className="text-xs text-muted-foreground">{(footerSettings.vendors_visible ?? true) ? 'Visible' : 'Hidden'}</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div>
                         <label className="text-sm font-medium">Buyers Column</label>
@@ -9113,67 +9107,67 @@ export default function AdminDashboard() {
 
                 <div className="space-y-6 border-t pt-6">
                   <h3 className="font-semibold text-base mb-4">Contact Information</h3>
-                  
-                  
-                  
 
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">WhatsApp Number</label>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={footerSettings.whatsapp_visible ?? false}
-                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, whatsapp_visible: v })}
-                          />
-                          <span className="text-xs text-muted-foreground">{(footerSettings.whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                        </div>
-                      </div>
-                      <input
-                        value={footerSettings.whatsapp_number || ''}
-                        onChange={(e) => setFooterSettings({ ...footerSettings, whatsapp_number: e.target.value })}
-                        placeholder="e.g., +1 234 567 8900"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
 
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Email Address</label>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={footerSettings.email_visible ?? false}
-                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, email_visible: v })}
-                          />
-                          <span className="text-xs text-muted-foreground">{(footerSettings.email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                        </div>
-                      </div>
-                      <input
-                        value={footerSettings.email || ''}
-                        onChange={(e) => setFooterSettings({ ...footerSettings, email: e.target.value })}
-                        placeholder="e.g., contact@example.com"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
 
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Bottom Footer Email</label>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={footerSettings.bottom_footer_email_visible ?? false}
-                            onCheckedChange={(v) => setFooterSettings({ ...footerSettings, bottom_footer_email_visible: v })}
-                          />
-                          <span className="text-xs text-muted-foreground">{(footerSettings.bottom_footer_email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
-                        </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium">WhatsApp Number</label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={footerSettings.whatsapp_visible ?? false}
+                          onCheckedChange={(v) => setFooterSettings({ ...footerSettings, whatsapp_visible: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">{(footerSettings.whatsapp_visible ?? false) ? 'Visible' : 'Hidden'}</span>
                       </div>
-                      <input
-                        value={footerSettings.bottom_footer_email || ''}
-                        onChange={(e) => setFooterSettings({ ...footerSettings, bottom_footer_email: e.target.value })}
-                        placeholder="e.g., support@example.com"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
                     </div>
-                  
+                    <input
+                      value={footerSettings.whatsapp_number || ''}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, whatsapp_number: e.target.value })}
+                      placeholder="e.g., +1 234 567 8900"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium">Email Address</label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={footerSettings.email_visible ?? false}
+                          onCheckedChange={(v) => setFooterSettings({ ...footerSettings, email_visible: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">{(footerSettings.email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                      </div>
+                    </div>
+                    <input
+                      value={footerSettings.email || ''}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, email: e.target.value })}
+                      placeholder="e.g., contact@example.com"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium">Bottom Footer Email</label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={footerSettings.bottom_footer_email_visible ?? false}
+                          onCheckedChange={(v) => setFooterSettings({ ...footerSettings, bottom_footer_email_visible: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">{(footerSettings.bottom_footer_email_visible ?? false) ? 'Visible' : 'Hidden'}</span>
+                      </div>
+                    </div>
+                    <input
+                      value={footerSettings.bottom_footer_email || ''}
+                      onChange={(e) => setFooterSettings({ ...footerSettings, bottom_footer_email: e.target.value })}
+                      placeholder="e.g., support@example.com"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+
                 </div>
 
                 <div className="space-y-6 border-t pt-6">
@@ -9479,7 +9473,7 @@ export default function AdminDashboard() {
                   {isSavingFooter ? 'Saving...' : 'Save Social Links'}
                 </button>
               </div>
-              
+
               <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
                 {/* Twitter */}
                 <div className="space-y-4 border-b pb-4">
@@ -9712,7 +9706,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               {isLoadingContactSettings ? (
                 <div className="space-y-6 rounded-2xl border border-border bg-card p-12 shadow-sm text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -9722,260 +9716,260 @@ export default function AdminDashboard() {
                 <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
                   <div className="space-y-4">
 
-                  {/* Multiple Contact Emails */}
-                  <div className="space-y-4 border-t pt-4">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-medium">Contact Emails</label>
-                      <button
-                        type="button"
-                        onClick={() => setContactSettings({
-                          ...contactSettings,
-                          contact_emails: [...contactSettings.contact_emails, { label: '', email: '' }]
-                        })}
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20"
-                      >
-                        <Plus className="w-4 h-4" /> Add Email
-                      </button>
-                    </div>
-                    {contactSettings.contact_emails.map((item, index) => (
-                      <div key={index} className="flex gap-3 items-start">
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-muted-foreground mb-1">Label</label>
-                            <input
-                              value={item.label}
-                              onChange={(e) => {
-                                const newEmails = [...contactSettings.contact_emails];
-                                newEmails[index].label = e.target.value;
-                                setContactSettings({ ...contactSettings, contact_emails: newEmails });
-                              }}
-                              placeholder="e.g., Sales, Support"
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-muted-foreground mb-1">Email</label>
-                            <input
-                              type="email"
-                              value={item.email}
-                              onChange={(e) => {
-                                const newEmails = [...contactSettings.contact_emails];
-                                newEmails[index].email = e.target.value;
-                                setContactSettings({ ...contactSettings, contact_emails: newEmails });
-                              }}
-                              placeholder="email@example.com"
-                              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                            />
-                          </div>
-                        </div>
+                    {/* Multiple Contact Emails */}
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium">Contact Emails</label>
                         <button
                           type="button"
-                          onClick={() => {
-                            const newEmails = contactSettings.contact_emails.filter((_, i) => i !== index);
-                            setContactSettings({ ...contactSettings, contact_emails: newEmails });
-                          }}
-                          className="mt-6 text-destructive hover:text-destructive/80 p-1"
+                          onClick={() => setContactSettings({
+                            ...contactSettings,
+                            contact_emails: [...contactSettings.contact_emails, { label: '', email: '' }]
+                          })}
+                          className="inline-flex items-center gap-2 rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Plus className="w-4 h-4" /> Add Email
                         </button>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Single Email Fallback */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Email Label (Legacy)</label>
-                      <input
-                        value={contactSettings.email_label}
-                        onChange={(e) => setContactSettings({ ...contactSettings, email_label: e.target.value })}
-                        placeholder="e.g., You can contact our Support Team by email:"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
+                      {contactSettings.contact_emails.map((item, index) => (
+                        <div key={index} className="flex gap-3 items-start">
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1">Label</label>
+                              <input
+                                value={item.label}
+                                onChange={(e) => {
+                                  const newEmails = [...contactSettings.contact_emails];
+                                  newEmails[index].label = e.target.value;
+                                  setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                                }}
+                                placeholder="e.g., Sales, Support"
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1">Email</label>
+                              <input
+                                type="email"
+                                value={item.email}
+                                onChange={(e) => {
+                                  const newEmails = [...contactSettings.contact_emails];
+                                  newEmails[index].email = e.target.value;
+                                  setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                                }}
+                                placeholder="email@example.com"
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newEmails = contactSettings.contact_emails.filter((_, i) => i !== index);
+                              setContactSettings({ ...contactSettings, contact_emails: newEmails });
+                            }}
+                            className="mt-6 text-destructive hover:text-destructive/80 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Email Address (Legacy)</label>
-                      <input
-                        type="email"
-                        value={contactSettings.email}
-                        onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
-                        placeholder="e.g., office@freeprivacypolicy.com"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Phone Number</label>
-                      <input
-                        value={contactSettings.phone}
-                        onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
-                        placeholder="e.g., +1 234 567 890"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">WhatsApp Number</label>
-                      <input
-                        value={contactSettings.whatsapp}
-                        onChange={(e) => setContactSettings({ ...contactSettings, whatsapp: e.target.value })}
-                        placeholder="e.g., +1 234 567 890"
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Address</label>
-                    <CKEditor
-                      value={contactSettings.address}
-                      onChange={(value) => setContactSettings({ ...contactSettings, address: value })}
-                      placeholder="Enter your address"
-                      className="min-h-[80px]"
-                    />
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <label className="block text-sm font-medium mb-1.5">Form Embed (URL or HTML code)</label>
-                    <CKEditor
-                      value={contactSettings.form_embed}
-                      onChange={(value) => setContactSettings({ ...contactSettings, form_embed: value })}
-                      placeholder="Enter form URL or full HTML embed code"
-                      className="min-h-[120px]"
-                    />
-                  </div>
-
-                  {/* Nodal Officer */}
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Nodal Officer</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Visible</span>
-                        <Switch
-                          checked={contactSettings.nodal_officer_visible ?? true}
-                          onCheckedChange={(v) => setContactSettings({ ...contactSettings, nodal_officer_visible: v })}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Single Email Fallback */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">Title</label>
+                        <label className="block text-sm font-medium mb-1.5">Email Label (Legacy)</label>
                         <input
-                          value={contactSettings.nodal_officer_title}
-                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_title: e.target.value })}
-                          placeholder="e.g., Nodal Officer"
+                          value={contactSettings.email_label}
+                          onChange={(e) => setContactSettings({ ...contactSettings, email_label: e.target.value })}
+                          placeholder="e.g., You can contact our Support Team by email:"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">Name</label>
+                        <label className="block text-sm font-medium mb-1.5">Email Address (Legacy)</label>
                         <input
-                          value={contactSettings.nodal_officer_name}
-                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_name: e.target.value })}
-                          placeholder="e.g., John Doe"
+                          type="email"
+                          value={contactSettings.email}
+                          onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
+                          placeholder="e.g., office@freeprivacypolicy.com"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">Phone</label>
+                        <label className="block text-sm font-medium mb-1.5">Phone Number</label>
                         <input
-                          value={contactSettings.nodal_officer_phone}
-                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_phone: e.target.value })}
+                          value={contactSettings.phone}
+                          onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
                           placeholder="e.g., +1 234 567 890"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">Email</label>
+                        <label className="block text-sm font-medium mb-1.5">WhatsApp Number</label>
                         <input
-                          type="email"
-                          value={contactSettings.nodal_officer_email}
-                          onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_email: e.target.value })}
-                          placeholder="e.g., nodal@example.com"
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Appellate Authority */}
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Appellate Authority</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Visible</span>
-                        <Switch
-                          checked={contactSettings.appellate_authority_visible ?? true}
-                          onCheckedChange={(v) => setContactSettings({ ...contactSettings, appellate_authority_visible: v })}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Title</label>
-                        <input
-                          value={contactSettings.appellate_authority_title}
-                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_title: e.target.value })}
-                          placeholder="e.g., Appellate Authority"
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Name</label>
-                        <input
-                          value={contactSettings.appellate_authority_name}
-                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_name: e.target.value })}
-                          placeholder="e.g., Jane Smith"
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Phone</label>
-                        <input
-                          value={contactSettings.appellate_authority_phone}
-                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_phone: e.target.value })}
+                          value={contactSettings.whatsapp}
+                          onChange={(e) => setContactSettings({ ...contactSettings, whatsapp: e.target.value })}
                           placeholder="e.g., +1 234 567 890"
                           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Email</label>
-                        <input
-                          type="email"
-                          value={contactSettings.appellate_authority_email}
-                          onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_email: e.target.value })}
-                          placeholder="e.g., appellate@example.com"
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-                        />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Address</label>
+                      <CKEditor
+                        value={contactSettings.address}
+                        onChange={(value) => setContactSettings({ ...contactSettings, address: value })}
+                        placeholder="Enter your address"
+                        className="min-h-[80px]"
+                      />
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <label className="block text-sm font-medium mb-1.5">Form Embed (URL or HTML code)</label>
+                      <CKEditor
+                        value={contactSettings.form_embed}
+                        onChange={(value) => setContactSettings({ ...contactSettings, form_embed: value })}
+                        placeholder="Enter form URL or full HTML embed code"
+                        className="min-h-[120px]"
+                      />
+                    </div>
+
+                    {/* Nodal Officer */}
+                    <div className="border-t pt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Nodal Officer</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Visible</span>
+                          <Switch
+                            checked={contactSettings.nodal_officer_visible ?? true}
+                            onCheckedChange={(v) => setContactSettings({ ...contactSettings, nodal_officer_visible: v })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Title</label>
+                          <input
+                            value={contactSettings.nodal_officer_title}
+                            onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_title: e.target.value })}
+                            placeholder="e.g., Nodal Officer"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Name</label>
+                          <input
+                            value={contactSettings.nodal_officer_name}
+                            onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_name: e.target.value })}
+                            placeholder="e.g., John Doe"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Phone</label>
+                          <input
+                            value={contactSettings.nodal_officer_phone}
+                            onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_phone: e.target.value })}
+                            placeholder="e.g., +1 234 567 890"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Email</label>
+                          <input
+                            type="email"
+                            value={contactSettings.nodal_officer_email}
+                            onChange={(e) => setContactSettings({ ...contactSettings, nodal_officer_email: e.target.value })}
+                            placeholder="e.g., nodal@example.com"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
-                        <CKEditor
-                          value={contactSettings.description_1}
-                          onChange={(value) => setContactSettings({ ...contactSettings, description_1: value })}
-                          placeholder="Enter the first paragraph of description"
-                          className="min-h-[100px]"
-                        />
+                    {/* Appellate Authority */}
+                    <div className="border-t pt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Appellate Authority</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Visible</span>
+                          <Switch
+                            checked={contactSettings.appellate_authority_visible ?? true}
+                            onCheckedChange={(v) => setContactSettings({ ...contactSettings, appellate_authority_visible: v })}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
-                        <CKEditor
-                          value={contactSettings.description_2}
-                          onChange={(value) => setContactSettings({ ...contactSettings, description_2: value })}
-                          placeholder="Enter the second paragraph of description"
-                          className="min-h-[100px]"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Title</label>
+                          <input
+                            value={contactSettings.appellate_authority_title}
+                            onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_title: e.target.value })}
+                            placeholder="e.g., Appellate Authority"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Name</label>
+                          <input
+                            value={contactSettings.appellate_authority_name}
+                            onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_name: e.target.value })}
+                            placeholder="e.g., Jane Smith"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Phone</label>
+                          <input
+                            value={contactSettings.appellate_authority_phone}
+                            onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_phone: e.target.value })}
+                            placeholder="e.g., +1 234 567 890"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Email</label>
+                          <input
+                            type="email"
+                            value={contactSettings.appellate_authority_email}
+                            onChange={(e) => setContactSettings({ ...contactSettings, appellate_authority_email: e.target.value })}
+                            placeholder="e.g., appellate@example.com"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Description Paragraph 1</label>
+                          <CKEditor
+                            value={contactSettings.description_1}
+                            onChange={(value) => setContactSettings({ ...contactSettings, description_1: value })}
+                            placeholder="Enter the first paragraph of description"
+                            className="min-h-[100px]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Description Paragraph 2</label>
+                          <CKEditor
+                            value={contactSettings.description_2}
+                            onChange={(value) => setContactSettings({ ...contactSettings, description_2: value })}
+                            placeholder="Enter the second paragraph of description"
+                            className="min-h-[100px]"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
               )}
             </div>
           )}
@@ -10028,36 +10022,36 @@ export default function AdminDashboard() {
               {(() => {
                 let slug = '';
                 let defaultTitle = '';
-                if (tab === 'footer_privacy') { 
-                  slug = 'privacy-policy'; 
-                  defaultTitle = 'Privacy Policy'; 
-                } else if (tab === 'footer_terms') { 
-                  slug = 'terms-of-service'; 
-                  defaultTitle = 'Terms of Service'; 
-                } else if (tab === 'footer_refund') { 
-                  slug = 'refund-policy'; 
-                  defaultTitle = 'Refund Policy'; 
-                } else if (tab === 'footer_refund_1') { 
-                  slug = 'refund-policy-1'; 
-                  defaultTitle = 'Refund Policy 1'; 
-                } else if (tab === 'footer_refund_2') { 
-                  slug = 'refund-policy-2'; 
-                  defaultTitle = 'Refund Policy 2'; 
-                } else if (tab === 'footer_refund_3') { 
-                  slug = 'refund-policy-3'; 
-                  defaultTitle = 'Refund Policy 3'; 
-                } else if (tab === 'footer_refund_4') { 
-                  slug = 'refund-policy-4'; 
-                  defaultTitle = 'Refund Policy 4'; 
-                } else if (tab === 'footer_about') { 
-                  slug = 'about-us'; 
-                  defaultTitle = 'About Us'; 
+                if (tab === 'footer_privacy') {
+                  slug = 'privacy-policy';
+                  defaultTitle = 'Privacy Policy';
+                } else if (tab === 'footer_terms') {
+                  slug = 'terms-of-service';
+                  defaultTitle = 'Terms of Service';
+                } else if (tab === 'footer_refund') {
+                  slug = 'refund-policy';
+                  defaultTitle = 'Refund Policy';
+                } else if (tab === 'footer_refund_1') {
+                  slug = 'refund-policy-1';
+                  defaultTitle = 'Refund Policy 1';
+                } else if (tab === 'footer_refund_2') {
+                  slug = 'refund-policy-2';
+                  defaultTitle = 'Refund Policy 2';
+                } else if (tab === 'footer_refund_3') {
+                  slug = 'refund-policy-3';
+                  defaultTitle = 'Refund Policy 3';
+                } else if (tab === 'footer_refund_4') {
+                  slug = 'refund-policy-4';
+                  defaultTitle = 'Refund Policy 4';
+                } else if (tab === 'footer_about') {
+                  slug = 'about-us';
+                  defaultTitle = 'About Us';
                 }
 
                 const page = legalPages.find(p => p.slug === slug);
                 const currentTitle = editableLegalTitles[slug] || page?.title || defaultTitle;
                 const currentVisible = editableLegalVisibility[slug] ?? page?.is_visible ?? true;
-                
+
                 return (
                   <>
                     <div className="space-y-6">
@@ -10102,7 +10096,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </div>
-                    
+
                       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                         <div className="prose prose-sm max-w-none mb-4">
                           <p className="text-muted-foreground">Use the editor below to format your {currentTitle}. You can add headings, lists, and more.</p>

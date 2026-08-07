@@ -33,13 +33,7 @@ export async function onRequestPost({ request, env }) {
         }
         return jsonResponse(result);
     } catch (error) {
-        // Log error with helpful context without leaking secrets.
-        const envInfo = {
-            hasSupabaseUrl: Boolean(env && (env.SUPABASE_URL || env.VITE_SUPABASE_URL)),
-            hasSupabaseServiceRoleKey: Boolean(env && env.SUPABASE_SERVICE_ROLE_KEY),
-            hasJwtSecret: Boolean(env && env.JWT_SECRET),
-        };
-        console.error('Error executing db query:', { error, spec: (typeof spec === 'object' ? { table: spec.table, action: spec.action } : spec), envInfo });
+        console.error('Error executing db query:', error);
         return jsonResponse({ data: null, error: { message: error instanceof Error ? error.message : 'Query execution failed' } }, 500);
     }
 }

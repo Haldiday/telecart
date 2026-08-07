@@ -37,22 +37,6 @@ function applyFilters(query, filters) {
             case 'or':
                 result = result.or(filter.value);
                 break;
-            case 'not':
-                // Support 'not' filters. `filter.value` can be either a primitive (treated as !=)
-                // or an object { op: 'eq'|'in'|..., value: ... } to express the inner comparison.
-                try {
-                    if (filter && typeof filter.value === 'object' && filter.value !== null && filter.value.op) {
-                        result = result.not(filter.column, filter.value.op, filter.value.value);
-                    } else {
-                        // default: not equal
-                        result = result.not(filter.column, 'eq', filter.value);
-                    }
-                } catch (e) {
-                    // If the runtime supabase client doesn't support this signature, log and rethrow
-                    console.error('applyFilters: failed to apply not() filter', { filter, err: e });
-                    throw e;
-                }
-                break;
             default:
                 throw new Error(`Unsupported filter operation: ${filter.op}`);
         }
@@ -148,7 +132,6 @@ export async function executeQuery(spec, env) {
         return { data: null, error: { message: `Unsupported action: ${spec.action}` } };
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Query execution failed';
-        console.error('executeQuery caught exception', { spec, message, err });
         return { data: null, error: { message } };
     }
 }

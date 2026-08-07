@@ -19,12 +19,7 @@ export async function onRequestGet({ request, env }) {
 
         return jsonResponse({ success: true, user });
     } catch (error) {
-        const envInfo = {
-            hasSupabaseUrl: Boolean(env && (env.SUPABASE_URL || env.VITE_SUPABASE_URL)),
-            hasSupabaseServiceRoleKey: Boolean(env && env.SUPABASE_SERVICE_ROLE_KEY),
-            hasJwtSecret: Boolean(env && env.JWT_SECRET),
-        };
-        console.error('Error fetching user:', { error, envInfo });
-        return jsonResponse({ success: false, message: error instanceof Error ? error.message : 'Failed to fetch user' }, 500);
+        console.error('Error fetching user:', error);
+        return jsonResponse({ success: false, message: 'Failed to fetch user' }, 500);
     }
 }
