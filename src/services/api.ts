@@ -12,9 +12,7 @@ import type {
 
 // In production (Cloudflare Pages) always use relative URLs for API calls.
 // In development, prefer VITE_API_URL if provided, otherwise default to localhost.
-const apiBaseUrl = import.meta.env.PROD
-  ? ''
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3001');
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
 const api = axios.create({
   baseURL: apiBaseUrl ? `${apiBaseUrl}/api` : '/api',
