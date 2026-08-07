@@ -15,7 +15,7 @@ export async function onRequestGet({ request, env }) {
         try {
             payload = await verifyJwt(token, config.jwtSecret);
         } catch (error) {
-            console.warn('Invalid or expired auth token:', error ? .message ? ? error);
+            console.warn('Invalid or expired auth token:', error?.message ?? error);
             return jsonResponse({ success: false, message: 'Invalid or expired token' }, 401);
         }
 

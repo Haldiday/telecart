@@ -1,4 +1,4 @@
-﻿import { getConfig } from '../../helpers/config.js';
+import { getConfig } from '../../helpers/config.js';
 import { getSupabaseAdmin } from '../../helpers/supabase.js';
 import { verifyJwt } from '../../helpers/jwt.js';
 import { jsonResponse, getBearerToken } from '../../helpers/utils.js';
@@ -13,7 +13,7 @@ function getUserFromToken(request, env) {
     try {
         return verifyJwt(token, config.jwtSecret);
     } catch (error) {
-        console.warn('Invalid or expired auth token:', error ? .message ? ? error);
+        console.warn('Invalid or expired auth token:', error?.message ?? error);
         return null;
     }
 }
