@@ -36,8 +36,8 @@ async function handlePrefill(token, env) {
         await markZohoPrefillTokenUsed({ env, token });
 
         const responsePayload = {
-            firstName: user.first_name ? ? '',
-            lastName: user.last_name ? ? '',
+            firstName: user.first_name ?? '',
+            lastName: user.last_name ?? '',
             name: user.full_name || '',
             email: user.email || '',
             phone: user.phone || '',
@@ -66,9 +66,9 @@ async function getPostToken(request) {
     if (trimmedContentType.includes('application/json')) {
         try {
             const body = await request.json();
-            return typeof body ? .token === 'string' ? body.token : undefined;
+            return typeof body?.token === 'string' ? body.token : undefined;
         } catch (error) {
-            console.warn('[prefill] unable to parse JSON body:', error ? .message ? ? error);
+            console.warn('[prefill] unable to parse JSON body:', error?.message ?? error);
             return undefined;
         }
     }
@@ -76,10 +76,10 @@ async function getPostToken(request) {
     const text = await request.text();
     try {
         const body = JSON.parse(text);
-        return typeof body ? .token === 'string' ? body.token : undefined;
+        return typeof body?.token === 'string' ? body.token : undefined;
     } catch {
         const params = new URLSearchParams(text);
-        return params.get('token') ? ? undefined;
+        return params.get('token') ?? undefined;
     }
 }
 
