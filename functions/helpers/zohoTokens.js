@@ -45,22 +45,44 @@ export async function validateZohoPrefillToken({ env, token, allowUsed = false }
         .eq('token', token)
         .maybeSingle();
 
-    if (error) throw error;
-    if (!data) return null;
+    const maskedToken = token ? `***${token.slice(-6)}` : 'none';
+    console.log('[prefill] validate token:', maskedToken, 'allowUsed:', allowUsed);
 
-    if (data.expires_at <= Date.now()) {
+    if (error) throw error;
+    if (!data) {
+        console.log('[prefill] validation failure reason: token not found');
+        return null;
+    }
+
+    const expiresAt = typeof data.expires_at === 'string' ? Number(data.expires_at) : data.expires_at;
+    if (!expiresAt || expiresAt <= Date.now()) {
+        console.log('[prefill] validation failure reason: expired');
         await supabase.from('zoho_prefill_tokens').delete().eq('token', token);
         return null;
     }
 
     if (data.used && !allowUsed) {
+        console.log('[prefill] validation failure reason: token already used and retry not allowed');
         return null;
     }
 
-    if (data.used && allowUsed && !isZohoPrefillRetryAllowed(data.created_at)) {
-        return null;
+    if (data.used && allowUsed) {
+        const createdAtMs = parseTimestamp(data.created_at);
+        if (!createdAtMs) {
+            console.log('[prefill] validation failure reason: token used but created_at invalid');
+            return null;
+        }
+
+        const retryAllowed = Date.now() - createdAtMs <= ZOHO_PREFILL_TOKEN_REUSE_WINDOW_MS;
+        console.log('[prefill] token used; retryAllowed:', retryAllowed, 'createdAt:', createdAtMs);
+
+        if (!retryAllowed) {
+            console.log('[prefill] validation failure reason: retry window expired');
+            return null;
+        }
     }
 
+    console.log('[prefill] validation success: token accepted');
     return { token: data.token, userId: data.user_id, used: Boolean(data.used) };
 }
 
