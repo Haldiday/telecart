@@ -100,7 +100,7 @@ export const prefillZohoForm = async (req: AuthRequest, res: Response) => {
     console.log('  body:', JSON.stringify(req.body, null, 2));
     console.log('  rawBody:', req.rawBody ?? '<empty>');
     console.log('  token candidate:', tokenCandidate);
-    const payload = await consumeZohoPrefillToken(token);
+    const payload = await consumeZohoPrefillToken(token, { allowUsedRetry: true });
 
     if (!payload) {
       console.warn('Zoho prefill failed: invalid or expired token', { token });

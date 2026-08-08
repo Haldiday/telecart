@@ -25,6 +25,30 @@ describe('zoho prefill token lifecycle', () => {
     expect(await consumeZohoPrefillToken(record.token)).toBeNull();
   });
 
+  it('allows Zoho webhook retry with the same token shortly after first use', async () => {
+    const record = await createZohoPrefillToken({
+      userId: 'user-789',
+      name: 'Retry User',
+      email: 'retry@example.com',
+      companyName: 'Retry Co',
+      ttlMs: 5 * 60 * 1000,
+    });
+
+    const firstUse = await consumeZohoPrefillToken(record.token);
+    expect(firstUse).toMatchObject({
+      name: 'Retry User',
+      email: 'retry@example.com',
+      companyName: 'Retry Co',
+    });
+
+    const secondUse = await consumeZohoPrefillToken(record.token, { allowUsedRetry: true });
+    expect(secondUse).toMatchObject({
+      name: 'Retry User',
+      email: 'retry@example.com',
+      companyName: 'Retry Co',
+    });
+  });
+
   it('rejects expired tokens', async () => {
     await seedExpiredZohoPrefillToken('expired-token', {
       user_id: 'user-123',

@@ -17,6 +17,7 @@ interface ZohoPrefillTokenRecord {
 interface FallbackTokenRecord {
   token: string;
   userId: string;
+  createdAt: number;
   expiresAt: number;
   used: boolean;
   payload: ZohoPrefillPayload;
@@ -103,6 +104,7 @@ export async function createZohoPrefillToken(input: CreateZohoPrefillTokenInput)
     fallbackTokenStore.set(token, {
       token,
       userId: input.userId,
+      createdAt: Date.now(),
       expiresAt,
       used: false,
       payload: {
@@ -119,21 +121,52 @@ export async function createZohoPrefillToken(input: CreateZohoPrefillTokenInput)
   return { token, expiresAt };
 }
 
-export async function consumeZohoPrefillToken(token: string | undefined): Promise<ZohoPrefillPayload | null> {
+const ZOHO_PREFILL_TOKEN_REUSE_WINDOW_MS = 60_000;
+
+function parseTimestamp(value: unknown): number | null {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function isZohoPrefillRetryAllowed(createdAt: unknown) {
+  const createdAtMs = parseTimestamp(createdAt);
+  if (!createdAtMs) return false;
+
+  return Date.now() - createdAtMs <= ZOHO_PREFILL_TOKEN_REUSE_WINDOW_MS;
+}
+
+export async function consumeZohoPrefillToken(
+  token: string | undefined,
+  options?: { allowUsedRetry?: boolean }
+): Promise<ZohoPrefillPayload | null> {
+  const allowUsedRetry = Boolean(options?.allowUsedRetry);
+
   if (!token) {
     return null;
   }
 
   const fallbackRecord = fallbackTokenStore.get(token);
   if (fallbackRecord) {
-    if (fallbackRecord.used || fallbackRecord.expiresAt <= Date.now()) {
-      fallbackRecord.used = true;
+    if (fallbackRecord.used) {
+      if (!allowUsedRetry || !isZohoPrefillRetryAllowed(fallbackRecord.createdAt)) {
+        fallbackTokenStore.delete(token);
+        return null;
+      }
+
+      return fallbackRecord.payload;
+    }
+
+    if (fallbackRecord.expiresAt <= Date.now()) {
       fallbackTokenStore.delete(token);
       return null;
     }
 
     fallbackRecord.used = true;
-    fallbackTokenStore.delete(token);
     return fallbackRecord.payload;
   }
 
@@ -141,11 +174,19 @@ export async function consumeZohoPrefillToken(token: string | undefined): Promis
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('zoho_prefill_tokens')
-      .select('token, user_id, expires_at, used')
+      .select('token, user_id, expires_at, used, created_at')
       .eq('token', token)
       .maybeSingle();
 
-    if (error || !data || data.used) {
+    if (error || !data) {
+      return null;
+    }
+
+    if (data.used && !allowUsedRetry) {
+      return null;
+    }
+
+    if (data.used && allowUsedRetry && !isZohoPrefillRetryAllowed(data.created_at)) {
       return null;
     }
 
@@ -158,10 +199,16 @@ export async function consumeZohoPrefillToken(token: string | undefined): Promis
       return null;
     }
 
-    const { error: updateError } = await supabase
-      .from('zoho_prefill_tokens')
-      .update({ used: true })
-      .eq('token', token);
+    if (!data.used) {
+      const { error: updateError } = await supabase
+        .from('zoho_prefill_tokens')
+        .update({ used: true })
+        .eq('token', token);
+
+      if (updateError) {
+        throw updateError;
+      }
+    }
 
     if (updateError) {
       throw updateError;
