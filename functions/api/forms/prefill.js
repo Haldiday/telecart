@@ -1,4 +1,4 @@
-﻿import { getSupabaseAdmin } from '../../helpers/supabase.js';
+import { getSupabaseAdmin } from '../../helpers/supabase.js';
 import { validateZohoPrefillToken, markZohoPrefillTokenUsed } from '../../helpers/zohoTokens.js';
 import { jsonResponse } from '../../helpers/utils.js';
 
@@ -12,7 +12,7 @@ async function handlePrefill(token, env) {
         const supabase = getSupabaseAdmin(env);
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('email, full_name, company_name, phone')
+            .select('email, full_name, company_name, phone, first_name, last_name')
             .eq('id', tokenRecord.userId)
             .single();
 
@@ -23,12 +23,22 @@ async function handlePrefill(token, env) {
 
         await markZohoPrefillTokenUsed({ env, token });
 
-        return jsonResponse({
+        const responsePayload = {
+            firstName: user.first_name ?? "",
+            lastName: user.last_name ?? "",
             name: user.full_name || '',
             email: user.email || '',
             phone: user.phone || '',
             companyName: user.company_name || '',
+        };
+
+        console.log('Zoho prefill response field existence:', {
+            firstNameExists: user.first_name != null && user.first_name !== '',
+            lastNameExists: user.last_name != null && user.last_name !== '',
         });
+        console.log('Zoho prefill response fields:', Object.keys(responsePayload));
+
+        return jsonResponse(responsePayload);
     } catch (error) {
         console.error('Zoho prefilling webhook error:', error);
         return jsonResponse({ success: false, message: 'Internal server error' }, 500);

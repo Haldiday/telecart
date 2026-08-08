@@ -108,6 +108,11 @@ export const prefillZohoForm = async (req: AuthRequest, res: Response) => {
     }
 
     console.log('Zoho prefill payload returned:', payload);
+    console.log('Zoho prefill response field existence:', {
+      firstNameExists: payload.firstName != null && payload.firstName !== '',
+      lastNameExists: payload.lastName != null && payload.lastName !== '',
+    });
+    console.log('Zoho prefill response fields:', Object.keys(payload));
     return res.status(200).json(payload);
   } catch (error) {
     console.error('Error pre-filling Zoho form:', error);
