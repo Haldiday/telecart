@@ -1,6 +1,6 @@
 ﻿import { getSupabaseAdmin } from './supabase.js';
 
-const ZOHO_PREFILL_TOKEN_REUSE_WINDOW_MS = 60 _000;
+const ZOHO_PREFILL_TOKEN_REUSE_WINDOW_MS = 60000;
 
 function parseTimestamp(value) {
     if (typeof value === 'number') return value;
