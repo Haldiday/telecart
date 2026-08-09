@@ -4748,11 +4748,11 @@ export default function AdminDashboard() {
         <div className="p-3 md:p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-sidebar-primary-foreground font-bold text-xs md:text-sm">SM</span>
+              <span className="text-sidebar-primary-foreground font-bold text-xs md:text-sm">B</span>
             </div>
             <div className="min-w-0">
               <h1 className="font-bold text-xs md:text-sm">Admin Panel</h1>
-              <p className="text-xs opacity-60">SoftMarket</p>
+              <p className="text-xs opacity-60">BizReq</p>
             </div>
           </div>
         </div>
