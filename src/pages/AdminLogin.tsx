@@ -23,7 +23,7 @@ export default function AdminLogin() {
     if (user) {
       const { data: role } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
       if (role) {
-        navigate('/admin');
+        navigate('/x540l-place-1208', { replace: true });
       } else {
         toast.error('You are not an admin.');
         await supabase.auth.signOut();

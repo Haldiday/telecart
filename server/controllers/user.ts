@@ -213,8 +213,9 @@ export const requestChangePhone = async (req: AuthRequest, res: Response) => {
 
     if (!currentUser) throw new Error('User not found');
 
-    await sendWhatsAppOtp(currentUser.phone!);
-    return res.status(200).json({ success: true, message: 'OTP sent to your current phone number' });
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    // await sendWhatsAppOtp(currentUser.phone!);
+    return res.status(503).json({ success: false, message: 'Phone number change is temporarily unavailable. Please try again later.' });
   } catch (error) {
     console.error('Error requesting phone change:', error);
     if (error instanceof WhatsAppOtpError) {
@@ -249,7 +250,9 @@ export const verifyChangePhone = async (req: AuthRequest, res: Response) => {
 
     if (!currentUser) throw new Error('User not found');
 
-    verifyWhatsAppOtp(currentUser.phone!, String(otp));
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    // verifyWhatsAppOtp(currentUser.phone!, String(otp));
+    return res.status(503).json({ success: false, message: 'Phone number change is temporarily unavailable. Please try again later.' });
 
     const { data: existingUser } = await supabase
       .from('users')

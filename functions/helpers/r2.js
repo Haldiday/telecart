@@ -63,7 +63,7 @@ function getR2Endpoint(accountId) {
 async function signR2Request({ method, url, headers, payloadHash, accessKeyId, secretAccessKey, region = 'auto', service = 's3' }) {
     const u = new URL(url);
     const date = new Date();
-    const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '') + 'Z';
+    const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
     const dateStamp = amzDate.slice(0, 8);
 
     const canonicalUri = u.pathname.split('/').map((segment) => encodeURIComponent(segment)).join('/');

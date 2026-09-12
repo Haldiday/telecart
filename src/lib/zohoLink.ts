@@ -56,6 +56,18 @@ export async function openZohoProtectedLink(options: {
 }) {
     const { destination, onSuccess, onError, target = '_self', useWindowOpen = true } = options;
 
+    /* AUTHENTICATION TEMPORARILY BYPASSED
+    DO NOT DELETE - WILL BE RE-ENABLED LATER
+    Open listed links directly without requesting an auth-dependent Zoho token.
+    */
+    if (useWindowOpen) {
+        window.open(destination, target, 'noopener,noreferrer');
+    } else {
+        window.location.assign(destination);
+    }
+    onSuccess?.();
+    return { handled: true, isZoho: isZohoFormUrl(destination) };
+
     if (!isZohoFormUrl(destination)) {
         console.log('Zoho URL detected', false, destination);
         if (useWindowOpen) {

@@ -14,6 +14,8 @@ import {
   setComparisonPlanVisibility,
 } from '@/lib/getListedComparisonVisibility';
 import { resolveSubcategorySortOrder } from '@/lib/subcategoryOrdering';
+import { searchAdminExternalLinks, type AdminLinkSearchResult } from '@/lib/api/adminLinkSearch';
+import AdminAuditLog from '@/pages/AdminAuditLog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
 } from '@dnd-kit/core';
@@ -22,7 +24,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save,
+  GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save, Search, Loader2,
   LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail, PenTool
 } from 'lucide-react';
 
@@ -201,6 +203,29 @@ function extractMissingColumnsFromError(errorMessage: string) {
   return missingColumns;
 }
 
+function auditedFrom(table: string, action: 'created' | 'updated' | 'deleted') {
+  return (supabase.from(table as any) as any).auditAction(action);
+}
+
+function classifyBrandAction(
+  originalBrand: SubcategoryBrand | undefined,
+  currentBrand: SubcategoryBrand,
+): 'created' | 'updated' | 'deleted' {
+  if (!originalBrand) return 'created';
+
+  const originalLinks = buildBrandActionLinkPayload(originalBrand.action_links);
+  const currentLinks = buildBrandActionLinkPayload(currentBrand.action_links);
+  if (originalLinks.length === 0 && currentLinks.length > 0) return 'created';
+  const originalLinkIds = new Set(originalLinks.map((link, index) => link.id || `link-${index}`));
+  const currentLinkIds = new Set(currentLinks.map((link, index) => link.id || `link-${index}`));
+  if ([...originalLinkIds].some((id) => !currentLinkIds.has(id))) return 'deleted';
+  if ([...currentLinkIds].some((id) => !originalLinkIds.has(id))) return 'created';
+  if (JSON.stringify(originalLinks) !== JSON.stringify(currentLinks)) {
+    return 'updated';
+  }
+  return 'updated';
+}
+
 function stripColumnsFromPayload<T extends Record<string, any>>(items: T[], columns: Set<string>) {
   if (columns.size === 0) return items;
   return items.map((item) => {
@@ -210,12 +235,18 @@ function stripColumnsFromPayload<T extends Record<string, any>>(items: T[], colu
   });
 }
 
-async function upsertWithMissingColumnFallback<T extends Record<string, any>>(table: string, rows: T[]) {
+async function upsertWithMissingColumnFallback<T extends Record<string, any>>(
+  table: string,
+  rows: T[],
+  auditAction?: 'created' | 'updated' | 'deleted',
+) {
   let payload = rows;
   const removedColumns = new Set<string>();
 
   while (true) {
-    const { error } = await supabase.from(table as any).upsert(payload as any);
+    const query = (supabase.from(table as any).upsert(payload as any) as any);
+    if (auditAction) query.auditAction(auditAction);
+    const { error } = await query;
     if (!error) return;
 
     const errorMessage = (error as any)?.message || JSON.stringify(error);
@@ -541,7 +572,7 @@ interface Ad3Item extends Ad2Item {
 
 interface FAQ extends FAQRecord { }
 
-type Tab = 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
+type Tab = 'search' | 'dashboard' | 'audit-log' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
@@ -653,6 +684,31 @@ function SortableAdminItem({
   );
 }
 
+function SortableActionLinkItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className="rounded-lg border border-border bg-muted/30 p-4"
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="shrink-0 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          aria-label="Drag to reorder action link"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function Modal({
   title,
   onClose,
@@ -687,7 +743,13 @@ interface SidebarItem {
   children?: { key: Tab; label: string }[];
 }
 
+interface AuditLogScope {
+  title: string;
+  entityTable: string;
+}
+
 const SIDEBAR_ITEMS: SidebarItem[] = [
+  { key: 'search', label: 'Search', icon: <Search className="w-5 h-5" /> },
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { key: 'hero', label: 'Hero Section', icon: <Type className="w-5 h-5" /> },
   { key: 'header', label: 'Header Options', icon: <Layers className="w-5 h-5" /> },
@@ -731,8 +793,39 @@ export default function AdminDashboard() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [auditLogScope, setAuditLogScope] = useState<AuditLogScope | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedSidebarItem, setExpandedSidebarItem] = useState<string | null>(null);
+  const [externalLinkQuery, setExternalLinkQuery] = useState('');
+  const [externalLinkResults, setExternalLinkResults] = useState<AdminLinkSearchResult[] | null>(null);
+  const [isSearchingExternalLinks, setIsSearchingExternalLinks] = useState(false);
+  const [externalLinkSearchError, setExternalLinkSearchError] = useState<string | null>(null);
+
+  const handleExternalLinkSearch = async () => {
+    const query = externalLinkQuery.trim();
+    if (!query) {
+      setExternalLinkResults(null);
+      setExternalLinkSearchError(null);
+      return;
+    }
+
+    setIsSearchingExternalLinks(true);
+    setExternalLinkSearchError(null);
+    try {
+      const response = await searchAdminExternalLinks(query);
+      setExternalLinkResults(response.results);
+    } catch (error) {
+      setExternalLinkResults(null);
+      setExternalLinkSearchError(error instanceof Error ? error.message : 'Unable to search external links');
+    } finally {
+      setIsSearchingExternalLinks(false);
+    }
+  };
+
+  const openAuditLog = (scope?: AuditLogScope | null) => {
+    setAuditLogScope(scope ?? null);
+    setTab('audit-log');
+  };
 
   // Use the new section instances hook
   const {
@@ -1085,7 +1178,7 @@ export default function AdminDashboard() {
   }, [productSections]);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) navigate('/admin/login');
+    if (!loading && (!user || !isAdmin)) navigate('/x540l-place-1208/login');
   }, [loading, user, isAdmin]);
 
   useEffect(() => {
@@ -2936,6 +3029,29 @@ export default function AdminDashboard() {
     setEditSubBrands(newOrder);
   }
 
+  function handleBrandActionLinkDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !editingBrandId || !editingBrand) return;
+
+    const actionLinks = editingBrand.action_links || [];
+    const getActionLinkId = (link: BrandActionLinkItem, index: number) =>
+      link.id || `${editingBrandId}-action-link-${index}`;
+    const oldIndex = actionLinks.findIndex((link, index) => getActionLinkId(link, index) === active.id);
+    const newIndex = actionLinks.findIndex((link, index) => getActionLinkId(link, index) === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newActionLinks = arrayMove(actionLinks, oldIndex, newIndex);
+    const updated = { ...editingBrand, action_links: newActionLinks };
+    setEditingBrand(updated);
+
+    const brandIndex = editSubBrands.findIndex((brand) => brand.id === editingBrandId);
+    if (brandIndex !== -1) {
+      const newBrands = [...editSubBrands];
+      newBrands[brandIndex] = updated as SubcategoryBrand;
+      setEditSubBrands(newBrands);
+    }
+  }
+
   async function handleCategoryDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -3018,7 +3134,7 @@ export default function AdminDashboard() {
         if (cardsFixedModeEnabled !== undefined) {
           updateData.is_fixed = cardsFixedModeEnabled;
         }
-        const { error } = await supabase.from('featured_cards').update(updateData).eq('id', editCard.id);
+        const { error } = await auditedFrom('featured_cards', 'updated').update(updateData).eq('id', editCard.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -3036,7 +3152,7 @@ export default function AdminDashboard() {
         if (cardsFixedModeEnabled !== undefined) {
           insertData.is_fixed = cardsFixedModeEnabled;
         }
-        const { error } = await supabase.from('featured_cards').insert(insertData);
+        const { error } = await auditedFrom('featured_cards', 'created').insert(insertData);
         if (error) throw error;
       }
       setEditCard(null);
@@ -3050,7 +3166,7 @@ export default function AdminDashboard() {
 
   async function deleteCard(id: string) {
     try {
-      const { error } = await supabase.from('featured_cards').delete().eq('id', id);
+      const { error } = await auditedFrom('featured_cards', 'deleted').delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -3134,15 +3250,14 @@ export default function AdminDashboard() {
       };
 
       if (editFaq.id) {
-        const { error } = await supabase
-          .from('faqs')
+        const { error } = await auditedFrom('faqs', 'updated')
           .update(payload)
           .eq('id', editFaq.id);
         if (error) throw error;
       } else {
         const baseFaqs = faqs.filter((item) => (editFaq.parent_id ? item.parent_id === editFaq.parent_id : item.parent_id == null));
         const nextOrder = baseFaqs.length;
-        const { error } = await supabase.from('faqs').insert({
+        const { error } = await auditedFrom('faqs', 'created').insert({
           ...payload,
           parent_id: editFaq.parent_id ?? null,
           sort_order: nextOrder,
@@ -3163,7 +3278,7 @@ export default function AdminDashboard() {
     try {
       const { error: deleteChildrenError } = await supabase.from('faqs').delete().eq('parent_id', id);
       if (deleteChildrenError) throw deleteChildrenError;
-      const { error } = await supabase.from('faqs').delete().eq('id', id);
+      const { error } = await auditedFrom('faqs', 'deleted').delete().eq('id', id);
       if (error) throw error;
       toast.success('FAQ deleted!');
       await loadAll();
@@ -3370,8 +3485,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditCard.id) {
-        await db
-          .from(PRODUCT_CARDS_TABLE)
+        await auditedFrom(PRODUCT_CARDS_TABLE, 'updated')
           .update({
             title: productEditCard.title.trim(),
             description: productEditCard.description.trim(),
@@ -3384,7 +3498,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditCard.id);
       } else {
-        await db.from(PRODUCT_CARDS_TABLE).insert({
+        await auditedFrom(PRODUCT_CARDS_TABLE, 'created').insert({
           title: productEditCard.title.trim(),
           description: productEditCard.description.trim(),
           logo_url: productEditCard.logo_url || null,
@@ -3423,8 +3537,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditOffer.id) {
-        await db
-          .from(PRODUCT_OFFERS_TABLE)
+        await auditedFrom(PRODUCT_OFFERS_TABLE, 'updated')
           .update({
             heading: productEditOffer.heading?.trim() || '',
             description: productEditOffer.description || null,
@@ -3438,7 +3551,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditOffer.id);
       } else {
-        await db.from(PRODUCT_OFFERS_TABLE).insert({
+        await auditedFrom(PRODUCT_OFFERS_TABLE, 'created').insert({
           heading: productEditOffer.heading?.trim() || '',
           description: productEditOffer.description || null,
           image_url: productEditOffer.image_url || null,
@@ -3473,8 +3586,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd1?.id) {
-        await db
-          .from(PRODUCT_ADS_2_TABLE)
+        await auditedFrom(PRODUCT_ADS_2_TABLE, 'updated')
           .update({
             image_url: productEditAd1.image_url || null,
             link: productEditAd1.link || null,
@@ -3486,7 +3598,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd1.id);
       } else {
-        await db.from(PRODUCT_ADS_2_TABLE).insert({
+        await auditedFrom(PRODUCT_ADS_2_TABLE, 'created').insert({
           image_url: productEditAd1?.image_url || null,
           link: productEditAd1?.link || null,
           show_border: productEditAd1?.show_border ?? false,
@@ -3519,8 +3631,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd2?.id) {
-        await db
-          .from(PRODUCT_ADS_2_TABLE)
+        await auditedFrom(PRODUCT_ADS_2_TABLE, 'updated')
           .update({
             image_url: productEditAd2.image_url || null,
             link: productEditAd2.link || null,
@@ -3532,7 +3643,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd2.id);
       } else {
-        await db.from(PRODUCT_ADS_2_TABLE).insert({
+        await auditedFrom(PRODUCT_ADS_2_TABLE, 'created').insert({
           image_url: productEditAd2?.image_url || null,
           link: productEditAd2?.link || null,
           show_border: productEditAd2?.show_border ?? false,
@@ -3565,8 +3676,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd3?.id) {
-        await db
-          .from(PRODUCT_ADS_3_TABLE)
+        await auditedFrom(PRODUCT_ADS_3_TABLE, 'updated')
           .update({
             image_url: productEditAd3.image_url || null,
             heading: productEditAd3.heading || null,
@@ -3580,7 +3690,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd3.id);
       } else {
-        await db.from(PRODUCT_ADS_3_TABLE).insert({
+        await auditedFrom(PRODUCT_ADS_3_TABLE, 'created').insert({
           image_url: productEditAd3?.image_url || null,
           heading: productEditAd3?.heading || null,
           description: productEditAd3?.description || null,
@@ -3642,7 +3752,7 @@ export default function AdminDashboard() {
 
   const productDeleteItem = async (tableName: string, itemId: string, subcategoryId: string) => {
     try {
-      await db.from(tableName).delete().eq('id', itemId);
+      await auditedFrom(tableName, 'deleted').delete().eq('id', itemId);
       await loadProductSectionContent(subcategoryId);
       toast.success('Deleted.');
     } catch (error) {
@@ -3739,7 +3849,7 @@ export default function AdminDashboard() {
 
   async function deleteCategory(id: string) {
     try {
-      const { error } = await supabase.from('categories' as any).delete().eq('id', id);
+      const { error } = await auditedFrom('categories', 'deleted').delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -3751,8 +3861,7 @@ export default function AdminDashboard() {
 
   async function toggleCategoryVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await supabase
-        .from('categories' as any)
+      const { error } = await auditedFrom('categories', 'updated')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3766,8 +3875,7 @@ export default function AdminDashboard() {
 
   async function toggleFeaturedCardVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await supabase
-        .from('featured_cards' as any)
+      const { error } = await auditedFrom('featured_cards', 'updated')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3781,8 +3889,7 @@ export default function AdminDashboard() {
 
   async function toggleOfferVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await supabase
-        .from('offers' as any)
+      const { error } = await auditedFrom('offers', 'updated')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3796,8 +3903,7 @@ export default function AdminDashboard() {
 
   async function toggleAd2Visibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await supabase
-        .from('ads_2col' as any)
+      const { error } = await auditedFrom('ads_2col', 'updated')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3811,8 +3917,7 @@ export default function AdminDashboard() {
 
   async function toggleAd3Visibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await supabase
-        .from('ads_3col' as any)
+      const { error } = await auditedFrom('ads_3col', 'updated')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3836,7 +3941,7 @@ export default function AdminDashboard() {
     }
   }
 
-  async function saveCategory() {
+  async function saveCategory(activeSubOverride?: Subcategory) {
     if (!editCategory) return;
     if (!editCategory.name?.trim()) {
       toast.error('Category name is required.');
@@ -3854,7 +3959,7 @@ export default function AdminDashboard() {
         ? { ...editButtonsState, [activeSubId]: editButtons }
         : editButtonsState;
       const effectiveSubBrandsState = activeSubId
-        ? { ...editSubBrandsState, [activeSubId]: editSubBrands }
+        ? { ...editSubBrandsState, [activeSubId]: editingBrandId ? editSubBrands : editSubBrandsState[activeSubId] || editSubBrands }
         : editSubBrandsState;
       const effectiveSubOverviewPointsState = activeSubId
         ? { ...editSubOverviewPointsState, [activeSubId]: editSubOverviewPoints }
@@ -3863,10 +3968,9 @@ export default function AdminDashboard() {
       let categoryId = editCategory.id;
 
       // Save category
-      if (categoryId) {
+      if (categoryId && !activeSubId) {
         // Update existing category
-        const { error: catError } = await supabase
-          .from('categories' as any)
+        const categoryUpdate = auditedFrom('categories', 'updated')
           .update({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
@@ -3876,11 +3980,11 @@ export default function AdminDashboard() {
             section_id: selectedCategoriesSectionId
           })
           .eq('id', categoryId);
+        const { error: catError } = await categoryUpdate.auditAction('updated');
         if (catError) throw catError;
-      } else {
+      } else if (!categoryId) {
         // Create new category
-        const { data: newCat, error: catError } = await supabase
-          .from('categories' as any)
+        const { data: newCat, error: catError } = await auditedFrom('categories', 'created')
           .insert({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
@@ -3899,12 +4003,16 @@ export default function AdminDashboard() {
       // Save subcategories
       if (categoryId) {
         const subIds = editSubs.map((s) => s.id).filter(Boolean);
-        const activeSub = activeSubId ? editSubs.find((sub) => sub.id === activeSubId) : undefined;
+        const activeSub = activeSubId
+          ? activeSubOverride?.id === activeSubId
+            ? activeSubOverride
+            : editSubs.find((sub) => sub.id === activeSubId)
+          : undefined;
         const subsToUpsert = activeSubId
           ? activeSub ? [activeSub] : []
           : editSubs;
 
-        const subcategoryRows = subsToUpsert.map((sub, index) => ({
+        const subcategoryRows = editingBrandId ? [] : subsToUpsert.map((sub, index) => ({
           id: sub.id,
           category_id: categoryId,
           name: sub.name,
@@ -3963,12 +4071,6 @@ export default function AdminDashboard() {
           ? supabase.from('category_buttons').delete().eq('subcategory_id', activeSubId)
           : (subIds.length > 0
             ? supabase.from('category_buttons').delete().in('subcategory_id', subIds)
-            : Promise.resolve());
-
-        const deleteSubBrands = activeSubId
-          ? supabase.from('subcategory_brands' as any).delete().eq('subcategory_id', activeSubId)
-          : (subIds.length > 0
-            ? supabase.from('subcategory_brands' as any).delete().in('subcategory_id', subIds)
             : Promise.resolve());
 
         const buttonsToInsert: any[] = [];
@@ -4085,16 +4187,51 @@ export default function AdminDashboard() {
           }
         }
 
+        const originalBrands = activeSubId
+          ? editSubBrandsState[activeSubId] || []
+          : Object.values(editSubBrandsState).flat();
+        const originalBrandById = new Map(originalBrands.filter((brand) => brand.id).map((brand) => [brand.id, brand]));
+        const deleteSubBrands = editingBrandId ? Promise.resolve() : (async () => {
+          const subcategoryIds = activeSubId ? [activeSubId] : subIds;
+          if (subcategoryIds.length === 0) return;
+
+          const { data: existingBrands, error: existingBrandsError } = await supabase
+            .from('subcategory_brands' as any)
+            .select('id, subcategory_id')
+            .in('subcategory_id', subcategoryIds);
+          if (existingBrandsError) throw existingBrandsError;
+
+          const retainedBrandIds = new Set(subBrandsToInsert.map((brand) => brand.id).filter(Boolean));
+          await Promise.all((existingBrands || [])
+            .filter((brand: any) => !retainedBrandIds.has(brand.id))
+            .map((brand: any) => auditedFrom('subcategory_brands', 'deleted').delete().eq('id', brand.id)));
+        })();
+
+        const brandsToSave = editingBrandId
+          ? subBrandsToInsert.filter((brand) => brand.id === editingBrandId)
+          : subBrandsToInsert;
+
         const subsUpsertPromise = subcategoryRows.length > 0
-          ? upsertWithMissingColumnFallback('subcategories', subcategoryRows as any)
+          ? upsertWithMissingColumnFallback('subcategories', subcategoryRows as any, activeSubId ? 'updated' : undefined)
           : Promise.resolve();
 
         const deletePromises = [deleteSubcategories, deleteButtons, deleteSubBrands];
         await Promise.all(deletePromises);
 
+        const brandRowsToSave = editingBrandId
+          ? brandsToSave
+          : brandsToSave.filter((brand) => !originalBrandById.has(brand.id));
+        const brandRowsToUpdate = editingBrandId
+          ? []
+          : brandsToSave.filter((brand) => originalBrandById.has(brand.id));
+        const brandAuditAction = editingBrandId && brandsToSave[0]
+          ? classifyBrandAction(originalBrandById.get(editingBrandId), brandsToSave[0])
+          : 'created' as const;
+
         const insertPromises = [
           buttonsToInsert.length > 0 ? insertWithMissingColumnFallback('category_buttons', buttonsToInsert) : Promise.resolve(),
-          subBrandsToInsert.length > 0 ? insertWithMissingColumnFallback('subcategory_brands', subBrandsToInsert) : Promise.resolve(),
+          brandRowsToSave.length > 0 ? upsertWithMissingColumnFallback('subcategory_brands', brandRowsToSave, editingBrandId ? brandAuditAction : 'created') : Promise.resolve(),
+          brandRowsToUpdate.length > 0 ? upsertWithMissingColumnFallback('subcategory_brands', brandRowsToUpdate) : Promise.resolve(),
         ];
 
         const sectionSubIds = activeSubId ? [activeSubId] : subIds;
@@ -4444,7 +4581,7 @@ export default function AdminDashboard() {
         if (offersFixedModeEnabled !== undefined) {
           updateData.is_fixed = offersFixedModeEnabled;
         }
-        const { error } = await supabase.from('offers').update(updateData).eq('id', editOffer.id);
+        const { error } = await auditedFrom('offers', 'updated').update(updateData).eq('id', editOffer.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -4463,7 +4600,7 @@ export default function AdminDashboard() {
         if (offersFixedModeEnabled !== undefined) {
           insertData.is_fixed = offersFixedModeEnabled;
         }
-        const { error } = await supabase.from('offers').insert(insertData);
+        const { error } = await auditedFrom('offers', 'created').insert(insertData);
         if (error) throw error;
       }
       setEditOffer(null); loadAll(); toast.success('Offer saved!');
@@ -4475,7 +4612,7 @@ export default function AdminDashboard() {
 
   async function deleteOffer(id: string) {
     try {
-      const { error } = await supabase.from('offers').delete().eq('id', id);
+      const { error } = await auditedFrom('offers', 'deleted').delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -4493,14 +4630,14 @@ export default function AdminDashboard() {
         if (ads2FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads2FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd2.id);
+        const { error } = await auditedFrom('ads_2col', 'updated').update(updateData).eq('id', editAd2.id);
         if (error) throw error;
       } else {
         const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, background_color: editAd2.background_color ?? null, show_image: editAd2.show_image ?? true, sort_order: ads2.length, section_id: selectedAds2SectionId };
         if (ads2FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads2FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_2col').insert(insertData);
+        const { error } = await auditedFrom('ads_2col', 'created').insert(insertData);
         if (error) throw error;
       }
       setEditAd2(null); loadAll(); toast.success('Ad saved!');
@@ -4518,14 +4655,14 @@ export default function AdminDashboard() {
         if (ads1FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads1FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd1.id);
+        const { error } = await auditedFrom('ads_2col', 'updated').update(updateData).eq('id', editAd1.id);
         if (error) throw error;
       } else {
         const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, background_color: editAd1.background_color ?? null, show_image: editAd1.show_image ?? true, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
         if (ads1FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads1FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_2col').insert(insertData);
+        const { error } = await auditedFrom('ads_2col', 'created').insert(insertData);
         if (error) throw error;
       }
       setEditAd1(null); loadAll(); toast.success('Ad saved!');
@@ -4537,7 +4674,7 @@ export default function AdminDashboard() {
 
   async function deleteAd2(id: string) {
     try {
-      const { error } = await supabase.from('ads_2col').delete().eq('id', id);
+      const { error } = await auditedFrom('ads_2col', 'deleted').delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -4565,7 +4702,7 @@ export default function AdminDashboard() {
         if (ads3FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads3FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_3col').update(updateData).eq('id', editAd3.id);
+        const { error } = await auditedFrom('ads_3col', 'updated').update(updateData).eq('id', editAd3.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -4584,7 +4721,7 @@ export default function AdminDashboard() {
         if (ads3FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads3FixedModeEnabled;
         }
-        const { error } = await supabase.from('ads_3col').insert(insertData);
+        const { error } = await auditedFrom('ads_3col', 'created').insert(insertData);
         if (error) throw error;
       }
       setEditAd3(null); loadAll(); toast.success('Ad saved!');
@@ -4636,7 +4773,7 @@ export default function AdminDashboard() {
 
   async function deleteAd3(id: string) {
     try {
-      const { error } = await supabase.from('ads_3col').delete().eq('id', id);
+      const { error } = await auditedFrom('ads_3col', 'deleted').delete().eq('id', id);
       if (error) throw error;
       loadAll();
       toast.success('Deleted!');
@@ -4646,7 +4783,7 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleLogout() { await supabase.auth.signOut(); navigate('/admin/login'); }
+  async function handleLogout() { await supabase.auth.signOut(); navigate('/x540l-place-1208/login'); }
 
   // Handle adding a new section
   async function handleAddSection() {
@@ -4767,6 +4904,9 @@ export default function AdminDashboard() {
                     setTab(item.key);
                     setSidebarOpen(false);
                     setExpandedSidebarItem(null); // Close sub-menus when clicking a main item
+                    if (item.key === 'audit-log') {
+                      setAuditLogScope(null);
+                    }
                   }
                 }}
                 className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === item.key || (item.children && item.children.some(child => child.key === tab))
@@ -4825,6 +4965,82 @@ export default function AdminDashboard() {
         </header>
 
         <div className="p-4 md:p-6">
+          {/* SEARCH */}
+          {tab === 'search' && (
+            <section className="max-w-6xl" aria-labelledby="admin-search-heading">
+              <div className="mb-6 md:mb-8">
+                
+              </div>
+              <section className="bg-card rounded-lg md:rounded-xl border border-border p-4 md:p-5" aria-labelledby="external-link-search-heading">
+                <div className="flex items-start gap-3 mb-4">
+                  
+                  
+                </div>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleExternalLinkSearch();
+                  }}
+                  className="flex flex-col sm:flex-row gap-2"
+                >
+                  <input
+                    type="url"
+                    value={externalLinkQuery}
+                    onChange={(event) => setExternalLinkQuery(event.target.value)}
+                    placeholder="Enter URL to search"
+                    aria-label="External URL"
+                    className="flex-1 min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSearchingExternalLinks || !externalLinkQuery.trim()}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {isSearchingExternalLinks ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    {isSearchingExternalLinks ? 'Searching...' : 'Search'}
+                  </button>
+                  {externalLinkResults !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExternalLinkQuery('');
+                        setExternalLinkResults(null);
+                        setExternalLinkSearchError(null);
+                      }}
+                      className="h-10 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </form>
+                {externalLinkSearchError && <p className="mt-3 text-sm text-destructive">{externalLinkSearchError}</p>}
+                {externalLinkResults !== null && !externalLinkSearchError && (
+                  <div className="mt-5">
+                    <h4 className="font-semibold">Search Results - {externalLinkResults.length} {externalLinkResults.length === 1 ? 'match' : 'matches'}</h4>
+                    {externalLinkResults.length === 0 ? (
+                      <p className="mt-3 text-sm text-muted-foreground">No results found.</p>
+                    ) : (
+                      <div className="mt-3 divide-y divide-border rounded-md border border-border">
+                        {externalLinkResults.map((result, index) => (
+                          <div key={`${result.recordId}-${result.source}-${index}`} className="p-4 text-sm">
+                            <p>
+                              <span className="font-medium">{index + 1}:</span>{' '}
+                              {[result.heading, result.category, result.subcategory, result.brand, result.actionLinkName]
+                                .filter((part): part is string => Boolean(part?.trim()))
+                                .join(' / ')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            </section>
+          )}
+
+          {tab === 'audit-log' && <AdminAuditLog scope={auditLogScope} />}
+
           {/* DASHBOARD */}
           {tab === 'dashboard' && (
             <div>
@@ -4978,9 +5194,19 @@ export default function AdminDashboard() {
           {/* HEADER OPTIONS */}
           {tab === 'header' && (
             <div className="max-w-2xl space-y-8">
-              <div>
-                <h2 className="text-xl font-bold mb-1">Header Options</h2>
-                <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold mb-1">Header Options</h2>
+                  <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAuditLog({ title: 'Header Options', entityTable: 'header_settings' })}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Audit Log
+                </button>
               </div>
 
               <div className="grid gap-6">
@@ -5128,9 +5354,19 @@ export default function AdminDashboard() {
           {/* SECTIONS */}
           {tab === 'sections' && (
             <div>
-              <div className="mb-6">
-                <h2 className="text-xl font-bold mb-2">Page Layout - Manage Sections</h2>
-                <p className="text-sm text-muted-foreground">Drag to reorder sections. Manage visibility and edit individual sections from their tabs.</p>
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold mb-2">Page Layout - Manage Sections</h2>
+                  <p className="text-sm text-muted-foreground">Drag to reorder sections. Manage visibility and edit individual sections from their tabs.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAuditLog({ title: 'Page Layout', entityTable: 'page_sections' })}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Audit Log
+                </button>
               </div>
 
               {sections.length > 0 ? (
@@ -5209,15 +5445,25 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Featured Cards</h2>
-                <button
-                  onClick={() => {
-                    setAddSectionType('cards');
-                    setShowAddSectionModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add New Section
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuditLog({ title: 'Feature Cards', entityTable: 'featured_cards' })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Audit Log
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddSectionType('cards');
+                      setShowAddSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Section
+                  </button>
+                </div>
               </div>
 
               {/* Section instances tabs */}
@@ -5409,15 +5655,25 @@ export default function AdminDashboard() {
                 <>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold">Categories</h2>
-                    <button
-                      onClick={() => {
-                        setAddSectionType('categories');
-                        setShowAddSectionModal(true);
-                      }}
-                      className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                    >
-                      <Plus className="w-4 h-4" /> Add New Section
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openAuditLog({ title: 'Categories', entityTable: 'categories' })}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Audit Log
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAddSectionType('categories');
+                          setShowAddSectionModal(true);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                      >
+                        <Plus className="w-4 h-4" /> Add New Section
+                      </button>
+                    </div>
                   </div>
 
                   {/* Section instances tabs */}
@@ -5866,7 +6122,7 @@ export default function AdminDashboard() {
                                 setEditShowHeaderPointsSectionState(prev => ({ ...prev, [editingSub.id]: editShowHeaderPointsSectionState[editingSub.id] ?? true }));
                                 setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
                                 setEditKeyFeaturesTabLabelState(prev => ({ ...prev, [editingSub.id]: editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features' }));
-                                await saveCategory();
+                                await saveCategory(editingSub);
                                 setEditingSubcategoryId(null);
                               }}
                               disabled={isSavingCategory}
@@ -5905,8 +6161,18 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Buttons Section */}
-                        <div className="space-y-4 border-t pt-4">
-                          <h3 className="text-sm font-semibold text-foreground">Buttons</h3>
+                        <div className="border-t">
+                          <button
+                            type="button"
+                            onClick={() => setActiveAccordion(activeAccordion === 'buttons' ? null : 'buttons')}
+                            className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
+                          >
+                            <label className="text-lg font-bold cursor-pointer">Buttons</label>
+                            <ChevronDown className={`h-5 w-5 transition-transform ${activeAccordion === 'buttons' ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {activeAccordion === 'buttons' && (
+                            <div className="space-y-4 pb-6 px-2">
 
                           {/* Button 1 */}
                           <div className="space-y-3 p-4 border border-border rounded-xl bg-muted/30">
@@ -6027,6 +6293,8 @@ export default function AdminDashboard() {
                               />
                             </div>
                           </div>
+                            </div>
+                          )}
                         </div>
 
 
@@ -6284,10 +6552,23 @@ export default function AdminDashboard() {
                                   {(editingBrand.action_links || []).length === 0 ? (
                                     <p className="text-sm text-muted-foreground">No action links added yet.</p>
                                   ) : (
-                                    <div className="space-y-3">
-                                      {(editingBrand.action_links || []).map((link, linkIdx) => (
-                                        <div key={link.id || linkIdx} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                                          <div className="flex items-center justify-between gap-2">
+                                    <DndContext
+                                      sensors={sensors}
+                                      collisionDetection={closestCenter}
+                                      onDragEnd={handleBrandActionLinkDragEnd}
+                                    >
+                                      <SortableContext
+                                        items={(editingBrand.action_links || []).map((link, linkIdx) => link.id || `${editingBrandId}-action-link-${linkIdx}`)}
+                                        strategy={verticalListSortingStrategy}
+                                      >
+                                        <div className="space-y-3">
+                                          {(editingBrand.action_links || []).map((link, linkIdx) => (
+                                            <SortableActionLinkItem
+                                              key={link.id || `${editingBrandId}-action-link-${linkIdx}`}
+                                              id={link.id || `${editingBrandId}-action-link-${linkIdx}`}
+                                            >
+                                              <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-2">
                                             <span className="text-sm font-medium">Link {linkIdx + 1}</span>
                                             <button
                                               type="button"
@@ -6308,9 +6589,9 @@ export default function AdminDashboard() {
                                             >
                                               <Trash2 className="w-4 h-4" />
                                             </button>
-                                          </div>
+                                                </div>
 
-                                          <div className="space-y-2">
+                                                <div className="space-y-2">
                                             <input
                                               type="text"
                                               placeholder="Link text"
@@ -6389,10 +6670,13 @@ export default function AdminDashboard() {
                                                 <span className="text-[10px] font-medium uppercase text-muted-foreground whitespace-nowrap">{link.enabled ?? true ? 'On' : 'Off'}</span>
                                               </div>
                                             </div>
-                                          </div>
+                                              </div>
+                                              </div>
+                                            </SortableActionLinkItem>
+                                          ))}
                                         </div>
-                                      ))}
-                                    </div>
+                                      </SortableContext>
+                                    </DndContext>
                                   )}
                                 </div>
                               </div>
@@ -7047,15 +7331,25 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Offers & Discounts</h2>
-                <button
-                  onClick={() => {
-                    setAddSectionType('offers');
-                    setShowAddSectionModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add New Section
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuditLog({ title: 'Offers', entityTable: 'offers' })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Audit Log
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddSectionType('offers');
+                      setShowAddSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Section
+                  </button>
+                </div>
               </div>
 
               {/* Section instances tabs */}
@@ -7255,15 +7549,25 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">2-Column Ads</h2>
-                <button
-                  onClick={() => {
-                    setAddSectionType('ads_2col');
-                    setShowAddSectionModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add New Section
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuditLog({ title: '2-Col Ads', entityTable: 'ads_2col' })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Audit Log
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddSectionType('ads_2col');
+                      setShowAddSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Section
+                  </button>
+                </div>
               </div>
 
               {sections.filter(s => s.section_type === 'ads_2col').length > 0 && (
@@ -7433,15 +7737,25 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">1-Column Ad</h2>
-                <button
-                  onClick={() => {
-                    setAddSectionType('ads_1col');
-                    setShowAddSectionModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add New Section
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuditLog({ title: '1-Col Ads', entityTable: 'ads_2col' })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Audit Log
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddSectionType('ads_1col');
+                      setShowAddSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Section
+                  </button>
+                </div>
               </div>
 
               {sections.filter(s => s.section_type === 'ads_1col').length > 0 && (
@@ -7611,15 +7925,25 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">3-Column Ads</h2>
-                <button
-                  onClick={() => {
-                    setAddSectionType('ads_3col');
-                    setShowAddSectionModal(true);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                >
-                  <Plus className="w-4 h-4" /> Add New Section
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuditLog({ title: '3-Col Ads', entityTable: 'ads_3col' })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Audit Log
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAddSectionType('ads_3col');
+                      setShowAddSectionModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add New Section
+                  </button>
+                </div>
               </div>
 
               {sections.filter(s => s.section_type === 'ads_3col').length > 0 && (

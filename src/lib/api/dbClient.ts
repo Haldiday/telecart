@@ -16,6 +16,7 @@ interface QueryOrder {
 }
 
 type QueryAction = 'select' | 'insert' | 'update' | 'delete' | 'upsert';
+type AuditActionIntent = 'created' | 'updated' | 'deleted';
 
 interface QuerySpec {
   table: string;
@@ -28,7 +29,9 @@ interface QuerySpec {
   single?: boolean;
   maybeSingle?: boolean;
   body?: unknown;
+  onConflict?: string;
   returning?: boolean;
+  auditAction?: AuditActionIntent;
 }
 
 export interface DbResponse<T = unknown> {
@@ -65,6 +68,7 @@ async function executeQuery<T = unknown>(spec: QuerySpec): Promise<DbResponse<T>
   const token = await authTokenProvider();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Request-Id': globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -119,9 +123,15 @@ class ApiQueryBuilder<T = unknown> implements PromiseLike<DbResponse<T>> {
     return this;
   }
 
-  upsert(body: unknown): this {
+  upsert(body: unknown, options?: { onConflict?: string }): this {
     this.spec.action = 'upsert';
     this.spec.body = body;
+    this.spec.onConflict = options?.onConflict;
+    return this;
+  }
+
+  auditAction(action: AuditActionIntent): this {
+    this.spec.auditAction = action;
     return this;
   }
 
@@ -230,6 +240,7 @@ class ApiStorageBucket {
     formData.append('path', path);
 
     const headers: Record<string, string> = {};
+    headers['X-Request-Id'] = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -252,6 +263,7 @@ class ApiStorageBucket {
     const token = await authTokenProvider();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Request-Id': globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     };
     if (token) {
       headers.Authorization = `Bearer ${token}`;

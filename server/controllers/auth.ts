@@ -8,6 +8,8 @@ import { normalizePhone, sendWhatsAppOtp, verifyWhatsAppOtp, WhatsAppOtpError } 
 import { validateEmail, validateOTP, validatePhone } from '../utils/index.js';
 import type { AuthRequest, User } from '../types/index.js';
 
+export const SIGNUP_DUPLICATE_PHONE_MESSAGE = 'This Mobile number is already registered use different mobile number';
+
 const msg91Service = new MSG91Service();
 const emailValidationService = new EmailValidationService();
 const pendingSignupStates = new Map<string, {
@@ -213,7 +215,7 @@ export const signupCheckUser = async (req: Request, res: Response) => {
     if (existingPhoneUser) {
       return res.status(409).json({
         success: false,
-        message: 'This phone number is already registered. Please login.',
+        message: SIGNUP_DUPLICATE_PHONE_MESSAGE,
         flow: 'login',
       });
     }
@@ -248,6 +250,7 @@ export const signupSendEmailOTP = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: payload.error });
     }
 
+    console.log('DEBUG signupSendEmailOTP: payload =', payload);
     const existingEmailUser = await getUserByEmail(payload.email);
     if (existingEmailUser) {
       return res.status(409).json({
@@ -258,7 +261,28 @@ export const signupSendEmailOTP = async (req: Request, res: Response) => {
     }
 
     const phone = normalizePhone(req.body.phone);
-    const state = mergePendingSignupState({ email: payload.email, phone, email_verified: false });
+    console.log('DEBUG signupSendEmailOTP: phone =', phone);
+
+    if (phone) {
+      const existingPhoneUser = await getUserByPhone(phone);
+      if (existingPhoneUser) {
+        return res.status(409).json({
+          success: false,
+          message: SIGNUP_DUPLICATE_PHONE_MESSAGE,
+        });
+      }
+    }
+
+    // Store all signup form fields in pending state, not just email and phone
+    const state = mergePendingSignupState({
+      first_name: String(req.body.first_name || '').trim(),
+      last_name: String(req.body.last_name || '').trim(),
+      company_name: String(req.body.company_name || '').trim(),
+      email: payload.email,
+      phone: phone || '',
+      email_verified: false,
+    });
+    console.log('DEBUG signupSendEmailOTP: state after merge =', state);
 
     const validationResult = await emailValidationService.validateEmail(payload.email);
     if (validationResult.isDisposable) {
@@ -284,6 +308,7 @@ export const signupVerifyEmailOTP = async (req: Request, res: Response) => {
     const { email, otp } = req.body;
     const normalizedEmail = normalizeSignupStateEmail(email);
 
+    console.log('DEBUG signupVerifyEmailOTP: normalizedEmail =', normalizedEmail);
     if (!validateEmail(normalizedEmail)) {
       return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
     }
@@ -294,12 +319,14 @@ export const signupVerifyEmailOTP = async (req: Request, res: Response) => {
     await msg91Service.verifyOTP(normalizedEmail, String(otp));
 
     const state = findPendingSignupStateByEmail(normalizedEmail);
+    console.log('DEBUG signupVerifyEmailOTP: state =', state);
     if (!state) {
       return res.status(400).json({ success: false, message: 'Signup session is missing. Please start from the beginning.' });
     }
 
     state.email_verified = true;
     savePendingSignupState(state);
+    console.log('DEBUG signupVerifyEmailOTP: state after save =', state);
 
     return res.status(200).json({
       success: true,
@@ -312,64 +339,74 @@ export const signupVerifyEmailOTP = async (req: Request, res: Response) => {
   }
 };
 
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// export const signupSendPhoneOTP = async (req: Request, res: Response) => {
+//   try {
+//     const payload = validatePhoneOnlyPayload(req.body);
+//     if ('error' in payload) {
+//       return res.status(400).json({ success: false, message: payload.error });
+//     }
+//
+//     const existingPhoneUser = await getUserByPhone(payload.phone);
+//     if (existingPhoneUser) {
+//       return res.status(409).json({
+//         success: false,
+//         message: 'This phone number is already registered. Please login.',
+//         flow: 'login',
+//       });
+//     }
+//
+//     const email = String(req.body.email || '').trim().toLowerCase();
+//     mergePendingSignupState({ email, phone: payload.phone, phone_verified: false });
+//
+//     await sendWhatsAppOtp(payload.phone);
+//     return res.status(200).json({ success: true, message: 'Phone OTP sent successfully.' });
+//   } catch (error) {
+//     console.error('Error sending signup phone OTP:', error);
+//     if (error instanceof WhatsAppOtpError) {
+//       return res.status(error.status).json({ success: false, message: error.message });
+//     }
+//     return res.status(500).json({ success: false, message: 'Unable to send phone OTP right now. Please try again.' });
+//   }
+// };
 export const signupSendPhoneOTP = async (req: Request, res: Response) => {
-  try {
-    const payload = validatePhoneOnlyPayload(req.body);
-    if ('error' in payload) {
-      return res.status(400).json({ success: false, message: payload.error });
-    }
-
-    const existingPhoneUser = await getUserByPhone(payload.phone);
-    if (existingPhoneUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'This phone number is already registered. Please login.',
-        flow: 'login',
-      });
-    }
-
-    const email = String(req.body.email || '').trim().toLowerCase();
-    mergePendingSignupState({ email, phone: payload.phone, phone_verified: false });
-
-    await sendWhatsAppOtp(payload.phone);
-    return res.status(200).json({ success: true, message: 'Phone OTP sent successfully.' });
-  } catch (error) {
-    console.error('Error sending signup phone OTP:', error);
-    if (error instanceof WhatsAppOtpError) {
-      return res.status(error.status).json({ success: false, message: error.message });
-    }
-    return res.status(500).json({ success: false, message: 'Unable to send phone OTP right now. Please try again.' });
-  }
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  return res.status(503).json({ success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' });
 };
 
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// export const signupVerifyPhoneOTP = async (req: Request, res: Response) => {
+//   try {
+//     const { phone, otp } = req.body;
+//     const normalizedPhone = normalizePhone(phone);
+//
+//     if (!normalizedPhone || !validateOTP(String(otp || ''))) {
+//       return res.status(400).json({ success: false, message: 'Please provide a valid phone number and OTP.' });
+//     }
+//
+//     verifyWhatsAppOtp(normalizedPhone, String(otp));
+//
+//     const state = findPendingSignupStateByPhone(normalizedPhone);
+//     if (!state) {
+//       return res.status(400).json({ success: false, message: 'Signup session is missing. Please start from the beginning.' });
+//     }
+//
+//     state.phone = normalizedPhone;
+//     state.phone_verified = true;
+//     savePendingSignupState(state);
+//
+//     return res.status(200).json({ success: true, message: 'Phone verified successfully.' });
+//   } catch (error) {
+//     console.error('Error verifying signup phone OTP:', error);
+//     if (error instanceof WhatsAppOtpError) {
+//       return res.status(error.status).json({ success: false, message: error.message });
+//     }
+//     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Invalid or expired OTP.' });
+//   }
+// };
 export const signupVerifyPhoneOTP = async (req: Request, res: Response) => {
-  try {
-    const { phone, otp } = req.body;
-    const normalizedPhone = normalizePhone(phone);
-
-    if (!normalizedPhone || !validateOTP(String(otp || ''))) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid phone number and OTP.' });
-    }
-
-    verifyWhatsAppOtp(normalizedPhone, String(otp));
-
-    const state = findPendingSignupStateByPhone(normalizedPhone);
-    if (!state) {
-      return res.status(400).json({ success: false, message: 'Signup session is missing. Please start from the beginning.' });
-    }
-
-    state.phone = normalizedPhone;
-    state.phone_verified = true;
-    savePendingSignupState(state);
-
-    return res.status(200).json({ success: true, message: 'Phone verified successfully.' });
-  } catch (error) {
-    console.error('Error verifying signup phone OTP:', error);
-    if (error instanceof WhatsAppOtpError) {
-      return res.status(error.status).json({ success: false, message: error.message });
-    }
-    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Invalid or expired OTP.' });
-  }
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  return res.status(503).json({ success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' });
 };
 
 export const signupComplete = async (req: Request, res: Response) => {
@@ -379,9 +416,16 @@ export const signupComplete = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: payload.error });
     }
 
+    console.log('DEBUG signupComplete: payload =', payload);
     const state = findPendingSignupStateByEmail(payload.email) || findPendingSignupStateByPhone(payload.phone);
-    if (!state || !state.email_verified || !state.phone_verified) {
-      return res.status(400).json({ success: false, message: 'Please complete both email and phone OTP verification before creating your account.' });
+    console.log('DEBUG signupComplete: state =', state);
+    // WHATSAPP OTP DISABLED - Only require email verification for now
+    // if (!state || !state.email_verified || !state.phone_verified) {
+    //   return res.status(400).json({ success: false, message: 'Please complete both email and phone OTP verification before creating your account.' });
+    // }
+    if (!state || !state.email_verified) {
+      console.log('DEBUG signupComplete: state check failed - state:', state, 'email_verified:', state?.email_verified);
+      return res.status(400).json({ success: false, message: 'Please complete email OTP verification before creating your account.' });
     }
 
     const supabase = getSupabaseAdmin();
@@ -395,6 +439,17 @@ export const signupComplete = async (req: Request, res: Response) => {
       return res.status(409).json({ success: false, message: 'This email is already registered. Please login.' });
     }
 
+    // Also check for duplicate phone number
+    const { data: existingPhoneUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('phone', payload.phone)
+      .maybeSingle();
+
+    if (existingPhoneUser) {
+      return res.status(409).json({ success: false, message: SIGNUP_DUPLICATE_PHONE_MESSAGE });
+    }
+
     const { data: createdUser, error } = await supabase
       .from('users')
       .insert({
@@ -404,7 +459,8 @@ export const signupComplete = async (req: Request, res: Response) => {
         email: payload.email,
         phone: payload.phone,
         email_verified: true,
-        phone_verified: true,
+        // WHATSAPP OTP DISABLED - Not requiring phone verification for now
+        phone_verified: false,
         is_verified: true,
       })
       .select('*')
@@ -430,6 +486,16 @@ export const signupComplete = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error completing signup:', error);
+    // Handle database constraint violations
+    if (error instanceof Object && 'code' in error && error.code === '23505') {
+      const details = (error as any).details || '';
+      if (details.includes('email')) {
+        return res.status(409).json({ success: false, message: 'This email is already registered. Please login.' });
+      }
+      if (details.includes('phone')) {
+        return res.status(409).json({ success: false, message: SIGNUP_DUPLICATE_PHONE_MESSAGE });
+      }
+    }
     return res.status(500).json({ success: false, message: 'Unable to create your account right now. Please try again.' });
   }
 };
@@ -492,56 +558,23 @@ export const verifyEmailOTP = async (req: Request, res: Response) => {
   }
 };
 
-export const sendPhoneOTP = async (req: Request, res: Response) => {
-  try {
-    const phone = normalizePhone(req.body?.phone);
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid mobile number.' });
-    }
-
-    const existingUser = await getUserByPhone(phone);
-    if (!existingUser) {
-      return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });
-    }
-
-    await sendWhatsAppOtp(phone);
-    return res.status(200).json({ success: true, message: 'Phone OTP sent successfully.' });
-  } catch (error) {
-    console.error('Error sending phone OTP:', error);
-    if (error instanceof WhatsAppOtpError) {
-      return res.status(error.status).json({ success: false, message: error.message });
-    }
-    return res.status(500).json({ success: false, message: 'Unable to send phone OTP right now. Please try again.' });
-  }
-};
-
-export const verifyPhoneOTP = async (req: Request, res: Response) => {
-  try {
-    const phone = normalizePhone(req.body?.phone);
-    const otp = String(req.body?.otp || '');
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid mobile number.' });
-    }
-    if (!validateOTP(otp)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid OTP.' });
-    }
-
-    verifyWhatsAppOtp(phone, otp);
-    const existingUser = await getUserByPhone(phone);
-    if (!existingUser) {
-      return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });
-    }
-
-    const token = createAuthToken(existingUser);
-    return res.status(200).json({ success: true, token, user: existingUser });
-  } catch (error) {
-    console.error('Error verifying phone OTP:', error);
-    if (error instanceof WhatsAppOtpError) {
-      return res.status(error.status).json({ success: false, message: error.message });
-    }
-    return res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Invalid or expired OTP.' });
-  }
-};
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// export const sendPhoneOTP = async (req: Request, res: Response) => {
+//   try {
+//     const phone = normalizePhone(req.body?.phone);
+//     if (!phone) {
+//       return res.status(400).json({ success: false, message: 'Please provide a valid mobile number.' });
+//     }
+//
+//     const existingUser = await getUserByPhone(phone);
+//     if (!existingUser) {
+//       return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });
+//     }
+//
+//     await sendWhatsAppOtp(phone);
+//     return res.status(200).json({ success: true, message: 'Phone OTP sent successfully.' });
+//   } catch (error) {
+//     console.error('Error sending phone OTP:', error);\n//     if (error instanceof WhatsAppOtpError) {\n//       return res.status(error.status).json({ success: false, message: error.message });\n//     }\n//     return res.status(500).json({ success: false, message: 'Unable to send phone OTP right now. Please try again.' });\n//   }\n// };\nexport const sendPhoneOTP = async (req: Request, res: Response) => {\n  // WHATSAPP OTP DISABLED - Use Email OTP only for now\n  return res.status(503).json({ success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' });\n};\n\n// WHATSAPP OTP DISABLED - Use Email OTP only for now\n// export const verifyPhoneOTP = async (req: Request, res: Response) => {\n//   try {\n//     const phone = normalizePhone(req.body?.phone);\n//     const otp = String(req.body?.otp || '');\n//     if (!phone) {\n//       return res.status(400).json({ success: false, message: 'Please provide a valid mobile number.' });\n//     }\n//     if (!validateOTP(otp)) {\n//       return res.status(400).json({ success: false, message: 'Please provide a valid OTP.' });\n//     }\n//\n//     verifyWhatsAppOtp(phone, otp);\n//     const existingUser = await getUserByPhone(phone);\n//     if (!existingUser) {\n//       return res.status(404).json({ success: false, message: 'This phone number is not registered. Please create an account first.' });\n//     }\n//\n//     const token = createAuthToken(existingUser);\n//     return res.status(200).json({ success: true, token, user: existingUser });\n//   } catch (error) {\n//     console.error('Error verifying phone OTP:', error);\n//     if (error instanceof WhatsAppOtpError) {\n//       return res.status(error.status).json({ success: false, message: error.message });\n//     }\n//     return res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Invalid or expired OTP.' });\n//   }\n// };\nexport const verifyPhoneOTP = async (req: Request, res: Response) => {\n  // WHATSAPP OTP DISABLED - Use Email OTP only for now\n  return res.status(503).json({ success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' });\n};
 
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {

@@ -4,6 +4,12 @@ import { getSupabaseAdmin } from '../lib/supabaseAdmin.js';
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   isAdmin?: boolean;
+  actor?: {
+    id: string;
+    email: string | null;
+    name: string | null;
+  };
+  requestId?: string;
 }
 
 export async function optionalAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
@@ -22,6 +28,7 @@ export async function optionalAuth(req: AuthenticatedRequest, _res: Response, ne
 
     req.userId = data.user.id;
     req.isAdmin = await checkIsAdmin(data.user.id);
+    req.actor = getActor(data.user);
   } catch {
     // Ignore invalid tokens for optional auth
   }
@@ -50,7 +57,18 @@ export async function requireAdmin(req: AuthenticatedRequest, res: Response, nex
 
   req.userId = data.user.id;
   req.isAdmin = true;
+  req.actor = getActor(data.user);
   next();
+}
+
+function getActor(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> | null }) {
+  const metadata = user.user_metadata ?? {};
+  const candidate = metadata.full_name ?? metadata.name ?? [metadata.first_name, metadata.last_name].filter(Boolean).join(' ');
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    name: typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null,
+  };
 }
 
 function extractBearerToken(req: Request): string | null {

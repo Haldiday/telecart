@@ -34,15 +34,17 @@ const otpRateLimiter = rateLimit({
 router.post('/signup/check-user', otpRateLimiter, signupCheckUser);
 router.post('/signup/send-email-otp', otpRateLimiter, signupSendEmailOTP);
 router.post('/signup/verify-email-otp', signupVerifyEmailOTP);
-router.post('/signup/send-phone-otp', otpRateLimiter, signupSendPhoneOTP);
-router.post('/signup/verify-phone-otp', signupVerifyPhoneOTP);
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// router.post('/signup/send-phone-otp', otpRateLimiter, signupSendPhoneOTP);
+// router.post('/signup/verify-phone-otp', signupVerifyPhoneOTP);
 router.post('/signup/complete', signupComplete);
 
 // Login family: email and phone login use a single verification step for existing users.
 router.post('/login/email/send-otp', otpRateLimiter, sendEmailOTP);
 router.post('/login/email/verify', verifyEmailOTP);
-router.post('/login/phone/send-otp', otpRateLimiter, sendPhoneOTP);
-router.post('/login/phone/verify', verifyPhoneOTP);
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// router.post('/login/phone/send-otp', otpRateLimiter, sendPhoneOTP);
+// router.post('/login/phone/verify', verifyPhoneOTP);
 
 // Legacy compatibility endpoints retained so the current app does not break during rollout.
 router.post('/send-email-otp', otpRateLimiter, sendEmailOTP);

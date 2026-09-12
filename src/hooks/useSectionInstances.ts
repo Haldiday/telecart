@@ -90,8 +90,8 @@ export const useSectionInstances = () => {
       const nextNumber = (count || 0) + 1;
       const name = customName || `${baseType} ${nextNumber}`;
 
-      const { data, error } = await supabase
-        .from('page_sections')
+      const { data, error } = await (supabase.from('page_sections') as any)
+        .auditAction('created')
         .insert({
           section_type: sectionType,
           name,
@@ -121,8 +121,8 @@ export const useSectionInstances = () => {
   // Delete section instance
   const deleteSection = async (sectionId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('page_sections')
+      const { error } = await (supabase.from('page_sections') as any)
+        .auditAction('deleted')
         .delete()
         .eq('id', sectionId);
 
@@ -229,8 +229,8 @@ export const useSectionInstances = () => {
       if (backgroundColor !== undefined) {
         updateData.background_color = backgroundColor || null;
       }
-      const { error } = await supabase
-        .from('page_sections')
+      const { error } = await (supabase.from('page_sections') as any)
+        .auditAction('updated')
         .update(updateData)
         .eq('id', sectionId);
 

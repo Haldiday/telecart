@@ -96,25 +96,10 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
     }
   }, [heroSettings]);
   
-  // Override handleResultClick for Hero search to keep input focused!
-  const handleHeroResultClick = (result: SearchResult) => {
-    handleResultClick(result);
-    // Keep focus on the input!
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
+  // Result click is handled by SearchContext context
+  const handleHeroResultClick = handleResultClick;
   
-  // When sticky search becomes hidden, focus Hero's input!
-  useEffect(() => {
-    console.log('[HeroSection] showMobileStickySearch changed:', showMobileStickySearch);
-    if (!showMobileStickySearch) {
-      setTimeout(() => {
-        console.log('[HeroSection] Focusing hero input');
-        inputRef.current?.focus();
-      }, 0);
-    }
-  }, [showMobileStickySearch]);
+
 
   useEffect(() => {
     if (words.length <= 1) return;

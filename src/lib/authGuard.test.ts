@@ -27,8 +27,9 @@ describe('authGuard', () => {
     window.sessionStorage.clear();
   });
 
-  it('stores a pending destination and redirects unauthenticated users to login', () => {
+  it('opens destinations directly while authentication is temporarily bypassed', () => {
     const navigate = vi.fn();
+    const onAuthenticated = vi.fn();
 
     const allowed = requireAuthenticationBeforeOpeningLink({
       destination: '/protected-page',
@@ -38,14 +39,13 @@ describe('authGuard', () => {
       search: '?foo=bar',
       hash: '#section',
       navigate,
+      onAuthenticated,
     });
 
-    expect(allowed).toBe(false);
-    expect(navigate).toHaveBeenCalledWith('/login', { replace: false });
-
-    const pending = window.sessionStorage.getItem('pending_auth_destination');
-    expect(pending).toContain('"destination":"/protected-page"');
-    expect(pending).toContain('"type":"brandAction"');
+    expect(allowed).toBe(true);
+    expect(onAuthenticated).toHaveBeenCalledOnce();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('pending_auth_destination')).toBeNull();
   });
 
   it('resumes the stored destination after login', () => {

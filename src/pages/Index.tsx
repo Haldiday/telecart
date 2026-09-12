@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearch } from '@/contexts/SearchContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { ChevronUp } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -64,23 +63,11 @@ export default function Index() {
   const heroSectionRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const { showMobileStickySearch } = useSearch();
 
-  useEffect(() => {
-    if (authLoading) return;
-
-    const hasVisited = localStorage.getItem('hasVisited');
-    if (!hasVisited && !user) {
-      const timer = setTimeout(() => {
-        localStorage.setItem('hasVisited', 'true');
-        navigate('/login');
-      }, 5000);
-      return () => clearTimeout(timer);
-    } else if (!hasVisited) {
-      localStorage.setItem('hasVisited', 'true');
-    }
-  }, [authLoading, user, navigate]);
+  /* AUTHENTICATION TEMPORARILY DISABLED - LOGIN/SIGNUP WILL BE ENABLED LATER
+  The previous first-visit redirect to /login is intentionally bypassed.
+  */
 
   const sectionsQuery = useQuery({
     queryKey: queryKeys.pageSections.home,
@@ -156,7 +143,7 @@ export default function Index() {
     };
   }, [queryClient]);
 
-  const isLoading = sectionsQuery.isLoading || heroSettingsQuery.isLoading;
+  const isLoading = sectionsQuery.isLoading;
   const sections = sectionsQuery.data || [];
   const heroSettings = heroSettingsQuery.data || null;
 
@@ -170,9 +157,6 @@ export default function Index() {
       const targetId = `section-${sectionId}`;
       console.log('[Index] Hash detected or sections loaded, targetId:', targetId);
       waitForElementAndScroll(targetId);
-    } else {
-      // If no hash, scroll to top on initial load
-      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, [location.hash, isLoading]);
 
@@ -196,7 +180,11 @@ export default function Index() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className={`flex-1 ${showMobileStickySearch ? 'pt-40' : 'pt-24'} md:pt-32`}>
+      <main
+        data-scroll-container="home"
+        data-scroll-ready={!isLoading ? 'home' : undefined}
+        className={`flex-1 ${showMobileStickySearch ? 'pt-40' : 'pt-24'} md:pt-32`}
+      >
         {isLoading ? (
           // Placeholder to prevent footer from showing early
           <div className="h-screen" />

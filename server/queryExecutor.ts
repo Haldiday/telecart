@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from './lib/supabaseAdmin.js';
-import type { DbResponse, QueryFilter, QuerySpec } from './types/query.js';
+import type { AuditActionIntent, DbResponse, QueryFilter, QuerySpec } from './types/query.js';
+import { calculateChanges, writeAuditLogsBestEffort, type AuditActor } from './lib/auditLog.js';
+import { assertAllowedTable } from './lib/allowedTables.js';
 
 function applyFilters(query: any, filters: QueryFilter[]): any {
   let result = query;
@@ -75,8 +77,9 @@ function formatError(error: { message: string; code?: string; details?: string }
   };
 }
 
-export async function executeQuery(spec: QuerySpec): Promise<DbResponse> {
+export async function executeQuery(spec: QuerySpec, actor?: AuditActor, requestId?: string): Promise<DbResponse> {
   const table = spec.table;
+  assertAllowedTable(table);
 
   try {
     if (spec.action === 'select') {
@@ -91,15 +94,34 @@ export async function executeQuery(spec: QuerySpec): Promise<DbResponse> {
 
     if (spec.action === 'insert') {
       let query: any = getSupabaseAdmin().from(table).insert(spec.body);
-      if (spec.returning) {
-        query = query.select(spec.select ?? '*');
-        query = applyLimitAndSingle(query, spec);
-      }
+      if (actor && requestId) query = query.select('*');
+      else if (spec.returning) query = query.select(spec.select ?? '*');
+      if (spec.returning && !(actor && requestId)) query = applyLimitAndSingle(query, spec);
       const { data, error } = await query;
+      if (!error && actor && requestId && spec.auditAction) {
+        const rows = toRows(data);
+        await writeAuditLogsBestEffort(rows.map((row) => ({
+          actor,
+          action: spec.auditAction,
+          entityTable: table,
+          recordId: row.id ? String(row.id) : null,
+          newData: row,
+          requestId,
+        })));
+      }
+      if (!spec.returning && actor && requestId) return { data: null, error: formatError(error) };
+      if (actor && requestId && spec.returning) {
+        const rows = toRows(data);
+        return {
+          data: spec.single ? (rows[0] ?? null) : spec.maybeSingle ? (rows[0] ?? null) : rows,
+          error: formatError(error),
+        };
+      }
       return { data, error: formatError(error) };
     }
 
     if (spec.action === 'update') {
+      const oldRows = actor && requestId ? await selectAffectedRowsSafely(table, spec) : [];
       let query: any = getSupabaseAdmin().from(table).update(spec.body);
       query = applyFilters(query, spec.filters);
       if (spec.returning) {
@@ -107,10 +129,15 @@ export async function executeQuery(spec: QuerySpec): Promise<DbResponse> {
         query = applyLimitAndSingle(query, spec);
       }
       const { data, error } = await query;
+      if (!error && actor && requestId && spec.auditAction) {
+        const newRows = await selectAffectedRowsSafely(table, spec);
+        await auditUpdatedRows(table, oldRows, newRows, actor, requestId, spec.auditAction);
+      }
       return { data, error: formatError(error) };
     }
 
     if (spec.action === 'delete') {
+      const oldRows = actor && requestId ? await selectAffectedRowsSafely(table, spec) : [];
       let query: any = getSupabaseAdmin().from(table).delete();
       query = applyFilters(query, spec.filters);
       if (spec.returning) {
@@ -118,16 +145,44 @@ export async function executeQuery(spec: QuerySpec): Promise<DbResponse> {
         query = applyLimitAndSingle(query, spec);
       }
       const { data, error } = await query;
+      if (!error && actor && requestId && spec.auditAction) {
+        await writeAuditLogsBestEffort(oldRows.map((row) => ({
+          actor,
+          action: spec.auditAction,
+          entityTable: table,
+          recordId: row.id ? String(row.id) : null,
+          oldData: row,
+          requestId,
+        })));
+      }
       return { data, error: formatError(error) };
     }
 
     if (spec.action === 'upsert') {
-      let query: any = getSupabaseAdmin().from(table).upsert(spec.body);
+      const oldRows = actor && requestId ? await findExistingUpsertRows(table, spec) : [];
+      let query: any = getSupabaseAdmin().from(table).upsert(spec.body, spec.onConflict ? { onConflict: spec.onConflict } : undefined);
       if (spec.returning) {
         query = query.select(spec.select ?? '*');
         query = applyLimitAndSingle(query, spec);
       }
       const { data, error } = await query;
+      if (!error && actor && requestId && spec.auditAction) {
+        const snapshotRows = await findExistingUpsertRows(table, spec);
+        const newRows = snapshotRows.length > 0 ? snapshotRows : toRows(data);
+        await writeAuditLogsBestEffort(newRows.flatMap((row) => {
+          const old = oldRows.find((candidate) => candidate.id === row.id) ?? null;
+          if (old && !calculateChanges(old, row)) return [];
+          return [{
+            actor,
+            action: spec.auditAction,
+            entityTable: table,
+            recordId: row.id ? String(row.id) : null,
+            oldData: old,
+            newData: row,
+            requestId,
+          }];
+        }));
+      }
       return { data, error: formatError(error) };
     }
 
@@ -136,4 +191,86 @@ export async function executeQuery(spec: QuerySpec): Promise<DbResponse> {
     const message = err instanceof Error ? err.message : 'Query execution failed';
     return { data: null, error: { message } };
   }
+}
+
+function toRows(data: unknown): Record<string, any>[] {
+  if (Array.isArray(data)) return data as Record<string, any>[];
+  return data ? [data as Record<string, any>] : [];
+}
+
+async function selectAffectedRowsSafely(table: string, spec: QuerySpec): Promise<Record<string, any>[]> {
+  try {
+    let query: any = getSupabaseAdmin().from(table).select('*');
+    query = applyFilters(query, spec.filters);
+    const { data, error } = await query;
+    if (error) throw error;
+    return toRows(data);
+  } catch (error) {
+    console.error('[audit] Unable to snapshot affected rows', {
+      table,
+      error: error instanceof Error ? error.message : error,
+    });
+    return [];
+  }
+}
+
+async function auditUpdatedRows(
+  table: string,
+  oldRows: Record<string, any>[],
+  newRows: Record<string, any>[],
+  actor: AuditActor,
+  requestId: string,
+  auditAction: AuditActionIntent,
+) {
+  await writeAuditLogsBestEffort(newRows.flatMap((row) => {
+    const oldData = oldRows.find((old) => old.id === row.id) ?? null;
+    if (oldData && !calculateChanges(oldData, row)) return [];
+    return [{
+      actor,
+      action: auditAction,
+      entityTable: table,
+      recordId: row.id ? String(row.id) : null,
+      oldData,
+      newData: row,
+      requestId,
+    }];
+  }));
+}
+
+async function findExistingUpsertRows(table: string, spec: QuerySpec): Promise<Record<string, any>[]> {
+  const body = Array.isArray(spec.body) ? spec.body : spec.body ? [spec.body] : [];
+  const ids = body.map((row: any) => row.id).filter(Boolean);
+  if (ids.length > 0) {
+    try {
+      const { data, error } = await getSupabaseAdmin().from(table).select('*').in('id', ids);
+      if (error) throw error;
+      return toRows(data);
+    } catch (error) {
+      console.error('[audit] Unable to snapshot upsert rows', {
+        table,
+        error: error instanceof Error ? error.message : error,
+      });
+      return [];
+    }
+  }
+
+  const conflictColumns = spec.onConflict?.split(',').map((column) => column.trim()).filter(Boolean) ?? [];
+  if (conflictColumns.length === 0) return [];
+
+  const rows: Record<string, any>[] = [];
+  for (const bodyRow of body) {
+    try {
+      let query: any = getSupabaseAdmin().from(table).select('*').limit(1);
+      for (const column of conflictColumns) query = query.eq(column, bodyRow[column]);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (data) rows.push(data);
+    } catch (error) {
+      console.error('[audit] Unable to snapshot conflict-key upsert row', {
+        table,
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  }
+  return rows;
 }

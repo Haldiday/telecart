@@ -50,7 +50,8 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [isLoading, setIsLoading] = useState(false);
-  const [agreeToWhatsApp, setAgreeToWhatsApp] = useState(false);
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  // const [agreeToWhatsApp, setAgreeToWhatsApp] = useState(false);
   const navigate = useNavigate();
 
   const handleSendOTP = async () => {
@@ -121,9 +122,14 @@ export default function LoginPage() {
       }
 
       // Store user data
+      // WHATSAPP OTP DISABLED - Use Email OTP only for now
+      // localStorage.setItem('msg91_session', JSON.stringify({
+      //   phoneNumber,
+      //   whatsappOptIn: agreeToWhatsApp,
+      // }));
       localStorage.setItem('msg91_session', JSON.stringify({
         phoneNumber,
-        whatsappOptIn: agreeToWhatsApp,
+        // whatsappOptIn: agreeToWhatsApp, // WHATSAPP OTP DISABLED
       }));
 
       toast.success('Login successful!');
@@ -188,9 +194,8 @@ export default function LoginPage() {
 
               {/* Checkboxes */}
               <div className="space-y-4">
-
-
-                <div className="flex items-start gap-3">
+                {/* WHATSAPP OTP DISABLED - Use Email OTP only for now */}
+                {/* <div className="flex items-start gap-3">
                   <Checkbox
                     id="whatsapp"
                     checked={agreeToWhatsApp}
@@ -201,7 +206,7 @@ export default function LoginPage() {
                     Send me notification,updates & offers{' '}
                     <span className="font-semibold">📱 WhatsApp</span>
                   </label>
-                </div>
+                </div> */}
               </div>
 
               {/* Get OTP Button */}

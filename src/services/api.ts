@@ -46,10 +46,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      window.location.href = '/login';
-    }
+    /* AUTHENTICATION TEMPORARILY DISABLED - LOGIN/SIGNUP WILL BE ENABLED LATER
+    Do not redirect public website visitors to login when an optional request
+    receives a 401 response. The original behavior remains available below.
+    */
+    // if (error.response?.status === 401) {
+    //   localStorage.removeItem('auth_token');
+    //   window.location.href = '/login';
+    // }
     return Promise.reject(error);
   }
 );
@@ -70,14 +74,25 @@ export const authAPI = {
     return response.data;
   },
 
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  // signupSendPhoneOTP: async (data: SignupCheckRequest): Promise<AuthResponse> => {
+  //   const response = await api.post('/auth/signup/send-phone-otp', data);
+  //   return response.data;
+  // },
+
+  // signupVerifyPhoneOTP: async (data: { email: string; phone: string; otp: string }): Promise<AuthResponse> => {
+  //   const response = await api.post('/auth/signup/verify-phone-otp', data);
+  //   return response.data;
+  // },
+
   signupSendPhoneOTP: async (data: SignupCheckRequest): Promise<AuthResponse> => {
-    const response = await api.post('/auth/signup/send-phone-otp', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   signupVerifyPhoneOTP: async (data: { email: string; phone: string; otp: string }): Promise<AuthResponse> => {
-    const response = await api.post('/auth/signup/verify-phone-otp', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   signupComplete: async (data: SignupCompleteRequest): Promise<AuthResponse> => {
@@ -96,15 +111,26 @@ export const authAPI = {
     return response.data;
   },
 
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  // loginSendPhoneOTP: async (data: SendWhatsAppOTPRequest): Promise<AuthResponse> => {
+  //   // Use the functions-backed endpoint
+  //   const response = await api.post('/auth/send-whatsapp-otp', data);
+  //   return response.data;
+  // },
+
+  // loginVerifyPhoneOTP: async (data: VerifyWhatsAppOTPRequest): Promise<AuthResponse> => {
+  //   const response = await api.post('/auth/login/phone/verify', data);
+  //   return response.data;
+  // },
+
   loginSendPhoneOTP: async (data: SendWhatsAppOTPRequest): Promise<AuthResponse> => {
-    // Use the functions-backed endpoint
-    const response = await api.post('/auth/send-whatsapp-otp', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   loginVerifyPhoneOTP: async (data: VerifyWhatsAppOTPRequest): Promise<AuthResponse> => {
-    const response = await api.post('/auth/login/phone/verify', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   sendOTP: async (data: SendOTPRequest): Promise<AuthResponse> => {
@@ -117,14 +143,25 @@ export const authAPI = {
     return response.data;
   },
 
+  // WHATSAPP OTP DISABLED - Use Email OTP only for now
+  // sendWhatsAppOTP: async (data: SendWhatsAppOTPRequest): Promise<AuthResponse> => {
+  //   const response = await api.post('/auth/send-whatsapp-otp', data);
+  //   return response.data;
+  // },
+
+  // verifyWhatsAppOTP: async (data: VerifyWhatsAppOTPRequest): Promise<AuthResponse> => {
+  //   const response = await api.post('/auth/verify-whatsapp-otp', data);
+  //   return response.data;
+  // },
+
   sendWhatsAppOTP: async (data: SendWhatsAppOTPRequest): Promise<AuthResponse> => {
-    const response = await api.post('/auth/send-whatsapp-otp', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   verifyWhatsAppOTP: async (data: VerifyWhatsAppOTPRequest): Promise<AuthResponse> => {
-    const response = await api.post('/auth/verify-whatsapp-otp', data);
-    return response.data;
+    // WHATSAPP OTP DISABLED - Use Email OTP only for now
+    return { success: false, message: 'WhatsApp OTP is temporarily unavailable. Please use Email OTP instead.' } as any;
   },
 
   getMe: async (): Promise<AuthResponse> => {

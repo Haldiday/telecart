@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import type { User } from '../types/auth';
 import { clearStoredPendingAuthDestination } from '@/lib/authGuard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -20,14 +21,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
 
   useEffect(() => {
+    /* AUTHENTICATION TEMPORARILY DISABLED - LOGIN/SIGNUP WILL BE ENABLED LATER
+    DO NOT DELETE - WILL BE RE-ENABLED LATER
     const initAuth = async () => {
       const token = localStorage.getItem('auth_token');
+
       if (token) {
         try {
           const response = await authAPI.getMe();
           if (response.success && response.user) {
             setUser(response.user);
-          } else if (response.message?.toLowerCase().includes('invalid') || response.message?.toLowerCase().includes('expired')) {
+            setLoading(false);
+            return;
+          }
+
+          if (response.message?.toLowerCase().includes('invalid') || response.message?.toLowerCase().includes('expired')) {
             localStorage.removeItem('auth_token');
           } else {
             console.warn('Auth initialization returned no user; keeping existing token for retry.', response);
@@ -40,10 +48,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          created_at: session.user.created_at || new Date().toISOString(),
+          updated_at: session.user.updated_at || new Date().toISOString(),
+        } as User);
+      }
+
       setLoading(false);
     };
 
     initAuth();
+    */
+
+    // Public visitors do not need an auth/session request during normal browsing.
+    setLoading(false);
   }, []);
 
   const login = (token: string, userData: User) => {
@@ -53,12 +76,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    const hasCustomToken = Boolean(localStorage.getItem('auth_token'));
+
     try {
-      await authAPI.logout();
+      if (hasCustomToken) {
+        await authAPI.logout();
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('auth_token');
+      if (hasCustomToken) {
+        localStorage.removeItem('auth_token');
+      }
       localStorage.removeItem('msg91_session');
       clearStoredPendingAuthDestination();
       setUser(null);

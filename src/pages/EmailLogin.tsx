@@ -101,10 +101,6 @@ export const EmailLogin: React.FC = () => {
             {loading ? 'Sending...' : 'Send OTP'}
           </Button>
 
-          <Button type="button" variant="outline" className="h-12 w-full rounded-[10px] border-[1.5px] border-[#1d4ed8] text-[#1d4ed8]" onClick={() => navigate('/login')} disabled={loading}>
-            Login by phone number
-          </Button>
-
           <p className="text-center text-sm text-slate-600">
             Don&apos;t have an account?{' '}
             <button type="button" onClick={() => navigate('/signup')} className="font-semibold text-[#1d4ed8] underline-offset-2 hover:underline">

@@ -27,4 +27,5 @@ export const supabase = {
   removeChannel: supabaseAuth.removeChannel.bind(supabaseAuth),
   from: apiDb.from.bind(apiDb),
   storage: apiDb.storage,
-} as typeof supabaseAuth;
+} as unknown as typeof supabaseAuth;
+

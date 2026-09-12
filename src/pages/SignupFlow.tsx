@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { resumePendingAuthDestination } from '@/lib/authGuard';
 
+// Feature flag: temporarily disable WhatsApp OTP
+const WHATSAPP_OTP_ENABLED = false;
+
 const initialForm = {
   first_name: '',
   last_name: '',
@@ -81,6 +84,9 @@ export const SignupFlow: React.FC = () => {
     !loading;
 
   const normalizeSignupError = (message: string) => {
+    if (/mobile number is already registered|registered email address to log in/i.test(message)) {
+      return 'This Mobile number is already registered use different mobile number';
+    }
     if (/already.*register/i.test(message)) {
       return 'This Email id is already registered. Please login.';
     }
@@ -110,6 +116,15 @@ export const SignupFlow: React.FC = () => {
     try {
       setError(null);
       setLoading(true);
+
+      const duplicateCheck = await authAPI.checkSignupUser({
+        ...form,
+        phone: form.phone || '',
+      });
+      if (!duplicateCheck.success) {
+        throw new Error(duplicateCheck.message || 'This mobile number is already registered. Please use your registered email address to log in.');
+      }
+
       const response = await authAPI.signupSendEmailOTP({
         ...form,
         phone: form.phone || '',
@@ -158,24 +173,36 @@ export const SignupFlow: React.FC = () => {
       if (!agreeToTerms) {
         throw new Error('Please agree to the Privacy Policy and Terms & Conditions to continue.');
       }
-      if (!emailVerified || !phoneVerified) {
-        throw new Error('Please verify both email and phone before creating your account.');
+      // When WhatsApp OTP is disabled, only email verification is required
+      if (!WHATSAPP_OTP_ENABLED) {
+        if (!emailVerified) {
+          throw new Error('Please verify your email before creating your account.');
+        }
+      } else {
+        // Original requirement: both email and phone verification
+        if (!emailVerified || !phoneVerified) {
+          throw new Error('Please verify both email and phone before creating your account.');
+        }
       }
       setLoading(true);
       const completion = await authAPI.signupComplete(form);
+      console.log('DEBUG submitSignupCheck: completion response =', completion);
       if (!completion.success || !completion.token || !completion.user) {
         throw new Error(completion.message || 'Unable to finish account creation.');
       }
+      console.log('DEBUG submitSignupCheck: calling login with token and user');
       login(completion.token, completion.user);
       const resumed = resumePendingAuthDestination({ navigate });
+      console.log('DEBUG submitSignupCheck: resumed =', resumed);
       if (!resumed) {
+        console.log('DEBUG submitSignupCheck: navigating to home');
         navigate('/');
       }
       toast({ title: 'Account created', description: 'Your BizReq account is ready.' });
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Unable to continue with signup.';
-      setError(message);
-      if (message.includes('Please login')) {
+      setError(normalizeSignupError(message));
+      if (/Please login|registered email address to log in/i.test(message)) {
         navigate('/login');
       }
     } finally {
@@ -192,7 +219,11 @@ export const SignupFlow: React.FC = () => {
         throw new Error(response.message || 'Email verification failed.');
       }
       setEmailVerified(true);
-      toast({ title: 'Email verified', description: 'Please verify your phone number now.' });
+      // Since WhatsApp OTP is disabled, automatically mark phone as verified if provided
+      if (!WHATSAPP_OTP_ENABLED && isFilled(form.phone)) {
+        setPhoneVerified(true);
+      }
+      toast({ title: 'Email verified', description: 'You can now continue with your signup.' });
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Unable to verify your email OTP.');
     } finally {
@@ -265,6 +296,41 @@ export const SignupFlow: React.FC = () => {
 
             <div className="space-y-3">
               <div className="space-y-2">
+                <Label htmlFor="phone" className="text-sm font-medium text-slate-700">Phone Number</Label>
+                <div className="flex items-center gap-2">
+                  <Input id="phone" value={form.phone} onChange={(e) => onFieldChange('phone', e.target.value)} placeholder="Mobile Number" className="flex-1 h-11 rounded-[10px] border border-gray-200 bg-white px-4 text-[15px] shadow-sm" disabled={phoneOtpSent || phoneVerified} />
+                  {WHATSAPP_OTP_ENABLED && (
+                    <Button type="button" variant="outline" className="h-11 rounded-[10px] px-4 text-sm font-semibold" onClick={triggerPhoneOtp} disabled={!canSendPhoneOTP}>
+                      {phoneVerified
+                        ? 'Verified'
+                        : phoneResendSeconds > 0
+                        ? `Resend in ${phoneResendSeconds}s`
+                        : phoneOtpSent
+                        ? 'Resend OTP'
+                        : 'Send OTP'}
+                    </Button>
+                  )}
+                  {!WHATSAPP_OTP_ENABLED && phoneVerified && (
+                    <span className="text-sm text-emerald-600 font-semibold">✓ Saved</span>
+                  )}
+                </div>
+                {phoneFieldMessage && emailVerified && !phoneVerified && WHATSAPP_OTP_ENABLED && (
+                  <p className="mt-2 text-sm text-amber-600">{phoneFieldMessage}</p>
+                )}
+                {phoneOtpSent && !phoneVerified && WHATSAPP_OTP_ENABLED && (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <Input id="phone-otp" maxLength={6} value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter phone OTP" className="h-11 rounded-[10px] border border-gray-200 bg-white px-4 text-[15px] shadow-sm" />
+                    <Button type="button" className="h-11 rounded-[10px] px-4 text-sm font-semibold" onClick={verifyPhoneOtp} disabled={loading || phoneOtp.length !== 6}>
+                      {loading ? 'Verifying...' : 'Verify'}
+                    </Button>
+                  </div>
+                )}
+                {phoneVerified && (
+                  <p className="text-sm text-emerald-600"></p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email</Label>
                 <div className="flex items-center gap-2">
                   <Input id="email" type="email" value={form.email} onChange={(e) => onFieldChange('email', e.target.value)} placeholder="name@example.com" className="flex-1 h-11 rounded-[10px] border border-gray-200 bg-white px-4 text-[15px] shadow-sm" disabled={emailOtpSent || emailVerified} />
@@ -290,36 +356,6 @@ export const SignupFlow: React.FC = () => {
                   </div>
                 )}
                 {emailVerified && (
-                  <p className="text-sm text-emerald-600"></p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium text-slate-700">Phone Number</Label>
-                <div className="flex items-center gap-2">
-                  <Input id="phone" value={form.phone} onChange={(e) => onFieldChange('phone', e.target.value)} placeholder="Mobile Number" className="flex-1 h-11 rounded-[10px] border border-gray-200 bg-white px-4 text-[15px] shadow-sm" disabled={phoneOtpSent || phoneVerified} />
-                  <Button type="button" variant="outline" className="h-11 rounded-[10px] px-4 text-sm font-semibold" onClick={triggerPhoneOtp} disabled={!canSendPhoneOTP}>
-                    {phoneVerified
-                      ? 'Verified'
-                      : phoneResendSeconds > 0
-                      ? `Resend in ${phoneResendSeconds}s`
-                      : phoneOtpSent
-                      ? 'Resend OTP'
-                      : 'Send OTP'}
-                  </Button>
-                </div>
-                {phoneFieldMessage && emailVerified && !phoneVerified && (
-                  <p className="mt-2 text-sm text-amber-600">{phoneFieldMessage}</p>
-                )}
-                {phoneOtpSent && !phoneVerified && (
-                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
-                    <Input id="phone-otp" maxLength={6} value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter phone OTP" className="h-11 rounded-[10px] border border-gray-200 bg-white px-4 text-[15px] shadow-sm" />
-                    <Button type="button" className="h-11 rounded-[10px] px-4 text-sm font-semibold" onClick={verifyPhoneOtp} disabled={loading || phoneOtp.length !== 6}>
-                      {loading ? 'Verifying...' : 'Verify'}
-                    </Button>
-                  </div>
-                )}
-                {phoneVerified && (
                   <p className="text-sm text-emerald-600"></p>
                 )}
               </div>

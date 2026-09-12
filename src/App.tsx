@@ -37,14 +37,18 @@ import BrandActionLinksPage from "./pages/BrandActionLinksPage";
 import BrandActionLinksSeeAllPage from "./pages/BrandActionLinksSeeAllPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
 import { queryClient } from "./lib/queryClient";
-import { Login } from "./pages/Login";
-import { EmailLogin } from "./pages/EmailLogin";
-import { SignupFlow } from "./pages/SignupFlow";
-import { VerifyOTP } from "./pages/VerifyOTP";
-import { WhatsAppLogin } from "./pages/WhatsAppLogin";
-import { VerifyWhatsAppOTP } from "./pages/VerifyWhatsAppOTP";
+// WHATSAPP OTP DISABLED - Use Email OTP only for now
+// import { WhatsAppLogin } from "./pages/WhatsAppLogin";
+// import { VerifyWhatsAppOTP } from "./pages/VerifyWhatsAppOTP";
 import { Dashboard } from "./pages/Dashboard";
 import { Account } from "./pages/Account";
+
+const PublicAuthDisabled = () => {
+  // TEMPORARILY DISABLED
+  // Public Login is currently disabled.
+  // Keep this code for future authentication re-enable.
+  return <Navigate to="/" replace />;
+};
 
 const router = createBrowserRouter(
   [
@@ -77,14 +81,27 @@ const router = createBrowserRouter(
         { path: "/category/:categoryId/subcategory/:subcategoryId/brand/:brandId/action-links/see-all", element: <BrandActionLinksSeeAllPage /> },
         { path: "/category/:categoryId/subcategories", element: <AllSubcategoriesPage /> },
         { path: "/featured-cards/:sectionId", element: <FeaturedCardsPage /> },
-        { path: "/admin/login", element: <AdminLogin /> },
-        { path: "/admin", element: <AdminDashboard /> },
-        { path: "/login", element: <Login /> },
-        { path: "/login/email", element: <EmailLogin /> },
-        { path: "/signup", element: <SignupFlow /> },
-        { path: "/verify-otp", element: <VerifyOTP /> },
-        { path: "/login/whatsapp", element: <WhatsAppLogin /> },
-        { path: "/verify-whatsapp-otp", element: <VerifyWhatsAppOTP /> },
+        { path: "/x540l-place-1208/login", element: <AdminLogin /> },
+        { path: "/x540l-place-1208", element: <AdminDashboard /> },
+        // TEMPORARILY DISABLED
+        // Public Login is currently disabled.
+        // Keep this code for future authentication re-enable.
+        // { path: "/login", element: <Login /> },
+        // { path: "/login/email", element: <EmailLogin /> },
+        // { path: "/signup", element: <SignupFlow /> },
+        // { path: "/verify-otp", element: <VerifyOTP /> },
+        { path: "/login", element: <PublicAuthDisabled /> },
+        { path: "/login/*", element: <PublicAuthDisabled /> },
+        { path: "/signup", element: <PublicAuthDisabled /> },
+        { path: "/register", element: <PublicAuthDisabled /> },
+        { path: "/signin", element: <PublicAuthDisabled /> },
+        { path: "/verify-otp", element: <PublicAuthDisabled /> },
+        { path: "/verify-whatsapp-otp", element: <PublicAuthDisabled /> },
+        { path: "/forgot-password", element: <PublicAuthDisabled /> },
+        { path: "/reset-password", element: <PublicAuthDisabled /> },
+        // WHATSAPP OTP DISABLED - Use Email OTP only for now
+        // { path: "/login/whatsapp", element: <WhatsAppLogin /> },
+        // { path: "/verify-whatsapp-otp", element: <VerifyWhatsAppOTP /> },
         {
           path: "/dashboard",
           element: (

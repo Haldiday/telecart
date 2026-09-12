@@ -157,27 +157,9 @@ export default function Header() {
     blurTimeoutRef,
   } = useSearch();
   
-  // Override handleResultClick for Header to keep input focused!
-  const handleHeaderResultClick = (result: SearchResult) => {
-    handleResultClick(result);
-    // Keep focus on the appropriate input!
-    setTimeout(() => {
-      if (showMobileStickySearch) {
-        stickyInputRef.current?.focus();
-      } else if (showHeaderSearch) {
-        desktopInputRef.current?.focus();
-      }
-    }, 0);
-  };
-  
-  // When sticky search becomes visible, focus the input if it was previously focused!
-  useEffect(() => {
-    if (showMobileStickySearch && isMobile) {
-      setTimeout(() => {
-        stickyInputRef.current?.focus();
-      }, 0);
-    }
-  }, [showMobileStickySearch, isMobile]);
+  // Result click is handled by SearchContext context
+  const handleHeaderResultClick = handleResultClick;
+
 
   const scrollToSectionElement = (sectionElement: HTMLElement | null) => {
     if (!sectionElement) return;
@@ -260,15 +242,6 @@ export default function Header() {
 
     checkElement();
   };
-
-  useEffect(() => {
-    if (!location.hash.startsWith('#section-')) return;
-
-    const sectionId = location.hash.replace('#section-', '');
-    const targetId = `section-${sectionId}`;
-    console.log('[Header] Hash detected, targetId:', targetId);
-    waitForElementAndScroll(targetId);
-  }, [location.pathname, location.hash]);
 
   useEffect(() => {
     const loadHeaderSettings = async () => {
@@ -370,7 +343,7 @@ export default function Header() {
       <div className="bg-[#17313B] text-white py-2 px-4 md:px-8 lg:px-10 hidden md:block">
         <div className="container mx-auto flex justify-end items-center gap-4 md:gap-8">
           {headerSettings.leave_review_visible && (
-            <a 
+            <a
               href={headerSettings.leave_review_link} 
               className="top-header-link"
             >
@@ -385,6 +358,16 @@ export default function Header() {
               {headerSettings.for_providers_text}
             </a>
           )}
+          {/* AUTHENTICATION TEMPORARILY DISABLED - LOGIN/SIGNUP WILL BE ENABLED LATER */}
+          {headerSettings.join_visible && (
+            <a
+              href={headerSettings.join_link}
+              className="top-header-link border border-white rounded-full px-5 py-1.5 hover:bg-white hover:text-[#0b212e]"
+            >
+              {headerSettings.join_text}
+            </a>
+          )}
+          {/*
           {!user && headerSettings.sign_in_visible && (
             <a
               href={headerSettings.sign_in_link}
@@ -398,14 +381,7 @@ export default function Header() {
               {headerSettings.sign_in_text}
             </a>
           )}
-          {headerSettings.join_visible && (
-            <a 
-              href={headerSettings.join_link}
-              className="top-header-link border border-white rounded-full px-5 py-1.5 hover:bg-white hover:text-[#0b212e]"
-            >
-              {headerSettings.join_text}
-            </a>
-          )}
+          */}
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -810,6 +786,18 @@ export default function Header() {
                     ) : (
                       <>
                         {headerSettings.join_visible && (
+                          <a
+                            href={headerSettings.join_link}
+                            onClick={() => setMobileOpen(false)}
+                            className="w-full bg-[#1d4ed8] text-white text-center py-3.5 rounded-lg font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
+                          >
+                            {headerSettings.join_text}
+                          </a>
+                        )}
+                      </>
+                    ) /* AUTHENTICATION TEMPORARILY DISABLED - LOGIN/SIGNUP WILL BE ENABLED LATER
+                      <>
+                        {headerSettings.join_visible && (
                           <a 
                             href={headerSettings.join_link}
                             onClick={(e) => { e.preventDefault(); setMobileOpen(false); navigate('/login'); }} 
@@ -833,7 +821,8 @@ export default function Header() {
                           </a>
                         )}
                       </>
-                    )}
+                      */
+                    }
 
                     {headerSettings.submit_button_visible && (
                       <a 
