@@ -15,7 +15,6 @@ import {
 } from '@/lib/getListedComparisonVisibility';
 import { resolveSubcategorySortOrder } from '@/lib/subcategoryOrdering';
 import { searchAdminExternalLinks, type AdminLinkSearchResult } from '@/lib/api/adminLinkSearch';
-import AdminAuditLog from '@/pages/AdminAuditLog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
 } from '@dnd-kit/core';
@@ -25,8 +24,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Pencil, Trash2, LogOut, Home, X, Save, Search, Loader2,
-  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail, PenTool
+  LayoutDashboard, Type, Layers, CreditCard, Tag, Star, Image, Lock, Unlock, ArrowLeft, CheckCircle2, ChevronDown, Mail, PenTool, History
 } from 'lucide-react';
+import AuditTimeline from '@/components/admin/AuditTimeline';
+import { recordAudit, type AuditModule as AuditModuleType } from '@/lib/auditService';
 
 interface PageSection { id: string; section_type: string; name: string; sort_order: number; is_visible: boolean; is_locked: boolean; heading: string; description: string | null; show_heading: boolean; background_color?: string | null; }
 interface FeaturedCard { id: string; title: string; description: string; logo_url: string | null; link: string | null; sort_order: number; section_id: string; is_fixed: boolean; show_border: boolean; border_color: string | null; background_color?: string | null; is_visible: boolean; open_in_new_tab: boolean; }
@@ -162,8 +163,7 @@ function normalizeAdminBrandActionLinks(brand: Partial<SubcategoryBrand> & Recor
     },
   ].filter((link) => Boolean(link.text || link.url || link.enabled !== undefined));
 
-  return legacyLinks.map((link, index) => ({
-    id: `legacy-${index}`,
+  return legacyLinks.map((link) => ({
     text: link.text,
     url: link.url,
     new_tab: Boolean(link.new_tab),
@@ -203,29 +203,6 @@ function extractMissingColumnsFromError(errorMessage: string) {
   return missingColumns;
 }
 
-function auditedFrom(table: string, action: 'created' | 'updated' | 'deleted') {
-  return (supabase.from(table as any) as any).auditAction(action);
-}
-
-function classifyBrandAction(
-  originalBrand: SubcategoryBrand | undefined,
-  currentBrand: SubcategoryBrand,
-): 'created' | 'updated' | 'deleted' {
-  if (!originalBrand) return 'created';
-
-  const originalLinks = buildBrandActionLinkPayload(originalBrand.action_links);
-  const currentLinks = buildBrandActionLinkPayload(currentBrand.action_links);
-  if (originalLinks.length === 0 && currentLinks.length > 0) return 'created';
-  const originalLinkIds = new Set(originalLinks.map((link, index) => link.id || `link-${index}`));
-  const currentLinkIds = new Set(currentLinks.map((link, index) => link.id || `link-${index}`));
-  if ([...originalLinkIds].some((id) => !currentLinkIds.has(id))) return 'deleted';
-  if ([...currentLinkIds].some((id) => !originalLinkIds.has(id))) return 'created';
-  if (JSON.stringify(originalLinks) !== JSON.stringify(currentLinks)) {
-    return 'updated';
-  }
-  return 'updated';
-}
-
 function stripColumnsFromPayload<T extends Record<string, any>>(items: T[], columns: Set<string>) {
   if (columns.size === 0) return items;
   return items.map((item) => {
@@ -238,15 +215,12 @@ function stripColumnsFromPayload<T extends Record<string, any>>(items: T[], colu
 async function upsertWithMissingColumnFallback<T extends Record<string, any>>(
   table: string,
   rows: T[],
-  auditAction?: 'created' | 'updated' | 'deleted',
 ) {
   let payload = rows;
   const removedColumns = new Set<string>();
 
   while (true) {
-    const query = (supabase.from(table as any).upsert(payload as any) as any);
-    if (auditAction) query.auditAction(auditAction);
-    const { error } = await query;
+    const { error } = await supabase.from(table as any).upsert(payload as any);
     if (!error) return;
 
     const errorMessage = (error as any)?.message || JSON.stringify(error);
@@ -572,7 +546,7 @@ interface Ad3Item extends Ad2Item {
 
 interface FAQ extends FAQRecord { }
 
-type Tab = 'search' | 'dashboard' | 'audit-log' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
+type Tab = 'search' | 'dashboard' | 'hero' | 'header' | 'sections' | 'cards' | 'categories' | 'offers' | 'ads_1col' | 'ads_2col' | 'ads_3col' | 'footer' | 'footer_general' | 'footer_contact' | 'footer_subscribers' | 'footer_privacy' | 'footer_terms' | 'footer_about' | 'footer_refund' | 'footer_refund_1' | 'footer_refund_2' | 'footer_refund_3' | 'footer_refund_4' | 'faqs' | 'advertise' | 'get-listed' | 'write-for-us' | 'vendor-guidelines' | 'browse-all-directories';
 
 
 function SortableItem({ id, children, disabled }: { id: string; children: React.ReactNode; disabled?: boolean }) {
@@ -743,11 +717,6 @@ interface SidebarItem {
   children?: { key: Tab; label: string }[];
 }
 
-interface AuditLogScope {
-  title: string;
-  entityTable: string;
-}
-
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { key: 'search', label: 'Search', icon: <Search className="w-5 h-5" /> },
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -793,7 +762,13 @@ export default function AdminDashboard() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [auditLogScope, setAuditLogScope] = useState<AuditLogScope | null>(null);
+  const [auditView, setAuditView] = useState<Partial<Record<Tab, 'manage' | 'audit'>>>({});
+  const getModuleView = (t: Tab): 'manage' | 'audit' => auditView[t] ?? 'manage';
+  const setModuleView = (t: Tab, v: 'manage' | 'audit') => setAuditView((prev) => ({ ...prev, [t]: v }));
+  type CategoriesAuditSubModule = 'categories' | 'subcategories' | 'brands' | 'brand-action-links';
+  const [categoriesAuditSubView, setCategoriesAuditSubView] = useState<CategoriesAuditSubModule>('categories');
+  type SubcategoriesAuditSubModule = 'subcategories' | 'brands' | 'brand-action-links';
+  const [subcategoriesAuditSubView, setSubcategoriesAuditSubView] = useState<SubcategoriesAuditSubModule>('subcategories');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedSidebarItem, setExpandedSidebarItem] = useState<string | null>(null);
   const [externalLinkQuery, setExternalLinkQuery] = useState('');
@@ -820,11 +795,6 @@ export default function AdminDashboard() {
     } finally {
       setIsSearchingExternalLinks(false);
     }
-  };
-
-  const openAuditLog = (scope?: AuditLogScope | null) => {
-    setAuditLogScope(scope ?? null);
-    setTab('audit-log');
   };
 
   // Use the new section instances hook
@@ -2652,6 +2622,16 @@ export default function AdminDashboard() {
     return section.name || section.heading?.trim() || section.section_type;
   }
 
+  function getSectionHeadingAuditDetails(sectionType: string): { module: AuditModuleType; adSlot?: 1 | 2 | 3 } {
+    if (sectionType === 'cards') return { module: 'featured-cards' };
+    if (sectionType === 'categories') return { module: 'categories' };
+    if (sectionType === 'offers') return { module: 'offers' };
+    if (sectionType === 'ads_1col') return { module: 'ads', adSlot: 1 };
+    if (sectionType === 'ads_2col') return { module: 'ads', adSlot: 2 };
+    if (sectionType === 'ads_3col') return { module: 'ads', adSlot: 3 };
+    return { module: 'section-headings' };
+  }
+
   async function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -3119,6 +3099,9 @@ export default function AdminDashboard() {
       toast.error('Title and description are required.');
       return;
     }
+    const isUpdate = Boolean(editCard.id);
+    const oldCard = isUpdate ? cards.find((c) => c.id === editCard.id) : null;
+    const entityName = editCard.title?.trim() || 'Card';
     try {
       if (editCard.id) {
         const updateData: any = {
@@ -3134,7 +3117,7 @@ export default function AdminDashboard() {
         if (cardsFixedModeEnabled !== undefined) {
           updateData.is_fixed = cardsFixedModeEnabled;
         }
-        const { error } = await auditedFrom('featured_cards', 'updated').update(updateData).eq('id', editCard.id);
+        const { error } = await supabase.from('featured_cards').update(updateData).eq('id', editCard.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -3152,9 +3135,19 @@ export default function AdminDashboard() {
         if (cardsFixedModeEnabled !== undefined) {
           insertData.is_fixed = cardsFixedModeEnabled;
         }
-        const { error } = await auditedFrom('featured_cards', 'created').insert(insertData);
+        const { error } = await supabase.from('featured_cards').insert(insertData);
         if (error) throw error;
       }
+      void recordAudit({
+        module: 'featured-cards',
+        action: isUpdate ? 'update' : 'create',
+        entity_type: 'featured_cards',
+        entity_id: editCard.id ?? undefined,
+        entity_name: entityName,
+        hierarchy_hints: {
+          section_id: (editCard as any).section_id ?? selectedCardsSectionId ?? null,
+        },
+      });
       setEditCard(null);
       loadAll();
       toast.success('Card saved!');
@@ -3166,8 +3159,19 @@ export default function AdminDashboard() {
 
   async function deleteCard(id: string) {
     try {
-      const { error } = await auditedFrom('featured_cards', 'deleted').delete().eq('id', id);
+      const card = cards.find((c) => c.id === id);
+      const entityName = card?.title?.trim() || 'Card';
+      const sectionId = (card as any)?.section_id ?? null;
+      const { error } = await supabase.from('featured_cards').delete().eq('id', id);
       if (error) throw error;
+      void recordAudit({
+        module: 'featured-cards',
+        action: 'delete',
+        entity_type: 'featured_cards',
+        entity_id: id,
+        entity_name: entityName,
+        hierarchy_hints: { section_id: sectionId },
+      });
       loadAll();
       toast.success('Deleted!');
     } catch (error) {
@@ -3250,14 +3254,14 @@ export default function AdminDashboard() {
       };
 
       if (editFaq.id) {
-        const { error } = await auditedFrom('faqs', 'updated')
+        const { error } = await supabase.from('faqs')
           .update(payload)
           .eq('id', editFaq.id);
         if (error) throw error;
       } else {
         const baseFaqs = faqs.filter((item) => (editFaq.parent_id ? item.parent_id === editFaq.parent_id : item.parent_id == null));
         const nextOrder = baseFaqs.length;
-        const { error } = await auditedFrom('faqs', 'created').insert({
+        const { error } = await supabase.from('faqs').insert({
           ...payload,
           parent_id: editFaq.parent_id ?? null,
           sort_order: nextOrder,
@@ -3278,7 +3282,7 @@ export default function AdminDashboard() {
     try {
       const { error: deleteChildrenError } = await supabase.from('faqs').delete().eq('parent_id', id);
       if (deleteChildrenError) throw deleteChildrenError;
-      const { error } = await auditedFrom('faqs', 'deleted').delete().eq('id', id);
+      const { error } = await supabase.from('faqs').delete().eq('id', id);
       if (error) throw error;
       toast.success('FAQ deleted!');
       await loadAll();
@@ -3485,7 +3489,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditCard.id) {
-        await auditedFrom(PRODUCT_CARDS_TABLE, 'updated')
+        await supabase.from(PRODUCT_CARDS_TABLE)
           .update({
             title: productEditCard.title.trim(),
             description: productEditCard.description.trim(),
@@ -3498,7 +3502,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditCard.id);
       } else {
-        await auditedFrom(PRODUCT_CARDS_TABLE, 'created').insert({
+        await supabase.from(PRODUCT_CARDS_TABLE).insert({
           title: productEditCard.title.trim(),
           description: productEditCard.description.trim(),
           logo_url: productEditCard.logo_url || null,
@@ -3537,7 +3541,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditOffer.id) {
-        await auditedFrom(PRODUCT_OFFERS_TABLE, 'updated')
+        await supabase.from(PRODUCT_OFFERS_TABLE)
           .update({
             heading: productEditOffer.heading?.trim() || '',
             description: productEditOffer.description || null,
@@ -3551,7 +3555,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditOffer.id);
       } else {
-        await auditedFrom(PRODUCT_OFFERS_TABLE, 'created').insert({
+        await supabase.from(PRODUCT_OFFERS_TABLE).insert({
           heading: productEditOffer.heading?.trim() || '',
           description: productEditOffer.description || null,
           image_url: productEditOffer.image_url || null,
@@ -3586,7 +3590,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd1?.id) {
-        await auditedFrom(PRODUCT_ADS_2_TABLE, 'updated')
+        await supabase.from(PRODUCT_ADS_2_TABLE)
           .update({
             image_url: productEditAd1.image_url || null,
             link: productEditAd1.link || null,
@@ -3598,7 +3602,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd1.id);
       } else {
-        await auditedFrom(PRODUCT_ADS_2_TABLE, 'created').insert({
+        await supabase.from(PRODUCT_ADS_2_TABLE).insert({
           image_url: productEditAd1?.image_url || null,
           link: productEditAd1?.link || null,
           show_border: productEditAd1?.show_border ?? false,
@@ -3631,7 +3635,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd2?.id) {
-        await auditedFrom(PRODUCT_ADS_2_TABLE, 'updated')
+        await supabase.from(PRODUCT_ADS_2_TABLE)
           .update({
             image_url: productEditAd2.image_url || null,
             link: productEditAd2.link || null,
@@ -3643,7 +3647,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd2.id);
       } else {
-        await auditedFrom(PRODUCT_ADS_2_TABLE, 'created').insert({
+        await supabase.from(PRODUCT_ADS_2_TABLE).insert({
           image_url: productEditAd2?.image_url || null,
           link: productEditAd2?.link || null,
           show_border: productEditAd2?.show_border ?? false,
@@ -3676,7 +3680,7 @@ export default function AdminDashboard() {
 
     try {
       if (productEditAd3?.id) {
-        await auditedFrom(PRODUCT_ADS_3_TABLE, 'updated')
+        await supabase.from(PRODUCT_ADS_3_TABLE)
           .update({
             image_url: productEditAd3.image_url || null,
             heading: productEditAd3.heading || null,
@@ -3690,7 +3694,7 @@ export default function AdminDashboard() {
           })
           .eq('id', productEditAd3.id);
       } else {
-        await auditedFrom(PRODUCT_ADS_3_TABLE, 'created').insert({
+        await supabase.from(PRODUCT_ADS_3_TABLE).insert({
           image_url: productEditAd3?.image_url || null,
           heading: productEditAd3?.heading || null,
           description: productEditAd3?.description || null,
@@ -3752,7 +3756,7 @@ export default function AdminDashboard() {
 
   const productDeleteItem = async (tableName: string, itemId: string, subcategoryId: string) => {
     try {
-      await auditedFrom(tableName, 'deleted').delete().eq('id', itemId);
+      await supabase.from(tableName).delete().eq('id', itemId);
       await loadProductSectionContent(subcategoryId);
       toast.success('Deleted.');
     } catch (error) {
@@ -3849,8 +3853,19 @@ export default function AdminDashboard() {
 
   async function deleteCategory(id: string) {
     try {
-      const { error } = await auditedFrom('categories', 'deleted').delete().eq('id', id);
+      const cat = categories.find((c) => c.id === id);
+      const entityName = cat?.name?.trim() || 'Category';
+      const sectionId = (cat as any)?.section_id ?? null;
+      const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) throw error;
+      void recordAudit({
+        module: 'categories',
+        action: 'delete',
+        entity_type: 'categories',
+        entity_id: id,
+        entity_name: entityName,
+        hierarchy_hints: { section_id: sectionId },
+      });
       loadAll();
       toast.success('Deleted!');
     } catch (error) {
@@ -3861,7 +3876,7 @@ export default function AdminDashboard() {
 
   async function toggleCategoryVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await auditedFrom('categories', 'updated')
+      const { error } = await supabase.from('categories')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3875,7 +3890,7 @@ export default function AdminDashboard() {
 
   async function toggleFeaturedCardVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await auditedFrom('featured_cards', 'updated')
+      const { error } = await supabase.from('featured_cards')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3889,7 +3904,7 @@ export default function AdminDashboard() {
 
   async function toggleOfferVisibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await auditedFrom('offers', 'updated')
+      const { error } = await supabase.from('offers')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3903,7 +3918,7 @@ export default function AdminDashboard() {
 
   async function toggleAd2Visibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await auditedFrom('ads_2col', 'updated')
+      const { error } = await supabase.from('ads_2col')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3917,7 +3932,7 @@ export default function AdminDashboard() {
 
   async function toggleAd3Visibility(id: string, isVisible: boolean) {
     try {
-      const { error } = await auditedFrom('ads_3col', 'updated')
+      const { error } = await supabase.from('ads_3col')
         .update({ is_visible: isVisible })
         .eq('id', id);
       if (error) throw error;
@@ -3938,6 +3953,290 @@ export default function AdminDashboard() {
       console.error('Error updating category order:', err instanceof Error ? err.message : JSON.stringify(err));
       toast.error('Failed to save category order.');
       return false;
+    }
+  }
+
+  async function deleteInlineSubcategory(subcategory: Subcategory) {
+    const persistedSubcategory = subcategories.some((item) => item.id === subcategory.id);
+    if (!persistedSubcategory) {
+      setEditSubs((current) => current.filter((item) => item.id !== subcategory.id));
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('subcategories')
+        .delete()
+        .eq('id', subcategory.id)
+        .select('id')
+        .single();
+      if (error) throw error;
+      if (!data?.id) throw new Error('Subcategory delete was not confirmed by the database.');
+
+      void recordAudit({
+        module: 'subcategories',
+        action: 'delete',
+        entity_type: 'subcategories',
+        entity_id: subcategory.id,
+        entity_name: subcategory.name.trim() || 'Subcategory',
+        hierarchy_hints: {
+          section_id: (categories.find((category) => category.id === subcategory.category_id) as any)?.section_id ?? selectedCategoriesSectionId ?? null,
+          category_id: subcategory.category_id,
+        },
+      });
+      setEditSubs((current) => current.filter((item) => item.id !== subcategory.id));
+      setSubcategories((current) => current.filter((item) => item.id !== subcategory.id));
+      setEditButtonsState((current) => {
+        const next = { ...current };
+        delete next[subcategory.id];
+        return next;
+      });
+      setEditSubBrandsState((current) => {
+        const next = { ...current };
+        delete next[subcategory.id];
+        return next;
+      });
+      await refreshCategoryListData();
+      toast.success('Subcategory deleted!');
+    } catch (error) {
+      console.error('Error deleting subcategory:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error(`Failed to delete subcategory: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async function deleteInlineBrand(brand: SubcategoryBrand, subcategoryId: string) {
+    const persistedBrand = (editSubBrandsState[subcategoryId] || []).some((item) => item.id === brand.id);
+    if (!persistedBrand || !brand.id) {
+      setEditSubBrands((current) => current.filter((item) => item.id !== brand.id));
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('subcategory_brands')
+        .delete()
+        .eq('id', brand.id)
+        .select('id')
+        .single();
+      if (error) throw error;
+      if (!data?.id) throw new Error('Brand delete was not confirmed by the database.');
+
+      const parentSubcategory = subcategories.find((subcategory) => subcategory.id === subcategoryId);
+      void recordAudit({
+        module: 'brands',
+        action: 'delete',
+        entity_type: 'subcategory_brands',
+        entity_id: brand.id,
+        entity_name: brand.name.trim() || 'Brand',
+        hierarchy_hints: {
+          section_id: (categories.find((category) => category.id === parentSubcategory?.category_id) as any)?.section_id ?? selectedCategoriesSectionId ?? null,
+          category_id: parentSubcategory?.category_id ?? null,
+          subcategory_id: subcategoryId,
+        },
+      });
+      setEditSubBrands((current) => current.filter((item) => item.id !== brand.id));
+      setEditSubBrandsState((current) => ({
+        ...current,
+        [subcategoryId]: (current[subcategoryId] || []).filter((item) => item.id !== brand.id),
+      }));
+      if (editingBrandId === brand.id) {
+        setEditingBrandId(null);
+        setEditingBrand(null);
+      }
+      toast.success('Brand deleted!');
+    } catch (error) {
+      console.error('Error deleting brand:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error(`Failed to delete brand: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  function startNewSubcategory() {
+    const categoryId = editCategory?.id;
+    if (!categoryId) {
+      toast.error('Save the category first before adding a subcategory.');
+      return;
+    }
+
+    const id = crypto.randomUUID();
+    const draft: Subcategory = {
+      id,
+      category_id: categoryId,
+      name: '',
+      link: null,
+      custom_link: null,
+      custom_link_type: 'link',
+      video_url: null,
+      video_url_2: null,
+      detail_description: null,
+      is_visible: true,
+      show_brands: true,
+      show_about_section: true,
+      show_header_points_section: true,
+      sort_order: editSubs.length,
+    };
+    setEditSubs((current) => [...current, draft]);
+    setEditButtons([]);
+    setEditSubBrands([]);
+    setEditSubOverviewPoints([]);
+    setEditingSubcategoryId(id);
+    setActiveAccordion(null);
+  }
+
+  async function saveSubcategory() {
+    if (!editingSubcategoryId) return;
+    const subcategory = editSubs.find((item) => item.id === editingSubcategoryId);
+    const categoryId = subcategory?.category_id || editCategory?.id;
+    if (!subcategory || !categoryId) {
+      toast.error('A saved parent category is required.');
+      return;
+    }
+    if (!subcategory.name.trim()) {
+      toast.error('Subcategory name is required.');
+      return;
+    }
+
+    setIsSavingCategory(true);
+    try {
+      const subcategoryRow = {
+        id: subcategory.id,
+        category_id: categoryId,
+        name: subcategory.name.trim(),
+        link: subcategory.link || null,
+        custom_link: subcategory.custom_link || null,
+        custom_link_type: subcategory.custom_link_type || 'link',
+        video_url: subcategory.video_url || null,
+        video_url_2: (subcategory.video_url_2 || []).filter((url) => url?.trim()).map((url) => url.trim()) || null,
+        schedule_link: subcategory.schedule_link || null,
+        show_schedule_in_separate_tab: subcategory.show_schedule_in_separate_tab ?? false,
+        schedule_link_2: subcategory.schedule_link_2 || null,
+        show_schedule_2_in_separate_tab: subcategory.show_schedule_2_in_separate_tab ?? false,
+        about_heading: subcategory.about_heading || 'About',
+        about_subheading: subcategory.about_subheading || null,
+        about_content: subcategory.about_content || null,
+        overview_points_heading: editKeyFeaturesTabLabelState[subcategory.id] || subcategory.overview_points_heading || 'Header',
+        detail_description: subcategory.detail_description || null,
+        hero_background_color: subcategory.hero_background_color || null,
+        is_visible: subcategory.is_visible ?? true,
+        show_brands: editShowBrandsState[subcategory.id] ?? subcategory.show_brands ?? true,
+        show_about_section: editShowAboutSectionState[subcategory.id] ?? subcategory.show_about_section ?? true,
+        show_header_points_section: editShowHeaderPointsSectionState[subcategory.id] ?? subcategory.show_header_points_section ?? true,
+        brands_tab_label: editBrandsTabLabelState[subcategory.id] ?? subcategory.brands_tab_label ?? 'Brands',
+        key_features_tab_label: editKeyFeaturesTabLabelState[subcategory.id] ?? subcategory.key_features_tab_label ?? 'Key Features',
+        form_link: subcategory.form_link || null,
+        show_form_in_separate_tab: subcategory.show_form_in_separate_tab ?? false,
+        tab_order: editTabOrderState[subcategory.id] || subcategory.tab_order || ['overview', 'key_features', 'brands', 'form'],
+        sort_order: resolveSubcategorySortOrder(subcategory, subcategory.sort_order),
+      };
+
+      await upsertWithMissingColumnFallback('subcategories', subcategoryRow as any);
+      const buttons = editButtons.map((button, index) => ({
+        id: button.id || crypto.randomUUID(),
+        subcategory_id: subcategory.id,
+        label: button.label?.trim() || 'Button',
+        link: button.link?.trim() || null,
+        is_visible: button.is_visible,
+        sort_order: index,
+      })).filter((button) => button.label || button.link);
+      await supabase.from('category_buttons').delete().eq('subcategory_id', subcategory.id);
+      if (buttons.length > 0) {
+        const { error } = await supabase.from('category_buttons').insert(buttons);
+        if (error) throw error;
+      }
+      await saveAboutSections(subcategory.id);
+      await saveKeyFeaturesSections(subcategory.id, editSubOverviewPointsState[subcategory.id] || editSubOverviewPoints);
+
+      const isCreate = !subcategories.some((item) => item.id === subcategory.id);
+      void recordAudit({
+        module: 'subcategories',
+        action: isCreate ? 'create' : 'update',
+        entity_type: 'subcategories',
+        entity_id: subcategory.id,
+        entity_name: subcategory.name.trim(),
+        hierarchy_hints: { section_id: selectedCategoriesSectionId ?? null, category_id: categoryId },
+      });
+      setSubcategories((current) => {
+        const exists = current.some((item) => item.id === subcategory.id);
+        return exists ? current.map((item) => item.id === subcategory.id ? { ...item, ...subcategoryRow } : item) : [...current, subcategoryRow as Subcategory];
+      });
+      setEditSubBrandsState((current) => ({ ...current, [subcategory.id]: editSubBrandsState[subcategory.id] || editSubBrands }));
+      await refreshCategoryListData();
+      setEditingSubcategoryId(null);
+      toast.success('Subcategory saved!');
+    } catch (error) {
+      console.error('Error saving subcategory:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error(`Failed to save subcategory: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSavingCategory(false);
+    }
+  }
+
+  async function saveBrand() {
+    if (!editingBrandId || !editingBrand || !editingSubcategoryId) return;
+    if (!editingBrand.name?.trim()) {
+      toast.error('Brand name is required.');
+      return;
+    }
+
+    setIsSavingCategory(true);
+    try {
+      const { data: parentSubcategory, error: parentError } = await supabase
+        .from('subcategories')
+        .select('id')
+        .eq('id', editingSubcategoryId)
+        .maybeSingle();
+      if (parentError) throw parentError;
+      if (!parentSubcategory?.id) {
+        throw new Error('Save the Subcategory before saving a Brand.');
+      }
+
+      const payload = {
+        id: editingBrandId,
+        subcategory_id: editingSubcategoryId,
+        name: editingBrand.name.trim(),
+        logo_url: editingBrand.logo_url,
+        link: editingBrand.link,
+        description: editingBrand.description,
+        buttons: editingBrand.buttons || [],
+        is_visible: editingBrand.is_visible ?? true,
+        action_links: buildBrandActionLinkPayload(editingBrand.action_links),
+        action_link_1_text: editingBrand.action_links?.[0]?.text ?? editingBrand.action_link_1_text,
+        action_link_1_url: editingBrand.action_links?.[0]?.url ?? editingBrand.action_link_1_url,
+        action_link_1_new_tab: editingBrand.action_links?.[0]?.new_tab ?? editingBrand.action_link_1_new_tab,
+        action_link_1_enabled: editingBrand.action_links?.[0]?.enabled ?? editingBrand.action_link_1_enabled,
+        action_link_2_text: editingBrand.action_links?.[1]?.text ?? editingBrand.action_link_2_text,
+        action_link_2_url: editingBrand.action_links?.[1]?.url ?? editingBrand.action_link_2_url,
+        action_link_2_new_tab: editingBrand.action_links?.[1]?.new_tab ?? editingBrand.action_link_2_new_tab,
+        action_link_2_enabled: editingBrand.action_links?.[1]?.enabled ?? editingBrand.action_link_2_enabled,
+        action_link_3_text: editingBrand.action_links?.[2]?.text ?? editingBrand.action_link_3_text,
+        action_link_3_url: editingBrand.action_links?.[2]?.url ?? editingBrand.action_link_3_url,
+        action_link_3_new_tab: editingBrand.action_links?.[2]?.new_tab ?? editingBrand.action_link_3_new_tab,
+        action_link_3_enabled: editingBrand.action_links?.[2]?.enabled ?? editingBrand.action_link_3_enabled,
+      };
+      const isCreate = !(editSubBrandsState[editingSubcategoryId] || []).some((brand) => brand.id === editingBrandId);
+      await upsertWithMissingColumnFallback('subcategory_brands', [payload] as any);
+      setEditSubBrands((current) => current.map((brand) => brand.id === editingBrandId ? { ...brand, ...payload } : brand));
+      setEditSubBrandsState((current) => ({
+        ...current,
+        [editingSubcategoryId]: (current[editingSubcategoryId] || []).some((brand) => brand.id === editingBrandId)
+          ? (current[editingSubcategoryId] || []).map((brand) => brand.id === editingBrandId ? { ...brand, ...payload } : brand)
+          : [...(current[editingSubcategoryId] || []), payload as SubcategoryBrand],
+      }));
+      void recordAudit({
+        module: 'brands',
+        action: isCreate ? 'create' : 'update',
+        entity_type: 'subcategory_brands',
+        entity_id: editingBrandId,
+        entity_name: editingBrand.name.trim(),
+        hierarchy_hints: { subcategory_id: editingSubcategoryId },
+      });
+      setEditingBrandId(null);
+      setEditingBrand(null);
+      toast.success('Brand saved!');
+    } catch (error) {
+      console.error('Error saving brand:', error instanceof Error ? error.message : JSON.stringify(error));
+      toast.error(`Failed to save brand: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSavingCategory(false);
     }
   }
 
@@ -3966,11 +4265,17 @@ export default function AdminDashboard() {
         : editSubOverviewPointsState;
 
       let categoryId = editCategory.id;
+      const deletedSubcategories = !editingSubcategoryId && editCategory.id
+        ? subcategories.filter((sub) => sub.category_id === editCategory.id && !editSubs.some((candidate) => candidate.id === sub.id))
+        : [];
+      const deletedBrands = editingSubcategoryId
+        ? (editSubBrandsState[editingSubcategoryId] || []).filter((brand) => !editSubBrands.some((candidate) => candidate.id === brand.id))
+        : [];
 
       // Save category
       if (categoryId && !activeSubId) {
         // Update existing category
-        const categoryUpdate = auditedFrom('categories', 'updated')
+        const categoryUpdate = supabase.from('categories')
           .update({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
@@ -3980,11 +4285,11 @@ export default function AdminDashboard() {
             section_id: selectedCategoriesSectionId
           })
           .eq('id', categoryId);
-        const { error: catError } = await categoryUpdate.auditAction('updated');
+        const { error: catError } = await categoryUpdate;
         if (catError) throw catError;
       } else if (!categoryId) {
         // Create new category
-        const { data: newCat, error: catError } = await auditedFrom('categories', 'created')
+        const { data: newCat, error: catError } = await supabase.from('categories')
           .insert({
             name: editCategory.name,
             icon_url: editCategory.icon_url,
@@ -4000,8 +4305,7 @@ export default function AdminDashboard() {
         categoryId = (newCat as any).id;
       }
 
-      // Save subcategories
-      if (categoryId) {
+      if (categoryId && (!editCategory.id || activeSubId)) {
         const subIds = editSubs.map((s) => s.id).filter(Boolean);
         const activeSub = activeSubId
           ? activeSubOverride?.id === activeSubId
@@ -4065,13 +4369,19 @@ export default function AdminDashboard() {
               (query, id) => query.neq('id', id),
               supabase.from('subcategories').delete().eq('category_id', categoryId),
             )
-            : supabase.from('subcategories').delete().eq('category_id', categoryId));
+            : supabase.from('subcategories').delete().eq('category_id', categoryId))
+            .then(({ error }) => {
+              if (error) throw error;
+            });
 
-        const deleteButtons = activeSubId
+        const deleteButtons = (activeSubId
           ? supabase.from('category_buttons').delete().eq('subcategory_id', activeSubId)
           : (subIds.length > 0
             ? supabase.from('category_buttons').delete().in('subcategory_id', subIds)
-            : Promise.resolve());
+            : Promise.resolve()))
+          .then((result: any) => {
+            if (result?.error) throw result.error;
+          });
 
         const buttonsToInsert: any[] = [];
         if (activeSubId) {
@@ -4204,7 +4514,10 @@ export default function AdminDashboard() {
           const retainedBrandIds = new Set(subBrandsToInsert.map((brand) => brand.id).filter(Boolean));
           await Promise.all((existingBrands || [])
             .filter((brand: any) => !retainedBrandIds.has(brand.id))
-            .map((brand: any) => auditedFrom('subcategory_brands', 'deleted').delete().eq('id', brand.id)));
+            .map(async (brand: any) => {
+              const { error } = await supabase.from('subcategory_brands').delete().eq('id', brand.id);
+              if (error) throw error;
+            }));
         })();
 
         const brandsToSave = editingBrandId
@@ -4212,7 +4525,7 @@ export default function AdminDashboard() {
           : subBrandsToInsert;
 
         const subsUpsertPromise = subcategoryRows.length > 0
-          ? upsertWithMissingColumnFallback('subcategories', subcategoryRows as any, activeSubId ? 'updated' : undefined)
+          ? upsertWithMissingColumnFallback('subcategories', subcategoryRows as any)
           : Promise.resolve();
 
         const deletePromises = [deleteSubcategories, deleteButtons, deleteSubBrands];
@@ -4224,13 +4537,9 @@ export default function AdminDashboard() {
         const brandRowsToUpdate = editingBrandId
           ? []
           : brandsToSave.filter((brand) => originalBrandById.has(brand.id));
-        const brandAuditAction = editingBrandId && brandsToSave[0]
-          ? classifyBrandAction(originalBrandById.get(editingBrandId), brandsToSave[0])
-          : 'created' as const;
-
         const insertPromises = [
           buttonsToInsert.length > 0 ? insertWithMissingColumnFallback('category_buttons', buttonsToInsert) : Promise.resolve(),
-          brandRowsToSave.length > 0 ? upsertWithMissingColumnFallback('subcategory_brands', brandRowsToSave, editingBrandId ? brandAuditAction : 'created') : Promise.resolve(),
+          brandRowsToSave.length > 0 ? upsertWithMissingColumnFallback('subcategory_brands', brandRowsToSave) : Promise.resolve(),
           brandRowsToUpdate.length > 0 ? upsertWithMissingColumnFallback('subcategory_brands', brandRowsToUpdate) : Promise.resolve(),
         ];
 
@@ -4244,6 +4553,90 @@ export default function AdminDashboard() {
           ...aboutPromises,
           ...keyFeaturePromises,
         ]);
+      }
+
+      const currentBrand = editingBrandId
+        ? editSubBrands.find((brand) => brand.id === editingBrandId) ?? null
+        : null;
+      const originalBrand = editingBrandId && activeSubId
+        ? (editSubBrandsState[activeSubId] || []).find((brand) => brand.id === editingBrandId) ?? null
+        : null;
+      const currentLinks = currentBrand ? normalizeAdminBrandActionLinks(currentBrand) : [];
+      const originalLinks = originalBrand ? normalizeAdminBrandActionLinks(originalBrand) : [];
+      const changedLink = editingBrandId && JSON.stringify(currentLinks) !== JSON.stringify(originalLinks)
+        ? currentLinks.find((link) => {
+          const originalLink = originalLinks.find((candidate) => candidate.id === link.id);
+          return !originalLink || JSON.stringify(originalLink) !== JSON.stringify(link);
+        }) ?? originalLinks.find((link) => !currentLinks.some((candidate) => candidate.id === link.id)) ?? currentLinks[0] ?? originalLinks[0]
+        : null;
+      if (deletedSubcategories.length > 0 || deletedBrands.length > 0) {
+        for (const subcategory of deletedSubcategories) {
+          void recordAudit({
+            module: 'subcategories',
+            action: 'delete',
+            entity_type: 'subcategories',
+            entity_id: subcategory.id,
+            entity_name: subcategory.name.trim() || 'Subcategory',
+            hierarchy_hints: {
+              section_id: selectedCategoriesSectionId ?? null,
+              category_id: subcategory.category_id,
+            },
+          });
+        }
+        for (const brand of deletedBrands) {
+          void recordAudit({
+            module: 'brands',
+            action: 'delete',
+            entity_type: 'subcategory_brands',
+            entity_id: brand.id,
+            entity_name: brand.name.trim() || 'Brand',
+            hierarchy_hints: {
+              section_id: selectedCategoriesSectionId ?? null,
+              category_id: categoryId ?? null,
+              subcategory_id: activeSubId,
+            },
+          });
+        }
+      } else {
+        const auditModule = changedLink
+          ? 'brand-action-links'
+          : editingBrandId
+            ? 'brands'
+            : activeSubId
+              ? 'subcategories'
+              : 'categories';
+      const auditEntityType = changedLink
+        ? 'brand_action_links'
+        : editingBrandId
+          ? 'subcategory_brands'
+          : activeSubId
+            ? 'subcategories'
+            : 'categories';
+      const auditEntityId = changedLink
+        ? changedLink.id
+        : editingBrandId ?? activeSubId ?? categoryId ?? undefined;
+      const auditEntityName = changedLink?.text?.trim()
+        || currentBrand?.name?.trim()
+        || (activeSubId ? editSubs.find((sub) => sub.id === activeSubId)?.name?.trim() : null)
+        || editCategory.name?.trim()
+        || 'Category';
+      const auditAction = changedLink
+        ? (currentLinks.some((link) => link.id === changedLink.id)
+          ? (originalLinks.some((link) => link.id === changedLink.id) ? 'update' : 'create')
+          : 'delete')
+        : (editingBrandId || activeSubId || editCategory.id ? 'update' : 'create');
+      void recordAudit({
+        module: auditModule,
+        action: auditAction,
+        entity_type: auditEntityType,
+        entity_id: auditEntityId,
+        entity_name: auditEntityName,
+        hierarchy_hints: {
+          section_id: selectedCategoriesSectionId ?? null,
+          category_id: activeSubId ? categoryId ?? null : null,
+          subcategory_id: editingBrandId ? activeSubId : null,
+        },
+      });
       }
 
       toast.success('Category saved successfully!');
@@ -4573,6 +4966,8 @@ export default function AdminDashboard() {
       toast.error('Add an image, heading, or description.');
       return;
     }
+    const isUpdate = Boolean(editOffer.id);
+    const entityName = editOffer.heading?.trim() || 'Offer';
     try {
       const selectedOffersCount = selectedOffers.length;
 
@@ -4581,7 +4976,7 @@ export default function AdminDashboard() {
         if (offersFixedModeEnabled !== undefined) {
           updateData.is_fixed = offersFixedModeEnabled;
         }
-        const { error } = await auditedFrom('offers', 'updated').update(updateData).eq('id', editOffer.id);
+        const { error } = await supabase.from('offers').update(updateData).eq('id', editOffer.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -4600,9 +4995,19 @@ export default function AdminDashboard() {
         if (offersFixedModeEnabled !== undefined) {
           insertData.is_fixed = offersFixedModeEnabled;
         }
-        const { error } = await auditedFrom('offers', 'created').insert(insertData);
+        const { error } = await supabase.from('offers').insert(insertData);
         if (error) throw error;
       }
+      void recordAudit({
+        module: 'offers',
+        action: isUpdate ? 'update' : 'create',
+        entity_type: 'offers',
+        entity_id: editOffer.id ?? undefined,
+        entity_name: entityName,
+        hierarchy_hints: {
+          section_id: (editOffer as any).section_id ?? selectedOffersSectionId ?? null,
+        },
+      });
       setEditOffer(null); loadAll(); toast.success('Offer saved!');
     } catch (error) {
       console.error('Error saving offer:', error instanceof Error ? error.message : JSON.stringify(error));
@@ -4612,8 +5017,19 @@ export default function AdminDashboard() {
 
   async function deleteOffer(id: string) {
     try {
-      const { error } = await auditedFrom('offers', 'deleted').delete().eq('id', id);
+      const offer = offers.find((o) => o.id === id);
+      const entityName = offer?.heading?.trim() || 'Offer';
+      const sectionId = (offer as any)?.section_id ?? null;
+      const { error } = await supabase.from('offers').delete().eq('id', id);
       if (error) throw error;
+      void recordAudit({
+        module: 'offers',
+        action: 'delete',
+        entity_type: 'offers',
+        entity_id: id,
+        entity_name: entityName,
+        hierarchy_hints: { section_id: sectionId },
+      });
       loadAll();
       toast.success('Deleted!');
     } catch (error) {
@@ -4624,22 +5040,33 @@ export default function AdminDashboard() {
 
   async function saveAd2() {
     if (!editAd2) return;
+    const isUpdate = Boolean(editAd2.id);
+    const sectionId = (editAd2 as any).section_id ?? selectedAds2SectionId ?? null;
     try {
       if (editAd2.id) {
         const updateData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, background_color: editAd2.background_color ?? null, show_image: editAd2.show_image ?? true };
         if (ads2FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads2FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_2col', 'updated').update(updateData).eq('id', editAd2.id);
+        const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd2.id);
         if (error) throw error;
       } else {
         const insertData: any = { image_url: editAd2.image_url, link: editAd2.link, show_border: editAd2.show_border ?? false, border_color: editAd2.border_color ?? null, background_color: editAd2.background_color ?? null, show_image: editAd2.show_image ?? true, sort_order: ads2.length, section_id: selectedAds2SectionId };
         if (ads2FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads2FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_2col', 'created').insert(insertData);
+        const { error } = await supabase.from('ads_2col').insert(insertData);
         if (error) throw error;
       }
+      void recordAudit({
+        module: 'ads',
+        action: isUpdate ? 'update' : 'create',
+        entity_type: 'ads_2col',
+        entity_id: editAd2.id ?? undefined,
+        entity_name: 'Ad',
+        ad_slot: 2,
+        hierarchy_hints: { section_id: sectionId },
+      });
       setEditAd2(null); loadAll(); toast.success('Ad saved!');
     } catch (error) {
       console.error('Error saving ad:', error instanceof Error ? error.message : JSON.stringify(error));
@@ -4649,22 +5076,33 @@ export default function AdminDashboard() {
 
   async function saveAd1() {
     if (!editAd1) return;
+    const isUpdate = Boolean(editAd1.id);
+    const sectionId = (editAd1 as any).section_id ?? selectedAds1SectionId ?? null;
     try {
       if (editAd1.id) {
         const updateData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, background_color: editAd1.background_color ?? null, show_image: editAd1.show_image ?? true };
         if (ads1FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads1FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_2col', 'updated').update(updateData).eq('id', editAd1.id);
+        const { error } = await supabase.from('ads_2col').update(updateData).eq('id', editAd1.id);
         if (error) throw error;
       } else {
         const insertData: any = { image_url: editAd1.image_url, link: editAd1.link, show_border: editAd1.show_border ?? false, border_color: editAd1.border_color ?? null, background_color: editAd1.background_color ?? null, show_image: editAd1.show_image ?? true, sort_order: selectedAds1.length, section_id: selectedAds1SectionId };
         if (ads1FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads1FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_2col', 'created').insert(insertData);
+        const { error } = await supabase.from('ads_2col').insert(insertData);
         if (error) throw error;
       }
+      void recordAudit({
+        module: 'ads',
+        action: isUpdate ? 'update' : 'create',
+        entity_type: 'ads_2col',
+        entity_id: editAd1.id ?? undefined,
+        entity_name: 'Ad',
+        ad_slot: 1,
+        hierarchy_hints: { section_id: sectionId },
+      });
       setEditAd1(null); loadAll(); toast.success('Ad saved!');
     } catch (error) {
       console.error('Error saving ad:', error instanceof Error ? error.message : JSON.stringify(error));
@@ -4674,8 +5112,18 @@ export default function AdminDashboard() {
 
   async function deleteAd2(id: string) {
     try {
-      const { error } = await auditedFrom('ads_2col', 'deleted').delete().eq('id', id);
+      const ad = ads2.find((a) => a.id === id);
+      const sectionId = (ad as any)?.section_id ?? null;
+      const { error } = await supabase.from('ads_2col').delete().eq('id', id);
       if (error) throw error;
+      void recordAudit({
+        module: 'ads',
+        action: 'delete',
+        entity_type: 'ads_2col',
+        entity_id: id,
+        entity_name: 'Ad',
+        hierarchy_hints: { section_id: sectionId },
+      });
       loadAll();
       toast.success('Deleted!');
     } catch (error) {
@@ -4686,6 +5134,9 @@ export default function AdminDashboard() {
 
   async function saveAd3() {
     if (!editAd3) return;
+    const isUpdate = Boolean(editAd3.id);
+    const sectionId = (editAd3 as any).section_id ?? selectedAds3SectionId ?? null;
+    const entityName = editAd3.heading?.trim() || 'Ad';
     try {
       if (editAd3.id) {
         const updateData: any = {
@@ -4702,7 +5153,7 @@ export default function AdminDashboard() {
         if (ads3FixedModeEnabled !== undefined) {
           updateData.is_fixed = ads3FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_3col', 'updated').update(updateData).eq('id', editAd3.id);
+        const { error } = await supabase.from('ads_3col').update(updateData).eq('id', editAd3.id);
         if (error) throw error;
       } else {
         const insertData: any = {
@@ -4721,9 +5172,18 @@ export default function AdminDashboard() {
         if (ads3FixedModeEnabled !== undefined) {
           insertData.is_fixed = ads3FixedModeEnabled;
         }
-        const { error } = await auditedFrom('ads_3col', 'created').insert(insertData);
+        const { error } = await supabase.from('ads_3col').insert(insertData);
         if (error) throw error;
       }
+      void recordAudit({
+        module: 'ads',
+        action: isUpdate ? 'update' : 'create',
+        entity_type: 'ads_3col',
+        entity_id: editAd3.id ?? undefined,
+        entity_name: entityName,
+        ad_slot: 3,
+        hierarchy_hints: { section_id: sectionId },
+      });
       setEditAd3(null); loadAll(); toast.success('Ad saved!');
     } catch (error) {
       console.error('Error saving ad:', error instanceof Error ? error.message : JSON.stringify(error));
@@ -4773,8 +5233,20 @@ export default function AdminDashboard() {
 
   async function deleteAd3(id: string) {
     try {
-      const { error } = await auditedFrom('ads_3col', 'deleted').delete().eq('id', id);
+      const ad = ads3.find((a) => a.id === id);
+      const sectionId = (ad as any)?.section_id ?? null;
+      const entityName = (ad as any)?.heading?.trim() || 'Ad';
+      const { error } = await supabase.from('ads_3col').delete().eq('id', id);
       if (error) throw error;
+      void recordAudit({
+        module: 'ads',
+        action: 'delete',
+        entity_type: 'ads_3col',
+        entity_id: id,
+        entity_name: entityName,
+        ad_slot: 3,
+        hierarchy_hints: { section_id: sectionId },
+      });
       loadAll();
       toast.success('Deleted!');
     } catch (error) {
@@ -4795,10 +5267,20 @@ export default function AdminDashboard() {
       toast.error('Please enter a section name');
       return;
     }
+    const entityName = addSectionName.trim();
     setAddingSectionLoading(true);
     try {
       const result = await addSection(addSectionType, addSectionName);
       if (result) {
+        const auditDetails = getSectionHeadingAuditDetails(result.section_type);
+        await recordAudit({
+          module: auditDetails.module,
+          action: 'create',
+          entity_type: 'page_sections',
+          entity_id: result.id,
+          entity_name: entityName,
+          ad_slot: auditDetails.adSlot,
+        });
         toast.success('Section added successfully!');
         setShowAddSectionModal(false);
         setAddSectionType('');
@@ -4817,8 +5299,19 @@ export default function AdminDashboard() {
   // Handle deleting a section
   async function handleDeleteSection(sectionId: string) {
     if (!window.confirm('Are you sure you want to delete this section?')) return;
+    const section = sections.find(s => s.id === sectionId);
+    const entityName = section?.heading?.trim() || section?.name?.trim() || 'Section';
     const success = await deleteSection(sectionId);
     if (success) {
+      const auditDetails = getSectionHeadingAuditDetails(section?.section_type || '');
+      await recordAudit({
+        module: auditDetails.module,
+        action: 'delete',
+        entity_type: 'page_sections',
+        entity_id: sectionId,
+        entity_name: entityName,
+        ad_slot: auditDetails.adSlot,
+      });
       toast.success('Section deleted!');
     } else {
       toast.error('Failed to delete section');
@@ -4841,6 +5334,10 @@ export default function AdminDashboard() {
     if (!editingHeadingSectionId) return;
 
     try {
+      const section = sections.find(s => s.id === editingHeadingSectionId);
+      const entityName = editingHeadingText?.trim() || section?.name?.trim() || 'Section';
+      const auditDetails = getSectionHeadingAuditDetails(section?.section_type || '');
+
       const success1 = await updateHeading(editingHeadingSectionId, editingHeadingText, editingHeadingBackgroundColor);
       const success2 = await toggleShowHeading(editingHeadingSectionId, editingHeadingVisible);
 
@@ -4848,6 +5345,14 @@ export default function AdminDashboard() {
       const success3 = await updateSectionName(editingHeadingSectionId, editingHeadingText || 'Featured Cards');
 
       if (success1 && success2 && success3) {
+        await recordAudit({
+          module: auditDetails.module,
+          action: 'update',
+          entity_type: 'page_sections',
+          entity_id: editingHeadingSectionId,
+          entity_name: entityName,
+          ad_slot: auditDetails.adSlot,
+        });
         toast.success('Heading and tab label updated!');
         setEditingHeadingSectionId(null);
         // Refetch sections
@@ -4904,9 +5409,6 @@ export default function AdminDashboard() {
                     setTab(item.key);
                     setSidebarOpen(false);
                     setExpandedSidebarItem(null); // Close sub-menus when clicking a main item
-                    if (item.key === 'audit-log') {
-                      setAuditLogScope(null);
-                    }
                   }
                 }}
                 className={`w-full flex items-center justify-between px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors ${tab === item.key || (item.children && item.children.some(child => child.key === tab))
@@ -5038,8 +5540,6 @@ export default function AdminDashboard() {
               </section>
             </section>
           )}
-
-          {tab === 'audit-log' && <AdminAuditLog scope={auditLogScope} />}
 
           {/* DASHBOARD */}
           {tab === 'dashboard' && (
@@ -5199,14 +5699,6 @@ export default function AdminDashboard() {
                   <h2 className="text-xl font-bold mb-1">Header Options</h2>
                   <p className="text-sm text-muted-foreground mb-6">Manage the top header bar items.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openAuditLog({ title: 'Header Options', entityTable: 'header_settings' })}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Audit Log
-                </button>
               </div>
 
               <div className="grid gap-6">
@@ -5354,20 +5846,37 @@ export default function AdminDashboard() {
           {/* SECTIONS */}
           {tab === 'sections' && (
             <div>
-              <div className="mb-6 flex items-start justify-between gap-3">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold mb-2">Page Layout - Manage Sections</h2>
+                  <h2 className="text-xl font-bold">Page Layout - Manage Sections</h2>
                   <p className="text-sm text-muted-foreground">Drag to reorder sections. Manage visibility and edit individual sections from their tabs.</p>
                 </div>
+              </div>
+              <div className="mb-6 flex items-center gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
                 <button
-                  type="button"
-                  onClick={() => openAuditLog({ title: 'Page Layout', entityTable: 'page_sections' })}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  onClick={() => setModuleView('sections', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('sections') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Audit Log
+                  <span className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('sections', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('sections') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
                 </button>
               </div>
+              </div>
+              {getModuleView('sections') === 'audit' ? (
+                <AuditTimeline module="section-headings" />
+              ) : (
+                <>
+                  <div className="mb-6 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Below is the current order of sections on the homepage.</p>
+                    </div>
+                  </div>
 
               {sections.length > 0 ? (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
@@ -5437,34 +5946,47 @@ export default function AdminDashboard() {
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">No sections added yet. Create sections from the tabs above.</p>
               )}
+                </>
+              )}
             </div>
           )}
 
           {/* CARDS */}
           {tab === 'cards' && (
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Featured Cards</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuditLog({ title: 'Feature Cards', entityTable: 'featured_cards' })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Audit Log
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddSectionType('cards');
-                      setShowAddSectionModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add New Section
-                  </button>
-                </div>
+                <div className="flex items-center gap-2" />
               </div>
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('cards', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('cards') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><CreditCard className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('cards', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('cards') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('cards');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+              {getModuleView('cards') === 'audit' ? (
+                <AuditTimeline module="featured-cards" />
+              ) : (
+                <>
 
               {/* Section instances tabs */}
               {sections.filter(s => s.section_type === 'cards').length > 0 && (
@@ -5645,37 +6167,81 @@ export default function AdminDashboard() {
                   </div>
                 </Modal>
               )}
+                </>
+              )}
             </div>
           )}
 
           {/* CATEGORIES */}
           {tab === 'categories' && (
             <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-bold">Categories</h2>
+                </div>
+              </div>
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('categories', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('categories') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('categories', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('categories') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('categories');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+              {getModuleView('categories') === 'audit' ? (
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                    <button
+                      onClick={() => setCategoriesAuditSubView('categories')}
+                      className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${categoriesAuditSubView === 'categories' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Categories
+                    </button>
+                    <button
+                      onClick={() => setCategoriesAuditSubView('subcategories')}
+                      className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${categoriesAuditSubView === 'subcategories' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Subcategories
+                    </button>
+                    <button
+                      onClick={() => setCategoriesAuditSubView('brands')}
+                      className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${categoriesAuditSubView === 'brands' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Brands
+                    </button>
+                    <button
+                      onClick={() => setCategoriesAuditSubView('brand-action-links')}
+                      className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${categoriesAuditSubView === 'brand-action-links' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Brand Action Links
+                    </button>
+                  </div>
+                  {categoriesAuditSubView === 'categories' && <AuditTimeline module="categories" />}
+                  {categoriesAuditSubView === 'subcategories' && <AuditTimeline module="subcategories" />}
+                  {categoriesAuditSubView === 'brands' && <AuditTimeline module="brands" />}
+                  {categoriesAuditSubView === 'brand-action-links' && <AuditTimeline module="brand-action-links" />}
+                </div>
+              ) : (
+              <>
               {!editingSubcategoryId ? (
                 <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold">Categories</h2>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openAuditLog({ title: 'Categories', entityTable: 'categories' })}
-                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Audit Log
-                      </button>
-                      <button
-                        onClick={() => {
-                          setAddSectionType('categories');
-                          setShowAddSectionModal(true);
-                        }}
-                        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                      >
-                        <Plus className="w-4 h-4" /> Add New Section
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Section instances tabs */}
                   {sections.filter(s => s.section_type === 'categories').length > 0 && (
                     <div className="mb-6 hidden md:block">
@@ -5807,7 +6373,7 @@ export default function AdminDashboard() {
                                       <label className="text-sm font-medium">Subcategories</label>
                                       <button
                                         type="button"
-                                        onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                                        onClick={startNewSubcategory}
                                         className="text-sm text-primary font-semibold"
                                       >
                                         + Add
@@ -5874,7 +6440,7 @@ export default function AdminDashboard() {
                                                     </button>
                                                     <button
                                                       type="button"
-                                                      onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                                      onClick={() => { void deleteInlineSubcategory(sub); }}
                                                       className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
                                                     >
                                                       <X className="w-4 h-4" />
@@ -5946,7 +6512,7 @@ export default function AdminDashboard() {
                             <label className="text-sm font-medium">Subcategories</label>
                             <button
                               type="button"
-                              onClick={() => setEditSubcategory({ id: crypto.randomUUID(), category_id: editCategory.id || '', name: '', link: null, video_url: null, image_url: null, sort_order: editSubs.length })}
+                              onClick={startNewSubcategory}
                               className="text-sm text-primary font-semibold"
                             >
                               + Add
@@ -6003,7 +6569,7 @@ export default function AdminDashboard() {
                                           </button>
                                           <button
                                             type="button"
-                                            onClick={() => setEditSubs(editSubs.filter((item) => item.id !== sub.id))}
+                                            onClick={() => { void deleteInlineSubcategory(sub); }}
                                             className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
                                           >
                                             <X className="w-4 h-4" />
@@ -6075,7 +6641,7 @@ export default function AdminDashboard() {
                               setEditShowAboutSectionState((prev) => ({ ...prev, [subcategoryId]: editShowAboutSectionState[editSubcategory.id || 'new'] ?? true }));
                               setEditShowHeaderPointsSectionState((prev) => ({ ...prev, [subcategoryId]: editShowHeaderPointsSectionState[editSubcategory.id || 'new'] ?? true }));
                               setEditSubcategory(null);
-                              toast.success('Subcategory added! Click the main Save button to persist changes.');
+                              toast.success('Subcategory draft created.');
                             }}
                             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                           >
@@ -6105,6 +6671,9 @@ export default function AdminDashboard() {
                                 setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
                                 setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
                                 setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
+                                setEditingBrandId(null);
+                                setEditingBrand(null);
+                                setActiveAccordion(null);
                                 setEditingSubcategoryId(null);
                               }}
                               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted flex items-center gap-2"
@@ -6114,22 +6683,13 @@ export default function AdminDashboard() {
                             </button>
                             <button
                               onClick={async () => {
-                                setEditButtonsState(prev => ({ ...prev, [editingSub.id]: editButtons }));
-                                setEditSubOverviewPointsState(prev => ({ ...prev, [editingSub.id]: editSubOverviewPoints }));
-                                setEditSubBrandsState(prev => ({ ...prev, [editingSub.id]: editSubBrands }));
-                                setEditShowBrandsState(prev => ({ ...prev, [editingSub.id]: editShowBrandsState[editingSub.id] ?? true }));
-                                setEditShowAboutSectionState(prev => ({ ...prev, [editingSub.id]: editShowAboutSectionState[editingSub.id] ?? true }));
-                                setEditShowHeaderPointsSectionState(prev => ({ ...prev, [editingSub.id]: editShowHeaderPointsSectionState[editingSub.id] ?? true }));
-                                setEditBrandsTabLabelState(prev => ({ ...prev, [editingSub.id]: editBrandsTabLabelState[editingSub.id] ?? 'Brands' }));
-                                setEditKeyFeaturesTabLabelState(prev => ({ ...prev, [editingSub.id]: editKeyFeaturesTabLabelState[editingSub.id] ?? 'Key Features' }));
-                                await saveCategory(editingSub);
-                                setEditingSubcategoryId(null);
+                                await saveSubcategory();
                               }}
                               disabled={isSavingCategory}
                               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Save className="w-4 h-4" />
-                              {isSavingCategory ? 'Saving...' : 'Save'}
+                              {isSavingCategory ? 'Saving...' : 'Save Subcategory'}
                             </button>
                           </div>
                         </div>
@@ -6302,7 +6862,15 @@ export default function AdminDashboard() {
                         <div className="border-t">
                           <button
                             type="button"
-                            onClick={() => setActiveAccordion(activeAccordion === 'brands' ? null : 'brands')}
+                            onClick={() => {
+                              if (editingBrandId) {
+                                setEditingBrandId(null);
+                                setEditingBrand(null);
+                                setActiveAccordion(null);
+                                return;
+                              }
+                              setActiveAccordion(activeAccordion === 'brands' ? null : 'brands');
+                            }}
                             className="flex w-full items-center justify-between py-4 text-left hover:bg-muted/50 px-2 rounded-lg transition-colors"
                           >
                             <label className="text-lg font-bold cursor-pointer">Brands</label>
@@ -6326,8 +6894,10 @@ export default function AdminDashboard() {
                                   <label className="text-sm font-medium">Brands List</label>
                                   <button
                                     type="button"
-                                    onClick={() => setEditSubBrands([...editSubBrands, {
-                                      id: crypto.randomUUID(),
+                                    onClick={() => {
+                                      const id = crypto.randomUUID();
+                                      const draft = {
+                                      id,
                                       name: '',
                                       logo_url: null,
                                       link: null,
@@ -6354,8 +6924,12 @@ export default function AdminDashboard() {
                                       join_network_label: '+ Join their Network',
                                       join_network_link: '',
                                       join_network_visible: false
-                                    }])}
-                                    disabled={editSubBrands.length >= 10}
+                                      };
+                                      setEditSubBrands([...editSubBrands, draft]);
+                                      setEditingBrandId(id);
+                                      setEditingBrand(draft);
+                                    }}
+                                    disabled={editSubBrands.length >= 10 || !subcategories.some((subcategory) => subcategory.id === editingSub.id)}
                                     className="text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     + Add Brand
@@ -6413,14 +6987,7 @@ export default function AdminDashboard() {
                                                 </button>
                                                 <button
                                                   type="button"
-                                                  onClick={() => {
-                                                    const newBrands = editSubBrands.filter(b => b.id !== brand.id);
-                                                    setEditSubBrands(newBrands);
-                                                    if (editingBrandId === brand.id) {
-                                                      setEditingBrandId(null);
-                                                      setEditingBrand(null);
-                                                    }
-                                                  }}
+                                                  onClick={() => { void deleteInlineBrand(brand, editingSub.id); }}
                                                   className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
                                                 >
                                                   <X className="w-4 h-4" />
@@ -6449,10 +7016,20 @@ export default function AdminDashboard() {
                                   onClick={() => {
                                     setEditingBrandId(null);
                                     setEditingBrand(null);
+                                    setActiveAccordion(null);
                                   }}
                                   className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted flex items-center gap-2"
                                 >
                                   <ArrowLeft className="w-4 h-4" /> Back to Brands
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={saveBrand}
+                                  disabled={isSavingCategory}
+                                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                                >
+                                  <Save className="mr-2 inline h-4 w-4" />
+                                  {isSavingCategory ? 'Saving...' : 'Save Brand'}
                                 </button>
                               </div>
 
@@ -7323,34 +7900,46 @@ export default function AdminDashboard() {
                   })()}
                 </>
               )}
+              </>
+              )}
             </div>
           )}
 
           {/* OFFERS */}
           {tab === 'offers' && (
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Offers & Discounts</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuditLog({ title: 'Offers', entityTable: 'offers' })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Audit Log
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddSectionType('offers');
-                      setShowAddSectionModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add New Section
-                  </button>
-                </div>
               </div>
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('offers', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('offers') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><Star className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('offers', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('offers') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('offers');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+              {getModuleView('offers') === 'audit' ? (
+                <AuditTimeline module="offers" />
+              ) : (
+                <>
 
               {/* Section instances tabs */}
               {sections.filter(s => s.section_type === 'offers').length > 0 && (
@@ -7541,34 +8130,46 @@ export default function AdminDashboard() {
                   </div>
                 </Modal>
               )}
+                </>
+              )}
             </div>
           )}
 
           {/* 2-COL ADS */}
           {tab === 'ads_2col' && (
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">2-Column Ads</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuditLog({ title: '2-Col Ads', entityTable: 'ads_2col' })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Audit Log
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddSectionType('ads_2col');
-                      setShowAddSectionModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add New Section
-                  </button>
-                </div>
               </div>
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('ads_2col', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_2col') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><Image className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('ads_2col', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_2col') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('ads_2col');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+              {getModuleView('ads_2col') === 'audit' ? (
+                <AuditTimeline module="ads" adSlot={2} />
+              ) : (
+                <>
 
               {sections.filter(s => s.section_type === 'ads_2col').length > 0 && (
                 <div className="mb-6 hidden md:block">
@@ -7729,6 +8330,8 @@ export default function AdminDashboard() {
                   </div>
                 </Modal>
               )}
+                </>
+              )}
             </div>
           )}
 
@@ -7737,26 +8340,38 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">1-Column Ad</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuditLog({ title: '1-Col Ads', entityTable: 'ads_2col' })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Audit Log
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddSectionType('ads_1col');
-                      setShowAddSectionModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add New Section
-                  </button>
-                </div>
               </div>
+
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('ads_1col', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_1col') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><Image className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('ads_1col', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_1col') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('ads_1col');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+
+              {getModuleView('ads_1col') === 'audit' ? (
+                <AuditTimeline module="ads" adSlot={1} />
+              ) : (
+              <>
 
               {sections.filter(s => s.section_type === 'ads_1col').length > 0 && (
                 <div className="mb-6 hidden md:block">
@@ -7917,6 +8532,8 @@ export default function AdminDashboard() {
                   </div>
                 </Modal>
               )}
+              </>
+              )}
             </div>
           )}
 
@@ -7925,26 +8542,38 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">3-Column Ads</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAuditLog({ title: '3-Col Ads', entityTable: 'ads_3col' })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs md:text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Audit Log
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAddSectionType('ads_3col');
-                      setShowAddSectionModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add New Section
-                  </button>
-                </div>
               </div>
+
+              <div className="relative -mt-14 mb-6 flex items-center justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+                <button
+                  onClick={() => setModuleView('ads_3col', 'manage')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_3col') === 'manage' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><Image className="h-4 w-4" /> Manage</span>
+                </button>
+                <button
+                  onClick={() => setModuleView('ads_3col', 'audit')}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${getModuleView('ads_3col') === 'audit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className="flex items-center gap-2"><History className="h-4 w-4" /> Audit</span>
+                </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setAddSectionType('ads_3col');
+                    setShowAddSectionModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-green-700"
+                >
+                  <Plus className="w-4 h-4" /> Add New Section
+                </button>
+              </div>
+
+              {getModuleView('ads_3col') === 'audit' ? (
+                <AuditTimeline module="ads" adSlot={3} />
+              ) : (
+              <>
 
               {sections.filter(s => s.section_type === 'ads_3col').length > 0 && (
                 <div className="mb-6 hidden md:block">
@@ -8117,6 +8746,8 @@ export default function AdminDashboard() {
                     <button onClick={saveAd3} className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold">Save</button>
                   </div>
                 </Modal>
+              )}
+              </>
               )}
             </div>
           )}

@@ -74,23 +74,30 @@ function formatError(error) {
     };
 }
 
+function valueOrDefault(value, fallback) {
+    if (value === null || value === undefined) {
+        return fallback;
+    }
+    return value;
+}
+
 export async function executeQuery(spec, env) {
     const supabase = getSupabaseAdmin(env);
 
     try {
         if (spec.action === 'select') {
-            let query = supabase.from(spec.table).select(spec.select ?? '*', spec.selectOptions);
+            let query = supabase.from(spec.table).select(valueOrDefault(spec.select, '*'), spec.selectOptions);
             query = applyFilters(query, spec.filters || []);
             query = applyOrders(query, spec);
             query = applyLimitAndSingle(query, spec);
             const { data, error, count } = await query;
-            return { data, error: formatError(error), count: count ?? null };
+            return { data, error: formatError(error), count: valueOrDefault(count, null) };
         }
 
         if (spec.action === 'insert') {
             let query = supabase.from(spec.table).insert(spec.body);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(valueOrDefault(spec.select, '*'));
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -101,7 +108,7 @@ export async function executeQuery(spec, env) {
             let query = supabase.from(spec.table).update(spec.body);
             query = applyFilters(query, spec.filters || []);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(valueOrDefault(spec.select, '*'));
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -112,7 +119,7 @@ export async function executeQuery(spec, env) {
             let query = supabase.from(spec.table).delete();
             query = applyFilters(query, spec.filters || []);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(valueOrDefault(spec.select, '*'));
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;
@@ -122,7 +129,7 @@ export async function executeQuery(spec, env) {
         if (spec.action === 'upsert') {
             let query = supabase.from(spec.table).upsert(spec.body);
             if (spec.returning) {
-                query = query.select(spec.select ?? '*');
+                query = query.select(valueOrDefault(spec.select, '*'));
                 query = applyLimitAndSingle(query, spec);
             }
             const { data, error } = await query;

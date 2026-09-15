@@ -11,9 +11,9 @@ export class MSG91Service {
     }
 
     getFromEmail() {
-        return this.config.msg91FromEmail || (this.config.msg91EmailDomain ?
+        return this.config.msg91EmailDomain ?
             `no-reply@${this.config.msg91EmailDomain}` :
-            'no-reply@mailer91.com');
+            'no-reply@mailer91.com';
     }
 
     async sendOTP(email, otp) {
@@ -21,11 +21,12 @@ export class MSG91Service {
             otp = this.generateOTP();
         }
 
+        console.log('[OTP] Generated OTP', { email, otp });
         storeOtp(email, otp);
-        console.info('[OTP] Stored OTP for email delivery');
+        console.log('[OTP] Stored OTP before sending email', { email });
 
         if (this.config.useFakeOtp) {
-            console.info('[OTP] Fake delivery enabled');
+            console.log(`[FAKE OTP] Sending OTP ${otp} to email: ${email}`);
             return { success: true, message: 'OTP sent successfully' };
         }
 
@@ -35,10 +36,6 @@ export class MSG91Service {
 
         if (!this.config.msg91TemplateId) {
             throw new Error('MSG91 email template is not configured');
-        }
-
-        if (!this.config.msg91EmailDomain) {
-            throw new Error('MSG91 email domain is not configured');
         }
 
         const url = `${this.baseUrl}/email/send`;
@@ -62,7 +59,7 @@ export class MSG91Service {
             template_id: this.config.msg91TemplateId,
         };
 
-        console.info('[MSG91] Sending OTP email', { hasAuthKey: Boolean(this.config.msg91AuthKey), hasTemplateId: Boolean(this.config.msg91TemplateId), hasEmailDomain: Boolean(this.config.msg91EmailDomain), hasFromEmail: Boolean(this.config.msg91FromEmail) });
+        console.log('[MSG91] Payload sent to MSG91', { url, payload });
 
         const response = await fetch(url, {
             method: 'POST',
@@ -83,8 +80,9 @@ export class MSG91Service {
     }
 
     async verifyOTP(email, otp) {
+        console.log('[OTP] verifyOTP called', { email, otp });
         verifyOtp(email, otp);
-        console.info('[OTP] OTP verification successful');
+        console.log('[OTP] OTP verification successful', { email });
         return { success: true, message: 'OTP verified successfully' };
     }
 }

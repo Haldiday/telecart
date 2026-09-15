@@ -850,6 +850,9 @@ export default function Header() {
             ref={stickyInputRef}
             type="search"
             value={query}
+            onTouchStart={() => {
+              stickyInputRef.current?.focus();
+            }}
             onChange={(event) => {
               setQuery(event.target.value);
               // If user is typing, make sure isSearchActive is true!

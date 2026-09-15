@@ -32,9 +32,35 @@ const api = axios.create({
   },
 });
 
+function getCustomAuthToken(): string | null {
+  try {
+    return localStorage.getItem('auth_token');
+  } catch {
+    return null;
+  }
+}
+
+async function getSupabaseSessionToken(): Promise<string | null> {
+  try {
+    const mod = await import('@/integrations/supabase/client');
+    const sb = (mod as any).supabase;
+    if (!sb?.auth?.getSession) return null;
+    const result = await sb.auth.getSession();
+    return result?.data?.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveAuthToken(): Promise<string | null> {
+  const custom = getCustomAuthToken();
+  if (custom) return custom;
+  return getSupabaseSessionToken();
+}
+
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
+  async (config) => {
+    const token = await resolveAuthToken();
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

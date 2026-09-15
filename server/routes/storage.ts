@@ -2,8 +2,6 @@ import { Router } from 'express';
 import multer from 'multer';
 import { requireAdmin, type AuthenticatedRequest } from '../middleware/auth.js';
 import { deleteFromR2, getR2Config, getR2PublicUrl, uploadToR2 } from '../lib/r2.js';
-import { writeAuditLogsBestEffort } from '../lib/auditLog.js';
-import { randomUUID } from 'node:crypto';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
@@ -26,17 +24,6 @@ storageRouter.post('/upload', requireAdmin, upload.single('file'), async (req: A
   }
 
   const { publicUrl } = await uploadToR2(config.bucketName, path, file.buffer, file.mimetype || 'application/octet-stream');
-  if (req.actor) {
-    await writeAuditLogsBestEffort([{
-      actor: req.actor,
-      action: 'created',
-      entityType: 'storage_object',
-      entityTable: 'storage.objects',
-      recordId: path,
-      newData: { bucket: config.bucketName, path, content_type: file.mimetype || 'application/octet-stream', size: file.size },
-      requestId: req.headers['x-request-id']?.toString() || randomUUID(),
-    }]);
-  }
   res.json({ data: { path, publicUrl }, error: null });
 });
 
@@ -56,17 +43,6 @@ storageRouter.post('/remove', requireAdmin, async (req: AuthenticatedRequest, re
   }
 
   await Promise.all(paths.map((path) => deleteFromR2(config.bucketName, path)));
-  if (req.actor) {
-    await writeAuditLogsBestEffort(paths.map((path) => ({
-      actor: req.actor!,
-      action: 'deleted' as const,
-      entityType: 'storage_object',
-      entityTable: 'storage.objects',
-      recordId: path,
-      oldData: { bucket: config.bucketName, path },
-      requestId: req.headers['x-request-id']?.toString() || randomUUID(),
-    })));
-  }
   res.json({ data: { removed: paths }, error: null });
 });
 

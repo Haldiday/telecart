@@ -16,7 +16,6 @@ export interface QueryOrder {
 }
 
 export type QueryAction = 'select' | 'insert' | 'update' | 'delete' | 'upsert';
-export type AuditActionIntent = 'created' | 'updated' | 'deleted';
 
 export interface QuerySpec {
   table: string;
@@ -31,7 +30,6 @@ export interface QuerySpec {
   body?: unknown;
   onConflict?: string;
   returning?: boolean;
-  auditAction?: AuditActionIntent;
 }
 
 export interface DbResponse<T = unknown> {

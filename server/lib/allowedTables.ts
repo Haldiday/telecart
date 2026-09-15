@@ -1,5 +1,6 @@
 /** Tables the backend is allowed to query. */
 export const ALLOWED_TABLES = new Set([
+  'admin_audit_logs',
   'page_sections',
   'hero_settings',
   'header_settings',

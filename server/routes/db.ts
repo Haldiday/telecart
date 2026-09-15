@@ -4,7 +4,6 @@ import { requireAdmin } from '../middleware/auth.js';
 import { executeQuery } from '../queryExecutor.js';
 import type { QuerySpec } from '../types/query.js';
 import { assertAllowedTable } from '../lib/allowedTables.js';
-import { randomUUID } from 'node:crypto';
 
 const WRITE_ACTIONS = new Set(['insert', 'update', 'delete', 'upsert']);
 
@@ -55,13 +54,11 @@ dbRouter.post('/query', async (req: AuthenticatedRequest, res) => {
     }
   }
 
-  const requestId = req.headers['x-request-id']?.toString() || randomUUID();
-  req.requestId = requestId;
   const result = await executeQuery({
     ...spec,
     filters: spec.filters ?? [],
     orders: spec.orders ?? [],
-  }, req.actor, requestId);
+  });
 
   if (result.error) {
     res.status(400).json(result);
