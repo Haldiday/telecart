@@ -4555,20 +4555,6 @@ export default function AdminDashboard() {
         ]);
       }
 
-      const currentBrand = editingBrandId
-        ? editSubBrands.find((brand) => brand.id === editingBrandId) ?? null
-        : null;
-      const originalBrand = editingBrandId && activeSubId
-        ? (editSubBrandsState[activeSubId] || []).find((brand) => brand.id === editingBrandId) ?? null
-        : null;
-      const currentLinks = currentBrand ? normalizeAdminBrandActionLinks(currentBrand) : [];
-      const originalLinks = originalBrand ? normalizeAdminBrandActionLinks(originalBrand) : [];
-      const changedLink = editingBrandId && JSON.stringify(currentLinks) !== JSON.stringify(originalLinks)
-        ? currentLinks.find((link) => {
-          const originalLink = originalLinks.find((candidate) => candidate.id === link.id);
-          return !originalLink || JSON.stringify(originalLink) !== JSON.stringify(link);
-        }) ?? originalLinks.find((link) => !currentLinks.some((candidate) => candidate.id === link.id)) ?? currentLinks[0] ?? originalLinks[0]
-        : null;
       if (deletedSubcategories.length > 0 || deletedBrands.length > 0) {
         for (const subcategory of deletedSubcategories) {
           void recordAudit({
@@ -4598,45 +4584,22 @@ export default function AdminDashboard() {
           });
         }
       } else {
-        const auditModule = changedLink
-          ? 'brand-action-links'
-          : editingBrandId
-            ? 'brands'
+        void recordAudit({
+          module: editingBrandId ? 'brands' : activeSubId ? 'subcategories' : 'categories',
+          action: editingBrandId || activeSubId || editCategory.id ? 'update' : 'create',
+          entity_type: editingBrandId ? 'subcategory_brands' : activeSubId ? 'subcategories' : 'categories',
+          entity_id: editingBrandId ?? activeSubId ?? categoryId ?? undefined,
+          entity_name: (editingBrandId
+            ? editSubBrands.find((brand) => brand.id === editingBrandId)?.name
             : activeSubId
-              ? 'subcategories'
-              : 'categories';
-      const auditEntityType = changedLink
-        ? 'brand_action_links'
-        : editingBrandId
-          ? 'subcategory_brands'
-          : activeSubId
-            ? 'subcategories'
-            : 'categories';
-      const auditEntityId = changedLink
-        ? changedLink.id
-        : editingBrandId ?? activeSubId ?? categoryId ?? undefined;
-      const auditEntityName = changedLink?.text?.trim()
-        || currentBrand?.name?.trim()
-        || (activeSubId ? editSubs.find((sub) => sub.id === activeSubId)?.name?.trim() : null)
-        || editCategory.name?.trim()
-        || 'Category';
-      const auditAction = changedLink
-        ? (currentLinks.some((link) => link.id === changedLink.id)
-          ? (originalLinks.some((link) => link.id === changedLink.id) ? 'update' : 'create')
-          : 'delete')
-        : (editingBrandId || activeSubId || editCategory.id ? 'update' : 'create');
-      void recordAudit({
-        module: auditModule,
-        action: auditAction,
-        entity_type: auditEntityType,
-        entity_id: auditEntityId,
-        entity_name: auditEntityName,
-        hierarchy_hints: {
-          section_id: selectedCategoriesSectionId ?? null,
-          category_id: activeSubId ? categoryId ?? null : null,
-          subcategory_id: editingBrandId ? activeSubId : null,
-        },
-      });
+              ? editSubs.find((sub) => sub.id === activeSubId)?.name
+              : editCategory.name)?.trim() || 'Category',
+          hierarchy_hints: {
+            section_id: selectedCategoriesSectionId ?? null,
+            category_id: activeSubId ? categoryId ?? null : null,
+            subcategory_id: editingBrandId ? activeSubId : null,
+          },
+        });
       }
 
       toast.success('Category saved successfully!');

@@ -104,7 +104,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       // Mobile: never show header search, but show sticky search when scrolled
       if (isMobile) {
         setShowHeaderSearch(false);
-        setShowMobileStickySearch(scrolled);
+        setShowMobileStickySearch(scrolled || isSearchActive);
       } else {
         setShowHeaderSearch(scrolled);
         setShowMobileStickySearch(false);
@@ -132,7 +132,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({
       window.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('resize', handleVisualViewportResize);
     };
-  }, [isMobile]);
+  }, [isMobile, isSearchActive]);
 
   // Log state changes
   useEffect(() => {

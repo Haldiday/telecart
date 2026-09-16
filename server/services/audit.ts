@@ -405,6 +405,7 @@ export interface AuditMutationContext {
   new_data?: Record<string, any> | null;
   changes?: Record<string, any> | null;
   correlation_id?: string | null;
+  hierarchy_override?: AuditHierarchy | null;
 }
 
 export async function normalizeAuditRow(ctx: AuditMutationContext): Promise<NormalizedAuditRow> {
@@ -426,6 +427,12 @@ export async function normalizeAuditRow(ctx: AuditMutationContext): Promise<Norm
   });
 
   const action = normalizeAction(ctx.action);
+  const resolvedHierarchy = {
+    section_heading: ctx.hierarchy_override?.section_heading ?? hierarchy.section_heading,
+    category: ctx.hierarchy_override?.category ?? hierarchy.category,
+    subcategory: ctx.hierarchy_override?.subcategory ?? hierarchy.subcategory,
+    brand: ctx.hierarchy_override?.brand ?? hierarchy.brand,
+  };
   const entityName = (typeof ctx.entity_name === 'string' && ctx.entity_name.trim())
     ? ctx.entity_name.trim()
     : `(${entityTable})`;
@@ -436,7 +443,7 @@ export async function normalizeAuditRow(ctx: AuditMutationContext): Promise<Norm
     entityName,
     entityTable,
     resolvedAdSlot,
-    hierarchy,
+    resolvedHierarchy,
   );
 
   const recordId = toUuidOrNull(ctx.entity_id);
@@ -493,6 +500,7 @@ export async function createAuditLog(
       new_data: req.new_data ?? null,
       changes: req.changes ?? null,
       correlation_id: req.correlation_id ?? null,
+      hierarchy_override: req.hierarchy_override ?? null,
     });
 
     const row = {
@@ -533,6 +541,113 @@ export async function createAuditLog(
   } catch (err) {
     console.error('[AUDIT] Unexpected error creating audit log:', err);
     return null;
+  }
+}
+
+interface BrandActionLinkRow {
+  id: string;
+  name: string;
+  subcategory_id: string;
+  action_links?: unknown;
+  action_link_1_text?: string | null;
+  action_link_1_url?: string | null;
+  action_link_1_new_tab?: boolean | null;
+  action_link_1_enabled?: boolean | null;
+  action_link_2_text?: string | null;
+  action_link_2_url?: string | null;
+  action_link_2_new_tab?: boolean | null;
+  action_link_2_enabled?: boolean | null;
+  action_link_3_text?: string | null;
+  action_link_3_url?: string | null;
+  action_link_3_new_tab?: boolean | null;
+  action_link_3_enabled?: boolean | null;
+}
+
+interface NormalizedBrandActionLink {
+  id: string;
+  text: string;
+  url: string;
+  new_tab: boolean;
+  enabled: boolean;
+}
+
+function normalizeBrandActionLinks(row: BrandActionLinkRow): NormalizedBrandActionLink[] {
+  const configured = Array.isArray(row.action_links)
+    ? row.action_links.map((link, index) => {
+      const item = link && typeof link === 'object' ? link as Record<string, unknown> : {};
+      return {
+        id: typeof item.id === 'string' && item.id.trim() ? item.id : `${row.id}-action-${index + 1}`,
+        text: typeof item.text === 'string' ? item.text.trim() : '',
+        url: typeof item.url === 'string' ? item.url.trim() : '',
+        new_tab: Boolean(item.new_tab),
+        enabled: item.enabled !== false,
+      };
+    })
+    : [];
+
+  if (configured.length > 0) return configured.filter((link) => link.text || link.url);
+
+  return [1, 2, 3].map((index) => ({
+    id: `${row.id}-action-${index}`,
+    text: String(row[`action_link_${index}_text` as keyof BrandActionLinkRow] ?? '').trim(),
+    url: String(row[`action_link_${index}_url` as keyof BrandActionLinkRow] ?? '').trim(),
+    new_tab: Boolean(row[`action_link_${index}_new_tab` as keyof BrandActionLinkRow]),
+    enabled: row[`action_link_${index}_enabled` as keyof BrandActionLinkRow] !== false,
+  })).filter((link) => link.text || link.url);
+}
+
+async function resolveBrandActionLinkHierarchy(row: BrandActionLinkRow): Promise<AuditHierarchy> {
+  const hierarchy: AuditHierarchy = { brand: row.name };
+  const subcategory = await resolveSubcategoryInfo(row.subcategory_id);
+  if (!subcategory) return hierarchy;
+  hierarchy.subcategory = subcategory.name;
+
+  const category = await resolveCategoryInfo(subcategory.category_id);
+  if (!category) return hierarchy;
+  hierarchy.category = category.name;
+  if (category.section_id) {
+    hierarchy.section_heading = await resolveSectionName(category.section_id) ?? undefined;
+  }
+  return hierarchy;
+}
+
+export async function recordBrandActionLinkMutation(
+  actorId: string,
+  beforeRows: BrandActionLinkRow[],
+  afterRows: BrandActionLinkRow[],
+): Promise<void> {
+  const beforeById = new Map(beforeRows.map((row) => [row.id, row]));
+  const afterById = new Map(afterRows.map((row) => [row.id, row]));
+  const brandIds = new Set([...beforeById.keys(), ...afterById.keys()]);
+
+  for (const brandId of brandIds) {
+    const beforeRow = beforeById.get(brandId);
+    const afterRow = afterById.get(brandId);
+    const beforeLinks = new Map((beforeRow ? normalizeBrandActionLinks(beforeRow) : []).map((link) => [link.id, link]));
+    const afterLinks = new Map((afterRow ? normalizeBrandActionLinks(afterRow) : []).map((link) => [link.id, link]));
+    const linkIds = new Set([...beforeLinks.keys(), ...afterLinks.keys()]);
+
+    for (const linkId of linkIds) {
+      const beforeLink = beforeLinks.get(linkId);
+      const afterLink = afterLinks.get(linkId);
+      const action = !beforeLink ? 'create' : !afterLink ? 'delete' : JSON.stringify(beforeLink) === JSON.stringify(afterLink) ? null : 'update';
+      if (!action) continue;
+
+      const row = afterRow ?? beforeRow;
+      const link = afterLink ?? beforeLink;
+      if (!row || !link?.text) continue;
+      await createAuditLog(actorId, {
+        module: 'brand-action-links',
+        action,
+        entity_type: 'brand_action_links',
+        entity_id: link.id,
+        entity_name: link.text,
+        hierarchy_hints: { brand_id: row.id },
+        hierarchy_override: await resolveBrandActionLinkHierarchy(row),
+        old_data: beforeLink,
+        new_data: afterLink,
+      });
+    }
   }
 }
 

@@ -850,9 +850,6 @@ export default function Header() {
             ref={stickyInputRef}
             type="search"
             value={query}
-            onTouchStart={() => {
-              stickyInputRef.current?.focus();
-            }}
             onChange={(event) => {
               setQuery(event.target.value);
               // If user is typing, make sure isSearchActive is true!
@@ -871,7 +868,7 @@ export default function Header() {
               blurTimeoutRef.current = setTimeout(() => setIsSearchActive(false), 120);
             }}
             placeholder="Search brand or category"
-            className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
+            className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-base outline-none focus:border-[#6b7cff]"
           />
           <button
             type="button"

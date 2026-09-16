@@ -34,6 +34,7 @@ export interface CreateAuditLogRequest {
   new_data?: Record<string, any> | null;
   changes?: Record<string, any> | null;
   correlation_id?: string | null;
+  hierarchy_override?: AuditHierarchy | null;
 }
 
 export interface AuditLogRecord {
