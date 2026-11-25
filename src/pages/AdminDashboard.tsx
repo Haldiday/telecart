@@ -93,6 +93,7 @@ interface SubcategoryBrand {
   name: string;
   logo_url: string | null;
   link: string | null;
+  sort_order?: number;
   description?: string | null;
   buttons?: CategoryButton[];
   is_visible: boolean;
@@ -1189,7 +1190,7 @@ export default function AdminDashboard() {
 
         let subBrands;
         try {
-          const result = await supabase.from('subcategory_brands' as any).select('*');
+          const result = await supabase.from('subcategory_brands' as any).select('*').order('sort_order');
           subBrands = result;
         } catch {
           subBrands = { data: [] };
@@ -1403,6 +1404,7 @@ export default function AdminDashboard() {
               name: brand.name,
               logo_url: brand.logo_url,
               link: brand.link,
+              sort_order: brand.sort_order,
               description: brand.description,
               buttons: brand.buttons || [],
               is_visible: brand.is_visible,
@@ -1629,7 +1631,7 @@ export default function AdminDashboard() {
     ]);
     let subBrands;
     try {
-      const result = await supabase.from('subcategory_brands' as any).select('*');
+      const result = await supabase.from('subcategory_brands' as any).select('*').order('sort_order');
       subBrands = result;
     } catch {
       subBrands = { data: [] };
@@ -1731,6 +1733,7 @@ export default function AdminDashboard() {
           name: brand.name,
           logo_url: brand.logo_url,
           link: brand.link,
+          sort_order: brand.sort_order,
           description: brand.description,
           buttons: brand.buttons || [],
           is_visible: brand.is_visible,
@@ -4145,6 +4148,27 @@ export default function AdminDashboard() {
       await saveAboutSections(subcategory.id);
       await saveKeyFeaturesSections(subcategory.id, editSubOverviewPointsState[subcategory.id] || editSubOverviewPoints);
 
+      const orderedBrands = editSubBrands.map((brand, index) => ({ ...brand, sort_order: index }));
+      const persistedBrandIds = new Set(
+        (editSubBrandsState[subcategory.id] || [])
+          .map((brand) => brand.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      await Promise.all(orderedBrands
+        .filter((brand) => brand.id && persistedBrandIds.has(brand.id))
+        .map(async (brand) => {
+          if (!brand.id) return;
+          const { data, error } = await supabase
+            .from('subcategory_brands')
+            .update({ sort_order: brand.sort_order })
+            .eq('id', brand.id)
+            .eq('subcategory_id', subcategory.id)
+            .select('id')
+            .single();
+          if (error) throw error;
+          if (!data?.id) throw new Error(`Brand order update was not confirmed for "${brand.name}".`);
+        }));
+
       const isCreate = !subcategories.some((item) => item.id === subcategory.id);
       void recordAudit({
         module: 'subcategories',
@@ -4158,7 +4182,11 @@ export default function AdminDashboard() {
         const exists = current.some((item) => item.id === subcategory.id);
         return exists ? current.map((item) => item.id === subcategory.id ? { ...item, ...subcategoryRow } : item) : [...current, subcategoryRow as Subcategory];
       });
-      setEditSubBrandsState((current) => ({ ...current, [subcategory.id]: editSubBrandsState[subcategory.id] || editSubBrands }));
+      setEditSubBrands(orderedBrands);
+      setEditSubBrandsState((current) => ({
+        ...current,
+        [subcategory.id]: orderedBrands.filter((brand) => brand.id && persistedBrandIds.has(brand.id)),
+      }));
       await refreshCategoryListData();
       setEditingSubcategoryId(null);
       toast.success('Subcategory saved!');
@@ -4189,12 +4217,14 @@ export default function AdminDashboard() {
         throw new Error('Save the Subcategory before saving a Brand.');
       }
 
+      const brandIndex = editSubBrands.findIndex((brand) => brand.id === editingBrandId);
       const payload = {
         id: editingBrandId,
         subcategory_id: editingSubcategoryId,
         name: editingBrand.name.trim(),
         logo_url: editingBrand.logo_url,
         link: editingBrand.link,
+        sort_order: brandIndex >= 0 ? brandIndex : editSubBrands.length,
         description: editingBrand.description,
         buttons: editingBrand.buttons || [],
         is_visible: editingBrand.is_visible ?? true,

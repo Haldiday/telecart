@@ -229,7 +229,7 @@ export default function HeroSection({ heroSettings }: HeroSectionProps) {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Search brand or category"
-                className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-sm outline-none focus:border-[#6b7cff]"
+                className="w-full rounded-full border border-[#dcd6d1] bg-white px-5 pr-14 py-3 text-base outline-none focus:border-[#6b7cff]"
               />
               <button
                 type="button"

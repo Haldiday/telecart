@@ -9,6 +9,19 @@ export const AuthLayout = () => {
   const scrollPositionsRef = useRef(new Map<string, { x: number; y: number }>());
   const activeLocationKeyRef = useRef(location.key);
 
+  useEffect(() => {
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+
+    if (location.pathname === "/") {
+      const homepageCanonical = canonical ?? document.createElement("link");
+      homepageCanonical.rel = "canonical";
+      homepageCanonical.href = "https://bizreq.com/";
+      if (!canonical) document.head.appendChild(homepageCanonical);
+    } else {
+      canonical?.remove();
+    }
+  }, [location.pathname]);
+
   useLayoutEffect(() => {
     const previousRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
